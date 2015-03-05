@@ -14,7 +14,7 @@ class PermissionSerializer(DynamicModelSerializer):
     name = 'permission'
     plural_name = 'permissions'
     fields = ('id', 'name', 'code')
-    deferred_fields = ('code')
+    deferred_fields = ('code',)
 
 class GroupSerializer(DynamicModelSerializer):
   class Meta:
