@@ -43,9 +43,5 @@ class TestUserViewSet(TestCase):
   def testInvalidRequestFields(self):
     for invalid_field in ('groups..name', 'groups..'):
       request = Request(self.rf.get('/users/', {'include[]': [invalid_field]}))
-      try:
-        self.view.request = request
-        self.view._get_request_fields()
-        self.assertTrue(False, 'Expecting ParseError')
-      except exceptions.ParseError:
-        self.assertTrue(True)
+      self.view.request = request
+      self.assertRaises(exceptions.ParseError, self.view._get_request_fields)
