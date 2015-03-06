@@ -25,8 +25,8 @@ class DynamicJSONRenderer(renderers.JSONRenderer):
     self._sideload = getattr(view, '_sideload', True)
 
     self._seen = defaultdict(set)
-    self._plural_name = getattr(view.get_serializer(), '_get_plural_name', lambda: 'objects')()
-    self._name = getattr(view.get_serializer(), '_get_name', lambda: 'object')()
+    self._plural_name = getattr(view.serializer_class(), '_get_plural_name', lambda: 'objects')()
+    self._name = getattr(view.serializer_class(), '_get_name', lambda: 'object')()
 
     # process the data
     self._process(data)
