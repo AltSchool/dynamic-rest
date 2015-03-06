@@ -3,67 +3,74 @@ from rest_framework import renderers
 
 
 class DynamicJSONRenderer(renderers.JSONRenderer):
+  """
+  Custom renderer that handles post-processing operations such as
+  sideloading and metadata injection.
 
+  Optional view parameters that control this behavior:
+
+  * _sideload: (Default: True) if False, turns off sideloading
+  * _metadata: (Default: None) if non-empty, added to the response data
+
+  """
   def render(self, data, accepted_media_type=None, renderer_context=None):
-    # if data is a string, just render it out using the default method
-    # this usually indicates an error message
+    # if data is a string, render it using the default method
     if isinstance(data, basestring):
       return super(DynamicJSONRenderer, self).render(data, accepted_media_type, renderer_context)
 
-    # populated by _sideload
-    self._data = {}
-
-    # used by _sideload to prevent duplicates
-    self._seen = defaultdict(set)
-
-    # used by _sideload to prevent adding secondary records of the primary resource
-    # from ending up in the primary slot
-    self._plural_name = getattr(
-        renderer_context.get('view').get_serializer().Meta, 'plural_name', 'objects')
-
-    # recursively sideload everything
-    self._sideload(data)
-
-    # add the primary resource data into the response data
-    if isinstance(data, dict):
-      resource_name = getattr(
-          renderer_context.get('view').get_serializer().Meta, 'name', 'object')
-    else:
-      resource_name = self._plural_name
-
-    self._data[resource_name] = data
-
+    # this renderer must be associated with a DRF view
     view = renderer_context.get('view')
-    if hasattr(view, 'response_meta') and view.response_meta:
-      self._data['meta'] = view.response_meta
 
-    # call super to render the response
+    self._data = {}
+    self._sideload = getattr(view, '_sideload', True)
+
+    self._seen = defaultdict(set)
+    self._plural_name = getattr(view.get_serializer(), '_get_plural_name', lambda x: 'objects')()
+    self._name = getattr(view.get_serializer(), '_get_name', lambda x: 'object')()
+
+    # process the data
+    self._process(data)
+
+    if self._sideload:
+      # add the primary resource data into the response data
+      resource_name = self._name if isinstance(data, dict) else self._plural_name
+      self._data[resource_name] = data
+    else:
+      # use the data as-is
+      self._data = data
+
+    # add metadata to the response if specified by the view
+    if getattr(view, '_metadata', None):
+      self._data['meta'] = view._metadata
+
+    # call superclass to render the response
     return super(DynamicJSONRenderer, self).render(self._data, accepted_media_type, renderer_context)
 
-  # recursively traverse the data and extract all resources
-  # that need to be sideloaded
-  def _sideload(self, obj, parent=None, parent_key=None, depth=0):
+  def _process(self, obj, parent=None, parent_key=None, depth=0):
+    """
+    Recursively traverse the response data, remove identifying tags added by serializers
+    and sideload if necessary.
+    """
     if isinstance(obj, list):
-      # list
       for key, o in enumerate(obj):
-        # recurse into lists of objects
-        self._sideload(o, parent=obj, parent_key=key, depth=depth)
+        # traverse into lists of objects
+        self._process(o, parent=obj, parent_key=key, depth=depth)
     elif isinstance(obj, dict):
-      # object
-
       if '_model' in obj and '_pk' in obj:
-        model = obj['_model']
-        pk = obj['_pk']
-
-        # strip the model and pk tags from the final response
-        del obj['_pk']
-        del obj['_model']
+        model = obj.pop('_model')
+        pk = obj.pop('_pk')
 
         # recursively check all fields
         for key, o in obj.iteritems():
           if isinstance(o, list) or isinstance(o, dict):
             # lists or dicts indicate a relation
-            self._sideload(o, parent=obj, parent_key=key, depth=depth + 1)
+            self._process(o, parent=obj, parent_key=key, depth=depth + 1)
+
+        # if sideloading is off, stop here
+        if not self._sideload:
+          return
+
+        # sideloading
 
         seen = True
         # if this object has not yet been seen
@@ -74,6 +81,9 @@ class DynamicJSONRenderer(renderers.JSONRenderer):
         # prevent sideloading the primary objects
         if depth == 0:
           return
+
+        # TODO: spec out the exact behavior for secondary instances of
+        # the primary resource
 
         # if the primary resource is embedded, add it to a prefixed key
         if model == self._plural_name:

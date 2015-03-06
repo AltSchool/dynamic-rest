@@ -5,11 +5,31 @@ from rest_framework import serializers, fields, exceptions
 class DynamicModelSerializer(serializers.ModelSerializer):
 
   def __init__(self, *args, **kwargs):
+    """
+    Extracts `_request_fields` from the `context`.
+    """
     super(DynamicModelSerializer, self).__init__(*args, **kwargs)
     self._request_fields = self._context.get('request_fields', {})
 
   def _id_only(self):
+    """
+    Returns True if the serializer should represent its record
+    as an ID rather than an object.
+    """
     return self._request_fields == True
+
+  def _get_name(self):
+    """
+    Returns the serializer name, which must be defined on the Meta class.
+    """
+    return self.Meta.name
+
+  def _get_plural_name(self):
+    """
+    Returns the serializer's plural name, which may be defined on the Meta class.
+    If the plural name is not defined, the pluralized name will be returned.
+    """
+    return getattr(self.Meta, 'plural_name', self._get_name() + 's')
 
   def get_fields(self):
     serializer_fields = super(DynamicModelSerializer, self).get_fields()
@@ -68,13 +88,14 @@ class DynamicModelSerializer(serializers.ModelSerializer):
             # default behavior for a sub-serializer is to return the ID
             if hasattr(field, 'child') and isinstance(field.child, serializers.BaseSerializer):
               # inject into the child serializer
-              field.child._request_fields = self._request_fields.get(field.field_name, True)
+              field.child._request_fields = self._request_fields.get(
+                  field.field_name, True)
             else:
               field._request_fields = self._request_fields.get(field.field_name, True)
           representation[field.field_name] = field.to_representation(attribute)
 
     # save the plural name and id
     # so that the DynamicRenderer can sideload in post-serialization
-    representation['_model'] = self.Meta.plural_name
+    representation['_model'] = self._get_plural_name()
     representation['_pk'] = instance.pk
     return representation

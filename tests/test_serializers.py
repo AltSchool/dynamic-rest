@@ -102,7 +102,49 @@ class TestUserSerializer(TestCase):
       ], serializer.data)
 
   def testNestedExtraField(self):
-    pass
+    context = {
+      'request_fields': {
+        'groups': {
+          'permissions': True
+        }
+      }
+    }
+    serializer = UserSerializer(self.fixture.users, many=True, context=context)
+    self.assertEqual([
+      OrderedDict([('id', 1), ('name', u'0'), ('groups', [
+        OrderedDict([('id', 1), ('name', u'0'), ('permissions', [1]), ('_model', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2), ('name', u'1'), ('permissions', [2]), ('_model', 'groups'), ('_pk', 2)])]), ('location', 1), ('_model', 'users'), ('_pk', 1)]),
+      OrderedDict([('id', 2), ('name', u'1'), ('groups', [
+        OrderedDict([('id', 1), ('name', u'0'), ('permissions', [1]), ('_model', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2), ('name', u'1'), ('permissions', [2]), ('_model', 'groups'), ('_pk', 2)])]), ('location', 1), ('_model', 'users'), ('_pk', 2)]),
+      OrderedDict([('id', 3), ('name', u'2'), ('groups', [
+        OrderedDict([('id', 1), ('name', u'0'), ('permissions', [1]), ('_model', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2), ('name', u'1'), ('permissions', [2]), ('_model', 'groups'), ('_pk', 2)])]), ('location', 2), ('_model', 'users'), ('_pk', 3)]),
+      OrderedDict([('id', 4), ('name', u'3'), ('groups', [
+        OrderedDict([('id', 1), ('name', u'0'), ('permissions', [1]), ('_model', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2), ('name', u'1'), ('permissions', [2]), ('_model', 'groups'), ('_pk', 2)])]), ('location', 3), ('_model', 'users'), ('_pk', 4)])
+    ], serializer.data)
 
   def testNestedDeferredField(self):
-    pass
+    context = {
+      'request_fields': {
+        'groups': {
+          'name': False
+        }
+      }
+    }
+    serializer = UserSerializer(self.fixture.users, many=True, context=context)
+    self.assertEqual([
+      OrderedDict([('id', 1), ('name', u'0'), ('groups', [
+        OrderedDict([('id', 1), ('_model', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2), ('_model', 'groups'), ('_pk', 2)])]), ('location', 1), ('_model', 'users'), ('_pk', 1)]),
+      OrderedDict([('id', 2), ('name', u'1'), ('groups', [
+        OrderedDict([('id', 1), ('_model', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2), ('_model', 'groups'), ('_pk', 2)])]), ('location', 1), ('_model', 'users'), ('_pk', 2)]),
+      OrderedDict([('id', 3), ('name', u'2'), ('groups', [
+        OrderedDict([('id', 1), ('_model', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2), ('_model', 'groups'), ('_pk', 2)])]), ('location', 2), ('_model', 'users'), ('_pk', 3)]),
+      OrderedDict([('id', 4), ('name', u'3'), ('groups', [
+        OrderedDict([('id', 1), ('_model', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2), ('_model', 'groups'), ('_pk', 2)])]), ('location', 3), ('_model', 'users'), ('_pk', 4)])
+    ], serializer.data)
