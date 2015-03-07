@@ -31,7 +31,7 @@ class DynamicJSONRenderer(renderers.JSONRenderer):
     # process the data
     self._process(data)
 
-    if self._sideload:
+    if self._sideload and '_pk' in data:
       # add the primary resource data into the response data
       resource_name = self._name if isinstance(data, dict) else self._plural_name
       self._data[resource_name] = data
