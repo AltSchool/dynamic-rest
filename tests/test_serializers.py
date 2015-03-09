@@ -14,13 +14,13 @@ class TestUserSerializer(TestCase):
     serializer = UserSerializer(self.fixture.users, many=True)
     self.assertEqual([
         OrderedDict(
-            [('id', 1), ('name', u'0'), ('location', 1), ('_model', 'users'), ('_pk', 1)]),
+            [('id', 1), ('name', u'0'), ('location', 1), ('_name', 'users'), ('_pk', 1)]),
         OrderedDict(
-            [('id', 2), ('name', u'1'), ('location', 1), ('_model', 'users'), ('_pk', 2)]),
+            [('id', 2), ('name', u'1'), ('location', 1), ('_name', 'users'), ('_pk', 2)]),
         OrderedDict(
-            [('id', 3), ('name', u'2'), ('location', 2), ('_model', 'users'), ('_pk', 3)]),
+            [('id', 3), ('name', u'2'), ('location', 2), ('_name', 'users'), ('_pk', 3)]),
         OrderedDict(
-            [('id', 4), ('name', u'3'), ('location', 3), ('_model', 'users'), ('_pk', 4)])
+            [('id', 4), ('name', u'3'), ('location', 3), ('_name', 'users'), ('_pk', 4)])
     ], serializer.data)
 
   def testExtraField(self):
@@ -32,13 +32,13 @@ class TestUserSerializer(TestCase):
     serializer = UserSerializer(self.fixture.users, many=True, context=context)
     self.assertEqual([
         OrderedDict(
-            [('id', 1), ('name', u'0'), ('location', 1), ('last_name', u'0'), ('_model', 'users'), ('_pk', 1)]),
+            [('id', 1), ('name', u'0'), ('location', 1), ('last_name', u'0'), ('_name', 'users'), ('_pk', 1)]),
         OrderedDict(
-            [('id', 2), ('name', u'1'), ('location', 1), ('last_name', u'1'), ('_model', 'users'), ('_pk', 2)]),
+            [('id', 2), ('name', u'1'), ('location', 1), ('last_name', u'1'), ('_name', 'users'), ('_pk', 2)]),
         OrderedDict(
-            [('id', 3), ('name', u'2'), ('location', 2), ('last_name', u'2'), ('_model', 'users'), ('_pk', 3)]),
+            [('id', 3), ('name', u'2'), ('location', 2), ('last_name', u'2'), ('_name', 'users'), ('_pk', 3)]),
         OrderedDict(
-            [('id', 4), ('name', u'3'), ('location', 3), ('last_name', u'3'), ('_model', 'users'), ('_pk', 4)])
+            [('id', 4), ('name', u'3'), ('location', 3), ('last_name', u'3'), ('_name', 'users'), ('_pk', 4)])
     ], serializer.data)
 
   def testDeferredField(self):
@@ -50,13 +50,13 @@ class TestUserSerializer(TestCase):
     serializer = UserSerializer(self.fixture.users, many=True, context=context)
     self.assertEqual([
         OrderedDict(
-            [('id', 1), ('name', u'0'), ('_model', 'users'), ('_pk', 1)]),
+            [('id', 1), ('name', u'0'), ('_name', 'users'), ('_pk', 1)]),
         OrderedDict(
-            [('id', 2), ('name', u'1'), ('_model', 'users'), ('_pk', 2)]),
+            [('id', 2), ('name', u'1'), ('_name', 'users'), ('_pk', 2)]),
         OrderedDict(
-            [('id', 3), ('name', u'2'), ('_model', 'users'), ('_pk', 3)]),
+            [('id', 3), ('name', u'2'), ('_name', 'users'), ('_pk', 3)]),
         OrderedDict(
-            [('id', 4), ('name', u'3'), ('_model', 'users'), ('_pk', 4)])
+            [('id', 4), ('name', u'3'), ('_name', 'users'), ('_pk', 4)])
     ], serializer.data)
 
   def testNestedHasOne(self):
@@ -68,14 +68,14 @@ class TestUserSerializer(TestCase):
     serializer = UserSerializer(self.fixture.users, many=True, context=context)
     self.assertEqual([
       OrderedDict([('id', 1), ('name', u'0'), ('location',
-        OrderedDict([('id', 1), ('name', u'0'), ('_model', 'locations'), ('_pk', 1)])), ('_model', 'users'), ('_pk', 1)]),
+        OrderedDict([('id', 1), ('name', u'0'), ('_name', 'locations'), ('_pk', 1)])), ('_name', 'users'), ('_pk', 1)]),
       OrderedDict([('id', 2), ('name', u'1'), ('location',
-        OrderedDict([('id', 1), ('name', u'0'), ('_model', 'locations'), ('_pk', 1)])), ('_model', 'users'), ('_pk', 2)]),
+        OrderedDict([('id', 1), ('name', u'0'), ('_name', 'locations'), ('_pk', 1)])), ('_name', 'users'), ('_pk', 2)]),
       OrderedDict([('id', 3), ('name', u'2'), ('location',
-        OrderedDict([('id', 2), ('name', u'1'), ('_model', 'locations'), ('_pk', 2)])),
-    ('_model', 'users'), ('_pk', 3)]),
+        OrderedDict([('id', 2), ('name', u'1'), ('_name', 'locations'), ('_pk', 2)])),
+    ('_name', 'users'), ('_pk', 3)]),
       OrderedDict([('id', 4), ('name', u'3'), ('location',
-        OrderedDict([('id', 3), ('name', u'2'), ('_model', 'locations'), ('_pk', 3)])), ('_model', 'users'), ('_pk', 4)])
+        OrderedDict([('id', 3), ('name', u'2'), ('_name', 'locations'), ('_pk', 3)])), ('_name', 'users'), ('_pk', 4)])
     ], serializer.data)
 
   def testNestedHasMany(self):
@@ -87,18 +87,18 @@ class TestUserSerializer(TestCase):
     serializer = UserSerializer(self.fixture.users, many=True, context=context)
     self.assertEqual([
       OrderedDict([('id', 1), ('name', u'0'), ('groups', [
-        OrderedDict([('id', 1), ('name', u'0'), ('_model', 'groups'), ('_pk', 1)]),
-        OrderedDict([('id', 2), ('name', u'1'), ('_model', 'groups'), ('_pk', 2)])]), ('location', 1), ('_model', 'users'), ('_pk', 1)]),
+        OrderedDict([('id', 1), ('name', u'0'), ('_name', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2), ('name', u'1'), ('_name', 'groups'), ('_pk', 2)])]), ('location', 1), ('_name', 'users'), ('_pk', 1)]),
       OrderedDict([('id', 2), ('name', u'1'), ('groups', [
-        OrderedDict([('id', 1), ('name', u'0'), ('_model', 'groups'), ('_pk', 1)]),
-        OrderedDict([('id', 2), ('name', u'1'), ('_model', 'groups'), ('_pk', 2)])]),
-    ('location', 1), ('_model', 'users'), ('_pk', 2)]),
+        OrderedDict([('id', 1), ('name', u'0'), ('_name', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2), ('name', u'1'), ('_name', 'groups'), ('_pk', 2)])]),
+    ('location', 1), ('_name', 'users'), ('_pk', 2)]),
       OrderedDict([('id', 3), ('name', u'2'), ('groups', [
-        OrderedDict([('id', 1), ('name', u'0'), ('_model', 'groups'), ('_pk', 1)]),
-        OrderedDict([('id', 2), ('name', u'1'), ('_model', 'groups'), ('_pk', 2)])]), ('location', 2), ('_model', 'users'), ('_pk', 3)]),
+        OrderedDict([('id', 1), ('name', u'0'), ('_name', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2), ('name', u'1'), ('_name', 'groups'), ('_pk', 2)])]), ('location', 2), ('_name', 'users'), ('_pk', 3)]),
       OrderedDict([('id', 4), ('name', u'3'), ('groups', [
-        OrderedDict([('id', 1), ('name', u'0'), ('_model', 'groups'), ('_pk', 1)]),
-        OrderedDict([('id', 2),('name', u'1'), ('_model', 'groups'), ('_pk', 2)])]), ('location', 3), ('_model', 'users'), ('_pk', 4)])
+        OrderedDict([('id', 1), ('name', u'0'), ('_name', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2),('name', u'1'), ('_name', 'groups'), ('_pk', 2)])]), ('location', 3), ('_name', 'users'), ('_pk', 4)])
       ], serializer.data)
 
   def testNestedExtraField(self):
@@ -112,17 +112,17 @@ class TestUserSerializer(TestCase):
     serializer = UserSerializer(self.fixture.users, many=True, context=context)
     self.assertEqual([
       OrderedDict([('id', 1), ('name', u'0'), ('groups', [
-        OrderedDict([('id', 1), ('name', u'0'), ('permissions', [1]), ('_model', 'groups'), ('_pk', 1)]),
-        OrderedDict([('id', 2), ('name', u'1'), ('permissions', [2]), ('_model', 'groups'), ('_pk', 2)])]), ('location', 1), ('_model', 'users'), ('_pk', 1)]),
+        OrderedDict([('id', 1), ('name', u'0'), ('permissions', [1]), ('_name', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2), ('name', u'1'), ('permissions', [2]), ('_name', 'groups'), ('_pk', 2)])]), ('location', 1), ('_name', 'users'), ('_pk', 1)]),
       OrderedDict([('id', 2), ('name', u'1'), ('groups', [
-        OrderedDict([('id', 1), ('name', u'0'), ('permissions', [1]), ('_model', 'groups'), ('_pk', 1)]),
-        OrderedDict([('id', 2), ('name', u'1'), ('permissions', [2]), ('_model', 'groups'), ('_pk', 2)])]), ('location', 1), ('_model', 'users'), ('_pk', 2)]),
+        OrderedDict([('id', 1), ('name', u'0'), ('permissions', [1]), ('_name', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2), ('name', u'1'), ('permissions', [2]), ('_name', 'groups'), ('_pk', 2)])]), ('location', 1), ('_name', 'users'), ('_pk', 2)]),
       OrderedDict([('id', 3), ('name', u'2'), ('groups', [
-        OrderedDict([('id', 1), ('name', u'0'), ('permissions', [1]), ('_model', 'groups'), ('_pk', 1)]),
-        OrderedDict([('id', 2), ('name', u'1'), ('permissions', [2]), ('_model', 'groups'), ('_pk', 2)])]), ('location', 2), ('_model', 'users'), ('_pk', 3)]),
+        OrderedDict([('id', 1), ('name', u'0'), ('permissions', [1]), ('_name', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2), ('name', u'1'), ('permissions', [2]), ('_name', 'groups'), ('_pk', 2)])]), ('location', 2), ('_name', 'users'), ('_pk', 3)]),
       OrderedDict([('id', 4), ('name', u'3'), ('groups', [
-        OrderedDict([('id', 1), ('name', u'0'), ('permissions', [1]), ('_model', 'groups'), ('_pk', 1)]),
-        OrderedDict([('id', 2), ('name', u'1'), ('permissions', [2]), ('_model', 'groups'), ('_pk', 2)])]), ('location', 3), ('_model', 'users'), ('_pk', 4)])
+        OrderedDict([('id', 1), ('name', u'0'), ('permissions', [1]), ('_name', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2), ('name', u'1'), ('permissions', [2]), ('_name', 'groups'), ('_pk', 2)])]), ('location', 3), ('_name', 'users'), ('_pk', 4)])
     ], serializer.data)
 
   def testNestedDeferredField(self):
@@ -136,15 +136,15 @@ class TestUserSerializer(TestCase):
     serializer = UserSerializer(self.fixture.users, many=True, context=context)
     self.assertEqual([
       OrderedDict([('id', 1), ('name', u'0'), ('groups', [
-        OrderedDict([('id', 1), ('_model', 'groups'), ('_pk', 1)]),
-        OrderedDict([('id', 2), ('_model', 'groups'), ('_pk', 2)])]), ('location', 1), ('_model', 'users'), ('_pk', 1)]),
+        OrderedDict([('id', 1), ('_name', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2), ('_name', 'groups'), ('_pk', 2)])]), ('location', 1), ('_name', 'users'), ('_pk', 1)]),
       OrderedDict([('id', 2), ('name', u'1'), ('groups', [
-        OrderedDict([('id', 1), ('_model', 'groups'), ('_pk', 1)]),
-        OrderedDict([('id', 2), ('_model', 'groups'), ('_pk', 2)])]), ('location', 1), ('_model', 'users'), ('_pk', 2)]),
+        OrderedDict([('id', 1), ('_name', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2), ('_name', 'groups'), ('_pk', 2)])]), ('location', 1), ('_name', 'users'), ('_pk', 2)]),
       OrderedDict([('id', 3), ('name', u'2'), ('groups', [
-        OrderedDict([('id', 1), ('_model', 'groups'), ('_pk', 1)]),
-        OrderedDict([('id', 2), ('_model', 'groups'), ('_pk', 2)])]), ('location', 2), ('_model', 'users'), ('_pk', 3)]),
+        OrderedDict([('id', 1), ('_name', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2), ('_name', 'groups'), ('_pk', 2)])]), ('location', 2), ('_name', 'users'), ('_pk', 3)]),
       OrderedDict([('id', 4), ('name', u'3'), ('groups', [
-        OrderedDict([('id', 1), ('_model', 'groups'), ('_pk', 1)]),
-        OrderedDict([('id', 2), ('_model', 'groups'), ('_pk', 2)])]), ('location', 3), ('_model', 'users'), ('_pk', 4)])
+        OrderedDict([('id', 1), ('_name', 'groups'), ('_pk', 1)]),
+        OrderedDict([('id', 2), ('_name', 'groups'), ('_pk', 2)])]), ('location', 3), ('_name', 'users'), ('_pk', 4)])
     ], serializer.data)

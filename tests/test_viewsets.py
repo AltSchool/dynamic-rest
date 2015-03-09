@@ -16,7 +16,7 @@ class TestUserViewSet(TestCase):
       'exclude[]': ['groups.name']
     }))
     self.view.request = request
-    fields = self.view._get_request_fields()
+    fields = self.view.get_request_fields()
 
     self.assertEqual({
       'groups': {
@@ -27,13 +27,13 @@ class TestUserViewSet(TestCase):
     }, fields)
 
   def testGetRequestFieldsDisabled(self):
-    self.view._features = (self.view.INCLUDE)
+    self.view.features = (self.view.INCLUDE)
     request = Request(self.rf.get('/users/', {
       'include[]': ['name', 'groups'],
       'exclude[]': ['groups.name']
     }))
     self.view.request = request
-    fields = self.view._get_request_fields()
+    fields = self.view.get_request_fields()
 
     self.assertEqual({
       'groups': True,
@@ -44,4 +44,4 @@ class TestUserViewSet(TestCase):
     for invalid_field in ('groups..name', 'groups..'):
       request = Request(self.rf.get('/users/', {'include[]': [invalid_field]}))
       self.view.request = request
-      self.assertRaises(exceptions.ParseError, self.view._get_request_fields)
+      self.assertRaises(exceptions.ParseError, self.view.get_request_fields)

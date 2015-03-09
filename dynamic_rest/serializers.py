@@ -6,30 +6,23 @@ class DynamicModelSerializer(serializers.ModelSerializer):
 
   def __init__(self, *args, **kwargs):
     """
-    Extracts `_request_fields` from the `context`.
+    Extracts `request_fields` from the `context`.
     """
     super(DynamicModelSerializer, self).__init__(*args, **kwargs)
     self._request_fields = self._context.get('request_fields', {})
 
-  def _id_only(self):
-    """
-    Returns True if the serializer should represent its record
-    as an ID rather than an object.
-    """
-    return self._request_fields == True
-
-  def _get_name(self):
+  def get_name(self):
     """
     Returns the serializer name, which must be defined on the Meta class.
     """
     return self.Meta.name
 
-  def _get_plural_name(self):
+  def get_plural_name(self):
     """
     Returns the serializer's plural name, which may be defined on the Meta class.
     If the plural name is not defined, the pluralized name will be returned.
     """
-    return getattr(self.Meta, 'plural_name', self._get_name() + 's')
+    return getattr(self.Meta, 'plural_name', self.get_name() + 's')
 
   def get_fields(self):
     serializer_fields = super(DynamicModelSerializer, self).get_fields()
@@ -96,6 +89,13 @@ class DynamicModelSerializer(serializers.ModelSerializer):
 
     # save the plural name and id
     # so that the DynamicRenderer can sideload in post-serialization
-    representation['_model'] = self._get_plural_name()
+    representation['_name'] = self.get_plural_name()
     representation['_pk'] = instance.pk
     return representation
+
+  def _id_only(self):
+    """
+    Returns True if the serializer should represent its record
+    as an ID rather than an object.
+    """
+    return self._request_fields == True

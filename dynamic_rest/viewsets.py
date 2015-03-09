@@ -10,34 +10,34 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
   """
   Supported API features
   """
-  _features = (INCLUDE, EXCLUDE)
+  features = (INCLUDE, EXCLUDE)
 
   """
   Whether or not to enable sideloading
   in the DynamicRenderer.
   """
-  _sideload = True
+  sideload = True
 
   """
   Extra data that will be added into
   the response by the DynamicRenderer.
   """
-  _metadata = None
+  meta = None
 
-  def _get_request_feature(self, name):
+  def get_request_feature(self, name):
     """
     Parses the request for a particular feature.
     If the feature is not supported, returns None.
     """
-    return self.request.QUERY_PARAMS.getlist(name) if name in self._features else None
+    return self.request.QUERY_PARAMS.getlist(name) if name in self.features else None
 
-  def _get_request_fields(self):
+  def get_request_fields(self):
     """
     Parses the `include[]` and `exclude[]` features into a
     field map that is passed into the serializer.
     """
-    include_fields = self._get_request_feature('include[]')
-    exclude_fields = self._get_request_feature('exclude[]')
+    include_fields = self.get_request_feature('include[]')
+    exclude_fields = self.get_request_feature('exclude[]')
     field_map = {}
     for fields, include in ((include_fields, True), (exclude_fields, False)):
       if fields is None:
@@ -62,7 +62,7 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
 
   def get_serializer_context(self):
     context = super(DynamicModelViewSet, self).get_serializer_context()
-    context['request_fields'] = self._get_request_fields()
+    context['request_fields'] = self.get_request_fields()
     return context
 
   def list(self, request, *args, **kwargs):

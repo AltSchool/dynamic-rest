@@ -9,8 +9,8 @@ class DynamicJSONRenderer(renderers.JSONRenderer):
 
   Optional view parameters that control this behavior:
 
-  * _sideload: (Default: True) if False, turns off sideloading
-  * _metadata: (Default: None) if non-empty, added to the response data
+  * sideload: (Default: True) if False, turns off sideloading
+  * meta: (Default: None) if non-empty, added to the response data
 
   """
   def render(self, data, accepted_media_type=None, renderer_context=None):
@@ -22,16 +22,18 @@ class DynamicJSONRenderer(renderers.JSONRenderer):
     view = renderer_context.get('view')
 
     self._data = {}
-    self._sideload = getattr(view, '_sideload', True)
+    self._sideload = getattr(view, 'sideload', True)
 
     self._seen = defaultdict(set)
-    self._plural_name = getattr(view.serializer_class(), '_get_plural_name', lambda: 'objects')()
-    self._name = getattr(view.serializer_class(), '_get_name', lambda: 'object')()
+    self._plural_name = getattr(view.serializer_class(), 'get_plural_name', lambda: 'objects')()
+    self._name = getattr(view.serializer_class(), 'get_name', lambda: 'object')()
+
+    is_dynamic = self._is_dynamic(data)
 
     # process the data
     self._process(data)
 
-    if self._sideload and '_pk' in data:
+    if self._sideload and is_dynamic:
       # add the primary resource data into the response data
       resource_name = self._name if isinstance(data, dict) else self._plural_name
       self._data[resource_name] = data
@@ -39,12 +41,17 @@ class DynamicJSONRenderer(renderers.JSONRenderer):
       # use the data as-is
       self._data = data
 
-    # add metadata to the response if specified by the view
-    if getattr(view, '_metadata', None):
-      self._data['meta'] = view._metadata
+    # add meta to the response if specified by the view
+    if getattr(view, 'meta', None):
+      self._data['meta'] = view.meta
 
     # call superclass to render the response
     return super(DynamicJSONRenderer, self).render(self._data, accepted_media_type, renderer_context)
+
+  def _is_dynamic(self, data):
+    if isinstance(data, list):
+      return self._is_dynamic(data[0]) if len(data) else False
+    return '_pk' in data and '_name' in data
 
   def _process(self, obj, parent=None, parent_key=None, depth=0):
     """
@@ -56,8 +63,8 @@ class DynamicJSONRenderer(renderers.JSONRenderer):
         # traverse into lists of objects
         self._process(o, parent=obj, parent_key=key, depth=depth)
     elif isinstance(obj, dict):
-      if '_model' in obj and '_pk' in obj:
-        model = obj.pop('_model')
+      if self._is_dynamic(obj):
+        name = obj.pop('_name')
         pk = obj.pop('_pk')
 
         # recursively check all fields
@@ -74,9 +81,9 @@ class DynamicJSONRenderer(renderers.JSONRenderer):
 
         seen = True
         # if this object has not yet been seen
-        if not pk in self._seen[model]:
+        if not pk in self._seen[name]:
           seen = False
-          self._seen[model].add(pk)
+          self._seen[name].add(pk)
 
         # prevent sideloading the primary objects
         if depth == 0:
@@ -86,17 +93,17 @@ class DynamicJSONRenderer(renderers.JSONRenderer):
         # the primary resource
 
         # if the primary resource is embedded, add it to a prefixed key
-        if model == self._plural_name:
-          model = '+%s' % model
+        if name == self._plural_name:
+          name = '+%s' % name
 
         if not seen:
           # allocate a top-level key in the data for this resource type
-          if model not in self._data:
-            self._data[model] = []
+          if name not in self._data:
+            self._data[name] = []
 
           # move the object into a new top-level bucket
           # and mark it as seen
-          self._data[model].append(obj)
+          self._data[name].append(obj)
 
         # replace the object with a reference
         if parent is not None and parent_key is not None:
