@@ -51,7 +51,9 @@ class DynamicJSONRenderer(renderers.JSONRenderer):
   def _is_dynamic(self, data):
     if isinstance(data, list):
       return self._is_dynamic(data[0]) if len(data) else False
-    return '_pk' in data and '_name' in data
+    if isinstance(data, dict):
+      return '_pk' in data and '_name' in data
+    return False
 
   def _process(self, obj, parent=None, parent_key=None, depth=0):
     """
