@@ -1,40 +1,56 @@
 from rest_framework import viewsets, response, exceptions
-
+from django.db.models import Q, Prefetch
 
 class DynamicModelViewSet(viewsets.ModelViewSet):
-  # TODO: add support for other features
+
+  """A viewset that can support dynamic API features.
+
+  Attributes:
+    features: A list of features supported by the viewset.
+    sideload: Whether or not to enable sideloading in the DynamicRenderer.
+    meta: Extra data that is added to the response by the DynamicRenderer.
+  """
 
   INCLUDE = 'include[]'
   EXCLUDE = 'exclude[]'
 
-  """
-  Supported API features
-  """
+  # TODO: add support for `filter{}`, `sort{}`, `page`, and `per_page`
   features = (INCLUDE, EXCLUDE)
-
-  """
-  Whether or not to enable sideloading
-  in the DynamicRenderer.
-  """
   sideload = True
-
-  """
-  Extra data that will be added into
-  the response by the DynamicRenderer.
-  """
   meta = None
 
+  def get_queryset(self):
+    filters = self.get_filters()
+    prefetches = self.get_prefetches()
+    return self.queryset.filter(filters).prefetch_related(*prefetches)
+
+  def get_filters(self):
+    # TOOD: implement this
+    return Q()
+
+  def get_prefetches(self):
+    # TODO: implement this
+    return []
+
   def get_request_feature(self, name):
-    """
-    Parses the request for a particular feature.
-    If the feature is not supported, returns None.
+    """Parses the request for a particular feature.
+
+    Arguments:
+      name: A feature name.
+
+    Returns:
+      A feature parsed from the URL if the feature is supported, or None.
     """
     return self.request.QUERY_PARAMS.getlist(name) if name in self.features else None
 
   def get_request_fields(self):
-    """
-    Parses the `include[]` and `exclude[]` features into a
-    field map that is passed into the serializer.
+    """Parses the `include[]` and `exclude[]` features.
+
+    Extracts the dynamic field features from the request parameters
+    into a field map that can be passed to a serializer.
+
+    Returns:
+      A nested dict mapping serializer keys to True (include) or False (exclude).
     """
     include_fields = self.get_request_feature('include[]')
     exclude_fields = self.get_request_feature('exclude[]')
