@@ -74,38 +74,6 @@ class DynamicModelSerializer(serializers.ModelSerializer):
       return instance.pk
     else:
       representation = super(DynamicModelSerializer, self).to_representation(instance)
-
-      """
-      representation = OrderedDict()
-      serializer_fields = [
-          field for field in self.fields.itervalues() if not field.write_only]
-
-      for field in serializer_fields:
-        try:
-          attribute = field.get_attribute(instance)
-        except fields.SkipField:
-          continue
-
-        if attribute is None:
-          # We skip `to_representation` for `None` values so that
-          # fields do not have to explicitly deal with that case.
-          representation[field.field_name] = None
-        else:
-          inject = None
-          if isinstance(field, (DynamicRelationField, serializers.BaseSerializer)):
-            # inject the `request_fields` sub-object into any sub-serializer
-            # default behavior for a sub-serializer is to return the ID
-            if hasattr(field, 'child') and isinstance(field.child, serializers.BaseSerializer):
-              # inject into the child serializer
-              inject = field.child
-            else:
-              inject = field
-          if inject:
-            inject._request_fields = self._request_fields.get(field.field_name, True)
-
-          representation[field.field_name] = field.to_representation(attribute)
-        """
-
     # save the plural name and id
     # so that the DynamicRenderer can sideload in post-serialization
     representation['_name'] = self.get_plural_name()
