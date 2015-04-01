@@ -11,7 +11,10 @@ class TestUsersAPI(APITestCase):
     self.maxDiff = None
 
   def testDefault(self):
-    response = self.client.get('/users/')
+    with self.assertNumQueries(2):
+      # 2 queries: 1 for User, 1 for Location
+      # TODO: optimize down to 1 query
+      response = self.client.get('/users/')
     self.assertEquals(200, response.status_code)
     self.assertEquals({
       'users': [{
@@ -34,7 +37,9 @@ class TestUsersAPI(APITestCase):
     }, json.loads(response.content))
 
   def testInclude(self):
-    response = self.client.get('/users/?include[]=groups')
+    with self.assertNumQueries(3):
+      # 3 queries: 1 for User, 1 for Group, one for Location
+      response = self.client.get('/users/?include[]=groups')
     self.assertEquals(200, response.status_code)
     self.assertEquals({
       'users': [{
@@ -80,7 +85,8 @@ class TestUsersAPI(APITestCase):
     }, json.loads(response.content))
 
   def testNestedHasOne(self):
-    response = self.client.get('/users/?include[]=location.')
+    with self.assertNumQueries(2):
+      response = self.client.get('/users/?include[]=location.')
     self.assertEquals(200, response.status_code)
     self.assertEquals({
       'locations': [{

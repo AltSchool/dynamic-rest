@@ -26,23 +26,20 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     return getattr(self.Meta, 'plural_name', self.get_name() + 's')
 
   def get_fields(self):
+    if self.id_only():
+      return {}
+
     serializer_fields = super(DynamicModelSerializer, self).get_fields()
+    request_fields = self._request_fields
 
     # determine fields that are deferred by default
-    deferred = set()
+    meta_deferred = set(getattr(self.Meta, 'deferred_fields', []))
+    deferred = set([name for name, field in serializer_fields.iteritems()
+                    if getattr(field, 'deferred', None) == True or name in meta_deferred])
 
-    for name, field in serializer_fields.iteritems():
-      if getattr(field, 'deferred', None) == True:
-        deferred.add(name)
-
-    deferred_fields = getattr(self.Meta, 'deferred_fields', [])
-    for name in deferred_fields:
-      deferred.add(name)
-
-    # determine fields that are requested to be
-    # deferred/included
-    if not self._id_only() and self._request_fields:
-      for name, include in self._request_fields.iteritems():
+    # apply request overrides
+    if request_fields:
+      for name, include in request_fields.iteritems():
         if not name in serializer_fields:
           raise exceptions.ParseError(
               "'%s' is not a valid field name for '%s'" % (name, self.Meta.name))
@@ -51,17 +48,34 @@ class DynamicModelSerializer(serializers.ModelSerializer):
         elif include == False:
           deferred.add(name)
 
+    # remove any deferred fields from the base list
     for name in deferred:
       serializer_fields.pop(name)
+
+    # inject request_fields into sub-serializers
+    for name, field in serializer_fields.iteritems():
+      inject = None
+      if isinstance(field, serializers.BaseSerializer):
+        inject = field
+      elif isinstance(field, DynamicRelationField):
+        field.parent = self
+        inject = field.serializer
+      if isinstance(inject, serializers.ListSerializer):
+        inject = field.child
+      if inject:
+        inject._request_fields = request_fields.get(name, True)
 
     return serializer_fields
 
   def to_representation(self, instance):
-    if self._id_only():
+    if self.id_only():
       # if True is passed to request_fields,
       # the serializer should just return an ID/list of IDs
       return instance.pk
     else:
+      representation = super(DynamicModelSerializer, self).to_representation(instance)
+
+      """
       representation = OrderedDict()
       serializer_fields = [
           field for field in self.fields.itervalues() if not field.write_only]
@@ -90,6 +104,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
             inject._request_fields = self._request_fields.get(field.field_name, True)
 
           representation[field.field_name] = field.to_representation(attribute)
+        """
 
     # save the plural name and id
     # so that the DynamicRenderer can sideload in post-serialization
@@ -97,5 +112,5 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     representation['_pk'] = instance.pk
     return representation
 
-  def _id_only(self):
+  def id_only(self):
     return self._request_fields == True

@@ -1,5 +1,7 @@
-from rest_framework import viewsets, response, exceptions
-from django.db.models import Q, Prefetch
+from rest_framework import viewsets, response, exceptions, serializers
+from dynamic_rest.fields import DynamicRelationField
+from django.db.models import Prefetch
+
 
 class DynamicModelViewSet(viewsets.ModelViewSet):
 
@@ -19,18 +21,23 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
   sideload = True
   meta = None
 
-  def get_queryset(self):
-    filters = self.get_filters()
-    prefetches = self.get_prefetches()
-    return self.queryset.filter(filters).prefetch_related(*prefetches)
+  def get_queryset(self, serializer=None):
+    if serializer:
+      queryset = serializer.Meta.model.objects.all()
+    else:
+      serializer = self.get_serializer()
+      queryset = getattr(self, 'queryset', serializer.Meta.model.objects.all())
 
-  def get_filters(self):
-    # TOOD: implement this
-    return Q()
-
-  def get_prefetches(self):
-    # TODO: implement this
-    return []
+    prefetch_related = []
+    for name, field in serializer.get_fields().iteritems():
+      source = field.source or name
+      if isinstance(field, DynamicRelationField):
+        field = field.serializer
+      if isinstance(field, serializers.ListSerializer):
+        field = field.child
+      if isinstance(field, serializers.BaseSerializer):
+        prefetch_related.append(Prefetch(source, self.get_queryset(field)))
+    return queryset.prefetch_related(*prefetch_related)
 
   def get_request_feature(self, name):
     """Parses the request for a particular feature.
@@ -52,29 +59,34 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
     Returns:
       A nested dict mapping serializer keys to True (include) or False (exclude).
     """
+    if hasattr(self, '_request_fields'):
+      return self._request_fields
+
     include_fields = self.get_request_feature('include[]')
     exclude_fields = self.get_request_feature('exclude[]')
-    field_map = {}
+    request_fields = {}
     for fields, include in ((include_fields, True), (exclude_fields, False)):
       if fields is None:
         continue
       for field in fields:
         field_segments = field.split('.')
         num_segments = len(field_segments)
-        current_map = field_map
+        current_fields = request_fields
         for i, segment in enumerate(field_segments):
           last = i == num_segments - 1
           if segment:
             if last:
-              current_map[segment] = include
+              current_fields[segment] = include
             else:
-              if not segment in current_map:
-                current_map[segment] = {}
-              current_map = current_map[segment]
+              if not segment in current_fields:
+                current_fields[segment] = {}
+              current_fields = current_fields[segment]
           elif not last:
             # empty segment must be the last segment
             raise exceptions.ParseError("'%s' is not a valid field" % field)
-    return field_map
+
+    self._request_fields = request_fields
+    return request_fields
 
   def get_serializer_context(self):
     context = super(DynamicModelViewSet, self).get_serializer_context()

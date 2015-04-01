@@ -33,32 +33,46 @@ class DynamicRelationField(DynamicField):
       many: Whether or not the target represents a list of objects, passed to the serializer.
     """
     self.many = many
-    self.serializer_class = serializer_class
+    self._serializer_class = serializer_class
     if not 'deferred' in kwargs:
       kwargs['deferred'] = True
     super(DynamicRelationField, self).__init__(**kwargs)
 
-  def bind(self, *args, **kwargs):
-    super(DynamicRelationField, self).bind(*args, **kwargs)
-    self.serializer_class = self._get_serializer_class(self.serializer_class)
+  @property
+  def serializer(self):
+    if hasattr(self, '_serializer'):
+      return self._serializer
 
-  def get_serializer_context(self):
-    return {
-        'request_fields': getattr(self, '_request_fields', None)
-    }
+    serializer = self.serializer_class(many=self.many)
+    self._serializer = serializer
+    return serializer
 
   def to_representation(self, instance):
-    return self.serializer_class(many=self.many, context=self.get_serializer_context()).to_representation(instance)
+    return self.serializer.to_representation(instance)
 
-  def _get_serializer_class(self, cls):
-    if not isinstance(cls, basestring):
-      return cls
+  @property
+  def serializer_class(self):
+    serializer_class = self._serializer_class
+    if not isinstance(serializer_class, basestring):
+      return serializer_class
 
-    parts = cls.split('.')
+    parts = serializer_class.split('.')
     module_path = '.'.join(parts[:-1])
     if not module_path:
+      if getattr(self, 'parent', None) is None:
+        raise Exception(
+            "Can not load serializer '%s' before binding or without specifying full path" % serializer_class)
+
       # try the module of the parent class
       module_path = self.parent.__module__
 
     module = importlib.import_module(module_path)
-    return getattr(module, parts[-1])
+    serializer_class = getattr(module, parts[-1])
+
+    self._serializer_class = serializer_class
+    return serializer_class
+
+  def __getattr__(self, name):
+    """Proxy all methods and properties on the underlying serializer."""
+    return getattr(self.serializer, name)
+
