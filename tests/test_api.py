@@ -8,6 +8,7 @@ class TestUsersAPI(APITestCase):
 
   def setUp(self):
     self.fixture = create_fixture()
+    self.maxDiff = None
 
   def testDefault(self):
     response = self.client.get('/users/')

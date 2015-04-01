@@ -1,25 +1,26 @@
 from collections import OrderedDict
 from rest_framework import serializers, fields, exceptions
+from dynamic_rest.fields import DynamicRelationField
 
 
 class DynamicModelSerializer(serializers.ModelSerializer):
 
   def __init__(self, *args, **kwargs):
-    """
-    Extracts `request_fields` from the `context`.
-    """
+    """Extracts `request_fields` from the `context`."""
     super(DynamicModelSerializer, self).__init__(*args, **kwargs)
     self._request_fields = self._context.get('request_fields', {})
 
   def get_name(self):
-    """
-    Returns the serializer name, which must be defined on the Meta class.
+    """Returns the serializer name.
+
+    The name must be defined on the Meta class.
     """
     return self.Meta.name
 
   def get_plural_name(self):
-    """
-    Returns the serializer's plural name, which may be defined on the Meta class.
+    """Returns the serializer's plural name.
+
+    The plural name may be defined on the Meta class.
     If the plural name is not defined, the pluralized name will be returned.
     """
     return getattr(self.Meta, 'plural_name', self.get_name() + 's')
@@ -63,7 +64,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     else:
       representation = OrderedDict()
       serializer_fields = [
-          field for field in self.fields.values() if not field.write_only]
+          field for field in self.fields.itervalues() if not field.write_only]
 
       for field in serializer_fields:
         try:
@@ -76,15 +77,18 @@ class DynamicModelSerializer(serializers.ModelSerializer):
           # fields do not have to explicitly deal with that case.
           representation[field.field_name] = None
         else:
-          if isinstance(field, serializers.BaseSerializer):
+          inject = None
+          if isinstance(field, (DynamicRelationField, serializers.BaseSerializer)):
             # inject the `request_fields` sub-object into any sub-serializer
             # default behavior for a sub-serializer is to return the ID
             if hasattr(field, 'child') and isinstance(field.child, serializers.BaseSerializer):
               # inject into the child serializer
-              field.child._request_fields = self._request_fields.get(
-                  field.field_name, True)
+              inject = field.child
             else:
-              field._request_fields = self._request_fields.get(field.field_name, True)
+              inject = field
+          if inject:
+            inject._request_fields = self._request_fields.get(field.field_name, True)
+
           representation[field.field_name] = field.to_representation(attribute)
 
     # save the plural name and id
@@ -94,8 +98,4 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     return representation
 
   def _id_only(self):
-    """
-    Returns True if the serializer should represent its record
-    as an ID rather than an object.
-    """
     return self._request_fields == True
