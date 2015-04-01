@@ -13,7 +13,7 @@ class TestUsersAPI(APITestCase):
   def testDefault(self):
     with self.assertNumQueries(2):
       # 2 queries: 1 for User, 1 for Location
-      # TODO: optimize down to 1 query
+      # TODO: optimize down to 1 query using FK on core object
       response = self.client.get('/users/')
     self.assertEquals(200, response.status_code)
     self.assertEquals({
@@ -62,6 +62,23 @@ class TestUsersAPI(APITestCase):
         'groups': [1, 2],
         'location': 3,
         'name': '3'
+      }]
+    }, json.loads(response.content))
+
+    with self.assertNumQueries(2):
+      # 2 queries: 1 for User, 1 for Group
+      response = self.client.get('/groups/?include[]=members')
+    self.assertEquals(200, response.status_code)
+    self.assertEquals({
+      'groups': [{
+        'id': 1,
+        'members': [1, 2, 3, 4],
+        'name': '0'
+      }, {
+        'id': 2,
+        'members': [1, 2, 3, 4],
+        'name':
+        '1'
       }]
     }, json.loads(response.content))
 

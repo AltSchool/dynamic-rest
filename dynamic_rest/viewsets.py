@@ -1,6 +1,8 @@
-from rest_framework import viewsets, response, exceptions, serializers
-from dynamic_rest.fields import DynamicRelationField
 from django.db.models import Prefetch
+from dynamic_rest.fields import DynamicRelationField
+from dynamic_rest.renderers import DynamicJSONRenderer
+from rest_framework import viewsets, response, exceptions, serializers
+from rest_framework.renderers import BrowsableAPIRenderer
 
 
 class DynamicModelViewSet(viewsets.ModelViewSet):
@@ -17,6 +19,7 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
   EXCLUDE = 'exclude[]'
 
   # TODO: add support for `filter{}`, `sort{}`, `page`, and `per_page`
+  renderer_classes = (DynamicJSONRenderer, BrowsableAPIRenderer)
   features = (INCLUDE, EXCLUDE)
   sideload = True
   meta = None

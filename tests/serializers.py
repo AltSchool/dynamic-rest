@@ -24,10 +24,10 @@ class GroupSerializer(DynamicModelSerializer):
   class Meta:
     model = Group
     name = 'group'
-    fields = ('id', 'name', 'permissions', 'users')
+    fields = ('id', 'name', 'permissions', 'members')
 
   permissions = DynamicRelationField('PermissionSerializer', many=True)
-  users = DynamicRelationField('UserSerializer', many=True)
+  members = DynamicRelationField('UserSerializer', source='users', many=True)
 
 class UserSerializer(DynamicModelSerializer):
   class Meta:

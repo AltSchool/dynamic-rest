@@ -26,24 +26,27 @@ class DynamicRelationField(DynamicField):
   resolves after binding to the parent serializer.
   """
 
+  SERIALIZER_KWARGS = set(('many', 'source'))
+
   def __init__(self, serializer_class, many=False, **kwargs):
     """
     Arguments:
-      serializer_class: Serializer class or string for objects type of this field
-      many: Whether or not the target represents a list of objects, passed to the serializer.
+      serializer_class: Serializer class (or string representation) to proxy.
     """
-    self.many = many
+    self.kwargs = kwargs
     self._serializer_class = serializer_class
     if not 'deferred' in kwargs:
       kwargs['deferred'] = True
     super(DynamicRelationField, self).__init__(**kwargs)
+    self.kwargs['many'] = many
 
   @property
   def serializer(self):
     if hasattr(self, '_serializer'):
       return self._serializer
 
-    serializer = self.serializer_class(many=self.many)
+    serializer = self.serializer_class(
+        **{k: v for k, v in self.kwargs.iteritems() if k in self.SERIALIZER_KWARGS})
     self._serializer = serializer
     return serializer
 
@@ -75,4 +78,3 @@ class DynamicRelationField(DynamicField):
   def __getattr__(self, name):
     """Proxy all methods and properties on the underlying serializer."""
     return getattr(self.serializer, name)
-
