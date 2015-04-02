@@ -5,10 +5,26 @@ from dynamic_rest.fields import DynamicRelationField
 
 class DynamicModelSerializer(serializers.ModelSerializer):
 
-  def __init__(self, *args, **kwargs):
-    """Extracts `request_fields` from the `context`."""
-    super(DynamicModelSerializer, self).__init__(*args, **kwargs)
-    self._request_fields = self._context.get('request_fields', {})
+  def __init__(self, instance=None, include_fields=None, exclude_fields=None, request_fields=None, **kwargs):
+    """Builds `request_fields`
+
+    Arguments:
+      instance: instance for the serializer base
+      include_fields: list of field names to include
+      exclude_fields: list of field names to exclude
+      request_fields: nested map of field names
+        for inclusions, exclusions, and sideloads
+    """
+    kwargs['instance'] = instance
+    super(DynamicModelSerializer, self).__init__(**kwargs)
+    self.request_fields = request_fields or self._context.get('request_fields', {})
+    self.include_fields = include_fields or self._context.get('include_fields', [])
+    self.exclude_fields = exclude_fields or self._context.get('exclude_fields', [])
+
+    for name in self.include_fields:
+      self.request_fields[name] = True
+    for name in self.exclude_fields:
+      self.request_fields[name] = False
 
   def get_name(self):
     """Returns the serializer name.
@@ -43,7 +59,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
       return {}
 
     serializer_fields = super(DynamicModelSerializer, self).get_fields()
-    request_fields = self._request_fields
+    request_fields = self.request_fields
 
     # determine fields that are deferred by default
     meta_deferred = set(getattr(self.Meta, 'deferred_fields', []))
@@ -76,7 +92,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
       if isinstance(inject, serializers.ListSerializer):
         inject = field.child
       if inject:
-        inject._request_fields = request_fields.get(name, True)
+        inject.request_fields = request_fields.get(name, True)
 
     return serializer_fields
 
@@ -95,6 +111,6 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     """Whether or not the serializer should return an ID instead of an object.
 
     Returns:
-      True iff `_request_fields` == True
+      True iff `request_fields` == True
     """
-    return self._request_fields == True
+    return self.request_fields == True
