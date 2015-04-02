@@ -85,9 +85,9 @@ class TestUsersAPI(APITestCase):
   def testExclude(self):
     with self.assertNumQueries(1):
       response = self.client.get('/users/?exclude[]=name')
-    query = connection.queries[-1]
-    self.assertFalse('name' in query)
-    self.assertFalse('*' in query)
+    query = connection.queries[-1]['sql']
+    self.assertFalse('name' in query, query)
+    self.assertFalse('*' in query, query)
 
     self.assertEquals(200, response.status_code)
     self.assertEquals({
