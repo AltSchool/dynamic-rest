@@ -25,7 +25,20 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     """
     return getattr(self.Meta, 'plural_name', self.get_name() + 's')
 
+  def get_all_fields(self):
+    """Returns the entire serializer field set.
+
+    Does not respect dynamic field inclusions/exclusions.
+    """
+    return super(DynamicModelSerializer, self).get_fields()
+
   def get_fields(self):
+    """Returns the serializer's field set.
+
+    Respects field inclusions/exlcusions, taking into account
+    `field.deferred` (field-specific flag), `Meta.deferred_fields` (serializer-specific list),
+    and `request_fields` (passed to the serializer by a viewset or parent serializer).
+    """
     if self.id_only():
       return {}
 
