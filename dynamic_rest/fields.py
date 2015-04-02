@@ -50,8 +50,19 @@ class DynamicRelationField(DynamicField):
     self._serializer = serializer
     return serializer
 
+  def get_attribute(self, instance):
+    return instance
+
   def to_representation(self, instance):
-    return self.serializer.to_representation(instance)
+    serializer = self.serializer
+    source = self.source
+    if not self.kwargs['many'] and serializer.id_only():
+      # attempt to optimize by reading the related ID directly
+      # from the current instance rather than from the related object
+      source_id = '%s_id' % source
+      if hasattr(instance, source_id):
+        return getattr(instance, source_id)
+    return serializer.to_representation(getattr(instance, source))
 
   @property
   def serializer_class(self):

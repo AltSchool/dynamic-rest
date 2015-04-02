@@ -1,4 +1,5 @@
 import json
+from django.db import connection
 from django.test import TestCase
 from rest_framework.test import APITestCase
 from tests.setup import create_fixture
@@ -11,9 +12,8 @@ class TestUsersAPI(APITestCase):
     self.maxDiff = None
 
   def testDefault(self):
-    with self.assertNumQueries(2):
-      # 2 queries: 1 for User, 1 for Location
-      # TODO: optimize down to 1 query using FK on core object
+    with self.assertNumQueries(1):
+      # 1 for User, 0 for Location
       response = self.client.get('/users/')
     self.assertEquals(200, response.status_code)
     self.assertEquals({
@@ -37,8 +37,8 @@ class TestUsersAPI(APITestCase):
     }, json.loads(response.content))
 
   def testInclude(self):
-    with self.assertNumQueries(3):
-      # 3 queries: 1 for User, 1 for Group, one for Location
+    with self.assertNumQueries(2):
+      # 2 queries: 1 for User, 1 for Group, 0 for Location
       response = self.client.get('/users/?include[]=groups')
     self.assertEquals(200, response.status_code)
     self.assertEquals({
@@ -83,7 +83,12 @@ class TestUsersAPI(APITestCase):
     }, json.loads(response.content))
 
   def testExclude(self):
-    response = self.client.get('/users/?exclude[]=name')
+    with self.assertNumQueries(1):
+      response = self.client.get('/users/?exclude[]=name')
+    query = connection.queries[-1]
+    self.assertFalse('name' in query)
+    self.assertFalse('*' in query)
+
     self.assertEquals(200, response.status_code)
     self.assertEquals({
       'users': [{
@@ -136,7 +141,8 @@ class TestUsersAPI(APITestCase):
     }, json.loads(response.content))
 
   def testNestedHasMany(self):
-    with self.assertNumQueries(3):
+    with self.assertNumQueries(2):
+      # 2 queries: 1 for User, 1 for Group
       response = self.client.get('/users/?include[]=groups.')
     self.assertEquals(200, response.status_code)
     self.assertEquals(
@@ -148,7 +154,8 @@ class TestUsersAPI(APITestCase):
     json.loads(response.content))
 
   def testNestedInclude(self):
-    with self.assertNumQueries(4):
+    with self.assertNumQueries(3):
+      # 3 queries: 1 for User, 1 for Group, 1 for Permissions
       response = self.client.get('/users/?include[]=groups.permissions')
     self.assertEquals(200, response.status_code)
     self.assertEquals(
@@ -161,7 +168,8 @@ class TestUsersAPI(APITestCase):
     json.loads(response.content))
 
   def testNestedExclude(self):
-    with self.assertNumQueries(3):
+    with self.assertNumQueries(2):
+      # 2 queries: 1 for User, 1 for Group
       response = self.client.get('/users/?exclude[]=groups.name')
     self.assertEquals(200, response.status_code)
     self.assertEquals(

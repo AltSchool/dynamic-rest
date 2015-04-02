@@ -69,8 +69,6 @@ class DynamicModelSerializer(serializers.ModelSerializer):
 
   def to_representation(self, instance):
     if self.id_only():
-      # if True is passed to request_fields,
-      # the serializer should just return an ID/list of IDs
       return instance.pk
     else:
       representation = super(DynamicModelSerializer, self).to_representation(instance)
@@ -81,4 +79,9 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     return representation
 
   def id_only(self):
+    """Whether or not the serializer should return an ID instead of an object.
+
+    Returns:
+      True iff `_request_fields` == True
+    """
     return self._request_fields == True

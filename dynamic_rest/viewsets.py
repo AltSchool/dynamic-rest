@@ -25,6 +25,16 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
   meta = None
 
   def get_queryset(self, serializer=None):
+    """Returns a queryset for this request.
+
+    Handles nested prefetching of related data and deferring fields
+    at the queryset level.
+
+    Arguments:
+      serializer: An optional serializer to use a base for the queryset.
+        If no serializer is passed, the `get_serializer` method will be used
+        to initialize the base serializer for the viewset.
+    """
     if serializer:
       queryset = serializer.Meta.model.objects.all()
     else:
@@ -32,14 +42,31 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
       queryset = getattr(self, 'queryset', serializer.Meta.model.objects.all())
 
     prefetch_related = []
+    only = set([])
+    use_only = True
+
     for name, field in serializer.get_fields().iteritems():
+      many = False
       source = field.source or name
+
       if isinstance(field, DynamicRelationField):
         field = field.serializer
       if isinstance(field, serializers.ListSerializer):
         field = field.child
+        many = True
       if isinstance(field, serializers.BaseSerializer):
-        prefetch_related.append(Prefetch(source, self.get_queryset(field)))
+        if many or not field.id_only():
+          prefetch_related.append(Prefetch(source, queryset=self.get_queryset(field)))
+
+      if use_only:
+        if source == '*':
+          use_only = False
+        elif not many:
+          # TODO: optimize for nested sources
+          only.add(source.split('.')[0])
+
+    if use_only:
+      queryset = queryset.only(*only)
     return queryset.prefetch_related(*prefetch_related)
 
   def get_request_feature(self, name):
