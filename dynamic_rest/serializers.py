@@ -1,12 +1,34 @@
 from collections import OrderedDict
-from rest_framework import serializers, fields, exceptions
+from django.db import models
 from dynamic_rest.fields import DynamicRelationField
+from rest_framework import serializers, fields, exceptions
 
+class DynamicListSerializer(serializers.ListSerializer):
+  def to_representation(self, data):
+     iterable = data.all() if isinstance(data, models.Manager) else data
+     return [self.child.to_representation(item) for item in iterable]
 
 class DynamicModelSerializer(serializers.ModelSerializer):
 
+  def __new__(cls, *args, **kwargs):
+    """
+    Custom constructor that sets the ListSerializer to DynamicListSerializer
+    to avoid re-evaluating querysets.
+
+    Addresses DRF 3.1.0 bug: https://github.com/tomchristie/django-rest-framework/issues/2704)
+    """
+    meta = getattr(cls, 'Meta', None)
+    if not meta:
+      meta = type('Meta', (), {})
+      cls.Meta = meta
+    if not hasattr(meta, 'list_serializer_class'):
+      meta.list_serializer_class = DynamicListSerializer
+    return super(DynamicModelSerializer, cls).__new__(cls, *args, **kwargs)
+
   def __init__(self, instance=None, include_fields=None, exclude_fields=None, request_fields=None, **kwargs):
-    """Builds `request_fields`
+    """
+    Custom initializer that builds `request_fields` and
+    sets a `ListSerializer` that doesn't re-evaluate querysets.
 
     Arguments:
       instance: instance for the serializer base
@@ -15,6 +37,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
       request_fields: nested map of field names
         for inclusions, exclusions, and sideloads
     """
+
     kwargs['instance'] = instance
     super(DynamicModelSerializer, self).__init__(**kwargs)
     self.request_fields = request_fields or self._context.get('request_fields', {})
