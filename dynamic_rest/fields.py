@@ -95,7 +95,7 @@ class DynamicRelationField(DynamicField):
       return data
 
     # lookup using field's manager
-    related_model = serializer.Meta.model
+    related_model = self.serializer.Meta.model
     return related_model.objects.get(pk=data)
 
   @property
