@@ -120,6 +120,3 @@ class DynamicRelationField(DynamicField):
     self._serializer_class = serializer_class
     return serializer_class
 
-  def __getattr__(self, name):
-    """Proxy all methods and properties on the underlying serializer."""
-    return getattr(self.serializer, name)
