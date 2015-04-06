@@ -109,7 +109,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     if self.id_only():
       return {}
 
-    serializer_fields = super(DynamicModelSerializer, self).get_fields()
+    serializer_fields = self.get_all_fields()
     request_fields = self.request_fields
     only_fields = set(self.only_fields)
 
