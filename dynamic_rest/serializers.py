@@ -3,10 +3,13 @@ from django.db import models
 from dynamic_rest.fields import DynamicRelationField
 from rest_framework import serializers, fields, exceptions
 
+
 class DynamicListSerializer(serializers.ListSerializer):
+
   def to_representation(self, data):
-     iterable = data.all() if isinstance(data, models.Manager) else data
-     return [self.child.to_representation(item) for item in iterable]
+    iterable = data.all() if isinstance(data, models.Manager) else data
+    return [self.child.to_representation(item) for item in iterable]
+
 
 class DynamicModelSerializer(serializers.ModelSerializer):
 
@@ -25,28 +28,32 @@ class DynamicModelSerializer(serializers.ModelSerializer):
       meta.list_serializer_class = DynamicListSerializer
     return super(DynamicModelSerializer, cls).__new__(cls, *args, **kwargs)
 
-  def __init__(self, instance=None, include_fields=None, exclude_fields=None, request_fields=None, **kwargs):
+  def __init__(self, instance=None, include_fields=None, exclude_fields=None, only_fields=None,
+               request_fields=None, dynamic=True, **kwargs):
     """
     Custom initializer that builds `request_fields` and
     sets a `ListSerializer` that doesn't re-evaluate querysets.
 
     Arguments:
       instance: instance for the serializer base
-      include_fields: list of field names to include
-      exclude_fields: list of field names to exclude
-      request_fields: nested map of field names
-        for inclusions, exclusions, and sideloads
+      include_fields: list of field names to include (adds to default field set)
+      exclude_fields: list of field names to exclude (removes from default field set)
+      only_fields: list of field names to render (overrides field set)
+      request_fields: map of field names that supports inclusions, exclusions, and nested sideloads
+      dynamic: if False, ignore deferred rules and revert to standard DRF behavior (default: True)
     """
 
     kwargs['instance'] = instance
     super(DynamicModelSerializer, self).__init__(**kwargs)
     self.request_fields = request_fields or self._context.get('request_fields', {})
-    self.include_fields = include_fields or self._context.get('include_fields', [])
-    self.exclude_fields = exclude_fields or self._context.get('exclude_fields', [])
+    self.only_fields = only_fields or self._context.get('only_fields', [])
+    self.dynamic = dynamic
 
-    for name in self.include_fields:
+    include_fields = include_fields or self._context.get('include_fields', [])
+    exclude_fields = exclude_fields or self._context.get('exclude_fields', [])
+    for name in include_fields:
       self.request_fields[name] = True
-    for name in self.exclude_fields:
+    for name in exclude_fields:
       self.request_fields[name] = False
 
   def get_name(self):
@@ -74,15 +81,23 @@ class DynamicModelSerializer(serializers.ModelSerializer):
   def get_fields(self):
     """Returns the serializer's field set.
 
-    Respects field inclusions/exlcusions, taking into account
+    If `dynamic` is True, respects field inclusions/exlcusions, taking into account
     `field.deferred` (field-specific flag), `Meta.deferred_fields` (serializer-specific list),
-    and `request_fields` (passed to the serializer by a viewset or parent serializer).
+    `only_fields` and/or `request_fields` (passed to the serializer by a viewset or parent serializer).
     """
+    if self.dynamic == False:
+      return self.get_all_fields()
+
     if self.id_only():
       return {}
 
     serializer_fields = super(DynamicModelSerializer, self).get_fields()
     request_fields = self.request_fields
+    only_fields = set(self.only_fields)
+
+    # return only those fields specified, ignoring deferred rules
+    if only_fields:
+      return {k:v for k,v in serializer_fields.iteritems() if k in only_fields}
 
     # determine fields that are deferred by default
     meta_deferred = set(getattr(self.Meta, 'deferred_fields', []))
@@ -94,7 +109,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
       for name, include in request_fields.iteritems():
         if not name in serializer_fields:
           raise exceptions.ParseError(
-              "'%s' is not a valid field name for '%s'" % (name, self.Meta.name))
+              "'%s' is not a valid field name for '%s'" % (name, self.get_name()))
         if include != False and name in deferred:
           deferred.remove(name)
         elif include == False:
