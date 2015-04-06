@@ -1,4 +1,5 @@
-from django.db.models import Prefetch
+from django.db.models import Prefetch, ManyToManyField
+from django.db.models.related import RelatedObject
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.renderers import DynamicJSONRenderer
 from rest_framework import viewsets, response, exceptions, serializers
@@ -44,24 +45,25 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
     prefetch_related = []
     only = set([])
     use_only = True
+    model = serializer.Meta.model
 
     for name, field in serializer.get_fields().iteritems():
-      many = False
-      source = field.source or name
-
       if isinstance(field, DynamicRelationField):
         field = field.serializer
       if isinstance(field, serializers.ListSerializer):
         field = field.child
-        many = True
+
+      source = field.source or name
+      model_field = model._meta.get_field_by_name(source)[0]
+      remote = isinstance(model._meta.get_field_by_name(source)[0], (ManyToManyField, RelatedObject))
       if isinstance(field, serializers.BaseSerializer):
-        if many or not field.id_only():
+        if not field.id_only() or remote:
           prefetch_related.append(Prefetch(source, queryset=self.get_queryset(field)))
 
       if use_only:
         if source == '*':
           use_only = False
-        elif not many:
+        elif not remote:
           # TODO: optimize for nested sources
           only.add(source.split('.')[0])
 
