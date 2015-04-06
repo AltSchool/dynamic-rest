@@ -164,10 +164,11 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     return representation
 
   def save(self, *args, **kwargs):
+    update = getattr(self, 'instance', None) is not None
     instance = super(DynamicModelSerializer, self).save(*args, **kwargs)
     view = self._context.get('view')
-    if view:
-      # reload the object
+    if update and view:
+      # reload the object on update
       # to get around prefetched manager issues
       instance = view.get_object()
     return instance
