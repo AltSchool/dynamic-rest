@@ -85,8 +85,8 @@ class DynamicRelationField(DynamicField):
     return serializer.to_representation(related)
 
   def to_internal_value(self, data):
-    if isinstance(self.model_field, (ManyToManyField, Manager)):
-      # ManyToManyField/Managers can be assigned lists of models or IDs
+    if self.kwargs['many']:
+      # many-fields can be assigned directly
       assert isinstance(data, list)
       return data
 
@@ -94,11 +94,7 @@ class DynamicRelationField(DynamicField):
       # if a model is passed in, assign it as is
       return data
 
-    # look up the object using the serializer's model's manager
-    serializer = self.serializer
-    if isinstance(serializer, ListSerializer):
-      serializer = serializer.child
-
+    # lookup using field's manager
     related_model = serializer.Meta.model
     return related_model.objects.get(pk=data)
 
