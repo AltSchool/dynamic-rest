@@ -60,7 +60,11 @@ class DynamicRelationField(DynamicField):
       source_id = '%s_id' % source
       if hasattr(instance, source_id):
         return getattr(instance, source_id)
-    return serializer.to_representation(getattr(instance, source))
+    try:
+      related = getattr(instance, source)
+    except:
+      return None
+    return serializer.to_representation(related)
 
   @property
   def serializer_class(self):
