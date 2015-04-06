@@ -170,7 +170,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     if update and view:
       # reload the object on update
       # to get around prefetched manager issues
-      instance = view.get_object()
+      instance = self.instance = view.get_object()
     return instance
 
   def id_only(self):
