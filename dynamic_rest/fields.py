@@ -1,4 +1,6 @@
 from rest_framework import fields
+from django.db.models.related import RelatedObject
+from django.db.models import ManyToManyField
 import importlib
 
 
@@ -35,8 +37,21 @@ class DynamicRelationField(DynamicField):
     """
     self.kwargs = kwargs
     self._serializer_class = serializer_class
+    if '.' in self.kwargs.get('source', ''):
+      raise Exception('Nested relationships are not supported')
     super(DynamicRelationField, self).__init__(**kwargs)
     self.kwargs['many'] = many
+
+  def bind(self, *args, **kwargs):
+    super(DynamicRelationField, self).bind(*args, **kwargs)
+    parent_model = self.parent.Meta.model
+    model_field = parent_model._meta.get_field_by_name(self.source)[0]
+    remote = isinstance(model_field, (ManyToManyField, RelatedObject))
+    if not 'required' in self.kwargs and \
+      (remote or model_field.has_default() or model_field.null):
+      self.required = False
+    if not 'allow_null' in self.kwargs and getattr(model_field, 'null', False):
+      self.allow_null = True
 
   @property
   def serializer(self):

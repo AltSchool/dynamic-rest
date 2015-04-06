@@ -28,7 +28,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
       meta.list_serializer_class = DynamicListSerializer
     return super(DynamicModelSerializer, cls).__new__(cls, *args, **kwargs)
 
-  def __init__(self, instance=None, include_fields=None, exclude_fields=None, only_fields=None,
+  def __init__(self, instance=None, data=fields.empty, include_fields=None, exclude_fields=None, only_fields=None,
                request_fields=None, dynamic=True, **kwargs):
     """
     Custom initializer that builds `request_fields` and
@@ -43,7 +43,23 @@ class DynamicModelSerializer(serializers.ModelSerializer):
       dynamic: if False, ignore deferred rules and revert to standard DRF behavior (default: True)
     """
 
+    name = self.get_name()
+    if data is not fields.empty and name in data and len(data) == 1:
+      # support POST/PUT key'd by resource name
+      data = data[name]
+
+    if data is not fields.empty:
+      # if a field is nullable but not required and the implementation
+      # passes null as a value, remove the field from the data
+      # this addresses the frontends that send
+      # undefined resource fields as null on POST/PUT
+      for field_name, field in self.get_fields().iteritems():
+        if field.allow_null == False and field.required == False \
+                and field_name in data and data[field_name] is None:
+          data.pop(field_name)
+
     kwargs['instance'] = instance
+    kwargs['data'] = data
     super(DynamicModelSerializer, self).__init__(**kwargs)
     self.request_fields = request_fields or self._context.get('request_fields', {})
     self.only_fields = only_fields or self._context.get('only_fields', [])
