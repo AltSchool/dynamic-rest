@@ -8,7 +8,7 @@ class LocationSerializer(DynamicModelSerializer):
     name = 'location'
     fields = ('id', 'name', 'users')
 
-  users = DynamicRelationField('UserSerializer', many=True)
+  users = DynamicRelationField('UserSerializer', many=True, deferred=True)
 
 class PermissionSerializer(DynamicModelSerializer):
   class Meta:
@@ -17,8 +17,8 @@ class PermissionSerializer(DynamicModelSerializer):
     fields = ('id', 'name', 'code', 'users', 'groups')
     deferred_fields = ('code',)
 
-  users = DynamicRelationField('UserSerializer', many=True)
-  groups = DynamicRelationField('GroupSerializer', many=True)
+  users = DynamicRelationField('UserSerializer', many=True, deferred=True)
+  groups = DynamicRelationField('GroupSerializer', many=True, deferred=True)
 
 class GroupSerializer(DynamicModelSerializer):
   class Meta:
@@ -26,8 +26,8 @@ class GroupSerializer(DynamicModelSerializer):
     name = 'group'
     fields = ('id', 'name', 'permissions', 'members')
 
-  permissions = DynamicRelationField('PermissionSerializer', many=True)
-  members = DynamicRelationField('UserSerializer', source='users', many=True)
+  permissions = DynamicRelationField('PermissionSerializer', many=True, deferred=True)
+  members = DynamicRelationField('UserSerializer', source='users', many=True, deferred=True)
 
 class UserSerializer(DynamicModelSerializer):
   class Meta:
@@ -36,6 +36,6 @@ class UserSerializer(DynamicModelSerializer):
     fields = ('id', 'name', 'permissions', 'groups', 'location', 'last_name')
     deferred_fields = ('last_name',)
 
-  location = DynamicRelationField('LocationSerializer', deferred=False)
-  permissions = DynamicRelationField('PermissionSerializer', many=True)
-  groups = DynamicRelationField('GroupSerializer', many=True)
+  location = DynamicRelationField('LocationSerializer')
+  permissions = DynamicRelationField('PermissionSerializer', many=True, deferred=True)
+  groups = DynamicRelationField('GroupSerializer', many=True, deferred=True)

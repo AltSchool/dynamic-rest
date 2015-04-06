@@ -35,8 +35,6 @@ class DynamicRelationField(DynamicField):
     """
     self.kwargs = kwargs
     self._serializer_class = serializer_class
-    if not 'deferred' in kwargs:
-      kwargs['deferred'] = True
     super(DynamicRelationField, self).__init__(**kwargs)
     self.kwargs['many'] = many
 
