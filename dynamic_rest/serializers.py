@@ -153,7 +153,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     return serializer_fields
 
   def to_representation(self, instance):
-    if self.id_only():
+    if self.dynamic and self.id_only():
       return instance.pk
     else:
       representation = super(DynamicModelSerializer, self).to_representation(instance)
