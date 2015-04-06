@@ -37,9 +37,6 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
         to initialize the base serializer for the viewset.
     """
     if serializer:
-      # related serializer may not be a model serializer
-      if not hasattr(serializer.Meta, 'model'):
-        return None
       queryset = serializer.Meta.model.objects.all()
     else:
       serializer = self.get_serializer()
@@ -57,20 +54,21 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
         field = field.child
 
       source = field.source or name
-      model_field = model._meta.get_field_by_name(source)[0]
-      remote = isinstance(model._meta.get_field_by_name(source)[0], (ManyToManyField, RelatedObject))
-      if isinstance(field, serializers.BaseSerializer):
+      source0 = source.split('.')[0]
+      remote = False
+
+      if isinstance(field, serializers.ModelSerializer):
+        model_field = model._meta.get_field_by_name(source0)[0]
+        remote = isinstance(model_field, (ManyToManyField, RelatedObject))
         if not getattr(field, 'id_only', lambda: False)() or remote:
-          q = self.get_queryset(field)
-          if q is not None:
-            prefetch_related.append(Prefetch(source, queryset=q))
+          prefetch_related.append(Prefetch(source, queryset=self.get_queryset(field)))
 
       if use_only:
         if source == '*':
           use_only = False
         elif not remote:
           # TODO: optimize for nested sources
-          only.add(source.split('.')[0])
+          only.add(source0)
 
     if use_only:
       queryset = queryset.only(*only)
