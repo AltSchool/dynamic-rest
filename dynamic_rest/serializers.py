@@ -53,7 +53,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
       # passes null as a value, remove the field from the data
       # this addresses the frontends that send
       # undefined resource fields as null on POST/PUT
-      for field_name, field in self.get_fields().iteritems():
+      for field_name, field in self.get_all_fields().iteritems():
         if field.allow_null == False and field.required == False \
                 and field_name in data and data[field_name] is None:
           data.pop(field_name)
@@ -61,10 +61,10 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     kwargs['instance'] = instance
     kwargs['data'] = data
     super(DynamicModelSerializer, self).__init__(**kwargs)
+
+    self.dynamic = dynamic
     self.request_fields = request_fields or self._context.get('request_fields', {})
     self.only_fields = only_fields or self._context.get('only_fields', [])
-    self.dynamic = dynamic
-
     include_fields = include_fields or self._context.get('include_fields', [])
     exclude_fields = exclude_fields or self._context.get('exclude_fields', [])
     for name in include_fields:
@@ -92,7 +92,9 @@ class DynamicModelSerializer(serializers.ModelSerializer):
 
     Does not respect dynamic field inclusions/exclusions.
     """
-    return super(DynamicModelSerializer, self).get_fields()
+    if not hasattr(self, '_all_fields'):
+      self._all_fields = super(DynamicModelSerializer, self).get_fields()
+    return self._all_fields
 
   def get_fields(self):
     """Returns the serializer's field set.
