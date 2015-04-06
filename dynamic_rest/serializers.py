@@ -146,7 +146,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
         field.parent = self
         inject = field.serializer
       if isinstance(inject, serializers.ListSerializer):
-        inject = field.child
+        inject = inject.child
       if inject:
         inject.request_fields = request_fields.get(name, True)
 
