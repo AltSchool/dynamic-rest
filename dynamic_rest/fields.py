@@ -1,4 +1,5 @@
 from rest_framework import fields
+from rest_framework.serializers import ListSerializer
 from django.db.models.related import RelatedObject
 from django.db.models import ManyToManyField, Manager, Model
 import importlib
@@ -93,8 +94,12 @@ class DynamicRelationField(DynamicField):
       # if a model is passed in, assign it as is
       return data
 
-    # look up the object using the queryset
-    related_model = self.serializer.Meta.model
+    # look up the object using the serializer's model's manager
+    serializer = self.serializer
+    if isinstance(serializer, ListSerializer):
+      serializer = serializer.child
+
+    related_model = serializer.Meta.model
     return related_model.objects.get(pk=data)
 
   @property
