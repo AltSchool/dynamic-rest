@@ -37,13 +37,16 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
         to initialize the base serializer for the viewset.
     """
     if serializer:
+      # related serializer may not be a model serializer
+      if not hasattr(serializer.Meta, 'model'):
+        return None
       queryset = serializer.Meta.model.objects.all()
     else:
       serializer = self.get_serializer()
       queryset = getattr(self, 'queryset', serializer.Meta.model.objects.all())
 
     prefetch_related = []
-    only = set([])
+    only = set()
     use_only = True
     model = serializer.Meta.model
 
@@ -57,8 +60,10 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
       model_field = model._meta.get_field_by_name(source)[0]
       remote = isinstance(model._meta.get_field_by_name(source)[0], (ManyToManyField, RelatedObject))
       if isinstance(field, serializers.BaseSerializer):
-        if not field.id_only() or remote:
-          prefetch_related.append(Prefetch(source, queryset=self.get_queryset(field)))
+        if not getattr(field, 'id_only', lambda: False)() or remote:
+          q = self.get_queryset(field)
+          if q is not None:
+            prefetch_related.append(Prefetch(source, queryset=q))
 
       if use_only:
         if source == '*':
