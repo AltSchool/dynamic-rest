@@ -163,6 +163,15 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     representation['_pk'] = instance.pk
     return representation
 
+  def save(self, *args, **kwargs):
+    instance = super(DynamicModelSerializer, self).save(*args, **kwargs)
+    view = self._context.get('view')
+    if view:
+      # reload the object
+      # to get around prefetched manager issues
+      instance = view.get_object()
+    return instance
+
   def id_only(self):
     """Whether or not the serializer should return an ID instead of an object.
 
