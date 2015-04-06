@@ -1,6 +1,6 @@
 from rest_framework import fields
 from django.db.models.related import RelatedObject
-from django.db.models import ManyToManyField
+from django.db.models import ManyToManyField, Manager, Model
 import importlib
 
 
@@ -53,6 +53,8 @@ class DynamicRelationField(DynamicField):
     if not 'allow_null' in self.kwargs and getattr(model_field, 'null', False):
       self.allow_null = True
 
+    self.model_field = model_field
+
   @property
   def serializer(self):
     if hasattr(self, '_serializer'):
@@ -80,6 +82,20 @@ class DynamicRelationField(DynamicField):
     except:
       return None
     return serializer.to_representation(related)
+
+  def to_internal_value(self, data):
+    if isinstance(self.model_field, (ManyToManyField, Manager)):
+      # ManyToManyField/Managers can be assigned lists of models or IDs
+      assert isinstance(data, list)
+      return data
+
+    if isinstance(data, Model):
+      # if a model is passed in, assign it as is
+      return data
+
+    # look up the object using the queryset
+    related_model = self.serializer.Meta.model
+    return related_model.objects.get(pk=data)
 
   @property
   def serializer_class(self):
