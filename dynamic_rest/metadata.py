@@ -18,6 +18,7 @@ class DynamicMetadata(SimpleMetadata):
     if hasattr(view, 'get_serializer'):
       serializer = view.get_serializer(dynamic=False)
     metadata['properties'] = self.get_serializer_info(serializer)
+    return metadata
 
   def get_field_info(self, field):
     """Adds `related_to` and `nullable` to the metadata response.
