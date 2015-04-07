@@ -101,7 +101,7 @@ class DynamicRelationField(DynamicField):
       if not isinstance(data, list):
         raise ParseError("'%s' value must be a list" % self.field_name)
       return [self.to_internal_value_single(instance, serializer) for instance in data]
-    return self.to_internal_value_single(instance, self.serializer)
+    return self.to_internal_value_single(data, self.serializer)
 
   @property
   def serializer_class(self):
