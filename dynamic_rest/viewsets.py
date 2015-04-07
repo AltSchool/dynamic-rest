@@ -138,7 +138,7 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
   def get_serializer_context(self):
     context = super(DynamicModelViewSet, self).get_serializer_context()
     context['request_fields'] = self.get_request_fields()
-    context['sideload'] = self.sideload
+    context['do_sideload'] = self.sideload
     return context
 
   def paginate_queryset(self, *args, **kwargs):

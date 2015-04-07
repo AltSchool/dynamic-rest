@@ -70,7 +70,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     kwargs['data'] = data
     super(DynamicModelSerializer, self).__init__(**kwargs)
 
-    self.sideload = self._context.get('sideload', sideload)
+    self.sideload = self._context.get('do_sideload', sideload)
     self.dynamic = self._context.get('dynamic', dynamic)
     self.request_fields = request_fields or self._context.get('request_fields', {})
     self.only_fields = only_fields or self._context.get('only_fields', [])
