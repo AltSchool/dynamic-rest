@@ -1,9 +1,8 @@
 from django.db.models import Prefetch, ManyToManyField
 from django.db.models.related import RelatedObject
 from dynamic_rest.fields import DynamicRelationField
-from dynamic_rest.renderers import DynamicJSONRenderer
 from rest_framework import viewsets, response, exceptions, serializers
-from rest_framework.renderers import BrowsableAPIRenderer
+from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 
 
 class DynamicModelViewSet(viewsets.ModelViewSet):
@@ -20,7 +19,7 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
   EXCLUDE = 'exclude[]'
 
   # TODO: add support for `filter{}`, `sort{}`, `page`, and `per_page`
-  renderer_classes = (DynamicJSONRenderer, BrowsableAPIRenderer)
+  renderer_classes = (JSONRenderer, BrowsableAPIRenderer)
   features = (INCLUDE, EXCLUDE)
   sideload = True
   meta = None
@@ -126,6 +125,7 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
   def get_serializer_context(self):
     context = super(DynamicModelViewSet, self).get_serializer_context()
     context['request_fields'] = self.get_request_fields()
+    context['sideload'] = self.sideload
     return context
 
   def list(self, request, *args, **kwargs):

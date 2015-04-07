@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from django.db import models
 from dynamic_rest.fields import DynamicRelationField
+from dynamic_rest.processors import SideloadingProcessor
 from rest_framework import serializers, fields, exceptions
 
 
@@ -10,6 +11,12 @@ class DynamicListSerializer(serializers.ListSerializer):
     iterable = data.all() if isinstance(data, models.Manager) else data
     return [self.child.to_representation(item) for item in iterable]
 
+  @property
+  def data(self):
+    if not hasattr(self, '_sideloaded_data'):
+      data = super(DynamicListSerializer, self).data
+      self._sideloaded_data = SideloadingProcessor(self, data).data
+    return self._sideloaded_data
 
 class DynamicModelSerializer(serializers.ModelSerializer):
 
@@ -29,7 +36,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     return super(DynamicModelSerializer, cls).__new__(cls, *args, **kwargs)
 
   def __init__(self, instance=None, data=fields.empty, include_fields=None, exclude_fields=None, only_fields=None,
-               request_fields=None, dynamic=True, **kwargs):
+               request_fields=None, sideload=True, dynamic=True, **kwargs):
     """
     Custom initializer that builds `request_fields` and
     sets a `ListSerializer` that doesn't re-evaluate querysets.
@@ -40,7 +47,8 @@ class DynamicModelSerializer(serializers.ModelSerializer):
       exclude_fields: list of field names to exclude (removes from default field set)
       only_fields: list of field names to render (overrides field set)
       request_fields: map of field names that supports inclusions, exclusions, and nested sideloads
-      dynamic: if False, ignore deferred rules and revert to standard DRF behavior (default: True)
+      dynamic: if False, ignore deferred rules and revert to standard DRF fields behavior (default: True)
+      sideload: if False, do not perform sideloading on data
     """
 
     name = self.get_name()
@@ -62,6 +70,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     kwargs['data'] = data
     super(DynamicModelSerializer, self).__init__(**kwargs)
 
+    self.sideload = self._context.get('sideload', sideload)
     self.dynamic = dynamic
     self.request_fields = request_fields or self._context.get('request_fields', {})
     self.only_fields = only_fields or self._context.get('only_fields', [])
@@ -180,3 +189,11 @@ class DynamicModelSerializer(serializers.ModelSerializer):
       True iff `request_fields` == True
     """
     return self.request_fields == True
+
+  @property
+  def data(self):
+    if not hasattr(self, '_sideloaded_data'):
+      data = super(DynamicModelSerializer, self).data
+      self._sideloaded_data = SideloadingProcessor(self, data).data
+    return self._sideloaded_data
+
