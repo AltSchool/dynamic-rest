@@ -25,6 +25,9 @@ INSTALLED_APPS = (
   'tests',
 )
 
+REST_FRAMEWORK = {
+  'PAGE_SIZE': 50
+}
 ROOT_URLCONF = 'tests.urls'
 
 BASE_DIR = os.path.dirname(__file__)

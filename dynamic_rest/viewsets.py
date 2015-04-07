@@ -1,10 +1,12 @@
 from django.db.models import Prefetch, ManyToManyField
 from django.db.models.related import RelatedObject
 from dynamic_rest.fields import DynamicRelationField
+from dynamic_rest.pagination import DynamicPageNumberPagination
 from rest_framework import viewsets, response, exceptions, serializers
 from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
+from django.conf import settings
 
-
+dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 class DynamicModelViewSet(viewsets.ModelViewSet):
 
   """A viewset that can support dynamic API features.
@@ -17,10 +19,13 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
 
   INCLUDE = 'include[]'
   EXCLUDE = 'exclude[]'
+  PAGE = dynamic_settings.get('PAGE_QUERY_PARAM', 'page')
+  PER_PAGE = dynamic_settings.get('PAGE_SIZE_QUERY_PARAM', 'per_page')
 
   # TODO: add support for `filter{}`, `sort{}`, `page`, and `per_page`
+  pagination_class = DynamicPageNumberPagination
   renderer_classes = (JSONRenderer, BrowsableAPIRenderer)
-  features = (INCLUDE, EXCLUDE)
+  features = (INCLUDE, EXCLUDE, PAGE, PER_PAGE)
   sideload = True
   meta = None
 
@@ -82,7 +87,15 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
     Returns:
       A feature parsed from the URL if the feature is supported, or None.
     """
-    return self.request.QUERY_PARAMS.getlist(name) if name in self.features else None
+    if '[]' in name:
+      # array-type
+      return self.request.QUERY_PARAMS.getlist(name) if name in self.features else None
+    elif '{}' in name:
+      # object-type (keys are not consistent)
+      return self.request.QUERY_PARAMS.getlist(name) if name in self.features else None
+    else:
+      # single-type
+      return self.request.QUERY_PARAMS.get(name) if name in self.features else None
 
   def get_request_fields(self):
     """Parses the `include[]` and `exclude[]` features.
@@ -128,8 +141,12 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
     context['sideload'] = self.sideload
     return context
 
-  def list(self, request, *args, **kwargs):
-    return response.Response(self.get_serializer(self.get_queryset(), many=True).data)
-
-  def retrieve(self, request, *args, **kwargs):
-    return response.Response(self.get_serializer(self.get_object()).data)
+  def paginate_queryset(self, *args, **kwargs):
+    if self.PAGE in self.features:
+      # make sure pagination is enabled
+      if not self.PER_PAGE in self.features and \
+        self.PER_PAGE in self.request.QUERY_PARAMS:
+        # remove per_page if it is disabled
+        self.request.QUERY_PARAMS[self.PER_PAGE] = None
+      return super(DynamicModelViewSet, self).paginate_queryset(*args, **kwargs)
+    return None
