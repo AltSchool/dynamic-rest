@@ -3,6 +3,7 @@ from django.db import models
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.wrappers import TaggedDict
+from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 from rest_framework import serializers, fields, exceptions
 
 
@@ -16,7 +17,10 @@ class DynamicListSerializer(serializers.ListSerializer):
   def data(self):
     if not hasattr(self, '_sideloaded_data'):
       data = super(DynamicListSerializer, self).data
-      self._sideloaded_data = SideloadingProcessor(self, data).data if self.child.sideload else data
+      if self.child.sideload:
+        self._sideloaded_data = ReturnDict(SideloadingProcessor(self, data).data, serializer=self)
+      else:
+        self._sideloaded_data = ReturnList(data, serializer=self)
     return self._sideloaded_data
 
 class DynamicModelSerializer(serializers.ModelSerializer):
@@ -191,6 +195,6 @@ class DynamicModelSerializer(serializers.ModelSerializer):
   def data(self):
     if not hasattr(self, '_sideloaded_data'):
       data = super(DynamicModelSerializer, self).data
-      self._sideloaded_data = SideloadingProcessor(self, data).data if self.sideload else data
+      self._sideloaded_data = ReturnDict(SideloadingProcessor(self, data).data if self.sideload else data, serializer=self)
     return self._sideloaded_data
 
