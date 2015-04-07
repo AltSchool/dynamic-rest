@@ -31,8 +31,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     if not meta:
       meta = type('Meta', (), {})
       cls.Meta = meta
-    if not hasattr(meta, 'list_serializer_class'):
-      meta.list_serializer_class = DynamicListSerializer
+    meta.list_serializer_class = DynamicListSerializer
     return super(DynamicModelSerializer, cls).__new__(cls, *args, **kwargs)
 
   def __init__(self, instance=None, data=fields.empty, include_fields=None, exclude_fields=None, only_fields=None,
