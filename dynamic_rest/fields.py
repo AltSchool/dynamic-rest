@@ -85,8 +85,8 @@ class DynamicRelationField(DynamicField):
       return None
     return serializer.to_representation(related)
 
-  def to_internal_value_single(self, data):
-    related_model = self.serializer.Meta.model
+  def to_internal_value_single(self, data, serializer):
+    related_model = serializer.Meta.model
     if isinstance(data, related_model):
       return data
     try:
@@ -97,10 +97,11 @@ class DynamicRelationField(DynamicField):
 
   def to_internal_value(self, data):
     if self.kwargs['many']:
+      serializer = self.serializer.child
       if not isinstance(data, list):
         raise ParseError("'%s' value must be a list" % self.field_name)
-      return [self.to_internal_value_single(instance) for instance in data]
-    return self.to_internal_value_single(instance)
+      return [self.to_internal_value_single(instance, serializer) for instance in data]
+    return self.to_internal_value_single(instance, self.serializer)
 
   @property
   def serializer_class(self):
