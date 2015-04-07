@@ -3,16 +3,13 @@ from rest_framework import renderers
 
 
 class DynamicJSONRenderer(renderers.JSONRenderer):
+
+  """Custom renderer that handles post-processing operations.
+
+  Supports sideloading and metadata injection, influenced by
+  properties set on a corresponding DynamicModelViewSet.
   """
-  Custom renderer that handles post-processing operations such as
-  sideloading and metadata injection.
 
-  Optional view parameters that control this behavior:
-
-  * sideload: (Default: True) if False, turns off sideloading
-  * meta: (Default: None) if non-empty, added to the response data
-
-  """
   def render(self, data, accepted_media_type=None, renderer_context=None):
     # if data is a string, render it using the default method
     if isinstance(data, basestring):
@@ -25,7 +22,8 @@ class DynamicJSONRenderer(renderers.JSONRenderer):
     self._sideload = getattr(view, 'sideload', True)
 
     self._seen = defaultdict(set)
-    self._plural_name = getattr(view.serializer_class(), 'get_plural_name', lambda: 'objects')()
+    self._plural_name = getattr(
+        view.serializer_class(), 'get_plural_name', lambda: 'objects')()
     self._name = getattr(view.serializer_class(), 'get_name', lambda: 'object')()
 
     is_dynamic = self._is_dynamic(data)
@@ -42,8 +40,9 @@ class DynamicJSONRenderer(renderers.JSONRenderer):
       self._data = data
 
     # add meta to the response if specified by the view
-    if getattr(view, 'meta', None):
-      self._data['meta'] = view.meta
+    meta = getattr(view, 'meta', None)
+    if meta is not None:
+      self._data['meta'] = meta
 
     # call superclass to render the response
     return super(DynamicJSONRenderer, self).render(self._data, accepted_media_type, renderer_context)
