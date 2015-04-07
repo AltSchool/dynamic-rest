@@ -1,8 +1,10 @@
 from collections import OrderedDict
 from django.utils.encoding import force_text
 from dynamic_rest.fields import DynamicRelationField
+from rest_framework.fields import empty
 from rest_framework.metadata import SimpleMetadata
 from rest_framework.serializers import ListSerializer, ModelSerializer
+
 
 class DynamicMetadata(SimpleMetadata):
   def determine_actions(self, request, view):
@@ -26,6 +28,8 @@ class DynamicMetadata(SimpleMetadata):
     field_info = OrderedDict()
     for attr in ('required', 'read_only', 'default', 'label'):
       field_info[attr] = getattr(field, attr)
+    if field_info['default'] is empty:
+      field_info['default'] = None
     field_info['nullable'] = field.allow_null
     if hasattr(field, 'choices'):
       field_info['choices'] = [
