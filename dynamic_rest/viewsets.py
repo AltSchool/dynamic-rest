@@ -1,10 +1,13 @@
+from django.conf import settings
 from django.db.models import Prefetch, ManyToManyField
 from django.db.models.related import RelatedObject
+
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.pagination import DynamicPageNumberPagination
+from dynamic_rest.metadata import DynamicMetadata
+
 from rest_framework import viewsets, response, exceptions, serializers
 from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
-from django.conf import settings
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 class DynamicModelViewSet(viewsets.ModelViewSet):
@@ -24,6 +27,7 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
 
   # TODO: add support for `filter{}`, `sort{}`, `page`, and `per_page`
   pagination_class = DynamicPageNumberPagination
+  metadata_class = DynamicMetadata
   renderer_classes = (JSONRenderer, BrowsableAPIRenderer)
   features = (INCLUDE, EXCLUDE, PAGE, PER_PAGE)
   sideload = True
