@@ -37,6 +37,7 @@ class DynamicMetadata(SimpleMetadata):
           'value': choice_value,
           'display_name': force_text(choice_name, strings_only=True)
         }
+        for choice_value, choice_name in field.choices.items()
       ]
     many = False
     if isinstance(field, DynamicRelationField):

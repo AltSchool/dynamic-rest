@@ -103,6 +103,19 @@ class TestUserSerializer(TestCase):
       }]
     })
 
+    serializer = UserSerializer(self.fixture.users[0], context=context, sideload=True)
+    self.assertEqual(serializer.data, {
+      'locations': [{
+        'id': 1,
+        'name': u'0'
+      }],
+      'user': {
+        'location': 1,
+        'id': 1,
+        'name': u'0'
+      }
+    })
+
 
   def testNestedHasMany(self):
     context = {
