@@ -83,6 +83,8 @@ class DynamicRelationField(DynamicField):
       related = getattr(instance, source)
     except:
       return None
+    if related is None:
+      return None
     return serializer.to_representation(related)
 
   def to_internal_value_single(self, data, serializer):
