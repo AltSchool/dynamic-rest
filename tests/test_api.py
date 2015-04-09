@@ -180,6 +180,78 @@ class TestUsersAPI(APITestCase):
                    {u'groups': [1, 2], u'id': 4, u'location': 3, u'name': u'3'}]},
     json.loads(response.content))
 
+  def testFilterBasic(self):
+    with self.assertNumQueries(1):
+      response = self.client.get('/users/?filter{name}=1')
+    self.assertEquals(200, response.status_code)
+    self.assertEquals(
+        {
+          u'users': [
+            {u'id': 2, u'location': 1, u'name': u'1'},
+          ]
+        },
+        json.loads(response.content))
+
+  def testFilterIn(self):
+    url = '/users/?filter{name.in}=1&filter{name.in}=2'
+    with self.assertNumQueries(1):
+      response = self.client.get(url)
+    self.assertEquals(200, response.status_code)
+    self.assertEquals(
+        {
+          u'users': [
+            {u'id': 2, u'location': 1, u'name': u'1'},
+            {u'id': 3, u'location': 2, u'name': u'2'},
+          ]
+        },
+        json.loads(response.content))
+
+  def testFilterExclude(self):
+    url = '/users/?filter{-name}=1'
+    with self.assertNumQueries(1):
+      response = self.client.get(url)
+    self.assertEquals(200, response.status_code)
+    self.assertEquals(
+        {
+          u'users': [
+            {u'id': 1, u'location': 1, u'name': u'0'},
+            {u'id': 3, u'location': 2, u'name': u'2'},
+            {u'id': 4, u'location': 3, u'name': u'3'},
+          ]
+        },
+        json.loads(response.content))
+
+  def testFilterRelation(self):
+    url = '/users/?filter{location.name}=1'
+    with self.assertNumQueries(1):
+      response = self.client.get(url)
+    self.assertEquals(200, response.status_code)
+    self.assertEquals(
+        {
+          u'users': [
+            {u'id': 3, u'location': 2, u'name': u'2'},
+          ]
+        },
+        json.loads(response.content))
+
+  def testFilterSideload(self):
+    url = '/users/?include[]=groups.&filter{groups|name}=1'
+    with self.assertNumQueries(2):
+      # 2 queries: 1 for User, 1 for Group
+      response = self.client.get(url)
+    self.assertEquals(200, response.status_code)
+    self.assertEquals(
+      {
+        u'groups': [{u'id': 2, u'name': u'1'}],
+        u'users': [
+          {u'groups': [2], u'id': 1, u'location': 1, u'name': u'0'},
+          {u'groups': [2], u'id': 2, u'location': 1, u'name': u'1'},
+          {u'groups': [2], u'id': 3, u'location': 2, u'name': u'2'},
+          {u'groups': [2], u'id': 4, u'location': 3, u'name': u'3'}
+        ]
+      },
+      json.loads(response.content))
+
   def testInvalid(self):
     for bad_data in ('name..', 'groups..name', 'foo', 'groups.foo'):
       response = self.client.get('/users/?include[]=%s' % bad_data)
