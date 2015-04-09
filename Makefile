@@ -18,6 +18,10 @@ test: install
 	. $(INSTALL_DIR)/bin/activate; \
 	  python manage.py test --settings=tests.settings
 
+run: install
+	. $(INSTALL_DIR)/bin/activate; \
+	  python manage.py $(CMD) --settings=tests.settings
+
 coverage: install
 	. $(INSTALL_DIR)/bin/activate; \
     coverage run --source='.' manage.py test --settings=tests.settings; coverage report
