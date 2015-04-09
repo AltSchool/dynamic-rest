@@ -1,4 +1,5 @@
 from rest_framework import fields
+from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.serializers import ListSerializer
 from django.db.models.related import RelatedObject
 from django.db.models import ManyToManyField, Manager, Model
@@ -82,21 +83,27 @@ class DynamicRelationField(DynamicField):
       related = getattr(instance, source)
     except:
       return None
+    if related is None:
+      return None
     return serializer.to_representation(related)
+
+  def to_internal_value_single(self, data, serializer):
+    related_model = serializer.Meta.model
+    if isinstance(data, related_model):
+      return data
+    try:
+      instance = related_model.objects.get(pk=data)
+    except related_model.DoesNotExist:
+      raise NotFound("'%s object with ID=%s not found" % (related_model.__name__, data))
+    return instance
 
   def to_internal_value(self, data):
     if self.kwargs['many']:
-      # many-fields can be assigned directly
-      assert isinstance(data, list)
-      return data
-
-    if isinstance(data, Model):
-      # if a model is passed in, assign it as is
-      return data
-
-    # lookup using field's manager
-    related_model = self.serializer.Meta.model
-    return related_model.objects.get(pk=data)
+      serializer = self.serializer.child
+      if not isinstance(data, list):
+        raise ParseError("'%s' value must be a list" % self.field_name)
+      return [self.to_internal_value_single(instance, serializer) for instance in data]
+    return self.to_internal_value_single(data, self.serializer)
 
   @property
   def serializer_class(self):

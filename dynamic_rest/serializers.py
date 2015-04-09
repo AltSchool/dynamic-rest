@@ -2,6 +2,8 @@ from collections import OrderedDict
 from django.db import models
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.processors import SideloadingProcessor
+from dynamic_rest.wrappers import TaggedDict
+from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 from rest_framework import serializers, fields, exceptions
 
 
@@ -15,7 +17,10 @@ class DynamicListSerializer(serializers.ListSerializer):
   def data(self):
     if not hasattr(self, '_sideloaded_data'):
       data = super(DynamicListSerializer, self).data
-      self._sideloaded_data = SideloadingProcessor(self, data).data
+      if self.child.sideload:
+        self._sideloaded_data = ReturnDict(SideloadingProcessor(self, data).data, serializer=self)
+      else:
+        self._sideloaded_data = ReturnList(data, serializer=self)
     return self._sideloaded_data
 
 class DynamicModelSerializer(serializers.ModelSerializer):
@@ -35,7 +40,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     return super(DynamicModelSerializer, cls).__new__(cls, *args, **kwargs)
 
   def __init__(self, instance=None, data=fields.empty, include_fields=None, exclude_fields=None, only_fields=None,
-               request_fields=None, sideload=True, dynamic=True, **kwargs):
+               request_fields=None, sideload=False, dynamic=True, **kwargs):
     """
     Custom initializer that builds `request_fields` and
     sets a `ListSerializer` that doesn't re-evaluate querysets.
@@ -46,8 +51,8 @@ class DynamicModelSerializer(serializers.ModelSerializer):
       exclude_fields: list of field names to exclude (removes from default field set)
       only_fields: list of field names to render (overrides field set)
       request_fields: map of field names that supports inclusions, exclusions, and nested sideloads
-      dynamic: if False, ignore deferred rules and revert to standard DRF fields behavior (default: True)
-      sideload: if False, do not perform sideloading on data
+      dynamic: if False, ignore deferred rules and revert to standard DRF `.fields` behavior (default: True)
+      sideload: if False, do not perform sideloading on `.data` (default: False)
     """
 
     name = self.get_name()
@@ -69,8 +74,8 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     kwargs['data'] = data
     super(DynamicModelSerializer, self).__init__(**kwargs)
 
-    self.sideload = self._context.get('sideload', sideload)
-    self.dynamic = dynamic
+    self.sideload = self._context.get('do_sideload', sideload)
+    self.dynamic = self._context.get('dynamic', dynamic)
     self.request_fields = request_fields or self._context.get('request_fields', {})
     self.only_fields = only_fields or self._context.get('only_fields', [])
     include_fields = include_fields or self._context.get('include_fields', [])
@@ -165,11 +170,8 @@ class DynamicModelSerializer(serializers.ModelSerializer):
       return instance.pk
     else:
       representation = super(DynamicModelSerializer, self).to_representation(instance)
-    # save the plural name and id
-    # so that the DynamicRenderer can sideload in post-serialization
-    representation['_name'] = self.get_plural_name()
-    representation['_pk'] = instance.pk
-    return representation
+    # tag the representation with the serializer and instance
+    return TaggedDict(representation, serializer=self, instance=instance)
 
   def save(self, *args, **kwargs):
     update = getattr(self, 'instance', None) is not None
@@ -193,6 +195,6 @@ class DynamicModelSerializer(serializers.ModelSerializer):
   def data(self):
     if not hasattr(self, '_sideloaded_data'):
       data = super(DynamicModelSerializer, self).data
-      self._sideloaded_data = SideloadingProcessor(self, data).data
+      self._sideloaded_data = ReturnDict(SideloadingProcessor(self, data).data if self.sideload else data, serializer=self)
     return self._sideloaded_data
 
