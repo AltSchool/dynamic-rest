@@ -226,10 +226,18 @@ class WithDynamicViewSetMixin(object):
         q &= ~Q(**{k:v})
     return q
 
+  def get_queryset(self, queryset=None):
+    """
+    Returns a queryset for this request.
 
-  def get_queryset(self, serializer=None, filters=None):
-    """Returns a queryset for this request.
+    Arguments:
+      queryset: Optional root-level queryset.
+    """
+    return self._get_queryset(root_queryset=queryset)
 
+  def _get_queryset(self, serializer=None, filters=None, root_queryset=None):
+    """
+    Recursive queryset builder.
     Handles nested prefetching of related data and deferring fields
     at the queryset level.
 
@@ -237,12 +245,15 @@ class WithDynamicViewSetMixin(object):
       serializer: An optional serializer to use a base for the queryset.
         If no serializer is passed, the `get_serializer` method will be used
         to initialize the base serializer for the viewset.
+      filters: Optional nested filter map (TreeMap) 
+      queryset: Optional queryset. Only applies to top-level. 
     """
     if serializer:
       queryset = serializer.Meta.model.objects
     else:
       serializer = self.get_serializer()
-      queryset = getattr(self, 'queryset', serializer.Meta.model.objects.all())
+      queryset = root_queryset or getattr(
+          self, 'queryset', serializer.Meta.model.objects.all())
 
     prefetch_related = []
     only = set()
@@ -269,7 +280,7 @@ class WithDynamicViewSetMixin(object):
         remote = isinstance(model_field, (ManyToManyField, RelatedObject))
         id_only = getattr(field, 'id_only', lambda: False)()
         if not id_only or remote:
-          prefetch_qs = self.get_queryset(
+          prefetch_qs = self._get_queryset(
               serializer=field, filters=filters.get(name,{}))
           prefetch_related.append(Prefetch(source, queryset=prefetch_qs))
 
