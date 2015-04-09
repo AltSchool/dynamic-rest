@@ -252,6 +252,17 @@ class TestUsersAPI(APITestCase):
       },
       json.loads(response.content))
 
+  def testIncludeO2M(self):
+    """ Test o2m without related_name set. """
+    url = '/locations/?filter{id}=1&include[]=users'
+    with self.assertNumQueries(2):
+      # 2 queries: 1 for User, 1 for Group
+      response = self.client.get(url)
+    self.assertEquals(200, response.status_code)
+    data = json.loads(response.content) 
+    self.assertEquals(len(data['locations']), 1)
+    self.assertEquals(len(data['locations'][0]['users']), 2)
+
   def testInvalid(self):
     for bad_data in ('name..', 'groups..name', 'foo', 'groups.foo'):
       response = self.client.get('/users/?include[]=%s' % bad_data)

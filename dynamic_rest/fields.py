@@ -3,7 +3,27 @@ from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.serializers import ListSerializer
 from django.db.models.related import RelatedObject
 from django.db.models import ForeignKey, ManyToManyField, Manager, Model
+from django.db.models.fields.related import ForeignRelatedObjectsDescriptor 
 import importlib
+
+def field_is_remote(model, field_name):
+  """
+  Helper function to determine whether model field is remote or not.
+  Remote fields are many-to-many or many-to-one.
+  """
+
+  try:
+    model_field = model._meta.get_field_by_name(field_name)[0]
+    return isinstance(model_field, (ManyToManyField, RelatedObject))
+  except:
+    pass
+
+  # M2O fields with no related_name set in the FK use the *_set
+  # naming convention. 
+  if field_name.endswith('_set'):
+    return getattr(model, field_name, False)
+
+  return False
 
 
 class DynamicField(fields.ReadOnlyField):
@@ -23,7 +43,7 @@ class DynamicField(fields.ReadOnlyField):
     super(DynamicField, self).__init__(**kwargs)
     self.deferred = deferred
     self.field_type = field_type
-    self.nullable = nullable
+    self.allow_null = nullable
 
 
 class DynamicComputedField(DynamicField):
@@ -71,10 +91,16 @@ class DynamicRelationField(DynamicField):
     super(DynamicRelationField, self).bind(*args, **kwargs)
     self.bound = True
     parent_model = self.parent.Meta.model
-    model_field = parent_model._meta.get_field_by_name(self.source)[0]
-    remote = isinstance(model_field, (ManyToManyField, RelatedObject))
-    if not 'required' in self.kwargs and \
-      (remote or model_field.has_default() or model_field.null):
+
+    remote = field_is_remote(parent_model, self.source)
+    try:
+      model_field = parent_model._meta.get_field_by_name(self.source)[0]
+    except:
+      # model field may not be available for m2o fields with no related_name
+      model_field = None
+
+    if not 'required' in self.kwargs and (remote or (
+        model_field and (model_field.has_default() or model_field.null))):
       self.required = False
     if not 'allow_null' in self.kwargs and getattr(model_field, 'null', False):
       self.allow_null = True
