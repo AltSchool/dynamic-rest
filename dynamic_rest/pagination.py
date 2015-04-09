@@ -7,6 +7,7 @@ class DynamicPageNumberPagination(PageNumberPagination):
   page_size_query_param = dynamic_settings.get('PAGE_SIZE_QUERY_PARAM', 'per_page')
   page_query_param = dynamic_settings.get('PAGE_QUERY_PARAM', 'page')
   max_page_size = dynamic_settings.get('MAX_PAGE_SIZE', None)
+  page_size = dynamic_settings.get('DEFAULT_PAGE_SIZE', 500)
 
   def get_page_metadata(self):
     # returns total_results, total_pages, page, per_page
