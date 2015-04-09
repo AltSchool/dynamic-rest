@@ -8,7 +8,8 @@ class LocationSerializer(DynamicModelSerializer):
     name = 'location'
     fields = ('id', 'name', 'users')
 
-  users = DynamicRelationField('UserSerializer', many=True, deferred=True)
+  users = DynamicRelationField('UserSerializer', source='user_set', many=True, 
+      deferred=True)
 
 class PermissionSerializer(DynamicModelSerializer):
   class Meta:

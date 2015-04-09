@@ -3,7 +3,7 @@ from django.db.models import Q, Prefetch, ManyToManyField
 from django.db.models.related import RelatedObject
 from django.http import QueryDict
 
-from dynamic_rest.fields import DynamicRelationField
+from dynamic_rest.fields import DynamicRelationField, field_is_remote
 from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.metadata import DynamicMetadata
 from dynamic_rest.datastructures import TreeMap
@@ -226,6 +226,7 @@ class WithDynamicViewSetMixin(object):
         q &= ~Q(**{k:v})
     return q
 
+
   def get_queryset(self, queryset=None):
     """
     Returns a queryset for this request.
@@ -276,8 +277,7 @@ class WithDynamicViewSetMixin(object):
       remote = False
 
       if isinstance(field, serializers.ModelSerializer):
-        model_field = model._meta.get_field_by_name(source0)[0]
-        remote = isinstance(model_field, (ManyToManyField, RelatedObject))
+        remote = field_is_remote(model, source0)
         id_only = getattr(field, 'id_only', lambda: False)()
         if not id_only or remote:
           prefetch_qs = self._get_queryset(
