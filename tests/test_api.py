@@ -256,12 +256,23 @@ class TestUsersAPI(APITestCase):
     """ Test o2m without related_name set. """
     url = '/locations/?filter{id}=1&include[]=users'
     with self.assertNumQueries(2):
-      # 2 queries: 1 for User, 1 for Group
+      # 2 queries: 1 for locations, 1 for location-users 
       response = self.client.get(url)
     self.assertEquals(200, response.status_code)
     data = json.loads(response.content) 
     self.assertEquals(len(data['locations']), 1)
     self.assertEquals(len(data['locations'][0]['users']), 2)
+
+  def testCountField(self):
+    url = '/locations/?filter{id}=1&include[]=users&include[]=user_count'
+    with self.assertNumQueries(2):
+      # 2 queries: 1 for locations, 1 for location-users 
+      response = self.client.get(url)
+    self.assertEquals(200, response.status_code)
+    data = json.loads(response.content) 
+    self.assertEquals(len(data['locations']), 1)
+    self.assertEquals(len(data['locations'][0]['users']), 2)
+    self.assertEquals(data['locations'][0]['user_count'], 2)
 
   def testInvalid(self):
     for bad_data in ('name..', 'groups..name', 'foo', 'groups.foo'):
