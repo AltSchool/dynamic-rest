@@ -252,6 +252,15 @@ class TestUsersAPI(APITestCase):
       },
       json.loads(response.content))
 
+  def testFilterSourceRewrite(self):
+    """ Test filtering on fields where source is different """
+    url = '/locations/?filter{address}=here&include[]=address'
+    with self.assertNumQueries(1):
+      response = self.client.get(url)
+    self.assertEquals(200, response.status_code)
+    data = json.loads(response.content) 
+    self.assertEquals(len(data['locations']), 1)
+
   def testIncludeO2M(self):
     """ Test o2m without related_name set. """
     url = '/locations/?filter{id}=1&include[]=users'
@@ -273,6 +282,8 @@ class TestUsersAPI(APITestCase):
     self.assertEquals(len(data['locations']), 1)
     self.assertEquals(len(data['locations'][0]['users']), 2)
     self.assertEquals(data['locations'][0]['user_count'], 2)
+
+
 
   def testInvalid(self):
     for bad_data in ('name..', 'groups..name', 'foo', 'groups.foo'):

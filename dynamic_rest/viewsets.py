@@ -196,7 +196,7 @@ class WithDynamicViewSetMixin(object):
     return out 
 
 
-  def _filters_to_query(self, includes, excludes, q=None): 
+  def _filters_to_query(self, includes, excludes, rewrites=None, q=None): 
     """
     Construct Django Query object from request.
     Arguments are dictionaries, which will be passed to Q() as kwargs.
@@ -209,10 +209,23 @@ class WithDynamicViewSetMixin(object):
     Arguments:
       includes: dictionary of inclusion filters
       excludes: dictionary of inclusion filters
+      rewrites: dictionary of field rewrites (e.g. when field and source
+          are different)
 
     Returns:
       Q() instance or None if no inclusion or exclusion filters were specified
     """
+
+    def rewrite_filters(filters, rewrites):
+      if not rewrites:
+        return filters
+      out = {}
+      for k,v in filters.iteritems():
+        if k in rewrites:
+          out[rewrites[k].replace('.', '__')] = v
+        else:
+          out[k] = v
+      return out
 
     q = q or Q() 
 
@@ -220,12 +233,13 @@ class WithDynamicViewSetMixin(object):
       return None
 
     if includes:
+      includes = rewrite_filters(includes, rewrites)
       q &= Q(**includes)
     if excludes:
+      excludes = rewrite_filters(excludes, rewrites)
       for k,v in excludes.iteritems():
         q &= ~Q(**{k:v})
     return q
-
 
   def get_queryset(self, queryset=None):
     """
@@ -249,6 +263,7 @@ class WithDynamicViewSetMixin(object):
       filters: Optional nested filter map (TreeMap) 
       queryset: Optional queryset. Only applies to top-level. 
     """
+
     if serializer:
       queryset = serializer.Meta.model.objects
     else:
@@ -263,8 +278,8 @@ class WithDynamicViewSetMixin(object):
 
     if filters == None:
       filters = self._extract_filters()  
-    q = self._filters_to_query(
-        includes=filters.get('_include'), excludes=filters.get('_exclude'))
+
+    field_rewrites = {}
 
     for name, field in serializer.get_fields().iteritems(): 
       if isinstance(field, DynamicRelationField):
@@ -284,6 +299,9 @@ class WithDynamicViewSetMixin(object):
               serializer=field, filters=filters.get(name,{}))
           prefetch_related.append(Prefetch(source, queryset=prefetch_qs))
 
+      if name != source:
+        field_rewrites[name] = source
+
       if use_only:
         if source == '*':
           use_only = False
@@ -297,6 +315,10 @@ class WithDynamicViewSetMixin(object):
 
     if use_only:
       queryset = queryset.only(*only)
+
+    q = self._filters_to_query(
+        includes=filters.get('_include'), excludes=filters.get('_exclude'),
+        rewrites=field_rewrites)
     if q:
       queryset = queryset.filter(q)
     return queryset.prefetch_related(*prefetch_related)
