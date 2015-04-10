@@ -23,7 +23,7 @@ class DynamicListSerializer(serializers.ListSerializer):
         self._sideloaded_data = ReturnList(data, serializer=self)
     return self._sideloaded_data
 
-class WithDynamicSerializerMixin(serializers.ModelSerializer):
+class WithDynamicSerializerMixin(object):
 
   def __new__(cls, *args, **kwargs):
     """
