@@ -180,6 +180,14 @@ class TestUsersAPI(APITestCase):
                    {u'groups': [1, 2], u'id': 4, u'location': 3, u'name': u'3'}]},
     json.loads(response.content))
 
+  def testSingleResourceSideload(self):
+    with self.assertNumQueries(2):
+      # 2 queries: 1 for User, 1 for Group
+      response = self.client.get('/users/1/?include[]=groups.')
+    self.assertEquals(200, response.status_code)
+    data = json.loads(response.content)
+    self.assertEquals(len(data['groups']), 2)
+
   def testFilterBasic(self):
     with self.assertNumQueries(1):
       response = self.client.get('/users/?filter{name}=1')
