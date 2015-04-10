@@ -287,7 +287,7 @@ class WithDynamicViewSetMixin(object):
       if use_only:
         if source == '*':
           use_only = False
-        elif not remote:
+        elif not remote and not getattr(field, 'is_computed', False):
           # TODO: optimize for nested sources
           only.add(source0)
 

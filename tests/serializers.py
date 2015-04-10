@@ -1,15 +1,16 @@
 from tests.models import *
 from dynamic_rest.serializers import DynamicModelSerializer
-from dynamic_rest.fields import DynamicRelationField
+from dynamic_rest.fields import DynamicRelationField, CountField
 
 class LocationSerializer(DynamicModelSerializer):
   class Meta:
     model = Location
     name = 'location'
-    fields = ('id', 'name', 'users')
+    fields = ('id', 'name', 'users', 'user_count')
 
   users = DynamicRelationField('UserSerializer', source='user_set', many=True, 
       deferred=True)
+  user_count = CountField('users', deferred=True)
 
 class PermissionSerializer(DynamicModelSerializer):
   class Meta:
