@@ -85,6 +85,8 @@ class DynamicRelationField(DynamicField):
     return getattr(self.serializer_class.Meta, 'model', None) 
 
   def bind(self, *args, **kwargs):
+    if self.bound:  # Prevent double-binding
+      return 
     super(DynamicRelationField, self).bind(*args, **kwargs)
     self.bound = True
     parent_model = self.parent.Meta.model
