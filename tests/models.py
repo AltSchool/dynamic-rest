@@ -22,3 +22,4 @@ class Permission(models.Model):
 
 class Location(models.Model):
   name = models.TextField()
+  blob = models.TextField()
