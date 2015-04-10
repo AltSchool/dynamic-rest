@@ -153,8 +153,8 @@ class WithDynamicViewSetMixin(object):
     for spec, value in filters_map.iteritems():
 
       # Inclusion or exclusion?
-      if spec[0]=='-':
-        spec= spec[1:]
+      if spec[0] == '-':
+        spec = spec[1:]
         inex = '_exclude'
       else:
         inex = '_include'
@@ -170,12 +170,12 @@ class WithDynamicViewSetMixin(object):
 
       # if dot-delimited, assume last part is the operator, otherwise
       # assume whole thing is a field name (with 'eq' implied).
-      field = '__'.join(parts[:-1]) if len(parts)>1 else parts[0] 
+      field = '__'.join(parts[:-1]) if len(parts) > 1 else parts[0] 
 
       # Assume last part of a dot-delimited field spec is an operator.
       # Note, however, that 'foo.bar' is a valid field spec with an 'eq'
       # implied as operator. This will be resolved below.
-      operator = parts[-1] if len(parts) > 1 and parts[-1]!='eq' else None
+      operator = parts[-1] if len(parts) > 1 and parts[-1] != 'eq' else None
 
       # All operators except 'range' and 'in' should have one value
       if operator == 'range':
