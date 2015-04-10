@@ -3,19 +3,28 @@ from tests.serializers import UserSerializer, GroupSerializer, LocationSerialize
 from tests.models import User, Group, Location
 
 class UserViewSet(DynamicModelViewSet):
-  features = (DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE)
+  features = (
+      DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
+      DynamicModelViewSet.FILTER
+      )
   model = User
   serializer_class = UserSerializer
   queryset = User.objects.all()
 
 class GroupViewSet(DynamicModelViewSet):
-  features = (DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE)
+  features = (
+      DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
+      DynamicModelViewSet.FILTER
+      )
   model = Group
   serializer_class = GroupSerializer
   queryset = Group.objects.all()
 
 class LocationViewSet(DynamicModelViewSet):
-  features = (DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE)
+  features = (
+      DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
+      DynamicModelViewSet.FILTER
+      )
   model = Location 
   serializer_class = LocationSerializer
   queryset = Location.objects.all()
