@@ -88,6 +88,16 @@ class WithDynamicViewSetMixin(object):
     return super(WithDynamicViewSetMixin, self).initialize_request(
         request, *args, **kargs)
 
+  def get_serializer(self, *args, **kwargs):
+    """
+    Return a serializer configured to return deferred fields for PUT/POST.
+    """
+    if self.request and self.request.method.lower() in ('put', 'post', 'patch'):
+      kwargs['dynamic'] = False 
+    kwargs['sideload'] = True
+    return super(WithDynamicViewSetMixin, self).get_serializer(*args, **kwargs)
+
+
   def get_request_feature(self, name):
     """Parses the request for a particular feature.
 
@@ -278,7 +288,7 @@ class WithDynamicViewSetMixin(object):
 
     field_rewrites = {}
 
-    for name, field in serializer.get_fields().iteritems(): 
+    for name, field in serializer.fields.iteritems(): 
       if isinstance(field, DynamicRelationField):
         field = field.serializer
       if isinstance(field, serializers.ListSerializer):
