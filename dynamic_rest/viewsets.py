@@ -102,29 +102,28 @@ class WithDynamicViewSetMixin(object):
       return self.request.QUERY_PARAMS.getlist(name) if name in self.features else None
     elif '{}' in name:
       # object-type (keys are not consistent)
-      return self.request.QUERY_PARAMS.getlist(name) if name in self.features else None
+      return self._extract_object_params(name) if name in self.features else {} 
     else:
       # single-type
       return self.request.QUERY_PARAMS.get(name) if name in self.features else None
 
-  def _extract_filters_map(self):
+  def _extract_object_params(self, name='filter{}'):
     """
-    Extract filter params, return as dict
-    NOTE: Supports 'filters{}' and 'filter{}' due to an implementation error.
-          In the future, 'filters' will be deprecated.
+    Extract object params, return as dict
     """
+
     params = self.request.query_params.lists()
-    filters_map = {}
+    params_map = {}
+    prefix = name[:-1]
+    offset = len(prefix)
     for name, value in params:
-      if name.startswith('filters{') and name.endswith('}'):
-        name = name[8:-1]
-      elif name.startswith('filter{') and name.endswith('}'):
-        name = name[7:-1]
+      if name.startswith(prefix) and name.endswith('}'):
+        name = name[offset:-1]
       else:
         continue
-      filters_map[name] = value
+      params_map[name] = value
 
-    return filters_map
+    return params_map 
 
   def _extract_filters(self, **kwargs):
     """ 
@@ -137,10 +136,8 @@ class WithDynamicViewSetMixin(object):
 
     """
 
-    filters_map = kwargs.get('filters_map') or self._extract_filters_map()
+    filters_map = kwargs.get('filters_map') or self.get_request_feature(self.FILTER)
 
-    prefix = 'filters{'
-    offset = len(prefix)
     out = TreeMap() 
 
     for spec, value in filters_map.iteritems():
