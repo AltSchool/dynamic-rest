@@ -16,7 +16,7 @@ class UserViewSet(DynamicModelViewSet):
     qs = self.queryset 
     if location:
       qs = qs.filter(location=location)
-    return super(UserViewSet, self).get_queryset(queryset=qs)
+    return qs 
 
   def list(self, request, *args, **kwargs):
     query_params = self.request.QUERY_PARAMS
