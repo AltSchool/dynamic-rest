@@ -88,16 +88,6 @@ class WithDynamicViewSetMixin(object):
     return super(WithDynamicViewSetMixin, self).initialize_request(
         request, *args, **kargs)
 
-  def get_serializer(self, *args, **kwargs):
-    """
-    Return a serializer configured to return deferred fields for PUT/POST.
-    """
-    if self.request and self.request.method.lower() in ('put', 'post', 'patch'):
-      kwargs['dynamic'] = False 
-    kwargs['sideload'] = True
-    return super(WithDynamicViewSetMixin, self).get_serializer(*args, **kwargs)
-
-
   def get_request_feature(self, name):
     """Parses the request for a particular feature.
 
@@ -117,7 +107,7 @@ class WithDynamicViewSetMixin(object):
       # single-type
       return self.request.QUERY_PARAMS.get(name) if name in self.features else None
 
-  def _extract_object_params(self, name='filter{}'):
+  def _extract_object_params(self, name):
     """
     Extract object params, return as dict
     """
@@ -372,6 +362,8 @@ class WithDynamicViewSetMixin(object):
     context = super(WithDynamicViewSetMixin, self).get_serializer_context()
     context['request_fields'] = self.get_request_fields()
     context['do_sideload'] = self.sideload
+    if self.request and self.request.method.lower() in ('put', 'post', 'patch'):
+      context['dynamic'] = False 
     return context
 
   def paginate_queryset(self, *args, **kwargs):

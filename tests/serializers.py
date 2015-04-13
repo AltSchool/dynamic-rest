@@ -1,5 +1,6 @@
 from tests.models import *
 from dynamic_rest.serializers import DynamicModelSerializer
+from dynamic_rest.serializers import DynamicEphemeralSerializer
 from dynamic_rest.fields import DynamicRelationField, CountField, DynamicField
 
 class LocationSerializer(DynamicModelSerializer):
@@ -42,3 +43,12 @@ class UserSerializer(DynamicModelSerializer):
   location = DynamicRelationField('LocationSerializer')
   permissions = DynamicRelationField('PermissionSerializer', many=True, deferred=True)
   groups = DynamicRelationField('GroupSerializer', many=True, deferred=True)
+
+class LocationGroupSerializer(DynamicEphemeralSerializer):
+  class Meta:
+    name = 'locationgroup'
+
+  id = DynamicField(field_type=str)
+  location = DynamicRelationField('LocationSerializer', deferred=False)
+  groups = DynamicRelationField('GroupSerializer', many=True, deferred=False)
+

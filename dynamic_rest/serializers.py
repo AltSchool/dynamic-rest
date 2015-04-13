@@ -54,7 +54,6 @@ class WithDynamicSerializerMixin(object):
       dynamic: if False, ignore deferred rules and revert to standard DRF `.fields` behavior (default: True)
       sideload: if False, do not perform sideloading on `.data` (default: False)
     """
-
     name = self.get_name()
     if data is not fields.empty and name in data and len(data) == 1:
       # support POST/PUT key'd by resource name
@@ -199,7 +198,10 @@ class WithDynamicSerializerMixin(object):
     return self._sideloaded_data
 
 
-class DynamicModelSerializer(WithDynamicSerializerMixin, serializers.ModelSerializer):
+class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
+  """
+  Dynamic serializer methods specific to model-based serializers.
+  """
 
   def get_model(self):
     return self.Meta.model
@@ -227,20 +229,23 @@ class DynamicModelSerializer(WithDynamicSerializerMixin, serializers.ModelSerial
 
     return out
 
+class DynamicModelSerializer(WithDynamicModelSerializerMixin, serializers.ModelSerializer):
+  """
+  DRESt-compatible model-based serializer.
+  """
+  pass
+
+class EphemeralObject(object):
+  """ Object that initializes attributes from a dict """
+  def __init__(self, values_dict):
+    if not 'pk' in values_dict:
+      raise Exception("'pk' key is required")
+    self.__dict__.update(values_dict)
 
 class DynamicEphemeralSerializer(WithDynamicSerializerMixin, serializers.Serializer):
   """
   DREST-compatible baseclass for serializers that aren't model-based.
   """
-
-  class EphemeralObject(object):
-    """ Object that initializes attributes from a dict """
-    def __init__(self, values_dict):
-      self.__dict__.update(values_dict)
-
-  def dict_to_object(self, d):
-    """ Convert dictionary to EphemeralObject instance """
-    return self.EphemeralObject(d)
 
   def to_representation(self, instance):
     """
@@ -253,9 +258,10 @@ class DynamicEphemeralSerializer(WithDynamicSerializerMixin, serializers.Seriali
     """
     
     if not isinstance(instance, dict):
-      data = super(EphemeralSerializer, self).to_representation(instance)
+      data = super(DynamicEphemeralSerializer, self).to_representation(instance)
     else:
       data = instance
+      instance = EphemeralObject(data)
     
-    return self._tag_dict(data, None, pk=data['id'])
+    return TaggedDict(data, serializer=self, instance=instance) 
 

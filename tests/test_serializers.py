@@ -1,5 +1,6 @@
 from collections import OrderedDict
 from django.test import TestCase
+from dynamic_rest.serializers import EphemeralObject
 from tests.models import *
 from tests.serializers import *
 from tests.setup import create_fixture
@@ -336,3 +337,19 @@ class TestUserSerializer(TestCase):
         'name': u'3'
       }]
     })
+
+class TestEphemeralSerializer(TestCase):
+
+  def setUp(self):
+    self.fixture = create_fixture()
+
+  def testBasic(self):
+    location = self.fixture.locations[0]
+    data = {}
+    data['pk'] = data['id'] = location.pk
+    data['location'] = location 
+    data['groups'] = self.fixture.groups
+    instance = EphemeralObject(data)
+    data = LocationGroupSerializer(instance).data
+    self.assertEqual(
+        data, {'id': 1, 'groups': [1, 2], 'location': 1})

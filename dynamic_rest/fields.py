@@ -21,7 +21,7 @@ def field_is_remote(model, field_name):
   # M2O fields with no related_name set in the FK use the *_set
   # naming convention. 
   if field_name.endswith('_set'):
-    return getattr(model, field_name, False)
+    return hasattr(model, field_name)
 
   return False
 
@@ -89,7 +89,7 @@ class DynamicRelationField(DynamicField):
       return 
     super(DynamicRelationField, self).bind(*args, **kwargs)
     self.bound = True
-    parent_model = self.parent.Meta.model
+    parent_model = getattr(self.parent.Meta, 'model', None)
 
     remote = field_is_remote(parent_model, self.source)
     try:
@@ -134,7 +134,12 @@ class DynamicRelationField(DynamicField):
       return None
     if related is None:
       return None
-    return serializer.to_representation(related)
+    try:
+      return serializer.to_representation(related)
+    except Exception as e:
+      # Provide more context to help debug these cases
+      raise Exception("Failed to serialize %s.%s: %s\nObj: %s" % (
+          self.parent.__class__.__name__, self.source, str(e), repr(related)))
 
   def to_internal_value_single(self, data, serializer):
     related_model = serializer.Meta.model
