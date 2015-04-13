@@ -11,6 +11,13 @@ class UserViewSet(DynamicModelViewSet):
   serializer_class = UserSerializer
   queryset = User.objects.all()
 
+  def list(self, request, *args, **kwargs):
+    query_params = self.request.QUERY_PARAMS
+    # for testing query param injection
+    if query_params.get('name'):
+      query_params.add('filter{name}', query_params.get('name'))
+    return super(UserViewSet, self).list(request, *args, **kwargs)
+
 class GroupViewSet(DynamicModelViewSet):
   features = (
       DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,

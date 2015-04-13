@@ -269,6 +269,16 @@ class TestUsersAPI(APITestCase):
     data = json.loads(response.content) 
     self.assertEquals(len(data['locations']), 1)
 
+  def testFilterQueryInjection(self):
+    """ Test viewset with query injection """
+    url = '/users/?name=1'
+    with self.assertNumQueries(1):
+      response = self.client.get(url)
+    self.assertEquals(200, response.status_code)
+    data = json.loads(response.content)
+    self.assertEquals(len(data['users']), 1)
+    self.assertEquals(data['users'][0]['name'], '1')
+
   def testIncludeO2M(self):
     """ Test o2m without related_name set. """
     url = '/locations/?filter{id}=1&include[]=users'
