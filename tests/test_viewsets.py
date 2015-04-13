@@ -3,6 +3,7 @@ from django.test.client import RequestFactory
 
 from rest_framework import exceptions
 from rest_framework.request import Request
+from dynamic_rest.filters import DynamicFilterBackend
 from tests.viewsets import UserViewSet
 
 class TestUserViewSet(TestCase):
@@ -59,7 +60,8 @@ class TestUserViewSet(TestCase):
       'attr5.in' : ['val1', 'val2', 'val3'],
       }
 
-    out = self.view._extract_filters(filters_map=filters_map)
+    backend = DynamicFilterBackend()
+    out = backend._extract_filters(filters_map=filters_map)
 
     self.assertEqual(out['_include']['attr'], 'bar')
     self.assertEqual(out['_include']['attr2'], 'bar')
