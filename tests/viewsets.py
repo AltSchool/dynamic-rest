@@ -11,6 +11,13 @@ class UserViewSet(DynamicModelViewSet):
   serializer_class = UserSerializer
   queryset = User.objects.all()
 
+  def get_queryset(self):
+    location = self.request.QUERY_PARAMS.get('location')
+    qs = self.queryset 
+    if location:
+      qs = qs.filter(location=location)
+    return super(UserViewSet, self).get_queryset(queryset=qs)
+
   def list(self, request, *args, **kwargs):
     query_params = self.request.QUERY_PARAMS
     # for testing query param injection

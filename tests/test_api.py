@@ -301,7 +301,13 @@ class TestUsersAPI(APITestCase):
     self.assertEquals(len(data['locations'][0]['users']), 2)
     self.assertEquals(data['locations'][0]['user_count'], 2)
 
-
+  def testQuerysetInjection(self):
+    url = '/users/?location=1'
+    with self.assertNumQueries(1):
+      response = self.client.get(url)
+    self.assertEquals(200, response.status_code)
+    data = json.loads(response.content)
+    self.assertEquals(len(data['users']), 2)
 
   def testInvalid(self):
     for bad_data in ('name..', 'groups..name', 'foo', 'groups.foo'):

@@ -265,8 +265,8 @@ class WithDynamicViewSetMixin(object):
       queryset = serializer.Meta.model.objects
     else:
       serializer = self.get_serializer()
-      queryset = root_queryset or getattr(
-          self, 'queryset', serializer.Meta.model.objects.all())
+      queryset = root_queryset if root_queryset is not None else \
+          getattr(self, 'queryset', serializer.Meta.model.objects.all())
 
     prefetch_related = []
     only = set()
