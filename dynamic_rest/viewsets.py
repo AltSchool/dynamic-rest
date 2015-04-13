@@ -258,6 +258,9 @@ class WithDynamicViewSetMixin(object):
     Handles nested prefetching of related data and deferring fields
     at the queryset level.
 
+    TODO: Eventually, filtering logic should be moved to a "filter backend".
+          See: http://www.django-rest-framework.org/api-guide/filtering/#setting-filter-backends
+
     Arguments:
       serializer: An optional serializer to use a base for the queryset.
         If no serializer is passed, the `get_serializer` method will be used
