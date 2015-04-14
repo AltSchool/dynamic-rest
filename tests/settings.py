@@ -7,26 +7,26 @@ STATIC_ROOT = INSTALL_DIR + 'www/static'
 DEBUG = True
 
 DATABASES = {
-  'default': {
-    'ENGINE': 'django.db.backends.sqlite3',
-    'NAME': INSTALL_DIR + 'db.sqlite3',
-    'USER': '',
-    'PASSWORD': '',
-    'HOST': '',
-    'PORT': ''
-  }
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': INSTALL_DIR + 'db.sqlite3',
+        'USER': '',
+        'PASSWORD': '',
+        'HOST': '',
+        'PORT': ''
+    }
 }
 
 MIDDLEWARE_CLASSES = ()
 
 INSTALLED_APPS = (
-  'rest_framework',
-  'django.contrib.staticfiles',
-  'tests',
+    'rest_framework',
+    'django.contrib.staticfiles',
+    'tests',
 )
 
 REST_FRAMEWORK = {
-  'PAGE_SIZE': 50
+    'PAGE_SIZE': 50
 }
 ROOT_URLCONF = 'tests.urls'
 

@@ -3,198 +3,212 @@ from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.serializers import ListSerializer
 from django.db.models.related import RelatedObject
 from django.db.models import ForeignKey, ManyToManyField, Manager, Model
-from django.db.models.fields.related import ForeignRelatedObjectsDescriptor 
+from django.db.models.fields.related import ForeignRelatedObjectsDescriptor
 import importlib
 
+
 def field_is_remote(model, field_name):
-  """
-  Helper function to determine whether model field is remote or not.
-  Remote fields are many-to-many or many-to-one.
-  """
+    """
+    Helper function to determine whether model field is remote or not.
+    Remote fields are many-to-many or many-to-one.
+    """
 
-  try:
-    model_field = model._meta.get_field_by_name(field_name)[0]
-    return isinstance(model_field, (ManyToManyField, RelatedObject))
-  except:
-    pass
+    try:
+        model_field = model._meta.get_field_by_name(field_name)[0]
+        return isinstance(model_field, (ManyToManyField, RelatedObject))
+    except:
+        pass
 
-  # M2O fields with no related_name set in the FK use the *_set
-  # naming convention. 
-  if field_name.endswith('_set'):
-    return hasattr(model, field_name)
+    # M2O fields with no related_name set in the FK use the *_set
+    # naming convention.
+    if field_name.endswith('_set'):
+        return hasattr(model, field_name)
 
-  return False
+    return False
 
 
 class DynamicField(fields.Field):
 
-  """
-  Generic field to capture additional custom field attributes
-  """
-
-  def __init__(self, deferred=False, field_type=None, **kwargs):
     """
-    Arguments:
-      deferred: Whether or not this field is deferred,
-          i.e. not included in the response unless specifically requested.
-      field_type: Field data type, if not inferrable from model.
+    Generic field to capture additional custom field attributes
     """
-    self.deferred = kwargs.pop('deferred', deferred)
-    self.field_type = kwargs.pop('field_type', field_type)
-    super(DynamicField, self).__init__(**kwargs)
 
-  def to_representation(self, value):
-    return value
+    def __init__(self, deferred=False, field_type=None, **kwargs):
+        """
+        Arguments:
+          deferred: Whether or not this field is deferred,
+              i.e. not included in the response unless specifically requested.
+          field_type: Field data type, if not inferrable from model.
+        """
+        self.deferred = kwargs.pop('deferred', deferred)
+        self.field_type = kwargs.pop('field_type', field_type)
+        super(DynamicField, self).__init__(**kwargs)
+
+    def to_representation(self, value):
+        return value
 
 
 class DynamicComputedField(DynamicField):
-  """
-  Computed field base-class (i.e. fields that are dynamically computed,
-  rather than being tied to model fields.)
-  """
-  is_computed = True
 
-  def __init__(self, *args, **kwargs):
-    return super(DynamicComputedField, self).__init__(*args, **kwargs)
+    """
+    Computed field base-class (i.e. fields that are dynamically computed,
+    rather than being tied to model fields.)
+    """
+    is_computed = True
+
+    def __init__(self, *args, **kwargs):
+        return super(DynamicComputedField, self).__init__(*args, **kwargs)
 
 
 class DynamicRelationField(DynamicField):
 
-  """Proxy for a sub-serializer.
+    """Proxy for a sub-serializer.
 
-  Supports passing in the target serializer as a class or string,
-  resolves after binding to the parent serializer.
-  """
-
-  SERIALIZER_KWARGS = set(('many', 'source'))
-
-  def __init__(self, serializer_class, many=False, **kwargs):
+    Supports passing in the target serializer as a class or string,
+    resolves after binding to the parent serializer.
     """
-    Arguments:
-      serializer_class: Serializer class (or string representation) to proxy.
-    """
-    self.kwargs = kwargs
-    self._serializer_class = serializer_class
-    self.bound = False
-    if '.' in self.kwargs.get('source', ''):
-      raise Exception('Nested relationships are not supported')
-    super(DynamicRelationField, self).__init__(**kwargs)
-    self.kwargs['many'] = many
 
-  def get_model(self):
-    return getattr(self.serializer_class.Meta, 'model', None) 
+    SERIALIZER_KWARGS = set(('many', 'source'))
 
-  def bind(self, *args, **kwargs):
-    if self.bound:  # Prevent double-binding
-      return 
-    super(DynamicRelationField, self).bind(*args, **kwargs)
-    self.bound = True
-    parent_model = getattr(self.parent.Meta, 'model', None)
+    def __init__(self, serializer_class, many=False, **kwargs):
+        """
+        Arguments:
+          serializer_class: Serializer class (or string representation) to proxy.
+        """
+        self.kwargs = kwargs
+        self._serializer_class = serializer_class
+        self.bound = False
+        if '.' in self.kwargs.get('source', ''):
+            raise Exception('Nested relationships are not supported')
+        super(DynamicRelationField, self).__init__(**kwargs)
+        self.kwargs['many'] = many
 
-    remote = field_is_remote(parent_model, self.source)
-    try:
-      model_field = parent_model._meta.get_field_by_name(self.source)[0]
-    except:
-      # model field may not be available for m2o fields with no related_name
-      model_field = None
+    def get_model(self):
+        return getattr(self.serializer_class.Meta, 'model', None)
 
-    if not 'required' in self.kwargs and (remote or (
-        model_field and (model_field.has_default() or model_field.null))):
-      self.required = False
-    if not 'allow_null' in self.kwargs and getattr(model_field, 'null', False):
-      self.allow_null = True
+    def bind(self, *args, **kwargs):
+        if self.bound:  # Prevent double-binding
+            return
+        super(DynamicRelationField, self).bind(*args, **kwargs)
+        self.bound = True
+        parent_model = getattr(self.parent.Meta, 'model', None)
 
-    self.model_field = model_field
+        remote = field_is_remote(parent_model, self.source)
+        try:
+            model_field = parent_model._meta.get_field_by_name(self.source)[0]
+        except:
+            # model field may not be available for m2o fields with no
+            # related_name
+            model_field = None
 
-  @property
-  def serializer(self):
-    if hasattr(self, '_serializer'):
-      return self._serializer
+        if not 'required' in self.kwargs and (
+                remote or (model_field and (model_field.has_default() or model_field.null))):
+            self.required = False
+        if not 'allow_null' in self.kwargs and getattr(
+                model_field, 'null', False):
+            self.allow_null = True
 
-    serializer = self.serializer_class(
-        **{k: v for k, v in self.kwargs.iteritems() if k in self.SERIALIZER_KWARGS})
-    self._serializer = serializer
-    return serializer
+        self.model_field = model_field
 
-  def get_attribute(self, instance):
-    return instance
+    @property
+    def serializer(self):
+        if hasattr(self, '_serializer'):
+            return self._serializer
 
-  def to_representation(self, instance):
-    serializer = self.serializer
-    source = self.source
-    if not self.kwargs['many'] and serializer.id_only():
-      # attempt to optimize by reading the related ID directly
-      # from the current instance rather than from the related object
-      source_id = '%s_id' % source
-      if hasattr(instance, source_id):
-        return getattr(instance, source_id)
-    try:
-      related = getattr(instance, source)
-    except:
-      return None
-    if related is None:
-      return None
-    try:
-      return serializer.to_representation(related)
-    except Exception as e:
-      # Provide more context to help debug these cases
-      raise Exception("Failed to serialize %s.%s: %s\nObj: %s" % (
-          self.parent.__class__.__name__, self.source, str(e), repr(related)))
+        serializer = self.serializer_class(
+            **
+            {k: v for k, v in self.kwargs.iteritems()
+             if k in self.SERIALIZER_KWARGS})
+        self._serializer = serializer
+        return serializer
 
-  def to_internal_value_single(self, data, serializer):
-    related_model = serializer.Meta.model
-    if isinstance(data, related_model):
-      return data
-    try:
-      instance = related_model.objects.get(pk=data)
-    except related_model.DoesNotExist:
-      raise NotFound("'%s object with ID=%s not found" % (related_model.__name__, data))
-    return instance
+    def get_attribute(self, instance):
+        return instance
 
-  def to_internal_value(self, data):
-    if self.kwargs['many']:
-      serializer = self.serializer.child
-      if not isinstance(data, list):
-        raise ParseError("'%s' value must be a list" % self.field_name)
-      return [self.to_internal_value_single(instance, serializer) for instance in data]
-    return self.to_internal_value_single(data, self.serializer)
+    def to_representation(self, instance):
+        serializer = self.serializer
+        source = self.source
+        if not self.kwargs['many'] and serializer.id_only():
+            # attempt to optimize by reading the related ID directly
+            # from the current instance rather than from the related object
+            source_id = '%s_id' % source
+            if hasattr(instance, source_id):
+                return getattr(instance, source_id)
+        try:
+            related = getattr(instance, source)
+        except:
+            return None
+        if related is None:
+            return None
+        try:
+            return serializer.to_representation(related)
+        except Exception as e:
+            # Provide more context to help debug these cases
+            raise Exception(
+                "Failed to serialize %s.%s: %s\nObj: %s" %
+                (self.parent.__class__.__name__,
+                 self.source,
+                 str(e),
+                    repr(related)))
 
-  @property
-  def serializer_class(self):
-    serializer_class = self._serializer_class
-    if not isinstance(serializer_class, basestring):
-      return serializer_class
+    def to_internal_value_single(self, data, serializer):
+        related_model = serializer.Meta.model
+        if isinstance(data, related_model):
+            return data
+        try:
+            instance = related_model.objects.get(pk=data)
+        except related_model.DoesNotExist:
+            raise NotFound(
+                "'%s object with ID=%s not found" %
+                (related_model.__name__, data))
+        return instance
 
-    parts = serializer_class.split('.')
-    module_path = '.'.join(parts[:-1])
-    if not module_path:
-      if getattr(self, 'parent', None) is None:
-        raise Exception(
-            "Can not load serializer '%s' before binding or without specifying full path" % serializer_class)
+    def to_internal_value(self, data):
+        if self.kwargs['many']:
+            serializer = self.serializer.child
+            if not isinstance(data, list):
+                raise ParseError("'%s' value must be a list" % self.field_name)
+            return [self.to_internal_value_single(
+                instance, serializer) for instance in data]
+        return self.to_internal_value_single(data, self.serializer)
 
-      # try the module of the parent class
-      module_path = self.parent.__module__
+    @property
+    def serializer_class(self):
+        serializer_class = self._serializer_class
+        if not isinstance(serializer_class, basestring):
+            return serializer_class
 
-    module = importlib.import_module(module_path)
-    serializer_class = getattr(module, parts[-1])
+        parts = serializer_class.split('.')
+        module_path = '.'.join(parts[:-1])
+        if not module_path:
+            if getattr(self, 'parent', None) is None:
+                raise Exception(
+                    "Can not load serializer '%s' before binding or without specifying full path" %
+                    serializer_class)
 
-    self._serializer_class = serializer_class
-    return serializer_class
+            # try the module of the parent class
+            module_path = self.parent.__module__
+
+        module = importlib.import_module(module_path)
+        serializer_class = getattr(module, parts[-1])
+
+        self._serializer_class = serializer_class
+        return serializer_class
 
 
 class CountField(DynamicComputedField):
-  """
-  Field that counts number of elements in another specified field.
-  """
 
-  def __init__(self, source, *args, **kwargs):
-    self.field_type = int
-    kwargs['source'] = source
-    return super(CountField, self).__init__(*args, **kwargs)
+    """
+    Field that counts number of elements in another specified field.
+    """
 
-  def get_attribute(self, obj):
-    if self.source in self.parent.fields:
-      data = self.parent.fields[self.source].to_representation(obj)
-      return len(data) if isinstance(data, list) else None
-    return None 
+    def __init__(self, source, *args, **kwargs):
+        self.field_type = int
+        kwargs['source'] = source
+        return super(CountField, self).__init__(*args, **kwargs)
 
+    def get_attribute(self, obj):
+        if self.source in self.parent.fields:
+            data = self.parent.fields[self.source].to_representation(obj)
+            return len(data) if isinstance(data, list) else None
+        return None

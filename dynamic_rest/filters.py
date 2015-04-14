@@ -6,215 +6,220 @@ from dynamic_rest.fields import DynamicRelationField, field_is_remote
 from rest_framework import viewsets, response, exceptions, serializers
 from rest_framework.filters import BaseFilterBackend
 
+
 class DynamicFilterBackend(BaseFilterBackend):
-  VALID_FILTER_OPERATORS = (
-    'in',
-    'any',
-    'all',
-    'like',
-    'range',
-    'gt',
-    'lt',
-    'gte',
-    'lte',
-    'isnull',
-    None,
+    VALID_FILTER_OPERATORS = (
+        'in',
+        'any',
+        'all',
+        'like',
+        'range',
+        'gt',
+        'lt',
+        'gte',
+        'lte',
+        'isnull',
+        None,
     )
 
-  def filter_queryset(self, request, queryset, view):
-    """
-    Filter queryset. This is the main/single entry-point to this class, and
-    is called by DRF's list handler.
-    """
-    self.request = request
-    self.view = view
-    return self._filter_queryset(root_queryset=queryset)
+    def filter_queryset(self, request, queryset, view):
+        """
+        Filter queryset. This is the main/single entry-point to this class, and
+        is called by DRF's list handler.
+        """
+        self.request = request
+        self.view = view
+        return self._filter_queryset(root_queryset=queryset)
 
-  def _extract_filters(self, **kwargs):
-    """ 
-    Convert 'filters' query params into a dict that can be passed
-    to Q. Returns a dict with two fields, 'include' and 'exclude',
-    which can be used like:
+    def _extract_filters(self, **kwargs):
+        """
+        Convert 'filters' query params into a dict that can be passed
+        to Q. Returns a dict with two fields, 'include' and 'exclude',
+        which can be used like:
 
-      result = self._extract_filters()
-      q = Q(**result['include'] & ~Q(**result['exclude'])
+          result = self._extract_filters()
+          q = Q(**result['include'] & ~Q(**result['exclude'])
 
-    """
+        """
 
-    filters_map = kwargs.get('filters_map') or \
-        self.view.get_request_feature(self.view.FILTER)
+        filters_map = kwargs.get('filters_map') or \
+            self.view.get_request_feature(self.view.FILTER)
 
-    out = TreeMap() 
+        out = TreeMap()
 
-    for spec, value in filters_map.iteritems():
+        for spec, value in filters_map.iteritems():
 
-      # Inclusion or exclusion?
-      if spec[0] == '-':
-        spec = spec[1:]
-        inex = '_exclude'
-      else:
-        inex = '_include'
+            # Inclusion or exclusion?
+            if spec[0] == '-':
+                spec = spec[1:]
+                inex = '_exclude'
+            else:
+                inex = '_include'
 
-      # for relational filters, separate out relation path part 
-      if '|' in spec:
-        rel, spec = spec.split('|')  
-        rel = rel.split('.')
-      else:
-        rel = None
+            # for relational filters, separate out relation path part
+            if '|' in spec:
+                rel, spec = spec.split('|')
+                rel = rel.split('.')
+            else:
+                rel = None
 
-      parts = spec.split('.')
+            parts = spec.split('.')
 
-      # if dot-delimited, assume last part is the operator, otherwise
-      # assume whole thing is a field name (with 'eq' implied).
-      field = '__'.join(parts[:-1]) if len(parts) > 1 else parts[0] 
+            # if dot-delimited, assume last part is the operator, otherwise
+            # assume whole thing is a field name (with 'eq' implied).
+            field = '__'.join(parts[:-1]) if len(parts) > 1 else parts[0]
 
-      # Assume last part of a dot-delimited field spec is an operator.
-      # Note, however, that 'foo.bar' is a valid field spec with an 'eq'
-      # implied as operator. This will be resolved below.
-      operator = parts[-1] if len(parts) > 1 and parts[-1] != 'eq' else None
+            # Assume last part of a dot-delimited field spec is an operator.
+            # Note, however, that 'foo.bar' is a valid field spec with an 'eq'
+            # implied as operator. This will be resolved below.
+            operator = parts[-
+                             1] if len(parts) > 1 and parts[-
+                                                            1] != 'eq' else None
 
-      # All operators except 'range' and 'in' should have one value
-      if operator == 'range':
-        value = value[:2]
-      elif operator == 'in':
-        # no-op: i.e. accept `value` as an arbitrarily long list
-        pass
-      elif operator in self.VALID_FILTER_OPERATORS:
-        value = value[0]
-      else:
-        # Unknown operator, we'll treat it like a field 
-        # e.g: filter{foo.bar}=baz
-        field += '__' + operator
-        operator = None
-        value = value[0]
+            # All operators except 'range' and 'in' should have one value
+            if operator == 'range':
+                value = value[:2]
+            elif operator == 'in':
+                # no-op: i.e. accept `value` as an arbitrarily long list
+                pass
+            elif operator in self.VALID_FILTER_OPERATORS:
+                value = value[0]
+            else:
+                # Unknown operator, we'll treat it like a field
+                # e.g: filter{foo.bar}=baz
+                field += '__' + operator
+                operator = None
+                value = value[0]
 
-      param = field
-      if operator:
-        param += '__'+operator 
+            param = field
+            if operator:
+                param += '__' + operator
 
-      path = rel if rel else []
-      path.extend([inex, param])
-      out.insert(path, value)
+            path = rel if rel else []
+            path.extend([inex, param])
+            out.insert(path, value)
 
-    return out 
+        return out
 
-  def _filters_to_query(self, includes, excludes, rewrites=None, q=None): 
-    """
-    Construct Django Query object from request.
-    Arguments are dictionaries, which will be passed to Q() as kwargs.
+    def _filters_to_query(self, includes, excludes, rewrites=None, q=None):
+        """
+        Construct Django Query object from request.
+        Arguments are dictionaries, which will be passed to Q() as kwargs.
 
-    e.g.
-        includes = { 'foo' : 'bar', 'baz__in' : [1, 2] }
-      produces:
-        Q(foo='bar', baz__in=[1, 2])
+        e.g.
+            includes = { 'foo' : 'bar', 'baz__in' : [1, 2] }
+          produces:
+            Q(foo='bar', baz__in=[1, 2])
 
-    Arguments:
-      includes: dictionary of inclusion filters
-      excludes: dictionary of inclusion filters
-      rewrites: dictionary of field rewrites (e.g. when field and source
-          are different)
+        Arguments:
+          includes: dictionary of inclusion filters
+          excludes: dictionary of inclusion filters
+          rewrites: dictionary of field rewrites (e.g. when field and source
+              are different)
 
-    Returns:
-      Q() instance or None if no inclusion or exclusion filters were specified
-    """
+        Returns:
+          Q() instance or None if no inclusion or exclusion filters were specified
+        """
 
-    def rewrite_filters(filters, rewrites):
-      if not rewrites:
-        return filters
-      out = {}
-      for k,v in filters.iteritems():
-        if k in rewrites:
-          out[rewrites[k].replace('.', '__')] = v
+        def rewrite_filters(filters, rewrites):
+            if not rewrites:
+                return filters
+            out = {}
+            for k, v in filters.iteritems():
+                if k in rewrites:
+                    out[rewrites[k].replace('.', '__')] = v
+                else:
+                    out[k] = v
+            return out
+
+        q = q or Q()
+
+        if not includes and not excludes:
+            return None
+
+        if includes:
+            includes = rewrite_filters(includes, rewrites)
+            q &= Q(**includes)
+        if excludes:
+            excludes = rewrite_filters(excludes, rewrites)
+            for k, v in excludes.iteritems():
+                q &= ~Q(**{k: v})
+        return q
+
+    def _filter_queryset(
+            self, serializer=None, filters=None, root_queryset=None):
+        """
+        Recursive queryset builder.
+        Handles nested prefetching of related data and deferring fields
+        at the queryset level.
+
+        Arguments:
+          serializer: An optional serializer to use a base for the queryset.
+            If no serializer is passed, the `get_serializer` method will be used
+            to initialize the base serializer for the viewset.
+          filters: Optional nested filter map (TreeMap)
+          queryset: Optional queryset. Only applies to top-level.
+        """
+
+        if serializer:
+            queryset = serializer.Meta.model.objects
         else:
-          out[k] = v
-      return out
+            queryset = root_queryset
+            serializer = self.view.get_serializer()
 
-    q = q or Q() 
+        prefetch_related = []
+        only = set()
+        use_only = True
+        model = getattr(serializer.Meta, 'model', None)
+        if not model:
+            return queryset
 
-    if not includes and not excludes:
-      return None
+        if filters is None:
+            filters = self._extract_filters()
 
-    if includes:
-      includes = rewrite_filters(includes, rewrites)
-      q &= Q(**includes)
-    if excludes:
-      excludes = rewrite_filters(excludes, rewrites)
-      for k,v in excludes.iteritems():
-        q &= ~Q(**{k:v})
-    return q
+        field_rewrites = {}
 
+        for name, field in serializer.fields.iteritems():
+            if isinstance(field, DynamicRelationField):
+                field = field.serializer
+            if isinstance(field, serializers.ListSerializer):
+                field = field.child
 
-  def _filter_queryset(self, serializer=None, filters=None, root_queryset=None):
-    """
-    Recursive queryset builder.
-    Handles nested prefetching of related data and deferring fields
-    at the queryset level.
+            source = field.source or name
+            source0 = source.split('.')[0]
+            remote = False
 
-    Arguments:
-      serializer: An optional serializer to use a base for the queryset.
-        If no serializer is passed, the `get_serializer` method will be used
-        to initialize the base serializer for the viewset.
-      filters: Optional nested filter map (TreeMap) 
-      queryset: Optional queryset. Only applies to top-level. 
-    """
+            if isinstance(field, serializers.ModelSerializer):
+                remote = field_is_remote(model, source0)
+                id_only = getattr(field, 'id_only', lambda: False)()
+                if not id_only or remote:
+                    prefetch_qs = self._filter_queryset(
+                        serializer=field, filters=filters.get(name, {}))
+                    prefetch_related.append(
+                        Prefetch(
+                            source,
+                            queryset=prefetch_qs))
 
-    if serializer:
-      queryset = serializer.Meta.model.objects
-    else:
-      queryset = root_queryset
-      serializer = self.view.get_serializer()
+            if name != source:
+                field_rewrites[name] = source
 
-    prefetch_related = []
-    only = set()
-    use_only = True
-    model = getattr(serializer.Meta, 'model', None)
-    if not model:
-      return queryset
+            if use_only:
+                if source == '*':
+                    use_only = False
+                elif not remote and not getattr(field, 'is_computed', False):
+                    # TODO: optimize for nested sources
+                    only.add(source0)
 
-    if filters == None:
-      filters = self._extract_filters()  
+        if getattr(serializer, 'id_only', lambda: False)():
+            only = serializer.get_id_fields()
+            use_only = True
 
-    field_rewrites = {}
+        if use_only:
+            queryset = queryset.only(*only)
 
-    for name, field in serializer.fields.iteritems(): 
-      if isinstance(field, DynamicRelationField):
-        field = field.serializer
-      if isinstance(field, serializers.ListSerializer):
-        field = field.child
-
-      source = field.source or name
-      source0 = source.split('.')[0]
-      remote = False
-
-      if isinstance(field, serializers.ModelSerializer):
-        remote = field_is_remote(model, source0)
-        id_only = getattr(field, 'id_only', lambda: False)()
-        if not id_only or remote:
-          prefetch_qs = self._filter_queryset(
-              serializer=field, filters=filters.get(name,{}))
-          prefetch_related.append(Prefetch(source, queryset=prefetch_qs))
-
-      if name != source:
-        field_rewrites[name] = source
-
-      if use_only:
-        if source == '*':
-          use_only = False
-        elif not remote and not getattr(field, 'is_computed', False):
-          # TODO: optimize for nested sources
-          only.add(source0)
-
-    if getattr(serializer, 'id_only', lambda: False)():
-      only = serializer.get_id_fields()
-      use_only = True
-
-    if use_only:
-      queryset = queryset.only(*only)
-
-    q = self._filters_to_query(
-        includes=filters.get('_include'), excludes=filters.get('_exclude'),
-        rewrites=field_rewrites)
-    if q:
-      queryset = queryset.filter(q)
-    return queryset.prefetch_related(*prefetch_related)
-
+        q = self._filters_to_query(
+            includes=filters.get('_include'), excludes=filters.get('_exclude'),
+            rewrites=field_rewrites)
+        if q:
+            queryset = queryset.filter(q)
+        return queryset.prefetch_related(*prefetch_related)
