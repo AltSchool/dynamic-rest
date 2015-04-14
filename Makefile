@@ -11,7 +11,10 @@ $(INSTALL_DIR)/bin/activate: requirements.txt
 	. $(INSTALL_DIR)/bin/activate; pip install -U -r requirements.txt
 	touch $(INSTALL_DIR)/bin/activate
 
-clean:
+clean_cd:
+	rm -rf ./build ./dist;
+
+clean: clean_cd
 	rm -rf $(INSTALL_DIR)
 
 test: lint install
@@ -31,8 +34,9 @@ server: install
 	  python manage.py migrate --settings=tests.settings; \
     python manage.py runserver --settings=tests.settings
 
-lint:
-	flake8 **/**.py
 
-format:
-	flake8 **/**.py | sed -E 's/^([^:]*\.py).*/\1/g' | uniq | xargs autopep8 --experimental -a --in-place
+lint: clean_cd
+	find . -type f -name '*.py' | xargs flake8
+
+format: clean_cd
+	find . -type f -name '*.py' | xargs flake8 | sed -E 's/^([^:]*\.py).*/\1/g' | uniq | xargs autopep8 --experimental -a --in-place
