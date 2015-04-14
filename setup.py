@@ -5,8 +5,13 @@ import re
 
 PACKAGE_NAME = 'dynamic_rest'
 BASE_DIR = os.path.dirname(__file__) or "."
-VERSION = re.search('__version__ = "([^"]+)"',
-                    codecs.open("%s/%s/__init__.py" % (BASE_DIR, PACKAGE_NAME), encoding='utf-8').read()).group(1)
+VERSION = re.search(
+    '__version__ = "([^"]+)"',
+    codecs.open(
+        "%s/%s/__init__.py" %
+        (BASE_DIR,
+         PACKAGE_NAME),
+        encoding='utf-8').read()).group(1)
 
 setup(
     author="Anthony Leontiev",

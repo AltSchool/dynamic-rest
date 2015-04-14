@@ -14,7 +14,7 @@ $(INSTALL_DIR)/bin/activate: requirements.txt
 clean:
 	rm -rf $(INSTALL_DIR)
 
-test: install
+test: lint install
 	. $(INSTALL_DIR)/bin/activate; \
 	  python manage.py test --settings=tests.settings
 
@@ -31,3 +31,8 @@ server: install
 	  python manage.py migrate --settings=tests.settings; \
     python manage.py runserver --settings=tests.settings
 
+lint:
+	flake8 **/**.py
+
+format:
+	flake8 **/**.py | sed -E 's/^([^:]*\.py).*/\1/g' | uniq | xargs autopep8 --experimental -a --in-place
