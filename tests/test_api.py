@@ -1,6 +1,5 @@
 import json
 from django.db import connection
-from django.test import TestCase
 from rest_framework.test import APITestCase
 from tests.setup import create_fixture
 
@@ -146,11 +145,16 @@ class TestUsersAPI(APITestCase):
             response = self.client.get('/users/?include[]=groups.')
         self.assertEquals(200, response.status_code)
         self.assertEquals(
-            {u'groups': [{u'id': 1, u'name': u'0'}, {u'id': 2, u'name': u'1'}],
-             u'users': [{u'groups': [1, 2], u'id': 1, u'location': 1, u'name': u'0'},
-                        {u'groups': [1, 2], u'id': 2, u'location': 1, u'name': u'1'},
-                        {u'groups': [1, 2], u'id': 3, u'location': 2, u'name': u'2'},
-                        {u'groups': [1, 2], u'id': 4, u'location': 3, u'name': u'3'}]},
+            {'groups': [{'id': 1, 'name': '0'}, {'id': 2, 'name': '1'}],
+             'users': [{
+                 'groups': [1, 2], 'id': 1, 'location': 1, 'name': '0'
+             }, {
+                 'groups': [1, 2], 'id': 2, 'location': 1, 'name': '1'
+             }, {
+                 'groups': [1, 2], 'id': 3, 'location': 2, 'name': '2'
+             }, {
+                 'groups': [1, 2], 'id': 4, 'location': 3, 'name': '3'
+             }]},
             json.loads(response.content))
 
     def testNestedInclude(self):
@@ -159,12 +163,18 @@ class TestUsersAPI(APITestCase):
             response = self.client.get('/users/?include[]=groups.permissions')
         self.assertEquals(200, response.status_code)
         self.assertEquals(
-            {u'groups': [{u'id': 1, u'name': u'0', u'permissions': [1]},
-                         {u'id': 2, u'name': u'1', u'permissions': [2]}],
-             u'users': [{u'groups': [1, 2], u'id': 1, u'location': 1, u'name': u'0'},
-                        {u'groups': [1, 2], u'id': 2, u'location': 1, u'name': u'1'},
-                        {u'groups': [1, 2], u'id': 3, u'location': 2, u'name': u'2'},
-                        {u'groups': [1, 2], u'id': 4, u'location': 3, u'name': u'3'}]},
+            {'groups': [{'id': 1, 'name': '0', 'permissions': [1]},
+                        {'id': 2, 'name': '1', 'permissions': [2]}],
+             'users': [{
+                 'groups': [1, 2], 'id': 1, 'location': 1, 'name': '0'
+             }, {
+                 'groups': [1, 2], 'id': 2, 'location': 1, 'name': '1'
+             }, {
+                 'groups': [1, 2], 'id': 3, 'location': 2, 'name': '2'
+             }, {
+                 'groups': [1, 2], 'id': 4, 'location': 3, 'name': '3'
+             }
+            ]},
             json.loads(response.content))
 
     def testNestedExclude(self):
@@ -173,11 +183,16 @@ class TestUsersAPI(APITestCase):
             response = self.client.get('/users/?exclude[]=groups.name')
         self.assertEquals(200, response.status_code)
         self.assertEquals(
-            {u'groups': [{u'id': 1}, {u'id': 2}],
-             u'users': [{u'groups': [1, 2], u'id': 1, u'location': 1, u'name': u'0'},
-                        {u'groups': [1, 2], u'id': 2, u'location': 1, u'name': u'1'},
-                        {u'groups': [1, 2], u'id': 3, u'location': 2, u'name': u'2'},
-                        {u'groups': [1, 2], u'id': 4, u'location': 3, u'name': u'3'}]},
+            {'groups': [{'id': 1}, {'id': 2}],
+             'users': [{
+                 'groups': [1, 2], 'id': 1, 'location': 1, 'name': '0'
+             }, {
+                 'groups': [1, 2], 'id': 2, 'location': 1, 'name': '1'
+             }, {
+                 'groups': [1, 2], 'id': 3, 'location': 2, 'name': '2'
+             }, {
+                 'groups': [1, 2], 'id': 4, 'location': 3, 'name': '3'
+             }]},
             json.loads(response.content))
 
     def testSingleResourceSideload(self):
@@ -194,8 +209,8 @@ class TestUsersAPI(APITestCase):
         self.assertEquals(200, response.status_code)
         self.assertEquals(
             {
-                u'users': [
-                    {u'id': 2, u'location': 1, u'name': u'1'},
+                'users': [
+                    {'id': 2, 'location': 1, 'name': '1'},
                 ]
             },
             json.loads(response.content))
@@ -207,9 +222,9 @@ class TestUsersAPI(APITestCase):
         self.assertEquals(200, response.status_code)
         self.assertEquals(
             {
-                u'users': [
-                    {u'id': 2, u'location': 1, u'name': u'1'},
-                    {u'id': 3, u'location': 2, u'name': u'2'},
+                'users': [
+                    {'id': 2, 'location': 1, 'name': '1'},
+                    {'id': 3, 'location': 2, 'name': '2'},
                 ]
             },
             json.loads(response.content))
@@ -221,10 +236,10 @@ class TestUsersAPI(APITestCase):
         self.assertEquals(200, response.status_code)
         self.assertEquals(
             {
-                u'users': [
-                    {u'id': 1, u'location': 1, u'name': u'0'},
-                    {u'id': 3, u'location': 2, u'name': u'2'},
-                    {u'id': 4, u'location': 3, u'name': u'3'},
+                'users': [
+                    {'id': 1, 'location': 1, 'name': '0'},
+                    {'id': 3, 'location': 2, 'name': '2'},
+                    {'id': 4, 'location': 3, 'name': '3'},
                 ]
             },
             json.loads(response.content))
@@ -236,8 +251,8 @@ class TestUsersAPI(APITestCase):
         self.assertEquals(200, response.status_code)
         self.assertEquals(
             {
-                u'users': [
-                    {u'id': 3, u'location': 2, u'name': u'2'},
+                'users': [
+                    {'id': 3, 'location': 2, 'name': '2'},
                 ]
             },
             json.loads(response.content))
@@ -250,12 +265,12 @@ class TestUsersAPI(APITestCase):
         self.assertEquals(200, response.status_code)
         self.assertEquals(
             {
-                u'groups': [{u'id': 2, u'name': u'1'}],
-                u'users': [
-                    {u'groups': [2], u'id': 1, u'location': 1, u'name': u'0'},
-                    {u'groups': [2], u'id': 2, u'location': 1, u'name': u'1'},
-                    {u'groups': [2], u'id': 3, u'location': 2, u'name': u'2'},
-                    {u'groups': [2], u'id': 4, u'location': 3, u'name': u'3'}
+                'groups': [{'id': 2, 'name': '1'}],
+                'users': [
+                    {'groups': [2], 'id': 1, 'location': 1, 'name': '0'},
+                    {'groups': [2], 'id': 2, 'location': 1, 'name': '1'},
+                    {'groups': [2], 'id': 3, 'location': 2, 'name': '2'},
+                    {'groups': [2], 'id': 4, 'location': 3, 'name': '3'}
                 ]
             },
             json.loads(response.content))

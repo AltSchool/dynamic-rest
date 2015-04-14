@@ -1,5 +1,7 @@
 from dynamic_rest.viewsets import DynamicModelViewSet
-from tests.serializers import UserSerializer, GroupSerializer, LocationSerializer
+from tests.serializers import (
+    UserSerializer, GroupSerializer, LocationSerializer
+)
 from tests.models import User, Group, Location
 
 

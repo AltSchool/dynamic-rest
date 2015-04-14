@@ -1,4 +1,4 @@
-from tests.models import *
+from tests.models import Location, Permission, Group, User
 from dynamic_rest.serializers import DynamicModelSerializer
 from dynamic_rest.serializers import DynamicEphemeralSerializer
 from dynamic_rest.fields import DynamicRelationField, CountField, DynamicField

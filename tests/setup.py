@@ -1,5 +1,7 @@
 from collections import namedtuple
-from tests.models import *
+from tests.models import (
+    User, Group, Location, Permission
+)
 
 
 def create_fixture():

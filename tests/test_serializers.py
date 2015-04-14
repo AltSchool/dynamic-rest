@@ -1,10 +1,10 @@
 from collections import OrderedDict
 from django.test import TestCase
 from dynamic_rest.serializers import EphemeralObject
-from tests.models import *
-from tests.serializers import *
+from tests.serializers import (
+    UserSerializer, GroupSerializer, LocationGroupSerializer
+)
 from tests.setup import create_fixture
-import json
 
 
 class TestUserSerializer(TestCase):
@@ -32,39 +32,39 @@ class TestUserSerializer(TestCase):
         })
 
     def testExtraField(self):
-        context = {
-            'request_fields': {
-                'last_name': True
-            }
+        request_fields = {
+            'last_name': True
         }
         serializer = UserSerializer(
             self.fixture.users,
             many=True,
-            context=context,
+            request_fields=request_fields,
             sideload=True)
         self.assertEqual(serializer.data, {
             'users': [
                 OrderedDict(
-                    [('id', 1), ('name', u'0'), ('location', 1), ('last_name', u'0')]),
+                    [('id', 1), ('name', u'0'),
+                     ('location', 1), ('last_name', u'0')]),
                 OrderedDict(
-                    [('id', 2), ('name', u'1'), ('location', 1), ('last_name', u'1')]),
+                    [('id', 2), ('name', u'1'),
+                     ('location', 1), ('last_name', u'1')]),
                 OrderedDict(
-                    [('id', 3), ('name', u'2'), ('location', 2), ('last_name', u'2')]),
+                    [('id', 3), ('name', u'2'),
+                     ('location', 2), ('last_name', u'2')]),
                 OrderedDict(
-                    [('id', 4), ('name', u'3'), ('location', 3), ('last_name', u'3')])
+                    [('id', 4), ('name', u'3'),
+                     ('location', 3), ('last_name', u'3')])
             ]
         })
 
     def testDeferredField(self):
-        context = {
-            'request_fields': {
-                'location': False
-            }
+        request_fields = {
+            'location': False
         }
         serializer = UserSerializer(
             self.fixture.users,
             many=True,
-            context=context,
+            request_fields=request_fields,
             sideload=True)
         self.assertEqual(serializer.data, {
             'users': [
@@ -80,15 +80,13 @@ class TestUserSerializer(TestCase):
         })
 
     def testNestedHasOne(self):
-        context = {
-            'request_fields': {
-                'location': {}
-            }
+        request_fields = {
+            'location': {}
         }
         serializer = UserSerializer(
             self.fixture.users,
             many=True,
-            context=context,
+            request_fields=request_fields,
             sideload=True)
         self.assertEqual(serializer.data, {
             'locations': [{
@@ -122,7 +120,7 @@ class TestUserSerializer(TestCase):
 
         serializer = UserSerializer(
             self.fixture.users[0],
-            context=context,
+            request_fields=request_fields,
             sideload=True)
         self.assertEqual(serializer.data, {
             'locations': [{
@@ -137,10 +135,8 @@ class TestUserSerializer(TestCase):
         })
 
     def testNestedHasMany(self):
-        context = {
-            'request_fields': {
-                'groups': {}
-            }
+        request_fields = {
+            'groups': {}
         }
         expected = {
             "users": [
@@ -195,14 +191,12 @@ class TestUserSerializer(TestCase):
         serializer = UserSerializer(
             self.fixture.users,
             many=True,
-            context=context,
+            request_fields=request_fields,
             sideload=True)
         self.assertEqual(serializer.data, expected)
 
-        context = {
-            'request_fields': {
-                'members': {}
-            }
+        request_fields = {
+            'members': {}
         }
 
         expected = {
@@ -254,23 +248,21 @@ class TestUserSerializer(TestCase):
         serializer = GroupSerializer(
             self.fixture.groups,
             many=True,
-            context=context,
+            request_fields=request_fields,
             sideload=True)
         self.assertEqual(serializer.data, expected)
 
     def testNestedExtraField(self):
-        context = {
-            'request_fields': {
-                'groups': {
-                    'permissions': True
-                }
+        request_fields = {
+            'groups': {
+                'permissions': True
             }
         }
 
         serializer = UserSerializer(
             self.fixture.users,
             many=True,
-            context=context,
+            request_fields=request_fields,
             sideload=True)
         expected = {
             "users": [
@@ -331,17 +323,15 @@ class TestUserSerializer(TestCase):
         self.assertEqual(serializer.data, expected)
 
     def testNestedDeferredField(self):
-        context = {
-            'request_fields': {
-                'groups': {
-                    'name': False
-                }
+        request_fields = {
+            'groups': {
+                'name': False
             }
         }
         serializer = UserSerializer(
             self.fixture.users,
             many=True,
-            context=context,
+            request_fields=request_fields,
             sideload=True)
         self.assertEqual(serializer.data, {
             'groups': [{

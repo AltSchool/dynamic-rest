@@ -1,18 +1,15 @@
 from django.conf import settings
-from django.db.models import Q, Prefetch, ManyToManyField
-from django.db.models.related import RelatedObject
 from django.http import QueryDict
 
-from dynamic_rest.fields import DynamicRelationField, field_is_remote
 from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.metadata import DynamicMetadata
-from dynamic_rest.datastructures import TreeMap
 from dynamic_rest.filters import DynamicFilterBackend
 
-from rest_framework import viewsets, response, exceptions, serializers
+from rest_framework import viewsets, exceptions
 from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
+UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
 
 
 class QueryParams(QueryDict):
@@ -136,7 +133,8 @@ class WithDynamicViewSetMixin(object):
         into a field map that can be passed to a serializer.
 
         Returns:
-          A nested dict mapping serializer keys to True (include) or False (exclude).
+          A nested dict mapping serializer keys to
+          True (include) or False (exclude).
         """
         if hasattr(self, '_request_fields'):
             return self._request_fields
@@ -159,7 +157,7 @@ class WithDynamicViewSetMixin(object):
                         if last:
                             current_fields[segment] = include
                         else:
-                            if not segment in current_fields:
+                            if segment not in current_fields:
                                 current_fields[segment] = {}
                             current_fields = current_fields[segment]
                     elif not last:
@@ -171,19 +169,22 @@ class WithDynamicViewSetMixin(object):
         self._request_fields = request_fields
         return request_fields
 
-    def get_serializer_context(self):
-        context = super(WithDynamicViewSetMixin, self).get_serializer_context()
-        context['request_fields'] = self.get_request_fields()
-        context['do_sideload'] = self.sideload
-        if self.request and self.request.method.lower() in(
-                'put', 'post', 'patch'):
-            context['dynamic'] = False
-        return context
+    def get_serializer(self, *args, **kwargs):
+        if 'request_fields' not in kwargs:
+            kwargs['request_fields'] = self.get_request_fields()
+        if 'sideload' not in kwargs:
+            kwargs['sideload'] = self.sideload
+        if self.request and self.request.method.upper() \
+                in UPDATE_REQUEST_METHODS:
+            kwargs['dynamic'] = False
+        return super(
+            WithDynamicViewSetMixin, self).get_serializer(
+            *args, **kwargs)
 
     def paginate_queryset(self, *args, **kwargs):
         if self.PAGE in self.features:
             # make sure pagination is enabled
-            if not self.PER_PAGE in self.features and \
+            if self.PER_PAGE not in self.features and \
                     self.PER_PAGE in self.request.QUERY_PARAMS:
                 # remove per_page if it is disabled
                 self.request.QUERY_PARAMS[self.PER_PAGE] = None

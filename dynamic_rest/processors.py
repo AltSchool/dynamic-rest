@@ -58,7 +58,7 @@ class SideloadingProcessor(object):
                 # sideloading
                 seen = True
                 # if this object has not yet been seen
-                if not pk in self.seen[name]:
+                if pk not in self.seen[name]:
                     seen = False
                     self.seen[name].add(pk)
 

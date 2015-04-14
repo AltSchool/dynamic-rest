@@ -1,9 +1,7 @@
 from rest_framework import fields
 from rest_framework.exceptions import ParseError, NotFound
-from rest_framework.serializers import ListSerializer
 from django.db.models.related import RelatedObject
-from django.db.models import ForeignKey, ManyToManyField, Manager, Model
-from django.db.models.fields.related import ForeignRelatedObjectsDescriptor
+from django.db.models import ManyToManyField
 import importlib
 
 
@@ -73,7 +71,8 @@ class DynamicRelationField(DynamicField):
     def __init__(self, serializer_class, many=False, **kwargs):
         """
         Arguments:
-          serializer_class: Serializer class (or string representation) to proxy.
+          serializer_class: Serializer class (or string representation)
+            to proxy.
         """
         self.kwargs = kwargs
         self._serializer_class = serializer_class
@@ -101,10 +100,11 @@ class DynamicRelationField(DynamicField):
             # related_name
             model_field = None
 
-        if not 'required' in self.kwargs and (
-                remote or (model_field and (model_field.has_default() or model_field.null))):
+        if 'required' not in self.kwargs and (
+                remote or (model_field and
+                           (model_field.has_default() or model_field.null))):
             self.required = False
-        if not 'allow_null' in self.kwargs and getattr(
+        if 'allow_null' not in self.kwargs and getattr(
                 model_field, 'null', False):
             self.allow_null = True
 
@@ -183,8 +183,8 @@ class DynamicRelationField(DynamicField):
         if not module_path:
             if getattr(self, 'parent', None) is None:
                 raise Exception(
-                    "Can not load serializer '%s' before binding or without specifying full path" %
-                    serializer_class)
+                    "Can not load serializer '%s'" % serializer_class +
+                    ' before binding or without specifying full path')
 
             # try the module of the parent class
             module_path = self.parent.__module__

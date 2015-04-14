@@ -1,9 +1,8 @@
-from django.db.models import Q, Prefetch, ManyToManyField
-
+from django.db.models import Q, Prefetch
 from dynamic_rest.datastructures import TreeMap
 from dynamic_rest.fields import DynamicRelationField, field_is_remote
 
-from rest_framework import viewsets, response, exceptions, serializers
+from rest_framework import serializers
 from rest_framework.filters import BaseFilterBackend
 
 
@@ -72,9 +71,8 @@ class DynamicFilterBackend(BaseFilterBackend):
             # Assume last part of a dot-delimited field spec is an operator.
             # Note, however, that 'foo.bar' is a valid field spec with an 'eq'
             # implied as operator. This will be resolved below.
-            operator = parts[-
-                             1] if len(parts) > 1 and parts[-
-                                                            1] != 'eq' else None
+            operator = (parts[-1] if len(parts) > 1
+                        and parts[-1] != 'eq' else None)
 
             # All operators except 'range' and 'in' should have one value
             if operator == 'range':
@@ -112,13 +110,14 @@ class DynamicFilterBackend(BaseFilterBackend):
             Q(foo='bar', baz__in=[1, 2])
 
         Arguments:
-          includes: dictionary of inclusion filters
-          excludes: dictionary of inclusion filters
-          rewrites: dictionary of field rewrites (e.g. when field and source
+          includes: Dictionary of inclusion filters.
+          excludes: Dictionary of inclusion filters.
+          rewrites: Dictionary of field rewrites. (e.g. when field and source
               are different)
 
         Returns:
-          Q() instance or None if no inclusion or exclusion filters were specified
+          Q() instance or None if no inclusion or exclusion filters
+          were specified.
         """
 
         def rewrite_filters(filters, rewrites):
@@ -155,8 +154,8 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         Arguments:
           serializer: An optional serializer to use a base for the queryset.
-            If no serializer is passed, the `get_serializer` method will be used
-            to initialize the base serializer for the viewset.
+            If no serializer is passed, the `get_serializer` method will
+            be used to initialize the base serializer for the viewset.
           filters: Optional nested filter map (TreeMap)
           queryset: Optional queryset. Only applies to top-level.
         """
