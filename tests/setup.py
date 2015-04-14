@@ -24,6 +24,8 @@ def create_fixture():
 
   for i in range(0, 3):
     fixture.locations.append(Location.objects.create(name=str(i)))
+  fixture.locations[0].blob = 'here'
+  fixture.locations[0].save()
 
   fixture.users[0].location = fixture.locations[0]
   fixture.users[0].save()

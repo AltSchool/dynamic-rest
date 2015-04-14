@@ -1,17 +1,48 @@
 from django.conf import settings
-from django.db.models import Prefetch, ManyToManyField
+from django.db.models import Q, Prefetch, ManyToManyField
 from django.db.models.related import RelatedObject
+from django.http import QueryDict
 
-from dynamic_rest.fields import DynamicRelationField
+from dynamic_rest.fields import DynamicRelationField, field_is_remote
 from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.metadata import DynamicMetadata
+from dynamic_rest.datastructures import TreeMap
+from dynamic_rest.filters import DynamicFilterBackend
 
 from rest_framework import viewsets, response, exceptions, serializers
 from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
-class DynamicModelViewSet(viewsets.ModelViewSet):
 
+class QueryParams(QueryDict):
+  """
+  Extension of Django's QueryDict. Instantiated from a DRF Request
+  object, and returns a mutable QueryDict subclass.
+  Also adds methods that might be useful for our usecase.
+  """
+
+  def __init__(self, query_params, *args, **kwargs):
+    query_string = getattr(query_params, 'urlencode', lambda: '')() 
+    kwargs['mutable'] = True 
+    super(QueryParams, self).__init__(query_string, *args, **kwargs)
+
+  def add(self, key, value):
+    """
+    Method to accept a list of values and append to flat list.
+    QueryDict.appendlist(), if given a list, will append the list, 
+    which creates nested lists. In most cases, we want to be able
+    to pass in a list (for convenience) but have it appended into
+    a flattened list.
+    TODO: Possibly throw an error if add() is used on a non-list param.
+    """
+    if isinstance(value, list):
+      for val in value:
+        self.appendlist(key, val)
+    else:
+      self.appendlist(key, value)
+
+
+class WithDynamicViewSetMixin(object):
   """A viewset that can support dynamic API features.
 
   Attributes:
@@ -22,65 +53,28 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
 
   INCLUDE = 'include[]'
   EXCLUDE = 'exclude[]'
+  FILTER = 'filter{}'
   PAGE = dynamic_settings.get('PAGE_QUERY_PARAM', 'page')
   PER_PAGE = dynamic_settings.get('PAGE_SIZE_QUERY_PARAM', 'per_page')
 
-  # TODO: add support for `filter{}`, `sort{}`, `page`, and `per_page`
+  # TODO: add support for `sort{}`
   pagination_class = DynamicPageNumberPagination
   metadata_class = DynamicMetadata
   renderer_classes = (JSONRenderer, BrowsableAPIRenderer)
-  features = (INCLUDE, EXCLUDE, PAGE, PER_PAGE)
+  features = (INCLUDE, EXCLUDE, FILTER, PAGE, PER_PAGE)
   sideload = True
   meta = None
+  filter_backends = (DynamicFilterBackend,)
 
-  def get_queryset(self, serializer=None):
-    """Returns a queryset for this request.
-
-    Handles nested prefetching of related data and deferring fields
-    at the queryset level.
-
-    Arguments:
-      serializer: An optional serializer to use a base for the queryset.
-        If no serializer is passed, the `get_serializer` method will be used
-        to initialize the base serializer for the viewset.
+  def initialize_request(self, request, *args, **kargs):
+    """ 
+    Override DRF initialize_request() method to swap request.GET
+    (which is aliased by request.QUERY_PARAMS) with a mutable instance
+    of QueryParams.
     """
-    if serializer:
-      queryset = serializer.Meta.model.objects.all()
-    else:
-      serializer = self.get_serializer()
-      queryset = getattr(self, 'queryset', serializer.Meta.model.objects.all())
-
-    prefetch_related = []
-    only = set()
-    use_only = True
-    model = serializer.Meta.model
-
-    for name, field in serializer.get_fields().iteritems():
-      if isinstance(field, DynamicRelationField):
-        field = field.serializer
-      if isinstance(field, serializers.ListSerializer):
-        field = field.child
-
-      source = field.source or name
-      source0 = source.split('.')[0]
-      remote = False
-
-      if isinstance(field, serializers.ModelSerializer):
-        model_field = model._meta.get_field_by_name(source0)[0]
-        remote = isinstance(model_field, (ManyToManyField, RelatedObject))
-        if not getattr(field, 'id_only', lambda: False)() or remote:
-          prefetch_related.append(Prefetch(source, queryset=self.get_queryset(field)))
-
-      if use_only:
-        if source == '*':
-          use_only = False
-        elif not remote:
-          # TODO: optimize for nested sources
-          only.add(source0)
-
-    if use_only:
-      queryset = queryset.only(*only)
-    return queryset.prefetch_related(*prefetch_related)
+    request.GET = QueryParams(request.GET)
+    return super(WithDynamicViewSetMixin, self).initialize_request(
+        request, *args, **kargs)
 
   def get_request_feature(self, name):
     """Parses the request for a particular feature.
@@ -96,10 +90,39 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
       return self.request.QUERY_PARAMS.getlist(name) if name in self.features else None
     elif '{}' in name:
       # object-type (keys are not consistent)
-      return self.request.QUERY_PARAMS.getlist(name) if name in self.features else None
+      return self._extract_object_params(name) if name in self.features else {} 
     else:
       # single-type
       return self.request.QUERY_PARAMS.get(name) if name in self.features else None
+
+  def _extract_object_params(self, name):
+    """
+    Extract object params, return as dict
+    """
+
+    params = self.request.query_params.lists()
+    params_map = {}
+    prefix = name[:-1]
+    offset = len(prefix)
+    for name, value in params:
+      if name.startswith(prefix) and name.endswith('}'):
+        name = name[offset:-1]
+      else:
+        continue
+      params_map[name] = value
+
+    return params_map 
+
+  def get_queryset(self, queryset=None):
+    """
+    Returns a queryset for this request.
+
+    Arguments:
+      queryset: Optional root-level queryset.
+    """
+    serializer = self.get_serializer()
+    return getattr(self, 'queryset', serializer.Meta.model.objects.all())
+
 
   def get_request_fields(self):
     """Parses the `include[]` and `exclude[]` features.
@@ -127,7 +150,7 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
           last = i == num_segments - 1
           if segment:
             if last:
-              current_fields[segment] = include
+              current_fields[segment] = include 
             else:
               if not segment in current_fields:
                 current_fields[segment] = {}
@@ -140,9 +163,11 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
     return request_fields
 
   def get_serializer_context(self):
-    context = super(DynamicModelViewSet, self).get_serializer_context()
+    context = super(WithDynamicViewSetMixin, self).get_serializer_context()
     context['request_fields'] = self.get_request_fields()
     context['do_sideload'] = self.sideload
+    if self.request and self.request.method.lower() in ('put', 'post', 'patch'):
+      context['dynamic'] = False 
     return context
 
   def paginate_queryset(self, *args, **kwargs):
@@ -152,5 +177,9 @@ class DynamicModelViewSet(viewsets.ModelViewSet):
         self.PER_PAGE in self.request.QUERY_PARAMS:
         # remove per_page if it is disabled
         self.request.QUERY_PARAMS[self.PER_PAGE] = None
-      return super(DynamicModelViewSet, self).paginate_queryset(*args, **kwargs)
+      return super(WithDynamicViewSetMixin, self).paginate_queryset(*args, **kwargs)
     return None
+
+
+class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
+  pass

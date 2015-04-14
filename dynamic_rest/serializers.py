@@ -23,7 +23,7 @@ class DynamicListSerializer(serializers.ListSerializer):
         self._sideloaded_data = ReturnList(data, serializer=self)
     return self._sideloaded_data
 
-class DynamicModelSerializer(serializers.ModelSerializer):
+class WithDynamicSerializerMixin(object):
 
   def __new__(cls, *args, **kwargs):
     """
@@ -37,7 +37,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
       meta = type('Meta', (), {})
       cls.Meta = meta
     meta.list_serializer_class = DynamicListSerializer
-    return super(DynamicModelSerializer, cls).__new__(cls, *args, **kwargs)
+    return super(WithDynamicSerializerMixin, cls).__new__(cls, *args, **kwargs)
 
   def __init__(self, instance=None, data=fields.empty, include_fields=None, exclude_fields=None, only_fields=None,
                request_fields=None, sideload=False, dynamic=True, **kwargs):
@@ -54,7 +54,6 @@ class DynamicModelSerializer(serializers.ModelSerializer):
       dynamic: if False, ignore deferred rules and revert to standard DRF `.fields` behavior (default: True)
       sideload: if False, do not perform sideloading on `.data` (default: False)
     """
-
     name = self.get_name()
     if data is not fields.empty and name in data and len(data) == 1:
       # support POST/PUT key'd by resource name
@@ -72,7 +71,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
 
     kwargs['instance'] = instance
     kwargs['data'] = data
-    super(DynamicModelSerializer, self).__init__(**kwargs)
+    super(WithDynamicSerializerMixin, self).__init__(**kwargs)
 
     self.sideload = self._context.get('do_sideload', sideload)
     self.dynamic = self._context.get('dynamic', dynamic)
@@ -106,7 +105,7 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     Does not respect dynamic field inclusions/exclusions.
     """
     if not hasattr(self, '_all_fields'):
-      self._all_fields = super(DynamicModelSerializer, self).get_fields()
+      self._all_fields = super(WithDynamicSerializerMixin, self).get_fields()
     return self._all_fields
 
   def get_fields(self):
@@ -169,13 +168,13 @@ class DynamicModelSerializer(serializers.ModelSerializer):
     if self.dynamic and self.id_only():
       return instance.pk
     else:
-      representation = super(DynamicModelSerializer, self).to_representation(instance)
+      representation = super(WithDynamicSerializerMixin, self).to_representation(instance)
     # tag the representation with the serializer and instance
     return TaggedDict(representation, serializer=self, instance=instance)
 
   def save(self, *args, **kwargs):
     update = getattr(self, 'instance', None) is not None
-    instance = super(DynamicModelSerializer, self).save(*args, **kwargs)
+    instance = super(WithDynamicSerializerMixin, self).save(*args, **kwargs)
     view = self._context.get('view')
     if update and view:
       # reload the object on update
@@ -194,7 +193,75 @@ class DynamicModelSerializer(serializers.ModelSerializer):
   @property
   def data(self):
     if not hasattr(self, '_sideloaded_data'):
-      data = super(DynamicModelSerializer, self).data
+      data = super(WithDynamicSerializerMixin, self).data
       self._sideloaded_data = ReturnDict(SideloadingProcessor(self, data).data if self.sideload else data, serializer=self)
     return self._sideloaded_data
+
+
+class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
+  """
+  Dynamic serializer methods specific to model-based serializers.
+  """
+
+  def get_model(self):
+    return self.Meta.model
+
+  def get_id_fields(self):
+    """
+    Called to return a list of fields consisting of, at minimum, the PK field
+    name. The output of this method is used to construct a Prefetch object 
+    with a .only() queryset, when this field is not being sideloaded but we 
+    need to return a list of IDs.
+    """
+    model = self.get_model()
+
+    out = [ model._meta.pk.name ]  # get PK field name
+
+    # If this is being called, it means it is a many-relation to its parent.
+    # Django wants the FK to the parent, but since accurately inferring the FK
+    # pointing back to the parent is less than trivial, we will just pull all
+    # ID fields.
+    # TODO: We also might need to return all non-nullable fields, or else it's
+    #       possible Django will issue another request.
+    for field in model._meta.fields:
+      if isinstance(field, models.ForeignKey):
+        out.append(field.name + '_id')
+
+    return out
+
+class DynamicModelSerializer(WithDynamicModelSerializerMixin, serializers.ModelSerializer):
+  """
+  DRESt-compatible model-based serializer.
+  """
+  pass
+
+class EphemeralObject(object):
+  """ Object that initializes attributes from a dict """
+  def __init__(self, values_dict):
+    if not 'pk' in values_dict:
+      raise Exception("'pk' key is required")
+    self.__dict__.update(values_dict)
+
+class DynamicEphemeralSerializer(WithDynamicSerializerMixin, serializers.Serializer):
+  """
+  DREST-compatible baseclass for serializers that aren't model-based.
+  """
+
+  def to_representation(self, instance):
+    """
+    Provides post processing. Sub-classes should implement their own 
+    to_representation method, but pass the resulting dict through this function
+    to get tagging and field selection.
+
+    :param instance: Serialized dict, or object. If object, it will be serialized
+                     by the super class's to_representation() method.
+    """
+    
+    if not isinstance(instance, dict):
+      data = super(DynamicEphemeralSerializer, self).to_representation(instance)
+    else:
+      data = instance
+      instance = EphemeralObject(data)
+    
+    return TaggedDict(data, serializer=self, instance=instance) 
 

@@ -1,14 +1,18 @@
 from tests.models import *
 from dynamic_rest.serializers import DynamicModelSerializer
-from dynamic_rest.fields import DynamicRelationField
+from dynamic_rest.serializers import DynamicEphemeralSerializer
+from dynamic_rest.fields import DynamicRelationField, CountField, DynamicField
 
 class LocationSerializer(DynamicModelSerializer):
   class Meta:
     model = Location
     name = 'location'
-    fields = ('id', 'name', 'users')
+    fields = ('id', 'name', 'users', 'user_count', 'address')
 
-  users = DynamicRelationField('UserSerializer', many=True, deferred=True)
+  users = DynamicRelationField('UserSerializer', source='user_set', many=True, 
+      deferred=True)
+  user_count = CountField('users', deferred=True)
+  address = DynamicField(source='blob', deferred=True)
 
 class PermissionSerializer(DynamicModelSerializer):
   class Meta:
@@ -39,3 +43,12 @@ class UserSerializer(DynamicModelSerializer):
   location = DynamicRelationField('LocationSerializer')
   permissions = DynamicRelationField('PermissionSerializer', many=True, deferred=True)
   groups = DynamicRelationField('GroupSerializer', many=True, deferred=True)
+
+class LocationGroupSerializer(DynamicEphemeralSerializer):
+  class Meta:
+    name = 'locationgroup'
+
+  id = DynamicField(field_type=str)
+  location = DynamicRelationField('LocationSerializer', deferred=False)
+  groups = DynamicRelationField('GroupSerializer', many=True, deferred=False)
+

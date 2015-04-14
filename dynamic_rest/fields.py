@@ -2,8 +2,28 @@ from rest_framework import fields
 from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.serializers import ListSerializer
 from django.db.models.related import RelatedObject
-from django.db.models import ManyToManyField, Manager, Model
+from django.db.models import ForeignKey, ManyToManyField, Manager, Model
+from django.db.models.fields.related import ForeignRelatedObjectsDescriptor 
 import importlib
+
+def field_is_remote(model, field_name):
+  """
+  Helper function to determine whether model field is remote or not.
+  Remote fields are many-to-many or many-to-one.
+  """
+
+  try:
+    model_field = model._meta.get_field_by_name(field_name)[0]
+    return isinstance(model_field, (ManyToManyField, RelatedObject))
+  except:
+    pass
+
+  # M2O fields with no related_name set in the FK use the *_set
+  # naming convention. 
+  if field_name.endswith('_set'):
+    return hasattr(model, field_name)
+
+  return False
 
 
 class DynamicField(fields.Field):
@@ -12,14 +32,30 @@ class DynamicField(fields.Field):
   Generic field to capture additional custom field attributes
   """
 
-  def __init__(self, deferred=False, **kwargs):
+  def __init__(self, deferred=False, field_type=None, **kwargs):
     """
     Arguments:
       deferred: Whether or not this field is deferred,
-        i.e. not included in the response unless specifically requested.
+          i.e. not included in the response unless specifically requested.
+      field_type: Field data type, if not inferrable from model.
     """
+    self.deferred = kwargs.pop('deferred', deferred)
+    self.field_type = kwargs.pop('field_type', field_type)
     super(DynamicField, self).__init__(**kwargs)
-    self.deferred = deferred
+
+  def to_representation(self, value):
+    return value
+
+
+class DynamicComputedField(DynamicField):
+  """
+  Computed field base-class (i.e. fields that are dynamically computed,
+  rather than being tied to model fields.)
+  """
+  is_computed = True
+
+  def __init__(self, *args, **kwargs):
+    return super(DynamicComputedField, self).__init__(*args, **kwargs)
 
 
 class DynamicRelationField(DynamicField):
@@ -39,18 +75,31 @@ class DynamicRelationField(DynamicField):
     """
     self.kwargs = kwargs
     self._serializer_class = serializer_class
+    self.bound = False
     if '.' in self.kwargs.get('source', ''):
       raise Exception('Nested relationships are not supported')
     super(DynamicRelationField, self).__init__(**kwargs)
     self.kwargs['many'] = many
 
+  def get_model(self):
+    return getattr(self.serializer_class.Meta, 'model', None) 
+
   def bind(self, *args, **kwargs):
+    if self.bound:  # Prevent double-binding
+      return 
     super(DynamicRelationField, self).bind(*args, **kwargs)
-    parent_model = self.parent.Meta.model
-    model_field = parent_model._meta.get_field_by_name(self.source)[0]
-    remote = isinstance(model_field, (ManyToManyField, RelatedObject))
-    if not 'required' in self.kwargs and \
-      (remote or model_field.has_default() or model_field.null):
+    self.bound = True
+    parent_model = getattr(self.parent.Meta, 'model', None)
+
+    remote = field_is_remote(parent_model, self.source)
+    try:
+      model_field = parent_model._meta.get_field_by_name(self.source)[0]
+    except:
+      # model field may not be available for m2o fields with no related_name
+      model_field = None
+
+    if not 'required' in self.kwargs and (remote or (
+        model_field and (model_field.has_default() or model_field.null))):
       self.required = False
     if not 'allow_null' in self.kwargs and getattr(model_field, 'null', False):
       self.allow_null = True
@@ -85,7 +134,12 @@ class DynamicRelationField(DynamicField):
       return None
     if related is None:
       return None
-    return serializer.to_representation(related)
+    try:
+      return serializer.to_representation(related)
+    except Exception as e:
+      # Provide more context to help debug these cases
+      raise Exception("Failed to serialize %s.%s: %s\nObj: %s" % (
+          self.parent.__class__.__name__, self.source, str(e), repr(related)))
 
   def to_internal_value_single(self, data, serializer):
     related_model = serializer.Meta.model
@@ -126,4 +180,21 @@ class DynamicRelationField(DynamicField):
 
     self._serializer_class = serializer_class
     return serializer_class
+
+
+class CountField(DynamicComputedField):
+  """
+  Field that counts number of elements in another specified field.
+  """
+
+  def __init__(self, source, *args, **kwargs):
+    self.field_type = int
+    kwargs['source'] = source
+    return super(CountField, self).__init__(*args, **kwargs)
+
+  def get_attribute(self, obj):
+    if self.source in self.parent.fields:
+      data = self.parent.fields[self.source].to_representation(obj)
+      return len(data) if isinstance(data, list) else None
+    return None 
 

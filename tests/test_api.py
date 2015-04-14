@@ -180,6 +180,135 @@ class TestUsersAPI(APITestCase):
                    {u'groups': [1, 2], u'id': 4, u'location': 3, u'name': u'3'}]},
     json.loads(response.content))
 
+  def testSingleResourceSideload(self):
+    with self.assertNumQueries(2):
+      # 2 queries: 1 for User, 1 for Group
+      response = self.client.get('/users/1/?include[]=groups.')
+    self.assertEquals(200, response.status_code)
+    data = json.loads(response.content)
+    self.assertEquals(len(data['groups']), 2)
+
+  def testFilterBasic(self):
+    with self.assertNumQueries(1):
+      response = self.client.get('/users/?filter{name}=1')
+    self.assertEquals(200, response.status_code)
+    self.assertEquals(
+        {
+          u'users': [
+            {u'id': 2, u'location': 1, u'name': u'1'},
+          ]
+        },
+        json.loads(response.content))
+
+  def testFilterIn(self):
+    url = '/users/?filter{name.in}=1&filter{name.in}=2'
+    with self.assertNumQueries(1):
+      response = self.client.get(url)
+    self.assertEquals(200, response.status_code)
+    self.assertEquals(
+        {
+          u'users': [
+            {u'id': 2, u'location': 1, u'name': u'1'},
+            {u'id': 3, u'location': 2, u'name': u'2'},
+          ]
+        },
+        json.loads(response.content))
+
+  def testFilterExclude(self):
+    url = '/users/?filter{-name}=1'
+    with self.assertNumQueries(1):
+      response = self.client.get(url)
+    self.assertEquals(200, response.status_code)
+    self.assertEquals(
+        {
+          u'users': [
+            {u'id': 1, u'location': 1, u'name': u'0'},
+            {u'id': 3, u'location': 2, u'name': u'2'},
+            {u'id': 4, u'location': 3, u'name': u'3'},
+          ]
+        },
+        json.loads(response.content))
+
+  def testFilterRelation(self):
+    url = '/users/?filter{location.name}=1'
+    with self.assertNumQueries(1):
+      response = self.client.get(url)
+    self.assertEquals(200, response.status_code)
+    self.assertEquals(
+        {
+          u'users': [
+            {u'id': 3, u'location': 2, u'name': u'2'},
+          ]
+        },
+        json.loads(response.content))
+
+  def testFilterSideload(self):
+    url = '/users/?include[]=groups.&filter{groups|name}=1'
+    with self.assertNumQueries(2):
+      # 2 queries: 1 for User, 1 for Group
+      response = self.client.get(url)
+    self.assertEquals(200, response.status_code)
+    self.assertEquals(
+      {
+        u'groups': [{u'id': 2, u'name': u'1'}],
+        u'users': [
+          {u'groups': [2], u'id': 1, u'location': 1, u'name': u'0'},
+          {u'groups': [2], u'id': 2, u'location': 1, u'name': u'1'},
+          {u'groups': [2], u'id': 3, u'location': 2, u'name': u'2'},
+          {u'groups': [2], u'id': 4, u'location': 3, u'name': u'3'}
+        ]
+      },
+      json.loads(response.content))
+
+  def testFilterSourceRewrite(self):
+    """ Test filtering on fields where source is different """
+    url = '/locations/?filter{address}=here&include[]=address'
+    with self.assertNumQueries(1):
+      response = self.client.get(url)
+    self.assertEquals(200, response.status_code)
+    data = json.loads(response.content) 
+    self.assertEquals(len(data['locations']), 1)
+
+  def testFilterQueryInjection(self):
+    """ Test viewset with query injection """
+    url = '/users/?name=1'
+    with self.assertNumQueries(1):
+      response = self.client.get(url)
+    self.assertEquals(200, response.status_code)
+    data = json.loads(response.content)
+    self.assertEquals(len(data['users']), 1)
+    self.assertEquals(data['users'][0]['name'], '1')
+
+  def testIncludeO2M(self):
+    """ Test o2m without related_name set. """
+    url = '/locations/?filter{id}=1&include[]=users'
+    with self.assertNumQueries(2):
+      # 2 queries: 1 for locations, 1 for location-users 
+      response = self.client.get(url)
+    self.assertEquals(200, response.status_code)
+    data = json.loads(response.content) 
+    self.assertEquals(len(data['locations']), 1)
+    self.assertEquals(len(data['locations'][0]['users']), 2)
+
+  def testCountField(self):
+    url = '/locations/?filter{id}=1&include[]=users&include[]=user_count'
+    with self.assertNumQueries(2):
+      # 2 queries: 1 for locations, 1 for location-users 
+      response = self.client.get(url)
+    self.assertEquals(200, response.status_code)
+    data = json.loads(response.content) 
+    self.assertEquals(len(data['locations']), 1)
+    self.assertEquals(len(data['locations'][0]['users']), 2)
+    self.assertEquals(data['locations'][0]['user_count'], 2)
+
+  def testQuerysetInjection(self):
+    url = '/users/?location=1'
+    with self.assertNumQueries(1):
+      response = self.client.get(url)
+    self.assertEquals(200, response.status_code)
+    data = json.loads(response.content)
+    self.assertEquals(len(data['users']), 2)
+
   def testInvalid(self):
     for bad_data in ('name..', 'groups..name', 'foo', 'groups.foo'):
       response = self.client.get('/users/?include[]=%s' % bad_data)
