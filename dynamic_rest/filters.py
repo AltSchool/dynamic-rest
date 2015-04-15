@@ -168,7 +168,7 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         prefetch_related = []
         only = set()
-        use_only = True
+        use_only = getattr(serializer.Meta, 'use_only', True) 
         model = getattr(serializer.Meta, 'model', None)
         if not model:
             return queryset
