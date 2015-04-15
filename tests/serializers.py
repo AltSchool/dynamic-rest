@@ -145,6 +145,18 @@ class ProfileSerializer(DynamicModelSerializer):
     )
 
 
+class AsyncUserGroupsSerializer(UserSerializer):
+    """ Like UserSerializer but with async groups field"""
+    class Meta:
+        model = User
+        name = 'user'
+        fields = ('id', 'name', 'groups')
+
+    groups = DynamicRelationField(
+        'GroupSerializer', many=True, deferred=True, async=True)
+
+
+
 class LocationGroupSerializer(DynamicEphemeralSerializer):
 
     class Meta:
