@@ -99,6 +99,7 @@ class DynamicRelationField(DynamicField):
             many=False,
             queryset=None,
             embed=False,
+            async=False,
             **kwargs
             ):
         """
@@ -116,6 +117,7 @@ class DynamicRelationField(DynamicField):
         self.bound = False
         self.queryset = queryset
         self.embed = embed
+        self.async = async
         if '.' in self.kwargs.get('source', ''):
             raise Exception('Nested relationships are not supported')
         super(DynamicRelationField, self).__init__(**kwargs)
