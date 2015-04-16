@@ -95,6 +95,11 @@ class WithDynamicSerializerMixin(object):
         include_fields = include_fields or []
         exclude_fields = exclude_fields or []
 
+        self.include_all = False
+        if include_fields == '*':
+            self.include_all = True
+            include_fields = []
+
         for name in include_fields:
             self.request_fields[name] = True
         for name in exclude_fields:
@@ -169,8 +174,9 @@ class WithDynamicSerializerMixin(object):
                     deferred.add(name)
 
         # remove any deferred fields from the base list
-        for name in deferred:
-            serializer_fields.pop(name)
+        if not self.include_all:
+            for name in deferred:
+                serializer_fields.pop(name)
 
         # inject request_fields into sub-serializers
         for name, field in serializer_fields.iteritems():

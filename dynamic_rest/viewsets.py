@@ -176,7 +176,7 @@ class WithDynamicViewSetMixin(object):
             kwargs['sideload'] = self.sideload
         if self.request and self.request.method.upper() \
                 in UPDATE_REQUEST_METHODS:
-            kwargs['dynamic'] = False
+            kwargs['include_fields'] = '*'
         return super(
             WithDynamicViewSetMixin, self).get_serializer(
             *args, **kwargs)
