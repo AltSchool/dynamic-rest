@@ -213,7 +213,8 @@ class DynamicFilterBackend(BaseFilterBackend):
             use_only = True
 
         if use_only:
-            only = set(serializer.get_id_fields() + list(only))
+            id_fields = getattr(serializer, 'get_id_fields', lambda: [])()
+            only = set(id_fields + list(only))
             queryset = queryset.only(*only)
 
         q = self._filters_to_query(
