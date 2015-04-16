@@ -205,10 +205,33 @@ class CountField(DynamicComputedField):
     def __init__(self, source, *args, **kwargs):
         self.field_type = int
         kwargs['source'] = source
+        self.unique = kwargs.pop('unique', True)
         return super(CountField, self).__init__(*args, **kwargs)
 
     def get_attribute(self, obj):
-        if self.source in self.parent.fields:
-            data = self.parent.fields[self.source].to_representation(obj)
-            return len(data) if isinstance(data, list) else None
-        return None
+        if self.source not in self.parent.fields:
+            return None
+        value = self.parent.fields[self.source].get_attribute(obj)
+        data = self.parent.fields[self.source].to_representation(value)
+
+        # How to count None is undefined... let the consumer decide.
+        if data is None:
+            return None
+
+        # Check data type. Technically len() works on dicts, strings, but
+        # since this is a "count" field, we'll limit to list, set, tuple.
+        if not isinstance(data, (list, set, tuple)):
+            raise TypeError(
+                "'%s' is %s. Must be list, set or tuple to be countable." % (
+                    self.source, type(data))
+                )
+
+        if self.unique:
+            # Try to create unique set. This may fail if `data` contains
+            # non-hashable elements (like dicts).
+            try:
+                data = set(data)
+            except TypeError:
+                pass
+
+        return len(data)

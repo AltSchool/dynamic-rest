@@ -80,3 +80,12 @@ class LocationGroupSerializer(DynamicEphemeralSerializer):
     id = DynamicField(field_type=str)
     location = DynamicRelationField('LocationSerializer', deferred=False)
     groups = DynamicRelationField('GroupSerializer', many=True, deferred=False)
+
+
+class CountsSerializer(DynamicEphemeralSerializer):
+    class Meta:
+        name = 'counts'
+
+    values = DynamicField(field_type=list)
+    count = CountField(source='values', unique=False)
+    unique_count = CountField(source='values')
