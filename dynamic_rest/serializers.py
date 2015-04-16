@@ -13,6 +13,12 @@ class DynamicListSerializer(serializers.ListSerializer):
         iterable = data.all() if isinstance(data, models.Manager) else data
         return [self.child.to_representation(item) for item in iterable]
 
+    def get_name(self):
+        return self.child.get_name()
+
+    def get_plural_name(self):
+        return self.child.get_plural_name()
+
     @property
     def data(self):
         if not hasattr(self, '_sideloaded_data'):
