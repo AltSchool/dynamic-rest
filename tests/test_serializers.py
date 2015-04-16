@@ -386,3 +386,15 @@ class TestEphemeralSerializer(TestCase):
 
         self.assertEqual(data['count'], 3)
         self.assertEqual(data['unique_count'], 2)
+
+    def testCountNone(self):
+        eo = EphemeralObject({'pk': 1, 'values': None})
+        data = CountsSerializer(eo).data
+
+        self.assertEqual(data['count'], None)
+        self.assertEqual(data['unique_count'], None)
+
+    def testCountException(self):
+        eo = EphemeralObject({'pk': 1, 'values': {}})
+        with self.assertRaises(TypeError):
+            CountsSerializer(eo).data
