@@ -328,3 +328,25 @@ class TestUsersAPI(APITestCase):
         for bad_data in ('name..', 'groups..name', 'foo', 'groups.foo'):
             response = self.client.get('/users/?include[]=%s' % bad_data)
             self.assertEquals(400, response.status_code)
+
+    def testPostResponse(self):
+        data = {
+            'name': 'test',
+            'last_name': 'last',
+            'location': 1
+            }
+        response = self.client.post(
+            '/users/', json.dumps(data), content_type='application/json')
+        self.assertEquals(201, response.status_code)
+        self.assertEquals(
+            json.loads(response.content),
+            {
+                "user": {
+                    "id": 5,
+                    "name": "test",
+                    "permissions": [],
+                    "groups": [],
+                    "location": 1,
+                    "last_name": "last"
+                    }
+            })
