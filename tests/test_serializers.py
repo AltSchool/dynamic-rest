@@ -2,7 +2,8 @@ from collections import OrderedDict
 from django.test import TestCase
 from dynamic_rest.serializers import EphemeralObject
 from tests.serializers import (
-    UserSerializer, GroupSerializer, LocationGroupSerializer
+    UserSerializer, GroupSerializer, LocationGroupSerializer,
+    CountsSerializer
 )
 from tests.setup import create_fixture
 
@@ -378,3 +379,10 @@ class TestEphemeralSerializer(TestCase):
         data = LocationGroupSerializer(instance).data
         self.assertEqual(
             data, {'id': 1, 'groups': [1, 2], 'location': 1})
+
+    def testCountFields(self):
+        eo = EphemeralObject({'pk': 1, 'values': [1, 1, 2]})
+        data = CountsSerializer(eo).data
+
+        self.assertEqual(data['count'], 3)
+        self.assertEqual(data['unique_count'], 2)

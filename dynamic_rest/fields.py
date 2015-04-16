@@ -205,10 +205,19 @@ class CountField(DynamicComputedField):
     def __init__(self, source, *args, **kwargs):
         self.field_type = int
         kwargs['source'] = source
+        self.unique = kwargs.pop('unique', True)
         return super(CountField, self).__init__(*args, **kwargs)
 
     def get_attribute(self, obj):
-        if self.source in self.parent.fields:
-            data = self.parent.fields[self.source].to_representation(obj)
-            return len(data) if isinstance(data, list) else None
-        return None
+        if self.source not in self.parent.fields:
+            return None
+        value = self.parent.fields[self.source].get_attribute(obj)
+        data = self.parent.fields[self.source].to_representation(value)
+        if not isinstance(data, list):
+            return None
+        if self.unique:
+            try:
+                data = list(set(data))
+            except:
+                pass
+        return len(data)
