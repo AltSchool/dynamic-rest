@@ -1,3 +1,4 @@
+import copy
 from django.db import models
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.processors import SideloadingProcessor
@@ -144,7 +145,7 @@ class WithDynamicSerializerMixin(object):
         if self.id_only():
             return {}
 
-        serializer_fields = self.get_all_fields()
+        serializer_fields = copy.deepcopy(self.get_all_fields())
         request_fields = self.request_fields
         only_fields = set(self.only_fields)
 

@@ -362,6 +362,15 @@ class TestUserSerializer(TestCase):
             }]
         })
 
+    def testGetAllFields(self):
+        s = GroupSerializer()
+        all_keys1 = s.get_all_fields().keys()
+        f2 = s.fields
+        all_keys2 = s.get_all_fields().keys()
+        expected = ['id', 'name']
+        self.assertEqual(f2.keys(), expected)
+        self.assertEqual(all_keys1, all_keys2)
+
 
 class TestEphemeralSerializer(TestCase):
 
