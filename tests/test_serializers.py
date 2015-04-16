@@ -1,6 +1,6 @@
 from collections import OrderedDict
 from django.test import TestCase
-from dynamic_rest.serializers import EphemeralObject
+from dynamic_rest.serializers import EphemeralObject, DynamicListSerializer
 from tests.serializers import (
     UserSerializer, GroupSerializer, LocationGroupSerializer
 )
@@ -370,6 +370,15 @@ class TestUserSerializer(TestCase):
         expected = ['id', 'name']
         self.assertEqual(f2.keys(), expected)
         self.assertEqual(all_keys1, all_keys2)
+
+
+class TestSerializerMethods(TestCase):
+    def testSerializerNameProxying(self):
+        us = UserSerializer(include_fields='*')
+        perm_srzr = us.fields['permissions'].serializer
+        self.assertTrue(isinstance(perm_srzr, DynamicListSerializer))
+        self.assertEqual(perm_srzr.get_name(), 'permission')
+        self.assertEqual(perm_srzr.get_plural_name(), 'permissions')
 
 
 class TestEphemeralSerializer(TestCase):
