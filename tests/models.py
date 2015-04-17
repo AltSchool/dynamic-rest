@@ -23,3 +23,14 @@ class Permission(models.Model):
 class Location(models.Model):
     name = models.TextField()
     blob = models.TextField()
+
+
+class Event(models.Model):
+    """
+    Event model -- Intentionally missing serializer and viewset, so they
+    can be added as part of a codelab.
+    """
+    name = models.TextField()
+    status = models.TextField(default="current")
+    location = models.ForeignKey('Location', null=True, blank=True)
+    users = models.ManyToManyField('User')
