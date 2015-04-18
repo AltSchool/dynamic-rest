@@ -1,6 +1,7 @@
 from django.db.models import Q, Prefetch
 from dynamic_rest.datastructures import TreeMap
 from dynamic_rest.fields import DynamicRelationField, field_is_remote
+# from dyanmic_rest.viewsets import UPDATE_REQUEST_METHODS
 
 from rest_framework import serializers
 from rest_framework.filters import BaseFilterBackend
@@ -28,6 +29,10 @@ class DynamicFilterBackend(BaseFilterBackend):
         """
         self.request = request
         self.view = view
+
+        # if request.method.upper() in UPDATE_REQUEST_METHODS:
+        #     return queryset
+
         return self._filter_queryset(root_queryset=queryset)
 
     def _extract_filters(self, **kwargs):
@@ -166,7 +171,7 @@ class DynamicFilterBackend(BaseFilterBackend):
             queryset = root_queryset
             serializer = self.view.get_serializer()
 
-        prefetch_related = []
+        prefetch_related = {}
         only = set()
         use_only = True
         model = getattr(serializer.Meta, 'model', None)
@@ -194,10 +199,15 @@ class DynamicFilterBackend(BaseFilterBackend):
                 if not id_only or remote:
                     prefetch_qs = self._filter_queryset(
                         serializer=field, filters=filters.get(name, {}))
-                    prefetch_related.append(
-                        Prefetch(
-                            source,
-                            queryset=prefetch_qs))
+
+                    # Note: There can only be one prefetch per source, even
+                    #       though there can be multiple fields pointing to
+                    #       the same source. This could break in some cases,
+                    #       but is mostly an issue on writes when we use all
+                    #       fields by default.
+                    prefetch_related[source] = Prefetch(
+                        source,
+                        queryset=prefetch_qs)
 
             if name != source:
                 field_rewrites[name] = source
@@ -222,4 +232,4 @@ class DynamicFilterBackend(BaseFilterBackend):
             rewrites=field_rewrites)
         if q:
             queryset = queryset.filter(q)
-        return queryset.prefetch_related(*prefetch_related)
+        return queryset.prefetch_related(*prefetch_related.values())

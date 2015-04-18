@@ -37,7 +37,7 @@ class GroupSerializer(DynamicModelSerializer):
     class Meta:
         model = Group
         name = 'group'
-        fields = ('id', 'name', 'permissions', 'members')
+        fields = ('id', 'name', 'permissions', 'members', 'users')
 
     permissions = DynamicRelationField(
         'PermissionSerializer',
@@ -46,6 +46,11 @@ class GroupSerializer(DynamicModelSerializer):
     members = DynamicRelationField(
         'UserSerializer',
         source='users',
+        many=True,
+        deferred=True)
+    # Intentional duplicate of 'users'
+    users = DynamicRelationField(
+        'UserSerializer',
         many=True,
         deferred=True)
 
