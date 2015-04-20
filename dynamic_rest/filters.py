@@ -1,7 +1,6 @@
 from django.db.models import Q, Prefetch
 from dynamic_rest.datastructures import TreeMap
 from dynamic_rest.fields import DynamicRelationField, field_is_remote
-# from dyanmic_rest.viewsets import UPDATE_REQUEST_METHODS
 
 from rest_framework import serializers
 from rest_framework.filters import BaseFilterBackend
@@ -29,9 +28,6 @@ class DynamicFilterBackend(BaseFilterBackend):
         """
         self.request = request
         self.view = view
-
-        # if request.method.upper() in UPDATE_REQUEST_METHODS:
-        #     return queryset
 
         return self._filter_queryset(root_queryset=queryset)
 
