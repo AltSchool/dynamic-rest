@@ -2,6 +2,7 @@ import json
 from django.db import connection
 from rest_framework.test import APITestCase
 from tests.setup import create_fixture
+from tests.models import Group
 
 
 class TestUsersAPI(APITestCase):
@@ -350,3 +351,16 @@ class TestUsersAPI(APITestCase):
                     "last_name": "last"
                     }
             })
+
+    def testUpdate(self):
+        group = Group.objects.create(name='test group')
+        data = {
+            'name': 'updated'
+            }
+        response = self.client.put(
+            '/groups/%s/' % group.pk,
+            json.dumps(data),
+            content_type='application/json')
+        self.assertEquals(200, response.status_code)
+        updated_group = Group.objects.get(pk=group.pk)
+        self.assertEquals(updated_group.name, data['name'])
