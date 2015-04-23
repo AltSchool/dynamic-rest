@@ -326,4 +326,7 @@ class DynamicEphemeralSerializer(
             data = instance
             instance = EphemeralObject(data)
 
-        return TaggedDict(data, serializer=self, instance=instance)
+        if isinstance(data, dict):
+            return TaggedDict(data, serializer=self, instance=instance)
+        else:
+            return data
