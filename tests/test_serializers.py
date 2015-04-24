@@ -7,8 +7,12 @@ from tests.serializers import (
 )
 from tests.setup import create_fixture
 
+# TODO(ant): move UserSerializer-specific tests
+# into an integration test case and test serializer
+# methods in a more generic way
 
-class TestUserSerializer(TestCase):
+
+class TestDynamicSerializer(TestCase):
 
     def setUp(self):
         self.fixture = create_fixture()
@@ -372,14 +376,81 @@ class TestUserSerializer(TestCase):
         self.assertEqual(f2.keys(), expected)
         self.assertEqual(all_keys1, all_keys2)
 
+    def testOnlyFieldsForcesFields(self):
+        expected = ['id', 'last_name']
+        serializer = UserSerializer(only_fields=expected)
+        self.assertEqual(serializer.fields.keys(), expected)
 
-class TestSerializerMethods(TestCase):
-    def testSerializerNameProxying(self):
-        us = UserSerializer(include_fields='*')
-        perm_srzr = us.fields['permissions'].serializer
-        self.assertTrue(isinstance(perm_srzr, DynamicListSerializer))
-        self.assertEqual(perm_srzr.get_name(), 'permission')
-        self.assertEqual(perm_srzr.get_plural_name(), 'permissions')
+    def testOnlyFieldsRespectsSideloads(self):
+        expected = ['id', 'permissions']
+        serializer = UserSerializer(
+            only_fields=expected,
+            request_fields={
+                'permissions': {}
+            }
+        )
+        self.assertEqual(serializer.fields.keys(), expected)
+        self.assertEqual(serializer.request_fields['permissions'], {})
+
+    def testOnlyFieldsOverridesIncludeFields(self):
+        expected = ['id', 'name']
+        serializer = UserSerializer(
+            only_fields=expected,
+            include_fields=['permissions']
+        )
+        self.assertEqual(serializer.fields.keys(), expected)
+
+    def testIncludeAllAddsAllFields(self):
+        expected = UserSerializer().get_all_fields().keys()
+        serializer = UserSerializer(
+            include_fields='*'
+        )
+        self.assertEqual(serializer.fields.keys(), expected)
+
+    def testIncludeAllOverridesExcludeFields(self):
+        expected = UserSerializer().get_all_fields().keys()
+        serializer = UserSerializer(
+            include_fields='*',
+            exclude_fields=['id']
+        )
+        self.assertEqual(serializer.fields.keys(), expected)
+
+    def testIncludeFieldsAddsFields(self):
+        include = ['permissions']
+        expected = set(UserSerializer().get_fields().keys()) | set(include)
+        serializer = UserSerializer(
+            include_fields=include
+        )
+        self.assertEqual(set(serializer.fields.keys()), expected)
+
+    def testIncludeFieldsRespectsSideloads(self):
+        include = ['permissions']
+        expected = set(UserSerializer().get_fields().keys()) | set(include)
+        serializer = UserSerializer(
+            include_fields=include,
+            request_fields={
+                'permissions': {}
+            }
+        )
+        self.assertEqual(set(serializer.fields.keys()), expected)
+        self.assertEqual(serializer.request_fields['permissions'], {})
+
+    def testExcludeFieldsRemovesFields(self):
+        exclude = ['id']
+        expected = set(UserSerializer().get_fields().keys()) - set(exclude)
+        serializer = UserSerializer(
+            exclude_fields=exclude,
+        )
+        self.assertEqual(set(serializer.fields.keys()), expected)
+
+
+class TestListSerializer(TestCase):
+
+    def testGetNameProxiesToChild(self):
+        serializer = UserSerializer(many=True)
+        self.assertTrue(isinstance(serializer, DynamicListSerializer))
+        self.assertEqual(serializer.get_name(), 'user')
+        self.assertEqual(serializer.get_plural_name(), 'users')
 
 
 class TestEphemeralSerializer(TestCase):

@@ -54,8 +54,8 @@ class WithDynamicSerializerMixin(object):
             cls, *args, **kwargs)
 
     def __init__(
-            self, instance=None, data=fields.empty, include_fields=None,
-            exclude_fields=None, only_fields=None, request_fields=None,
+            self, instance=None, data=fields.empty, only_fields=None,
+            include_fields=None, exclude_fields=None, request_fields=None,
             sideload=False, dynamic=True, **kwargs):
         """
         Custom initializer that builds `request_fields` and
@@ -63,18 +63,15 @@ class WithDynamicSerializerMixin(object):
 
         Arguments:
           instance: Instance for the serializer base.
-          include_fields: List of field names to include.
-            Adds to default field set.
-          exclude_fields: List of field names to exclude.
-            Removes from default field set.
           only_fields: List of field names to render.
-            Overrides default field set.
+          include_fields: List of field names to include.
+          exclude_fields: List of field names to exclude.
           request_fields: map of field names that supports
             inclusions, exclusions, and nested sideloads.
-          dynamic: If False, ignore deferred rules and
-            revert to standard DRF `.fields` behavior. (default: True)
           sideload: If False, do not perform sideloading on `.data`.
             (default: False)
+          dynamic: If False, ignore deferred rules and
+            revert to standard DRF `.fields` behavior. (default: True)
         """
         name = self.get_name()
         if data is not fields.empty and name in data and len(data) == 1:
@@ -98,17 +95,48 @@ class WithDynamicSerializerMixin(object):
         self.sideload = sideload
         self.dynamic = dynamic
         self.request_fields = request_fields or {}
-        self.only_fields = only_fields or []
+
+        if dynamic:
+            self._dynamic_init(only_fields, include_fields, exclude_fields)
+
+    def _dynamic_init(self, only_fields, include_fields, exclude_fields):
+        """
+        Modifies `request_fields` via higher-level dynamic field interfaces.
+
+        Arguments:
+            only_fields: List of field names to render.
+                All other fields will be deferred (respects sideloads).
+            include_fields: List of field names to include.
+                Adds to default field set, (respects sideloads).
+                `*` means include all fields.
+            exclude_fields: List of field names to exclude.
+                Removes from default field set.
+        """
+
+        only_fields = set(only_fields or [])
         include_fields = include_fields or []
         exclude_fields = exclude_fields or []
 
-        self.include_all = False
+        if only_fields:
+            all_fields = self.get_all_fields()
+            for name in all_fields.iterkeys():
+                if name not in only_fields:
+                    self.request_fields[name] = False
+                elif self.request_fields.get(name, False) is False:
+                    self.request_fields[name] = True
+            return
+
         if include_fields == '*':
-            self.include_all = True
-            include_fields = []
+            all_fields = self.get_all_fields()
+            for name in all_fields.iterkeys():
+                if self.request_fields.get(name, False) is False:
+                    self.request_fields[name] = True
+            return
 
         for name in include_fields:
-            self.request_fields[name] = True
+            if self.request_fields.get(name, False) is False:
+                self.request_fields[name] = True
+
         for name in exclude_fields:
             self.request_fields[name] = False
 
@@ -153,20 +181,14 @@ class WithDynamicSerializerMixin(object):
 
         serializer_fields = copy.deepcopy(self.get_all_fields())
         request_fields = self.request_fields
-        only_fields = set(self.only_fields)
-
-        # return only those fields specified, ignoring deferred rules
-        if only_fields:
-            return {
-                k: v for k, v in serializer_fields.iteritems()
-                if k in only_fields}
 
         # determine fields that are deferred by default
         meta_deferred = set(getattr(self.Meta, 'deferred_fields', []))
-        deferred = set(
-            [name for name, field in serializer_fields.iteritems()
-             if getattr(field, 'deferred', None) is True or name in
-             meta_deferred])
+        deferred = set([
+            name for name, field in serializer_fields.iteritems()
+            if getattr(field, 'deferred', None) is True or name in
+            meta_deferred
+        ])
 
         # apply request overrides
         if request_fields:
@@ -180,10 +202,8 @@ class WithDynamicSerializerMixin(object):
                 elif include is False:
                     deferred.add(name)
 
-        # remove any deferred fields from the base list
-        if not self.include_all:
-            for name in deferred:
-                serializer_fields.pop(name)
+        for name in deferred:
+            serializer_fields.pop(name)
 
         # inject request_fields into sub-serializers
         for name, field in serializer_fields.iteritems():
