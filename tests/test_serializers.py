@@ -487,3 +487,10 @@ class TestEphemeralSerializer(TestCase):
         eo = EphemeralObject({'pk': 1, 'values': {}})
         with self.assertRaises(TypeError):
             CountsSerializer(eo).data
+
+    def testIdOnly(self):
+        """ Test EphemeralSerializer.to_representation() in id_only mode """
+        eo = EphemeralObject({'pk': 1, 'values': None})
+        data = CountsSerializer(request_fields=True).to_representation(eo)
+
+        self.assertEqual(data, eo.pk)

@@ -215,7 +215,7 @@ class WithDynamicSerializerMixin(object):
         return serializer_fields
 
     def to_representation(self, instance):
-        if self.dynamic and self.id_only():
+        if self.id_only():
             return instance.pk
         else:
             representation = super(
@@ -244,7 +244,7 @@ class WithDynamicSerializerMixin(object):
         Returns:
           True iff `request_fields` is True
         """
-        return self.request_fields is True
+        return self.dynamic and self.request_fields is True
 
     @property
     def data(self):
@@ -340,4 +340,7 @@ class DynamicEphemeralSerializer(
             data = instance
             instance = EphemeralObject(data)
 
-        return TaggedDict(data, serializer=self, instance=instance)
+        if self.id_only():
+            return data
+        else:
+            return TaggedDict(data, serializer=self, instance=instance)
