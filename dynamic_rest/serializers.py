@@ -116,29 +116,22 @@ class WithDynamicSerializerMixin(object):
         only_fields = set(only_fields or [])
         include_fields = include_fields or []
         exclude_fields = exclude_fields or []
+        all_fields = set(self.get_all_fields().keys())
 
         if only_fields:
-            all_fields = self.get_all_fields()
-            for name in all_fields.iterkeys():
-                if name not in only_fields:
-                    self.request_fields[name] = False
-                elif self.request_fields.get(name, False) is False:
-                    self.request_fields[name] = True
-            return
+            include_fields = only_fields
+            exclude_fields = all_fields - only_fields
 
         if include_fields == '*':
-            all_fields = self.get_all_fields()
-            for name in all_fields.iterkeys():
-                if self.request_fields.get(name, False) is False:
-                    self.request_fields[name] = True
-            return
-
-        for name in include_fields:
-            if self.request_fields.get(name, False) is False:
-                self.request_fields[name] = True
+            include_fields = all_fields
 
         for name in exclude_fields:
             self.request_fields[name] = False
+
+        for name in include_fields:
+            if not isinstance(self.request_fields.get(name), dict):
+                # not sideloading this field
+                self.request_fields[name] = True
 
     def get_name(self):
         """Returns the serializer name.
@@ -173,22 +166,23 @@ class WithDynamicSerializerMixin(object):
         If `dynamic` is True, respects field inclusions/exlcusions.
         Otherwise, reverts back to standard DRF behavior.
         """
+        all_fields = self.get_all_fields()
         if self.dynamic is False:
-            return self.get_all_fields()
+            return all_fields
 
         if self.id_only():
             return {}
 
-        serializer_fields = copy.deepcopy(self.get_all_fields())
+        serializer_fields = copy.deepcopy(all_fields)
         request_fields = self.request_fields
 
         # determine fields that are deferred by default
         meta_deferred = set(getattr(self.Meta, 'deferred_fields', []))
-        deferred = set([
+        deferred = {
             name for name, field in serializer_fields.iteritems()
             if getattr(field, 'deferred', None) is True or name in
             meta_deferred
-        ])
+        }
 
         # apply request overrides
         if request_fields:
