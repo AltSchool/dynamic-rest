@@ -8,7 +8,7 @@ install: $(INSTALL_DIR)
 $(INSTALL_DIR): $(INSTALL_DIR)/bin/activate
 $(INSTALL_DIR)/bin/activate: requirements.txt
 	test -d $(INSTALL_DIR) || virtualenv $(INSTALL_DIR)
-	. $(INSTALL_DIR)/bin/activate; pip install -U -r requirements.txt
+	. $(INSTALL_DIR)/bin/activate; python setup.py install
 	touch $(INSTALL_DIR)/bin/activate
 
 clean_cd:

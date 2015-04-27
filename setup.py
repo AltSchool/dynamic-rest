@@ -1,4 +1,4 @@
-from distutils.core import setup
+from setuptools import setup
 import codecs
 import os
 import re
@@ -26,5 +26,6 @@ setup(
     scripts=['manage.py'],
     url="http://github.com/AltSchool/dynamic-rest",
     version=VERSION,
+    install_requires=open("requirements.txt").read().split("\n"),
     test_suite='runtests.runtests'
 )
