@@ -1,44 +1,35 @@
+from contextlib import contextmanager
+
 from django.conf import settings
-from django.http import QueryDict
+from django.db import transaction
 
 from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.metadata import DynamicMetadata
 from dynamic_rest.filters import DynamicFilterBackend
+from dynamic_rest.query import QueryParams
+from dynamic_rest.signals import (
+    pre_create, post_create,
+    pre_update, post_update,
+    pre_delete, post_delete
+)
 
 from rest_framework import viewsets, exceptions
 from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
+
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
 
+CREATE = 1
+UPDATE = 3
+DELETE = 4
 
-class QueryParams(QueryDict):
-
-    """
-    Extension of Django's QueryDict. Instantiated from a DRF Request
-    object, and returns a mutable QueryDict subclass.
-    Also adds methods that might be useful for our usecase.
-    """
-
-    def __init__(self, query_params, *args, **kwargs):
-        query_string = getattr(query_params, 'urlencode', lambda: '')()
-        kwargs['mutable'] = True
-        super(QueryParams, self).__init__(query_string, *args, **kwargs)
-
-    def add(self, key, value):
-        """
-        Method to accept a list of values and append to flat list.
-        QueryDict.appendlist(), if given a list, will append the list,
-        which creates nested lists. In most cases, we want to be able
-        to pass in a list (for convenience) but have it appended into
-        a flattened list.
-        TODO: Possibly throw an error if add() is used on a non-list param.
-        """
-        if isinstance(value, list):
-            for val in value:
-                self.appendlist(key, val)
-        else:
-            self.appendlist(key, value)
+PRE_CREATE = 1
+POST_CREATE = 2
+PRE_UPDATE = 3
+POST_UPDATE = 4
+PRE_DELETE = 5
+POST_DELETE = 6
 
 
 class WithDynamicViewSetMixin(object):
@@ -64,7 +55,79 @@ class WithDynamicViewSetMixin(object):
     features = (INCLUDE, EXCLUDE, FILTER, PAGE, PER_PAGE)
     sideload = True
     meta = None
+    transactions = ()
+    signals = ()
     filter_backends = (DynamicFilterBackend,)
+
+    def perform_update(self, serializer):
+        with self.in_transaction(UPDATE):
+            instance = serializer.instance
+            if PRE_UPDATE in self.signals:
+                pre_update.send(
+                    sender=self.__class__,
+                    request=self.request,
+                    instance=instance,
+                    data=serializer.data)
+            if POST_UPDATE in self.signals:
+                full_serializer = self.serializer_class(dynamic=False)
+                pre_data = full_serializer.to_representation(instance)
+
+            super(WithDynamicViewSetMixin, self).perform_update(serializer)
+
+            if POST_UPDATE in self.signals:
+                post_update.send(
+                    sender=self.__class__,
+                    request=self.request,
+                    instance=serializer.instance,
+                    pre_data=pre_data,
+                    data=serializer.data
+                )
+
+    def perform_create(self, serializer):
+        with self.in_transaction(CREATE):
+            if PRE_CREATE in self.signals:
+                pre_create.send(
+                    sender=self.__class__,
+                    request=self.request,
+                    data=serializer.data)
+
+            super(WithDynamicViewSetMixin, self).perform_update(serializer)
+
+            if POST_CREATE in self.signals:
+                post_create.send(
+                    sender=self.__class__,
+                    request=self.request,
+                    instance=serializer.instance,
+                    data=serializer.data)
+
+    def perform_destroy(self, instance):
+        with self.in_transaction(DELETE):
+            if PRE_DELETE in self.signals:
+                pre_delete.send(
+                    sender=self.__class__,
+                    request=self.request,
+                    instance=instance)
+
+            if POST_DELETE in self.signals:
+                full_serializer = self.serializer_class(dynamic=False)
+                pre_data = full_serializer.to_representation(instance)
+
+            super(WithDynamicViewSetMixin, self).perform_destroy(instance)
+
+            if POST_DELETE in self.signals:
+                post_delete.send(
+                    sender=self.__class__,
+                    request=self.request,
+                    instance=instance,
+                    pre_data=pre_data)
+
+    @contextmanager
+    def in_transaction(self, request_type):
+        if request_type in self.transactions:
+            with transaction.atomic():
+                yield
+        else:
+            yield
 
     def initialize_request(self, request, *args, **kargs):
         """
