@@ -13,6 +13,9 @@ class DynamicListSerializer(serializers.ListSerializer):
         iterable = data.all() if isinstance(data, models.Manager) else data
         return [self.child.to_representation(item) for item in iterable]
 
+    def get_model(self):
+        return self.child.get_model()
+
     def get_name(self):
         return self.child.get_name()
 
@@ -132,6 +135,13 @@ class WithDynamicSerializerMixin(object):
             if not isinstance(self.request_fields.get(name), dict):
                 # not sideloading this field
                 self.request_fields[name] = True
+
+    def get_model(self):
+        """Get the model, if the serializer has one.
+
+        Model serializers should implement this method.
+        """
+        return None
 
     def get_name(self):
         """Returns the serializer name.
