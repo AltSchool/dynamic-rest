@@ -1,8 +1,9 @@
+import importlib
+
 from rest_framework import fields
 from rest_framework.exceptions import ParseError, NotFound
 from django.db.models.related import RelatedObject
 from django.db.models import ManyToManyField
-import importlib
 
 
 def field_is_remote(model, field_name):
@@ -128,6 +129,10 @@ class DynamicRelationField(DynamicField):
 
     def to_representation(self, instance):
         serializer = self.serializer
+        if hasattr(serializer, 'child'):
+            model = serializer.child.Meta.model
+        else:
+            model = serializer.Meta.model
         source = self.source
         if not self.kwargs['many'] and serializer.id_only():
             # attempt to optimize by reading the related ID directly
@@ -135,7 +140,11 @@ class DynamicRelationField(DynamicField):
             source_id = '%s_id' % source
             if hasattr(instance, source_id):
                 return getattr(instance, source_id)
-        related = getattr(instance, source)
+        try:
+            related = getattr(instance, source)
+        except model.DoesNotExist:
+            return None
+
         if related is None:
             return None
         try:
