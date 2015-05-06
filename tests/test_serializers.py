@@ -3,7 +3,7 @@ from django.test import TestCase
 from dynamic_rest.serializers import EphemeralObject, DynamicListSerializer
 from tests.serializers import (
     UserSerializer, GroupSerializer, LocationGroupSerializer,
-    CountsSerializer
+    CountsSerializer, NestedEphemeralSerializer
 )
 from tests.setup import create_fixture
 
@@ -494,3 +494,10 @@ class TestEphemeralSerializer(TestCase):
         data = CountsSerializer(request_fields=True).to_representation(eo)
 
         self.assertEqual(data, eo.pk)
+
+    def testNested(self):
+        value_count = EphemeralObject({'pk': 1, 'values': []})
+        nested = EphemeralObject({'pk': 1, 'value_count': value_count})
+        data = NestedEphemeralSerializer(
+            request_fields={'value_count': {}}).to_representation(nested)
+        self.assertEqual(data['value_count']['count'], 0)
