@@ -158,7 +158,7 @@ class DynamicFilterBackend(BaseFilterBackend):
             If no serializer is passed, the `get_serializer` method will
             be used to initialize the base serializer for the viewset.
           filters: Optional nested filter map (TreeMap)
-          queryset: Optional queryset. Only applies to top-level.
+          queryset: Optional queryset.
         """
 
         if serializer:
