@@ -135,10 +135,7 @@ class DynamicRelationField(DynamicField):
             source_id = '%s_id' % source
             if hasattr(instance, source_id):
                 return getattr(instance, source_id)
-        try:
-            related = getattr(instance, source)
-        except:
-            return None
+        related = getattr(instance, source)
         if related is None:
             return None
         try:
