@@ -29,7 +29,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         self.request = request
         self.view = view
 
-        return self._filter_queryset(root_queryset=queryset)
+        return self._filter_queryset(queryset=queryset)
 
     def _extract_filters(self, **kwargs):
         """
@@ -147,7 +147,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         return q
 
     def _filter_queryset(
-            self, serializer=None, filters=None, root_queryset=None):
+            self, serializer=None, filters=None, queryset=None):
         """
         Recursive queryset builder.
         Handles nested prefetching of related data and deferring fields
@@ -158,13 +158,13 @@ class DynamicFilterBackend(BaseFilterBackend):
             If no serializer is passed, the `get_serializer` method will
             be used to initialize the base serializer for the viewset.
           filters: Optional nested filter map (TreeMap)
-          queryset: Optional queryset. Only applies to top-level.
+          queryset: Optional queryset.
         """
 
         if serializer:
-            queryset = serializer.Meta.model.objects
+            queryset = queryset or serializer.Meta.model.objects
         else:
-            queryset = root_queryset
+            queryset = queryset
             serializer = self.view.get_serializer()
 
         prefetch_related = {}
@@ -180,6 +180,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         field_rewrites = {}
 
         for name, field in serializer.fields.iteritems():
+            original_field = field
             if isinstance(field, DynamicRelationField):
                 field = field.serializer
             if isinstance(field, serializers.ListSerializer):
@@ -194,7 +195,10 @@ class DynamicFilterBackend(BaseFilterBackend):
                 id_only = getattr(field, 'id_only', lambda: False)()
                 if not id_only or remote:
                     prefetch_qs = self._filter_queryset(
-                        serializer=field, filters=filters.get(name, {}))
+                        serializer=field,
+                        filters=filters.get(name, {}),
+                        queryset=getattr(original_field, 'queryset', None)
+                    )
 
                     # Note: There can only be one prefetch per source, even
                     #       though there can be multiple fields pointing to

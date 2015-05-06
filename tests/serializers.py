@@ -37,7 +37,7 @@ class GroupSerializer(DynamicModelSerializer):
     class Meta:
         model = Group
         name = 'group'
-        fields = ('id', 'name', 'permissions', 'members', 'users')
+        fields = ('id', 'name', 'permissions', 'members', 'users', 'loc1users')
 
     permissions = DynamicRelationField(
         'PermissionSerializer',
@@ -48,10 +48,17 @@ class GroupSerializer(DynamicModelSerializer):
         source='users',
         many=True,
         deferred=True)
-    # Intentional duplicate of 'users'
+    # Intentional duplicate of 'users':
     users = DynamicRelationField(
         'UserSerializer',
         many=True,
+        deferred=True)
+    # For testing default queryset on relations:
+    loc1users = DynamicRelationField(
+        'UserSerializer',
+        source='users',
+        many=True,
+        queryset=User.objects.filter(location_id=1),
         deferred=True)
 
 

@@ -364,3 +364,25 @@ class TestUsersAPI(APITestCase):
         self.assertEquals(200, response.status_code)
         updated_group = Group.objects.get(pk=group.pk)
         self.assertEquals(updated_group.name, data['name'])
+
+    def testDefaultQueryset(self):
+        url = '/groups/?filter{id}=1&include[]=loc1users'
+        response = self.client.get(url)
+        content = json.loads(response.content)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(sorted([1, 2]), content['groups'][0]['loc1users'])
+
+    def testDefaultQuerysetWithFilter(self):
+        """
+        Make sure filter can be added to relational fields with default
+        filters.
+        """
+        url = (
+            '/groups/?filter{id}=1&include[]=loc1users'
+            '&filter{loc1users|id.in}=3'
+            '&filter{loc1users|id.in}=1'
+            )
+        response = self.client.get(url)
+        content = json.loads(response.content)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual([1], content['groups'][0]['loc1users'])

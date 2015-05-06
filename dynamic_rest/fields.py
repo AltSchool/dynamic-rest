@@ -68,7 +68,7 @@ class DynamicRelationField(DynamicField):
 
     SERIALIZER_KWARGS = set(('many', 'source'))
 
-    def __init__(self, serializer_class, many=False, **kwargs):
+    def __init__(self, serializer_class, many=False, queryset=None, **kwargs):
         """
         Arguments:
           serializer_class: Serializer class (or string representation)
@@ -77,6 +77,7 @@ class DynamicRelationField(DynamicField):
         self.kwargs = kwargs
         self._serializer_class = serializer_class
         self.bound = False
+        self.queryset = queryset
         if '.' in self.kwargs.get('source', ''):
             raise Exception('Nested relationships are not supported')
         super(DynamicRelationField, self).__init__(**kwargs)
