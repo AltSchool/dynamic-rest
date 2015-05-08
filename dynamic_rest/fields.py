@@ -1,8 +1,10 @@
+import importlib
+from itertools import chain
+
 from rest_framework import fields
 from rest_framework.exceptions import ParseError, NotFound
 from django.db.models.related import RelatedObject
 from django.db.models import ManyToManyField
-import importlib
 
 
 def field_is_remote(model, field_name):
@@ -10,19 +12,29 @@ def field_is_remote(model, field_name):
     Helper function to determine whether model field is remote or not.
     Remote fields are many-to-many or many-to-one.
     """
+    if not hasattr(model, '_meta'):
+        # ephemeral model with no metaclass
+        return False
 
+    meta = model._meta
     try:
-        model_field = model._meta.get_field_by_name(field_name)[0]
+        model_field = meta.get_field_by_name(field_name)[0]
         return isinstance(model_field, (ManyToManyField, RelatedObject))
     except:
-        pass
-
-    # M2O fields with no related_name set in the FK use the *_set
-    # naming convention.
-    if field_name.endswith('_set'):
-        return hasattr(model, field_name)
-
-    return False
+        related_objects = chain(
+            meta.get_all_related_objects(),
+            meta.get_all_related_many_to_many_objects()
+        )
+        related_objects_map = {
+            o.get_accessor_name(): o
+            for o in related_objects
+        }
+        if field_name in related_objects_map:
+            return True
+        else:
+            raise AttributeError(
+                '%s is not a valid field for %s' % (field_name, model)
+            )
 
 
 class DynamicField(fields.Field):
