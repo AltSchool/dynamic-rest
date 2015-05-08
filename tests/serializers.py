@@ -101,3 +101,10 @@ class CountsSerializer(DynamicEphemeralSerializer):
     values = DynamicField(field_type=list)
     count = CountField(source='values', unique=False)
     unique_count = CountField(source='values')
+
+
+class NestedEphemeralSerializer(DynamicEphemeralSerializer):
+    class Meta:
+        name = 'nested'
+
+    value_count = DynamicRelationField('CountsSerializer', deferred=False)
