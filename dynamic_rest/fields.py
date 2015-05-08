@@ -21,15 +21,14 @@ def field_is_remote(model, field_name):
         model_field = meta.get_field_by_name(field_name)[0]
         return isinstance(model_field, (ManyToManyField, RelatedObject))
     except:
-        related_objects = chain(
-            meta.get_all_related_objects(),
-            meta.get_all_related_many_to_many_objects()
-        )
-        related_objects_map = {
-            o.get_accessor_name(): o
-            for o in related_objects
+        related_object_names = {
+            o.get_accessor_name()
+            for o in chain(
+                meta.get_all_related_objects(),
+                meta.get_all_related_many_to_many_objects()
+            )
         }
-        if field_name in related_objects_map:
+        if field_name in related_object_names:
             return True
         else:
             raise AttributeError(
