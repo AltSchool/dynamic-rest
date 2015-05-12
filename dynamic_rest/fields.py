@@ -131,6 +131,7 @@ class DynamicRelationField(DynamicField):
             **
             {k: v for k, v in self.kwargs.iteritems()
              if k in self.SERIALIZER_KWARGS})
+        serializer.parent = self
         self._serializer = serializer
         return serializer
 

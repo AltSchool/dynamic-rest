@@ -501,3 +501,8 @@ class TestEphemeralSerializer(TestCase):
         data = NestedEphemeralSerializer(
             request_fields={'value_count': {}}).to_representation(nested)
         self.assertEqual(data['value_count']['count'], 0)
+
+    def testNestedContext(self):
+        s1 = LocationGroupSerializer(context={'foo': 'bar'})
+        s2 = s1.fields['location'].serializer
+        self.assertEqual(s2.context['foo'], 'bar')
