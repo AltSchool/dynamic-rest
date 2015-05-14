@@ -2,7 +2,7 @@ import json
 from django.db import connection
 from rest_framework.test import APITestCase
 from tests.setup import create_fixture
-from tests.models import Group
+from tests.models import User, Group
 
 
 class TestUsersAPI(APITestCase):
@@ -386,3 +386,38 @@ class TestUsersAPI(APITestCase):
         content = json.loads(response.content)
         self.assertEqual(200, response.status_code)
         self.assertEqual([1], content['groups'][0]['loc1users'])
+
+    def testIsNull(self):
+        """
+        Test for .isnull filters
+        """
+
+        # User with location=None
+        User.objects.create(name='name', last_name='lname', location=None)
+
+        # Count Users where location is not null
+        expected = User.objects.filter(location__isnull=False).count()
+
+        url = '/users/?filter{location.isnull}=0'
+        response = self.client.get(url)
+        content = json.loads(response.content)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(expected, len(content['users']))
+
+        url = '/users/?filter{location.isnull}=False'
+        response = self.client.get(url)
+        content = json.loads(response.content)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(expected, len(content['users']))
+
+        url = '/users/?filter{location.isnull}=1'
+        response = self.client.get(url)
+        content = json.loads(response.content)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, len(content['users']))
+
+        url = '/users/?filter{-location.isnull}=True'
+        response = self.client.get(url)
+        content = json.loads(response.content)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(expected, len(content['users']))
