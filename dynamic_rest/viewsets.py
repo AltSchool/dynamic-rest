@@ -7,7 +7,6 @@ from dynamic_rest.filters import DynamicFilterBackend
 
 from rest_framework import viewsets, exceptions
 from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
-from rest_framework.decorators import detail_route
 from rest_framework.response import Response
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
@@ -44,7 +43,6 @@ class QueryParams(QueryDict):
 
 
 class WithDynamicViewSetMixin(object):
-
     """A viewset that can support dynamic API features.
 
     Attributes:
@@ -67,6 +65,7 @@ class WithDynamicViewSetMixin(object):
     sideload = True
     meta = None
     filter_backends = (DynamicFilterBackend,)
+    field_name = None
 
     def initialize_request(self, request, *args, **kargs):
         """
@@ -206,11 +205,10 @@ class WithDynamicViewSetMixin(object):
                 *args, **kwargs)
         return None
 
-    @detail_route(methods=['get'])
-    def async_field(self, request, pk=None): 
+    def async_field(self, request, pk=None):
         """
         This method gets mapped by DRF to `/<resource>/<pk>/async_field/`
-        and will be available on all DynamicModelViewSets.  The serializer 
+        and will be available on all DynamicModelViewSets.  The serializer
         can construct these URLs, and return as JSON API "link" objects.
 
         TODO: Support for filter. Currently, filtering is handled by the
@@ -220,36 +218,36 @@ class WithDynamicViewSetMixin(object):
               here.
         """
 
-        field_name = request.QUERY_PARAMS.get('field')
         ids = request.QUERY_PARAMS.getlist('id')
 
         # Get serializer with dynamic=False so we can get full (and bound)
         # fields list.
         serializer = self.get_serializer(dynamic=False)
+        field_name = self.field_name
         field = serializer.fields.get(field_name)
-        if field is None: 
+        if field is None:
             return Response("Unknown field: %s" % field_name, status=400)
 
         # Get related objects
-        # TODO: Use logic in DynamicFilterBackend to do things like 
+        # TODO: Use logic in DynamicFilterBackend to do things like
         #       recursive prefetching.
         if ids:
             model = field.serializer_class.Meta.model
-            related_objs = model.objects.filter(pk__in=ids) 
+            related_objs = model.objects.filter(pk__in=ids)
         else:
             # Get root object, and fetch requested relational objects
             model = serializer.get_model()
             obj = model.objects.select_related(field.source).get(pk=pk)
-            related_objs = getattr(obj, field.source, []) 
+            related_objs = getattr(obj, field.source, [])
 
         # Serialize root object + requested relation, then sideload
         data = field.serializer_class(
-              related_objs,
-              many=True,
-              sideload = True
-              ).data
+            related_objs,
+            many=True,
+            sideload=True
+            ).data
 
-        return Response(data, status=400) 
+        return Response(data, status=400)
 
 
 class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):

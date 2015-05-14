@@ -156,7 +156,6 @@ class AsyncUserGroupsSerializer(UserSerializer):
         'GroupSerializer', many=True, deferred=True, async=True)
 
 
-
 class LocationGroupSerializer(DynamicEphemeralSerializer):
 
     class Meta:
