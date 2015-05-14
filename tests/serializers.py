@@ -33,7 +33,8 @@ class LocationSerializer(DynamicModelSerializer):
         'UserSerializer',
         source='user_set',
         many=True,
-        deferred=True)
+        deferred=True,
+        async=True)
     user_count = CountField('users', required=False, deferred=True)
     address = DynamicField(source='blob', required=False, deferred=True)
     metadata = DynamicField(deferred=True, required=False)
@@ -154,7 +155,6 @@ class AsyncUserGroupsSerializer(UserSerializer):
 
     groups = DynamicRelationField(
         'GroupSerializer', many=True, deferred=True, async=True)
-
 
 
 class LocationGroupSerializer(DynamicEphemeralSerializer):

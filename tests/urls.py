@@ -8,6 +8,7 @@ router.register(r'groups', viewsets.GroupViewSet)
 router.register(r'profiles', viewsets.ProfileViewSet)
 router.register(r'locations', viewsets.LocationViewSet)
 router.register(r'user_locations', viewsets.UserLocationViewSet)
+router.register(r'usergroups', viewsets.UserGroupsViewSet)
 
 urlpatterns = patterns('',
                        url(r'^', include(router.urls))
