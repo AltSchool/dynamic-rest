@@ -77,3 +77,36 @@ class TestUserViewSet(TestCase):
         self.assertEqual(out['rel']['bar']['_include']['attr'], 'val')
         self.assertEqual(out['_include']['attr4__lt'], 'val')
         self.assertEqual(len(out['_include']['attr5__in']), 3)
+
+    def testIsNullCasting(self):
+        filters_map = {
+            'f1.isnull': [True],
+            'f2.isnull': [['a']],
+            'f3.isnull': ['true'],
+            'f4.isnull': ['1'],
+            'f5.isnull': [1],
+            'f6.isnull': [False],
+            'f7.isnull': [[]],
+            'f8.isnull': ['false'],
+            'f9.isnull': ['0'],
+            'f10.isnull': [0],
+            'f11.isnull': [''],
+            'f12.isnull': [None],
+        }
+
+        backend = DynamicFilterBackend()
+        out = backend._extract_filters(filters_map=filters_map)
+
+        self.assertEqual(out['_include']['f1__isnull'], True)
+        self.assertEqual(out['_include']['f2__isnull'], ['a'])
+        self.assertEqual(out['_include']['f3__isnull'], True)
+        self.assertEqual(out['_include']['f4__isnull'], True)
+        self.assertEqual(out['_include']['f5__isnull'], 1)
+
+        self.assertEqual(out['_include']['f6__isnull'], False)
+        self.assertEqual(out['_include']['f7__isnull'], [])
+        self.assertEqual(out['_include']['f8__isnull'], False)
+        self.assertEqual(out['_include']['f9__isnull'], False)
+        self.assertEqual(out['_include']['f10__isnull'], False)
+        self.assertEqual(out['_include']['f11__isnull'], False)
+        self.assertEqual(out['_include']['f12__isnull'], None)
