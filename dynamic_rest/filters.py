@@ -21,6 +21,12 @@ class DynamicFilterBackend(BaseFilterBackend):
         None,
     )
 
+    FALSEY_STRINGS = (
+        '0',
+        'false',
+        '',
+    )
+
     def filter_queryset(self, request, queryset, view):
         """
         Filter queryset. This is the main/single entry-point to this class, and
@@ -82,6 +88,8 @@ class DynamicFilterBackend(BaseFilterBackend):
                 # no-op: i.e. accept `value` as an arbitrarily long list
                 pass
             elif operator in self.VALID_FILTER_OPERATORS:
+                if operator == 'isnull':
+                    value[0] = value[0].lower() not in self.FALSEY_STRINGS
                 value = value[0]
             else:
                 # Unknown operator, we'll treat it like a field
