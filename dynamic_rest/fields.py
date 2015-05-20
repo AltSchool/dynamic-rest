@@ -56,6 +56,9 @@ class DynamicField(fields.Field):
     def to_representation(self, value):
         return value
 
+    def to_internal_value(self, data):
+        return data
+
 
 class DynamicComputedField(DynamicField):
 
