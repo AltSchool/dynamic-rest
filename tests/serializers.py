@@ -9,15 +9,16 @@ class LocationSerializer(DynamicModelSerializer):
     class Meta:
         model = Location
         name = 'location'
-        fields = ('id', 'name', 'users', 'user_count', 'address')
+        fields = ('id', 'name', 'users', 'user_count', 'address', 'metadata')
 
     users = DynamicRelationField(
         'UserSerializer',
         source='user_set',
         many=True,
         deferred=True)
-    user_count = CountField('users', deferred=True)
-    address = DynamicField(source='blob', deferred=True)
+    user_count = CountField('users', required=False, deferred=True)
+    address = DynamicField(source='blob', required=False, deferred=True)
+    metadata = DynamicField(deferred=True, required=False)
 
 
 class PermissionSerializer(DynamicModelSerializer):

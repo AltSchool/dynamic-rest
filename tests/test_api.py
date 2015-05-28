@@ -421,3 +421,29 @@ class TestUsersAPI(APITestCase):
         content = json.loads(response.content)
         self.assertEqual(200, response.status_code)
         self.assertEqual(expected, len(content['users']))
+
+
+class TestLocationsAPI(APITestCase):
+
+    def setUp(self):
+        self.fixture = create_fixture()
+
+    def testCreate(self):
+        """Test create -- mostly a test for 'metadata' JSON field"""
+        data = {
+            'name': 'test location',
+            'metadata': {
+                'foo': 'bar',
+                'baz': 'booz'
+            }
+        }
+        url = '/locations/'
+        response = self.client.post(
+            url,
+            data=json.dumps(data),
+            content_type='application/json'
+        )
+
+        self.assertEqual(201, response.status_code)
+        content = json.loads(response.content)
+        self.assertEqual(content['location']['metadata'], data['metadata'])
