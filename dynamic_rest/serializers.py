@@ -14,10 +14,7 @@ class DynamicListSerializer(serializers.ListSerializer):
 
     def to_representation(self, data):
         iterable = data.all() if isinstance(data, models.Manager) else data
-        out = [self.child.to_representation(item) for item in iterable]
-        if self.child.id_only() and getattr(self.parent, 'async', False):
-            pass
-        return out
+        return [self.child.to_representation(item) for item in iterable]
 
     def get_model(self):
         return self.child.get_model()
