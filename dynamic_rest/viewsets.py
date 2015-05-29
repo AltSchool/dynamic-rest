@@ -1,3 +1,4 @@
+from django.db.models import Prefetch
 from django.conf import settings
 from django.http import QueryDict
 
@@ -205,49 +206,61 @@ class WithDynamicViewSetMixin(object):
                 *args, **kwargs)
         return None
 
-    def async_field(self, request, pk=None):
+    def list_related(self, request, pk=None):
         """
-        This method gets mapped by DRF to `/<resource>/<pk>/async_field/`
-        and will be available on all DynamicModelViewSets.  The serializer
-        can construct these URLs, and return as JSON API "link" objects.
+        This method gets mapped to `/<resource>/<pk>/<related>/` by
+        DynamicRouter for all DynamicRelationField fields. Individual
+        ViewSets can override this method entirely, or override individual
+        fields by implementing a method with that related field name.
+        For example, for the route `/users/<pk>/events/`, the UserViewSet
+        could implement an `events` method to override that specific endpoint.
 
-        TODO: Support for filter. Currently, filtering is handled by the
-              root API request, and a set of IDs is passed here. This means
-              the root request takes the hit of the DB query. Instead, if
-              the filter params are passed in, the filtering can be done
-              here.
+        TODO(ryo): Filtering/inclusion currently is off of top level object,
+
+            e.g. /users/1/events/?filter{users|events.location}=1
+
+            which is a little counter-intuitive. One solution is to simply
+            prepend the field name to filter/include/exclude query params.
         """
 
-        ids = request.QUERY_PARAMS.getlist('id')
+        # Trick DREST into thinking we're fetching the parent object with
+        # the related field sideloaded.
+        self.request.query_params.add('include[]', '%s.' % self.field_name)
+        self.request.query_params.add('filter{pk}', pk)
 
-        # Get serializer with dynamic=False so we can get full (and bound)
-        # fields list.
-        serializer = self.get_serializer(dynamic=False)
+        # Related field name is attached to the viewset on initialization.
+        # This behavior is defined in DynamicRouter, and mimics how  DRF
+        # handles @detail_view. Passing field_name in as a parameter to
+        # this method would be better, but would require more complex routing.
         field_name = self.field_name
+
+        # Get serializer and field
+        serializer = self.get_serializer()
         field = serializer.fields.get(field_name)
         if field is None:
             return Response("Unknown field: %s" % field_name, status=400)
 
-        # Get related objects
-        # TODO: Use logic in DynamicFilterBackend to do things like
-        #       recursive prefetching.
-        if ids:
-            model = field.serializer_class.Meta.model
-            related_objs = model.objects.filter(pk__in=ids)
+        # Query for root object, with related field sideloaded/prefetched
+        # Note: Filter against related field works here using standard
+        #       sideload filter query.
+        queryset = self.get_queryset()
+        queryset = self.filter_queryset(queryset)
+        obj = queryset.first()
+
+        if not obj:
+            return Response("Not found", status=404)
+
+        # Serialize the whole thing
+        data = self.get_serializer(obj).data
+
+        # Hack: Remove parent object so result only contains related
+        #       object, and any of its sideloads.
+        if self.sideload:
+            del data[serializer.get_name()]
         else:
-            # Get root object, and fetch requested relational objects
-            model = serializer.get_model()
-            obj = model.objects.select_related(field.source).get(pk=pk)
-            related_objs = getattr(obj, field.source, [])
+            data = data[self.field_name]
 
-        # Serialize root object + requested relation, then sideload
-        data = field.serializer_class(
-            related_objs,
-            many=True,
-            sideload=True
-            ).data
-
-        return Response(data, status=400)
+        return Response(data, status=200)
 
 
 class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
