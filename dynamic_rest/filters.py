@@ -2,8 +2,73 @@ from django.db.models import Q, Prefetch
 from dynamic_rest.datastructures import TreeMap
 from dynamic_rest.fields import DynamicRelationField, field_is_remote
 
+from rest_framework.exceptions import ValidationError
 from rest_framework import serializers
 from rest_framework.filters import BaseFilterBackend
+
+
+class FilterNode(object):
+    def __init__(self, field, operator, value):
+        """
+        Create an object representing filter, to be stored in TreeMap.
+
+        Arguments:
+            field: List of field parts
+                   i.e. 'filter{users.events}' -> ['users', 'events']
+            opreator: Valid operator (e.g. 'lt', 'in', etc). None == equals.
+        """
+        self.field = field
+        self.operator = operator
+        self.value = value
+
+    @property
+    def key(self):
+        return '%s%s' % (
+            '__'.join(self.field),
+            '__' + self.operator if self.operator else ''
+        )
+
+    def generate_query_key(self, serializer):
+        """
+        Return filter key that can be passed to Django's filter() method.
+        Translates serializer field names to model field names by inspecting
+        serializer.
+        """
+        rewritten = []
+        last = len(self.field) - 1
+        s = serializer
+        for i, field_name in enumerate(self.field):
+            # For related objects that aren't sideloaded, serializer.fields
+            # is empty. Call get_*fields() method.
+            fields = s.fields or getattr(
+                s, 'get_all_fields', 'get_fields')()
+
+            if field_name not in fields:
+                raise ValidationError(
+                    "Invalid filter field: %s" % field_name)
+
+            field = fields[field_name]
+
+            # If get_all_fields() was used above, field could be unbound,
+            # and field.source would be None
+            rewritten.append(field.source or field_name)
+
+            if i == last:
+                break
+
+            # Recurse into nested field
+            s = getattr(field, 'serializer', None)
+            if isinstance(s, serializers.ListSerializer):
+                s = s.child
+            if not s:
+                raise ValidationError(
+                    "Invalid nested filter field: %s" % field_name
+                )
+
+        if self.operator:
+            rewritten.append(self.operator)
+
+        return '__'.join(rewritten)
 
 
 class DynamicFilterBackend(BaseFilterBackend):
@@ -18,6 +83,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         'gte',
         'lte',
         'isnull',
+        'eq',
         None,
     )
 
@@ -71,15 +137,11 @@ class DynamicFilterBackend(BaseFilterBackend):
 
             parts = spec.split('.')
 
-            # if dot-delimited, assume last part is the operator, otherwise
-            # assume whole thing is a field name (with 'eq' implied).
-            field = '__'.join(parts[:-1]) if len(parts) > 1 else parts[0]
-
-            # Assume last part of a dot-delimited field spec is an operator.
-            # Note, however, that 'foo.bar' is a valid field spec with an 'eq'
-            # implied as operator. This will be resolved below.
-            operator = (parts[-1] if len(parts) > 1
-                        and parts[-1] != 'eq' else None)
+            # Last part could be operator, e.g. "events.capacity.gte"
+            if len(parts) > 1 and parts[-1] in self.VALID_FILTER_OPERATORS:
+                operator = parts.pop()
+            else:
+                operator = None
 
             # All operators except 'range' and 'in' should have one value
             if operator == 'range':
@@ -91,24 +153,19 @@ class DynamicFilterBackend(BaseFilterBackend):
                 value = value[0]
                 if operator == 'isnull' and isinstance(value, (str, unicode)):
                     value = value.lower() not in self.FALSEY_STRINGS
-            else:
-                # Unknown operator, we'll treat it like a field
-                # e.g: filter{foo.bar}=baz
-                field += '__' + operator
-                operator = None
-                value = value[0]
+                elif operator == 'eq':
+                    operator = None
 
-            param = field
-            if operator:
-                param += '__' + operator
+            node = FilterNode(parts, operator, value)
 
+            # insert into output tree
             path = rel if rel else []
-            path.extend([inex, param])
-            out.insert(path, value)
+            path += [inex, node.key]
+            out.insert(path, node)
 
         return out
 
-    def _filters_to_query(self, includes, excludes, rewrites=None, q=None):
+    def _filters_to_query(self, includes, excludes, serializer, q=None):
         """
         Construct Django Query object from request.
         Arguments are dictionaries, which will be passed to Q() as kwargs.
@@ -119,25 +176,22 @@ class DynamicFilterBackend(BaseFilterBackend):
             Q(foo='bar', baz__in=[1, 2])
 
         Arguments:
-          includes: Dictionary of inclusion filters.
-          excludes: Dictionary of inclusion filters.
-          rewrites: Dictionary of field rewrites. (e.g. when field and source
-              are different)
+          includes: TreeMap representing inclusion filters.
+          excludes: TreeMap representing exclusion filters.
+          serializer: serializer instance of top-level object
+          q: Q() object (optional)
 
         Returns:
           Q() instance or None if no inclusion or exclusion filters
           were specified.
         """
 
-        def rewrite_filters(filters, rewrites):
-            if not rewrites:
-                return filters
+        def rewrite_filters(filters, serializer):
             out = {}
-            for k, v in filters.iteritems():
-                if k in rewrites:
-                    out[rewrites[k].replace('.', '__')] = v
-                else:
-                    out[k] = v
+            for k, node in filters.iteritems():
+                filter_key = node.generate_query_key(serializer)
+                out[filter_key] = node.value
+
             return out
 
         q = q or Q()
@@ -146,10 +200,10 @@ class DynamicFilterBackend(BaseFilterBackend):
             return None
 
         if includes:
-            includes = rewrite_filters(includes, rewrites)
+            includes = rewrite_filters(includes, serializer)
             q &= Q(**includes)
         if excludes:
-            excludes = rewrite_filters(excludes, rewrites)
+            excludes = rewrite_filters(excludes, serializer)
             for k, v in excludes.iteritems():
                 q &= ~Q(**{k: v})
         return q
@@ -170,9 +224,9 @@ class DynamicFilterBackend(BaseFilterBackend):
         """
 
         if serializer:
-            queryset = queryset or serializer.Meta.model.objects
+            if queryset is None:
+                queryset = serializer.Meta.model.objects
         else:
-            queryset = queryset
             serializer = self.view.get_serializer()
 
         prefetch_related = {}
@@ -185,9 +239,8 @@ class DynamicFilterBackend(BaseFilterBackend):
         if filters is None:
             filters = self._extract_filters()
 
-        field_rewrites = {}
-
-        for name, field in serializer.fields.iteritems():
+        fields = serializer.fields
+        for name, field in fields.iteritems():
             original_field = field
             if isinstance(field, DynamicRelationField):
                 field = field.serializer
@@ -217,9 +270,6 @@ class DynamicFilterBackend(BaseFilterBackend):
                         source,
                         queryset=prefetch_qs)
 
-            if name != source:
-                field_rewrites[name] = source
-
             if use_only:
                 if source == '*':
                     use_only = False
@@ -237,7 +287,7 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         q = self._filters_to_query(
             includes=filters.get('_include'), excludes=filters.get('_exclude'),
-            rewrites=field_rewrites)
+            serializer=serializer)
         if q:
             queryset = queryset.filter(q)
         return queryset.prefetch_related(*prefetch_related.values())

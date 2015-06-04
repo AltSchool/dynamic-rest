@@ -387,6 +387,42 @@ class TestUsersAPI(APITestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual([1], content['groups'][0]['loc1users'])
 
+    def testFilterWithNestedRewrite(self):
+        """
+        Test filter for members.id which needs to be rewritten as users.id
+        """
+        user = User.objects.create(name='test user')
+        group = Group.objects.create(name='test group')
+        user.groups.add(group)
+
+        url = '/groups/?filter{members.id}=%s&include[]=members' % user.pk
+        response = self.client.get(url)
+        content = json.loads(response.content)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(1, len(content['groups']))
+        self.assertEqual(group.pk, content['groups'][0]['id'])
+
+        url = (
+            '/users/?filter{groups.members.id}=%s'
+            '&include[]=groups.members' % user.pk
+        )
+        response = self.client.get(url)
+        self.assertEqual(200, response.status_code)
+        content = json.loads(response.content)
+        self.assertEqual(1, len(content['users']))
+
+    def testBadFilter(self):
+        # Filtering on non-existent field should return 400
+        url = '/users/?filter{foobar}=1'
+        response = self.client.get(url)
+        self.assertEqual(400, response.status_code)
+
+    def testBadDeferredFilter(self):
+        # Filtering deferred field without including should return 400
+        url = '/users/?filter{groups.id}=1'
+        response = self.client.get(url)
+        self.assertEqual(400, response.status_code)
+
     def testIsNull(self):
         """
         Test for .isnull filters
