@@ -239,12 +239,13 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
                 WithDynamicSerializerMixin,
                 self).to_representation(instance)
 
-        if self.embed:
-            # Return without wrapping to disable sideloading behavior
-            return representation
-
         # tag the representation with the serializer and instance
-        return TaggedDict(representation, serializer=self, instance=instance)
+        return TaggedDict(
+            representation,
+            serializer=self,
+            instance=instance,
+            embed=self.embed
+        )
 
     def save(self, *args, **kwargs):
         update = getattr(self, 'instance', None) is not None
