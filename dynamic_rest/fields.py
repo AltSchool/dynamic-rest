@@ -6,6 +6,8 @@ from rest_framework.exceptions import ParseError, NotFound
 from django.db.models.related import RelatedObject
 from django.db.models import ManyToManyField
 
+from dynamic_rest.bases import DynamicSerializerBase
+
 
 def field_is_remote(model, field_name):
     """
@@ -82,16 +84,29 @@ class DynamicRelationField(DynamicField):
 
     SERIALIZER_KWARGS = set(('many', 'source'))
 
-    def __init__(self, serializer_class, many=False, queryset=None, **kwargs):
+    def __init__(
+            self,
+            serializer_class,
+            many=False,
+            queryset=None,
+            embed=False,
+            **kwargs
+            ):
         """
         Arguments:
           serializer_class: Serializer class (or string representation)
             to proxy.
+          many: Boolean, if relation is to-many.
+          queryset: Default queryset to apply when filtering for related
+            objects.
+          embed: Always embed related object(s). Will not sideload, and
+            will always include full object unless specifically excluded.
         """
         self.kwargs = kwargs
         self._serializer_class = serializer_class
         self.bound = False
         self.queryset = queryset
+        self.embed = embed
         if '.' in self.kwargs.get('source', ''):
             raise Exception('Nested relationships are not supported')
         super(DynamicRelationField, self).__init__(**kwargs)
@@ -130,10 +145,16 @@ class DynamicRelationField(DynamicField):
         if hasattr(self, '_serializer'):
             return self._serializer
 
-        serializer = self.serializer_class(
-            **
-            {k: v for k, v in self.kwargs.iteritems()
-             if k in self.SERIALIZER_KWARGS})
+        init_args = {
+            k: v for k, v in self.kwargs.iteritems()
+            if k in self.SERIALIZER_KWARGS
+        }
+
+        if self.embed and issubclass(
+                self.serializer_class, DynamicSerializerBase):
+            init_args['embed'] = True
+
+        serializer = self.serializer_class(**init_args)
         serializer.parent = self
         self._serializer = serializer
         return serializer

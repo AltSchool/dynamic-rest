@@ -1,0 +1,2 @@
+class DynamicSerializerBase(object):
+    pass

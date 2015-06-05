@@ -483,3 +483,25 @@ class TestLocationsAPI(APITestCase):
         self.assertEqual(201, response.status_code)
         content = json.loads(response.content)
         self.assertEqual(content['location']['metadata'], data['metadata'])
+
+
+class TestUserLocationsAPI(APITestCase):
+    """
+    Test API on serializer with embedded fields.
+    """
+
+    def setUp(self):
+        self.fixture = create_fixture()
+
+    def testGetEmbedded(self):
+        with self.assertNumQueries(3):
+            url = '/user_locations/1/'
+            response = self.client.get(url)
+
+        self.assertEqual(200, response.status_code)
+        content = json.loads(response.content)
+        groups = content['user_location']['groups']
+        location = content['user_location']['location']
+        self.assertEqual(content['user_location']['location']['name'], '0')
+        self.assertTrue(isinstance(groups[0], dict))
+        self.assertTrue(isinstance(location, dict))
