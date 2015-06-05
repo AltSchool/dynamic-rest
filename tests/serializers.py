@@ -109,3 +109,13 @@ class NestedEphemeralSerializer(DynamicEphemeralSerializer):
         name = 'nested'
 
     value_count = DynamicRelationField('CountsSerializer', deferred=False)
+
+
+class UserLocationSerializer(UserSerializer):
+    """ Serializer to test embedded fields """
+    class Meta:
+        model = User
+        name = 'user_location'
+
+    location = DynamicRelationField('LocationSerializer', embed=True)
+    groups = DynamicRelationField('GroupSerializer', many=True, embed=True)

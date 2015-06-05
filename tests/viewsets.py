@@ -1,6 +1,7 @@
 from dynamic_rest.viewsets import DynamicModelViewSet
 from tests.serializers import (
-    UserSerializer, GroupSerializer, LocationSerializer
+    UserSerializer, GroupSerializer, LocationSerializer,
+    UserLocationSerializer
 )
 from tests.models import User, Group, Location
 
@@ -47,3 +48,9 @@ class LocationViewSet(DynamicModelViewSet):
     model = Location
     serializer_class = LocationSerializer
     queryset = Location.objects.all()
+
+
+class UserLocationViewSet(DynamicModelViewSet):
+    model = User
+    serializer_class = UserLocationSerializer
+    queryset = User.objects.all()
