@@ -172,6 +172,8 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
             self._all_fields = super(
                 WithDynamicSerializerMixin,
                 self).get_fields()
+            for k, field in self._all_fields.iteritems():
+                field.parent = self
         return self._all_fields
 
     def get_fields(self):
