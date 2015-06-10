@@ -417,11 +417,18 @@ class TestUsersAPI(APITestCase):
         response = self.client.get(url)
         self.assertEqual(400, response.status_code)
 
-    def testBadDeferredFilter(self):
-        # Filtering deferred field without including should return 400
-        url = '/users/?filter{groups.id}=1'
+    def testDeferredFilter(self):
+        # Filtering deferred field should work
+        grp = Group.objects.create(name='test group')
+        user = self.fixture.users[0]
+        user.groups.add(grp)
+
+        url = '/users/?filter{groups.id}=%s' % grp.pk
         response = self.client.get(url)
-        self.assertEqual(400, response.status_code)
+        self.assertEqual(200, response.status_code)
+        content = json.loads(response.content)
+        self.assertEqual(1, len(content['users']))
+        self.assertEqual(user.pk, content['users'][0]['id'])
 
     def testIsNull(self):
         """

@@ -38,10 +38,14 @@ class FilterNode(object):
         last = len(self.field) - 1
         s = serializer
         for i, field_name in enumerate(self.field):
-            # For related objects that aren't sideloaded, serializer.fields
-            # is empty. Call get_*fields() method.
-            fields = s.fields or getattr(
-                s, 'get_all_fields', 'get_fields')()
+            # Note: .fields can be empty for related serializers that aren't
+            # sideloaded. Fields that are deferred also won't be present.
+            # If field name isn't in serializer.fields, get full list from
+            # get_all_fields() method. This is somewhat expensive, so only do
+            # this if we have to.
+            fields = s.fields
+            if field_name not in fields:
+                fields = getattr(s, 'get_all_fields', lambda: {})()
 
             if field_name not in fields:
                 raise ValidationError(
