@@ -498,6 +498,17 @@ class TestLocationsAPI(APITestCase):
         content = json.loads(response.content)
         self.assertEqual(1, len(content['locations']))
 
+    def testCatFilters(self):
+        """Tests various filter rewrite scenarios"""
+        urls = [
+            '/locations/?filter{cats}=1',
+            '/locations/?filter{friendly_cats}=1',
+            '/locations/?filter{bad_cats}=1'
+        ]
+        for url in urls:
+            response = self.client.get(url)
+            self.assertEqual(200, response.status_code)
+
 
 class TestUserLocationsAPI(APITestCase):
     """

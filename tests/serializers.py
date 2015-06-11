@@ -1,7 +1,15 @@
-from tests.models import Location, Permission, Group, User
+from tests.models import Location, Permission, Group, User, Cat
 from dynamic_rest.serializers import DynamicModelSerializer
 from dynamic_rest.serializers import DynamicEphemeralSerializer
 from dynamic_rest.fields import DynamicRelationField, CountField, DynamicField
+
+
+class CatSerializer(DynamicModelSerializer):
+
+    class Meta:
+        model = Cat
+        name = 'cat'
+        deferred_fields = ('home', 'backup_home', 'hunting_grous')
 
 
 class LocationSerializer(DynamicModelSerializer):
@@ -9,7 +17,10 @@ class LocationSerializer(DynamicModelSerializer):
     class Meta:
         model = Location
         name = 'location'
-        fields = ('id', 'name', 'users', 'user_count', 'address', 'metadata')
+        fields = (
+            'id', 'name', 'users', 'user_count', 'address', 'metadata',
+            'cats', 'friendly_cats', 'bad_cats'
+        )
 
     users = DynamicRelationField(
         'UserSerializer',
@@ -19,6 +30,12 @@ class LocationSerializer(DynamicModelSerializer):
     user_count = CountField('users', required=False, deferred=True)
     address = DynamicField(source='blob', required=False, deferred=True)
     metadata = DynamicField(deferred=True, required=False)
+    cats = DynamicRelationField(
+        'CatSerializer', source='cat_set', many=True, deferred=True)
+    friendly_cats = DynamicRelationField(
+        'CatSerializer', many=True, deferred=True)
+    bad_cats = DynamicRelationField(
+        'CatSerializer', source='annoying_cats', many=True, deferred=True)
 
 
 class PermissionSerializer(DynamicModelSerializer):
