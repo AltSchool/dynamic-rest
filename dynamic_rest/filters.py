@@ -1,6 +1,9 @@
 from django.db.models import Q, Prefetch
+from django.db.models.related import RelatedObject
 from dynamic_rest.datastructures import TreeMap
-from dynamic_rest.fields import DynamicRelationField, field_is_remote
+from dynamic_rest.fields import (
+    DynamicRelationField, field_is_remote, get_model_field
+)
 
 from rest_framework.exceptions import ValidationError
 from rest_framework import serializers
@@ -53,9 +56,16 @@ class FilterNode(object):
 
             field = fields[field_name]
 
+            # For remote fields, strip off '_set' for filtering. This is a
+            # weird Django inconsistency.
+            model_field_name = field.source or field_name
+            model_field = get_model_field(s.get_model(), model_field_name)
+            if isinstance(model_field, RelatedObject):
+                model_field_name = model_field.field.related_query_name()
+
             # If get_all_fields() was used above, field could be unbound,
             # and field.source would be None
-            rewritten.append(field.source or field_name)
+            rewritten.append(model_field_name)
 
             if i == last:
                 break

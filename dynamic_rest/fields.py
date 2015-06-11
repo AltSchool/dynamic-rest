@@ -1,12 +1,37 @@
 import importlib
 from itertools import chain
+import os
 
 from rest_framework import fields
 from rest_framework.exceptions import ParseError, NotFound
+from django.conf import settings
 from django.db.models.related import RelatedObject
 from django.db.models import ManyToManyField
 
 from dynamic_rest.bases import DynamicSerializerBase
+
+
+def get_model_field(model, field_name):
+    """
+    Helper function to get model field, including related fields.
+    """
+    meta = model._meta
+    try:
+        return meta.get_field_by_name(field_name)[0]
+    except:
+        related_objects = {
+            o.get_accessor_name(): o
+            for o in chain(
+                meta.get_all_related_objects(),
+                meta.get_all_related_many_to_many_objects()
+            )
+        }
+        if field_name in related_objects:
+            return related_objects[field_name]
+        else:
+            raise AttributeError(
+                '%s is not a valid field for %s' % (field_name, model)
+            )
 
 
 def field_is_remote(model, field_name):
@@ -18,24 +43,8 @@ def field_is_remote(model, field_name):
         # ephemeral model with no metaclass
         return False
 
-    meta = model._meta
-    try:
-        model_field = meta.get_field_by_name(field_name)[0]
-        return isinstance(model_field, (ManyToManyField, RelatedObject))
-    except:
-        related_object_names = {
-            o.get_accessor_name()
-            for o in chain(
-                meta.get_all_related_objects(),
-                meta.get_all_related_many_to_many_objects()
-            )
-        }
-        if field_name in related_object_names:
-            return True
-        else:
-            raise AttributeError(
-                '%s is not a valid field for %s' % (field_name, model)
-            )
+    model_field = get_model_field(model, field_name)
+    return isinstance(model_field, (ManyToManyField, RelatedObject))
 
 
 class DynamicField(fields.Field):
@@ -187,6 +196,10 @@ class DynamicRelationField(DynamicField):
             return serializer.to_representation(related)
         except Exception as e:
             # Provide more context to help debug these cases
+            if getattr(settings, 'DEBUG', False) or os.environ.get(
+                    'DREST_DEBUG', False):
+                import traceback
+                traceback.print_exc()
             raise Exception(
                 "Failed to serialize %s.%s: %s\nObj: %s" %
                 (self.parent.__class__.__name__,

@@ -11,6 +11,17 @@ class User(models.Model):
     location = models.ForeignKey('Location', null=True, blank=True)
 
 
+class Cat(models.Model):
+    name = models.TextField()
+    home = models.ForeignKey('Location')
+    backup_home = models.ForeignKey('Location', related_name='friendly_cats')
+    hunting_grounds = models.ManyToManyField(
+        'Location',
+        related_name='annoying_cats',
+        related_query_name='getoffmylawn'
+    )
+
+
 class Group(models.Model):
     name = models.TextField()
     permissions = models.ManyToManyField('Permission', related_name='groups')
