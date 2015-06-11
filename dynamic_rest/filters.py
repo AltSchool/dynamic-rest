@@ -53,9 +53,16 @@ class FilterNode(object):
 
             field = fields[field_name]
 
+            # For remote fields, strip off '_set' for filtering. This is a
+            # weird Django inconsistency.
+            model_field_name = field.source or field_name
+            if model_field_name.endswith('_set') and field_is_remote(
+                    s.get_model(), model_field_name):
+                model_field_name = model_field_name[:-4]
+
             # If get_all_fields() was used above, field could be unbound,
             # and field.source would be None
-            rewritten.append(field.source or field_name)
+            rewritten.append(model_field_name)
 
             if i == last:
                 break

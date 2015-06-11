@@ -491,6 +491,13 @@ class TestLocationsAPI(APITestCase):
         content = json.loads(response.content)
         self.assertEqual(content['location']['metadata'], data['metadata'])
 
+    def testFilterByUser(self):
+        url = '/locations/?filter{users}=1'
+        response = self.client.get(url)
+        self.assertEqual(200, response.status_code)
+        content = json.loads(response.content)
+        self.assertEqual(1, len(content['locations']))
+
 
 class TestUserLocationsAPI(APITestCase):
     """
