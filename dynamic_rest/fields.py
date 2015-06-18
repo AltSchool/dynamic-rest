@@ -2,11 +2,11 @@ import importlib
 from itertools import chain
 import os
 
-from rest_framework import fields
+from rest_framework import fields, serializers
 from rest_framework.exceptions import ParseError, NotFound
 from django.conf import settings
 from django.db.models.related import RelatedObject
-from django.db.models import ManyToManyField
+from django.db.models import ManyToManyField, ForeignKey
 
 from dynamic_rest.bases import DynamicSerializerBase
 
@@ -45,6 +45,55 @@ def field_is_remote(model, field_name):
 
     model_field = get_model_field(model, field_name)
     return isinstance(model_field, (ManyToManyField, RelatedObject))
+
+
+def s_field_from_m_field(serializer, model_field_name):
+    """
+    Try to match a model field name to a serializer field name
+    """
+    if isinstance(serializer, serializers.ListSerializer):
+        serializer = serializer.child
+
+    fields = serializer.get_all_fields()
+    for name, remote_field in fields.iteritems():
+        mf_name = remote_field.source or name
+        if mf_name == model_field_name:
+            return name
+    raise Exception("Could not find %s in %s" % (
+        model_field_name, serializer))
+
+
+def reverse_field(serializer, field_name):
+    """
+    Given serializer and serializer field, find reverse
+    serializer field name.
+
+    Usage:
+      s_name, f_name = reverse_field(catserializer, 'foobar')
+      reverse_api = '/%s/?filter{%s}=%s' % (s_name, f_name, pk)
+    """
+    model = serializer.get_model()
+    field = serializer.fields[field_name]
+    if not isinstance(field, DynamicRelationField):
+        return
+    remote_serializer = field.serializer
+    model_field_name = field.source or field_name
+    model_field = get_model_field(model, model_field_name)
+
+    # Reverse remote field
+    if isinstance(model_field, RelatedObject):
+        remote_field_name = model_field.field.name
+    elif isinstance(model_field, ManyToManyField):
+        remote_field_name = model_field.rel.related_name
+    elif isinstance(model_field, ForeignKey):
+        remote_field_name = model_field.related_field.name
+
+    # Return remote serializer name and field name
+    return (
+        remote_serializer.get_plural_name(),
+        s_field_from_m_field(
+            remote_serializer, remote_field_name)
+    )
 
 
 class DynamicField(fields.Field):

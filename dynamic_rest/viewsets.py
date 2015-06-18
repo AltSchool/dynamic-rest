@@ -1,4 +1,3 @@
-from django.db.models import Prefetch
 from django.conf import settings
 from django.http import QueryDict
 

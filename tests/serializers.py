@@ -12,6 +12,10 @@ from dynamic_rest.fields import DynamicRelationField, CountField, DynamicField
 
 
 class CatSerializer(DynamicModelSerializer):
+    home = DynamicRelationField('LocationSerializer')
+    backup_home = DynamicRelationField('LocationSerializer')
+    foobar = DynamicRelationField(
+        'LocationSerializer', many=True, source='hunting_grounds')
 
     class Meta:
         model = Cat
