@@ -67,6 +67,6 @@ class DynamicRouter(DefaultRouter):
                 url=url,
                 mapping={'get': methodname},
                 name=replace_methodname(route_name, field_name),
-                initkwargs={'field_name': field_name} # attaches to viewset
+                initkwargs={'field_name': field_name}  # attaches to viewset
             ))
         return routes
