@@ -304,4 +304,4 @@ class DynamicFilterBackend(BaseFilterBackend):
             serializer=serializer)
         if q:
             queryset = queryset.filter(q)
-        return queryset.prefetch_related(*prefetch_related.values())
+        return queryset.prefetch_related(*prefetch_related.values()).distinct()
