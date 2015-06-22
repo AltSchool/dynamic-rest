@@ -1,3 +1,6 @@
+from dynamic_rest.patches import patch_prefetch_one_level
+patch_prefetch_one_level()
+
 from django.db.models import Q, Prefetch
 from django.db.models.related import RelatedObject
 from dynamic_rest.datastructures import TreeMap

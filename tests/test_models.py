@@ -9,7 +9,7 @@ class TestModels(TestCase):
         a = A.objects.create(name="a")
         b = B.objects.create(a=a)
         d = D.objects.create(name="d")
-        c = C.objects.create(b=b, d=d)
+        C.objects.create(b=b, d=d)
 
         # This fails
         A.objects.prefetch_related(
