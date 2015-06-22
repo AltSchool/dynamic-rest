@@ -269,10 +269,17 @@ class DynamicFilterBackend(BaseFilterBackend):
                 remote = field_is_remote(model, source0)
                 id_only = getattr(field, 'id_only', lambda: False)()
                 if not id_only or remote:
+                    related_queryset = getattr(
+                        original_field,
+                        'queryset',
+                        None
+                    )
+                    if callable(related_queryset):
+                        related_queryset = related_queryset(field)
                     prefetch_qs = self._filter_queryset(
                         serializer=field,
                         filters=filters.get(name, {}),
-                        queryset=getattr(original_field, 'queryset', None)
+                        queryset=related_queryset
                     )
 
                     # Note: There can only be one prefetch per source, even
@@ -304,4 +311,4 @@ class DynamicFilterBackend(BaseFilterBackend):
             serializer=serializer)
         if q:
             queryset = queryset.filter(q)
-        return queryset.prefetch_related(*prefetch_related.values())
+        return queryset.prefetch_related(*prefetch_related.values()).distinct()

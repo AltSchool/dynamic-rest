@@ -76,7 +76,7 @@ class GroupSerializer(DynamicModelSerializer):
         'UserSerializer',
         source='users',
         many=True,
-        queryset=User.objects.filter(location_id=1),
+        queryset=lambda srlzr: User.objects.filter(location_id=1),
         deferred=True)
 
 
