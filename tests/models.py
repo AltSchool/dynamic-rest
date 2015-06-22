@@ -47,3 +47,20 @@ class Event(models.Model):
     status = models.TextField(default="current")
     location = models.ForeignKey('Location', null=True, blank=True)
     users = models.ManyToManyField('User')
+
+
+class A(models.Model):
+    name = models.TextField(blank=True)
+
+
+class B(models.Model):
+    a = models.OneToOneField('A', related_name='b')
+
+
+class C(models.Model):
+    b = models.ForeignKey('B', related_name='cs')
+    d = models.ForeignKey('D')
+
+
+class D(models.Model):
+    name = models.TextField(blank=True)
