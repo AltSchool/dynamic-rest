@@ -116,7 +116,7 @@ class WithDynamicViewSetMixin(object):
                     # this fixes an Ember queryparams issue
                     name = name[offset:-3]
                 else:
-                    # malformed arugment like:
+                    # malformed argument like:
                     # filter{foo=bar
                     raise exceptions.ParseError(
                         "'%s' is not a well-formed filter key" % name
