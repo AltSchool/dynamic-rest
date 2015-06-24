@@ -206,7 +206,8 @@ class TestUsersAPI(APITestCase):
 
     def testFilterBasic(self):
         with self.assertNumQueries(1):
-            response = self.client.get('/users/?filter{name}=1')
+            # verify that extra [] are stripped out of the key
+            response = self.client.get('/users/?filter{name}[]=1')
         self.assertEquals(200, response.status_code)
         self.assertEquals(
             {
@@ -371,6 +372,16 @@ class TestUsersAPI(APITestCase):
         content = json.loads(response.content)
         self.assertEqual(200, response.status_code)
         self.assertEqual(sorted([1, 2]), content['groups'][0]['loc1users'])
+
+    def testDefaultLambdaQueryset(self):
+        url = '/groups/?filter{id}=1&include[]=loc1usersLambda'
+        response = self.client.get(url)
+        content = json.loads(response.content)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            sorted([1, 2]),
+            content['groups'][0]['loc1usersLambda']
+        )
 
     def testDefaultQuerysetWithFilter(self):
         """

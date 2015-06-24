@@ -108,8 +108,19 @@ class WithDynamicViewSetMixin(object):
         prefix = name[:-1]
         offset = len(prefix)
         for name, value in params:
-            if name.startswith(prefix) and name.endswith('}'):
-                name = name[offset:-1]
+            if name.startswith(prefix):
+                if name.endswith('}'):
+                    name = name[offset:-1]
+                elif name.endswith('}[]'):
+                    # strip off trailing []
+                    # this fixes an Ember queryparams issue
+                    name = name[offset:-3]
+                else:
+                    # malformed argument like:
+                    # filter{foo=bar
+                    raise exceptions.ParseError(
+                        "'%s' is not a well-formed filter key" % name
+                    )
             else:
                 continue
             params_map[name] = value
