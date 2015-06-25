@@ -1,8 +1,11 @@
 import copy
 from django.db import models
+
+from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.wrappers import TaggedDict
+
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 from rest_framework import serializers, fields, exceptions
 
@@ -12,6 +15,9 @@ class DynamicListSerializer(serializers.ListSerializer):
     def to_representation(self, data):
         iterable = data.all() if isinstance(data, models.Manager) else data
         return [self.child.to_representation(item) for item in iterable]
+
+    def get_model(self):
+        return self.child.get_model()
 
     def get_name(self):
         return self.child.get_name()
@@ -34,7 +40,7 @@ class DynamicListSerializer(serializers.ListSerializer):
         return self._sideloaded_data
 
 
-class WithDynamicSerializerMixin(object):
+class WithDynamicSerializerMixin(DynamicSerializerBase):
 
     def __new__(cls, *args, **kwargs):
         """
@@ -56,7 +62,7 @@ class WithDynamicSerializerMixin(object):
     def __init__(
             self, instance=None, data=fields.empty, only_fields=None,
             include_fields=None, exclude_fields=None, request_fields=None,
-            sideload=False, dynamic=True, **kwargs):
+            sideload=False, dynamic=True, embed=False, **kwargs):
         """
         Custom initializer that builds `request_fields` and
         sets a `ListSerializer` that doesn't re-evaluate querysets.
@@ -95,6 +101,7 @@ class WithDynamicSerializerMixin(object):
         self.sideload = sideload
         self.dynamic = dynamic
         self.request_fields = request_fields or {}
+        self.embed = embed
 
         if dynamic:
             self._dynamic_init(only_fields, include_fields, exclude_fields)
@@ -116,29 +123,29 @@ class WithDynamicSerializerMixin(object):
         only_fields = set(only_fields or [])
         include_fields = include_fields or []
         exclude_fields = exclude_fields or []
+        all_fields = set(self.get_all_fields().keys())
 
         if only_fields:
-            all_fields = self.get_all_fields()
-            for name in all_fields.iterkeys():
-                if name not in only_fields:
-                    self.request_fields[name] = False
-                elif self.request_fields.get(name, False) is False:
-                    self.request_fields[name] = True
-            return
+            include_fields = only_fields
+            exclude_fields = all_fields - only_fields
 
         if include_fields == '*':
-            all_fields = self.get_all_fields()
-            for name in all_fields.iterkeys():
-                if self.request_fields.get(name, False) is False:
-                    self.request_fields[name] = True
-            return
-
-        for name in include_fields:
-            if self.request_fields.get(name, False) is False:
-                self.request_fields[name] = True
+            include_fields = all_fields
 
         for name in exclude_fields:
             self.request_fields[name] = False
+
+        for name in include_fields:
+            if not isinstance(self.request_fields.get(name), dict):
+                # not sideloading this field
+                self.request_fields[name] = True
+
+    def get_model(self):
+        """Get the model, if the serializer has one.
+
+        Model serializers should implement this method.
+        """
+        return None
 
     def get_name(self):
         """Returns the serializer name.
@@ -165,6 +172,8 @@ class WithDynamicSerializerMixin(object):
             self._all_fields = super(
                 WithDynamicSerializerMixin,
                 self).get_fields()
+            for k, field in self._all_fields.iteritems():
+                field.parent = self
         return self._all_fields
 
     def get_fields(self):
@@ -173,22 +182,23 @@ class WithDynamicSerializerMixin(object):
         If `dynamic` is True, respects field inclusions/exlcusions.
         Otherwise, reverts back to standard DRF behavior.
         """
+        all_fields = self.get_all_fields()
         if self.dynamic is False:
-            return self.get_all_fields()
+            return all_fields
 
         if self.id_only():
             return {}
 
-        serializer_fields = copy.deepcopy(self.get_all_fields())
+        serializer_fields = copy.deepcopy(all_fields)
         request_fields = self.request_fields
 
         # determine fields that are deferred by default
         meta_deferred = set(getattr(self.Meta, 'deferred_fields', []))
-        deferred = set([
+        deferred = {
             name for name, field in serializer_fields.iteritems()
             if getattr(field, 'deferred', None) is True or name in
             meta_deferred
-        ])
+        }
 
         # apply request overrides
         if request_fields:
@@ -207,28 +217,37 @@ class WithDynamicSerializerMixin(object):
 
         # inject request_fields into sub-serializers
         for name, field in serializer_fields.iteritems():
+            sub_fields = request_fields.get(name, True)
             inject = None
             if isinstance(field, serializers.BaseSerializer):
                 inject = field
             elif isinstance(field, DynamicRelationField):
                 field.parent = self
                 inject = field.serializer
+                if field.embed and sub_fields is True:
+                    sub_fields = {}
             if isinstance(inject, serializers.ListSerializer):
                 inject = inject.child
             if inject:
-                inject.request_fields = request_fields.get(name, True)
+                inject.request_fields = sub_fields
 
         return serializer_fields
 
     def to_representation(self, instance):
-        if self.dynamic and self.id_only():
+        if self.id_only():
             return instance.pk
         else:
             representation = super(
                 WithDynamicSerializerMixin,
                 self).to_representation(instance)
+
         # tag the representation with the serializer and instance
-        return TaggedDict(representation, serializer=self, instance=instance)
+        return TaggedDict(
+            representation,
+            serializer=self,
+            instance=instance,
+            embed=self.embed
+        )
 
     def save(self, *args, **kwargs):
         update = getattr(self, 'instance', None) is not None
@@ -250,7 +269,7 @@ class WithDynamicSerializerMixin(object):
         Returns:
           True iff `request_fields` is True
         """
-        return self.request_fields is True
+        return self.dynamic and self.request_fields is True
 
     @property
     def data(self):
@@ -346,4 +365,7 @@ class DynamicEphemeralSerializer(
             data = instance
             instance = EphemeralObject(data)
 
-        return TaggedDict(data, serializer=self, instance=instance)
+        if self.id_only():
+            return data
+        else:
+            return TaggedDict(data, serializer=self, instance=instance)

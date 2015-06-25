@@ -1,8 +1,37 @@
+import importlib
+from itertools import chain
+import os
+
 from rest_framework import fields
 from rest_framework.exceptions import ParseError, NotFound
+from django.conf import settings
 from django.db.models.related import RelatedObject
 from django.db.models import ManyToManyField
-import importlib
+
+from dynamic_rest.bases import DynamicSerializerBase
+
+
+def get_model_field(model, field_name):
+    """
+    Helper function to get model field, including related fields.
+    """
+    meta = model._meta
+    try:
+        return meta.get_field_by_name(field_name)[0]
+    except:
+        related_objects = {
+            o.get_accessor_name(): o
+            for o in chain(
+                meta.get_all_related_objects(),
+                meta.get_all_related_many_to_many_objects()
+            )
+        }
+        if field_name in related_objects:
+            return related_objects[field_name]
+        else:
+            raise AttributeError(
+                '%s is not a valid field for %s' % (field_name, model)
+            )
 
 
 def field_is_remote(model, field_name):
@@ -10,19 +39,12 @@ def field_is_remote(model, field_name):
     Helper function to determine whether model field is remote or not.
     Remote fields are many-to-many or many-to-one.
     """
+    if not hasattr(model, '_meta'):
+        # ephemeral model with no metaclass
+        return False
 
-    try:
-        model_field = model._meta.get_field_by_name(field_name)[0]
-        return isinstance(model_field, (ManyToManyField, RelatedObject))
-    except:
-        pass
-
-    # M2O fields with no related_name set in the FK use the *_set
-    # naming convention.
-    if field_name.endswith('_set'):
-        return hasattr(model, field_name)
-
-    return False
+    model_field = get_model_field(model, field_name)
+    return isinstance(model_field, (ManyToManyField, RelatedObject))
 
 
 class DynamicField(fields.Field):
@@ -44,6 +66,9 @@ class DynamicField(fields.Field):
 
     def to_representation(self, value):
         return value
+
+    def to_internal_value(self, data):
+        return data
 
 
 class DynamicComputedField(DynamicField):
@@ -68,15 +93,29 @@ class DynamicRelationField(DynamicField):
 
     SERIALIZER_KWARGS = set(('many', 'source'))
 
-    def __init__(self, serializer_class, many=False, **kwargs):
+    def __init__(
+            self,
+            serializer_class,
+            many=False,
+            queryset=None,
+            embed=False,
+            **kwargs
+            ):
         """
         Arguments:
           serializer_class: Serializer class (or string representation)
             to proxy.
+          many: Boolean, if relation is to-many.
+          queryset: Default queryset to apply when filtering for related
+            objects.
+          embed: Always embed related object(s). Will not sideload, and
+            will always include full object unless specifically excluded.
         """
         self.kwargs = kwargs
         self._serializer_class = serializer_class
         self.bound = False
+        self.queryset = queryset
+        self.embed = embed
         if '.' in self.kwargs.get('source', ''):
             raise Exception('Nested relationships are not supported')
         super(DynamicRelationField, self).__init__(**kwargs)
@@ -115,10 +154,17 @@ class DynamicRelationField(DynamicField):
         if hasattr(self, '_serializer'):
             return self._serializer
 
-        serializer = self.serializer_class(
-            **
-            {k: v for k, v in self.kwargs.iteritems()
-             if k in self.SERIALIZER_KWARGS})
+        init_args = {
+            k: v for k, v in self.kwargs.iteritems()
+            if k in self.SERIALIZER_KWARGS
+        }
+
+        if self.embed and issubclass(
+                self.serializer_class, DynamicSerializerBase):
+            init_args['embed'] = True
+
+        serializer = self.serializer_class(**init_args)
+        serializer.parent = self
         self._serializer = serializer
         return serializer
 
@@ -127,6 +173,7 @@ class DynamicRelationField(DynamicField):
 
     def to_representation(self, instance):
         serializer = self.serializer
+        model = serializer.get_model()
         source = self.source
         if not self.kwargs['many'] and serializer.id_only():
             # attempt to optimize by reading the related ID directly
@@ -134,16 +181,25 @@ class DynamicRelationField(DynamicField):
             source_id = '%s_id' % source
             if hasattr(instance, source_id):
                 return getattr(instance, source_id)
-        try:
+
+        if model is None:
             related = getattr(instance, source)
-        except:
-            return None
+        else:
+            try:
+                related = getattr(instance, source)
+            except model.DoesNotExist:
+                return None
+
         if related is None:
             return None
         try:
             return serializer.to_representation(related)
         except Exception as e:
             # Provide more context to help debug these cases
+            if getattr(settings, 'DEBUG', False) or os.environ.get(
+                    'DREST_DEBUG', False):
+                import traceback
+                traceback.print_exc()
             raise Exception(
                 "Failed to serialize %s.%s: %s\nObj: %s" %
                 (self.parent.__class__.__name__,

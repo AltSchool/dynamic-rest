@@ -1,4 +1,5 @@
 from django.db import models
+from annoying.fields import JSONField
 
 
 class User(models.Model):
@@ -8,6 +9,17 @@ class User(models.Model):
     permissions = models.ManyToManyField('Permission', related_name='users')
     # 'related_name' intentionally left unset in location field below:
     location = models.ForeignKey('Location', null=True, blank=True)
+
+
+class Cat(models.Model):
+    name = models.TextField()
+    home = models.ForeignKey('Location')
+    backup_home = models.ForeignKey('Location', related_name='friendly_cats')
+    hunting_grounds = models.ManyToManyField(
+        'Location',
+        related_name='annoying_cats',
+        related_query_name='getoffmylawn'
+    )
 
 
 class Group(models.Model):
@@ -23,6 +35,7 @@ class Permission(models.Model):
 class Location(models.Model):
     name = models.TextField()
     blob = models.TextField()
+    metadata = JSONField(null=True, blank=True)
 
 
 class Event(models.Model):
@@ -34,3 +47,20 @@ class Event(models.Model):
     status = models.TextField(default="current")
     location = models.ForeignKey('Location', null=True, blank=True)
     users = models.ManyToManyField('User')
+
+
+class A(models.Model):
+    name = models.TextField(blank=True)
+
+
+class B(models.Model):
+    a = models.OneToOneField('A', related_name='b')
+
+
+class C(models.Model):
+    b = models.ForeignKey('B', related_name='cs')
+    d = models.ForeignKey('D')
+
+
+class D(models.Model):
+    name = models.TextField(blank=True)
