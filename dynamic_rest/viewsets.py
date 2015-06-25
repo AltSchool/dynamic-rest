@@ -67,7 +67,8 @@ class WithDynamicViewSetMixin(object):
                     sender=self.__class__,
                     request=self.request,
                     instance=instance,
-                    data=serializer.data)
+                    serializer=serializer
+                )
             if POST_UPDATE in self.signals:
                 full_serializer = self.serializer_class(dynamic=False)
                 pre_data = full_serializer.to_representation(instance)
@@ -78,9 +79,9 @@ class WithDynamicViewSetMixin(object):
                 post_update.send(
                     sender=self.__class__,
                     request=self.request,
-                    instance=serializer.instance,
                     pre_data=pre_data,
-                    data=serializer.data
+                    instance=serializer.instance,
+                    serializer=serializer
                 )
 
     def perform_create(self, serializer):
@@ -89,7 +90,8 @@ class WithDynamicViewSetMixin(object):
                 pre_create.send(
                     sender=self.__class__,
                     request=self.request,
-                    data=serializer.data)
+                    serializer=serializer
+                )
 
             super(WithDynamicViewSetMixin, self).perform_update(serializer)
 
@@ -98,7 +100,8 @@ class WithDynamicViewSetMixin(object):
                     sender=self.__class__,
                     request=self.request,
                     instance=serializer.instance,
-                    data=serializer.data)
+                    serializer=serializer
+                )
 
     def perform_destroy(self, instance):
         with self.in_transaction(DELETE):
@@ -106,7 +109,8 @@ class WithDynamicViewSetMixin(object):
                 pre_delete.send(
                     sender=self.__class__,
                     request=self.request,
-                    instance=instance)
+                    instance=instance
+                )
 
             if POST_DELETE in self.signals:
                 full_serializer = self.serializer_class(dynamic=False)
@@ -119,7 +123,8 @@ class WithDynamicViewSetMixin(object):
                     sender=self.__class__,
                     request=self.request,
                     instance=instance,
-                    pre_data=pre_data)
+                    pre_data=pre_data
+                )
 
     @contextmanager
     def in_transaction(self, request_type):
