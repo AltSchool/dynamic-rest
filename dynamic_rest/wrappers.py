@@ -11,6 +11,7 @@ class TaggedDict(OrderedDict):
     def __init__(self, *args, **kwargs):
         self.serializer = kwargs.pop('serializer')
         self.instance = kwargs.pop('instance')
+        self.embed = kwargs.pop('embed', False)
         super(TaggedDict, self).__init__(*args, **kwargs)
 
     def copy(self):

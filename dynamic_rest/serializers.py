@@ -1,8 +1,11 @@
 import copy
 from django.db import models
+
+from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.wrappers import TaggedDict
+
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 from rest_framework import serializers, fields, exceptions
 
@@ -12,6 +15,9 @@ class DynamicListSerializer(serializers.ListSerializer):
     def to_representation(self, data):
         iterable = data.all() if isinstance(data, models.Manager) else data
         return [self.child.to_representation(item) for item in iterable]
+
+    def get_model(self):
+        return self.child.get_model()
 
     def get_name(self):
         return self.child.get_name()
@@ -34,7 +40,7 @@ class DynamicListSerializer(serializers.ListSerializer):
         return self._sideloaded_data
 
 
-class WithDynamicSerializerMixin(object):
+class WithDynamicSerializerMixin(DynamicSerializerBase):
 
     def __new__(cls, *args, **kwargs):
         """
@@ -56,7 +62,7 @@ class WithDynamicSerializerMixin(object):
     def __init__(
             self, instance=None, data=fields.empty, only_fields=None,
             include_fields=None, exclude_fields=None, request_fields=None,
-            sideload=False, dynamic=True, **kwargs):
+            sideload=False, dynamic=True, embed=False, **kwargs):
         """
         Custom initializer that builds `request_fields` and
         sets a `ListSerializer` that doesn't re-evaluate querysets.
@@ -95,6 +101,7 @@ class WithDynamicSerializerMixin(object):
         self.sideload = sideload
         self.dynamic = dynamic
         self.request_fields = request_fields or {}
+        self.embed = embed
 
         if dynamic:
             self._dynamic_init(only_fields, include_fields, exclude_fields)
@@ -133,6 +140,13 @@ class WithDynamicSerializerMixin(object):
                 # not sideloading this field
                 self.request_fields[name] = True
 
+    def get_model(self):
+        """Get the model, if the serializer has one.
+
+        Model serializers should implement this method.
+        """
+        return None
+
     def get_name(self):
         """Returns the serializer name.
 
@@ -158,6 +172,8 @@ class WithDynamicSerializerMixin(object):
             self._all_fields = super(
                 WithDynamicSerializerMixin,
                 self).get_fields()
+            for k, field in self._all_fields.iteritems():
+                field.parent = self
         return self._all_fields
 
     def get_fields(self):
@@ -201,16 +217,19 @@ class WithDynamicSerializerMixin(object):
 
         # inject request_fields into sub-serializers
         for name, field in serializer_fields.iteritems():
+            sub_fields = request_fields.get(name, True)
             inject = None
             if isinstance(field, serializers.BaseSerializer):
                 inject = field
             elif isinstance(field, DynamicRelationField):
                 field.parent = self
                 inject = field.serializer
+                if field.embed and sub_fields is True:
+                    sub_fields = {}
             if isinstance(inject, serializers.ListSerializer):
                 inject = inject.child
             if inject:
-                inject.request_fields = request_fields.get(name, True)
+                inject.request_fields = sub_fields
 
         return serializer_fields
 
@@ -221,8 +240,14 @@ class WithDynamicSerializerMixin(object):
             representation = super(
                 WithDynamicSerializerMixin,
                 self).to_representation(instance)
+
         # tag the representation with the serializer and instance
-        return TaggedDict(representation, serializer=self, instance=instance)
+        return TaggedDict(
+            representation,
+            serializer=self,
+            instance=instance,
+            embed=self.embed
+        )
 
     def save(self, *args, **kwargs):
         update = getattr(self, 'instance', None) is not None

@@ -1,11 +1,15 @@
 from collections import OrderedDict
 from django.test import TestCase
+
+from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.serializers import EphemeralObject, DynamicListSerializer
 from tests.serializers import (
     UserSerializer, GroupSerializer, LocationGroupSerializer,
-    CountsSerializer
+    CountsSerializer, NestedEphemeralSerializer,
+    UserLocationSerializer, LocationSerializer
 )
 from tests.setup import create_fixture
+from tests.models import User
 
 # TODO(ant): move UserSerializer-specific tests
 # into an integration test case and test serializer
@@ -494,3 +498,54 @@ class TestEphemeralSerializer(TestCase):
         data = CountsSerializer(request_fields=True).to_representation(eo)
 
         self.assertEqual(data, eo.pk)
+
+    def testNested(self):
+        value_count = EphemeralObject({'pk': 1, 'values': []})
+        nested = EphemeralObject({'pk': 1, 'value_count': value_count})
+        data = NestedEphemeralSerializer(
+            request_fields={'value_count': {}}).to_representation(nested)
+        self.assertEqual(data['value_count']['count'], 0)
+
+    def testNestedContext(self):
+        s1 = LocationGroupSerializer(context={'foo': 'bar'})
+        s2 = s1.fields['location'].serializer
+        self.assertEqual(s2.context['foo'], 'bar')
+
+
+class TestUserLocationSerializer(TestCase):
+
+    def setUp(self):
+        self.fixture = create_fixture()
+
+    def testSerializerWithEmbed(self):
+        data = UserLocationSerializer(
+            self.fixture.users[0], sideload=True).data
+        self.assertEqual(data['user_location']['location']['name'], '0')
+        self.assertEqual(
+            ["0", "1"],
+            sorted([g['name'] for g in data['user_location']['groups']])
+        )
+
+    def testSerializerWithDeferredEmbed(self):
+        # Make sure 'embed' fields can be deferred
+        class UserDeferredLocationSerializer(UserLocationSerializer):
+            class Meta:
+                model = User
+                name = 'user_deferred_location'
+            location = DynamicRelationField(
+                LocationSerializer, embed=True, deferred=True)
+
+        data = UserDeferredLocationSerializer(
+            self.fixture.users[0]).data
+        self.assertFalse('location' in data)
+
+        # Now include deferred embedded field
+        data = UserDeferredLocationSerializer(
+            self.fixture.users[0],
+            request_fields={
+                'id': True,
+                'name': True,
+                'location': True
+            }).data
+        self.assertTrue('location' in data)
+        self.assertEqual(data['location']['name'], '0')

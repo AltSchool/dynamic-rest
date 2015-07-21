@@ -49,7 +49,7 @@ class SideloadingProcessor(object):
                             depth=depth +
                             1)
 
-                if not dynamic:
+                if not dynamic or getattr(obj, 'embed', False):
                     return
 
                 name = obj.serializer.get_plural_name()
