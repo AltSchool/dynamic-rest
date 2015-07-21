@@ -93,7 +93,7 @@ class WithDynamicViewSetMixin(object):
                     serializer=serializer
                 )
 
-            super(WithDynamicViewSetMixin, self).perform_update(serializer)
+            super(WithDynamicViewSetMixin, self).perform_create(serializer)
 
             if POST_CREATE in self.signals:
                 post_create.send(
