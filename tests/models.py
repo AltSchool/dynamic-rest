@@ -11,6 +11,12 @@ class User(models.Model):
     location = models.ForeignKey('Location', null=True, blank=True)
 
 
+class Profile(models.Model):
+    user = models.OneToOneField(User)
+    display_name = models.TextField()
+    thumbnail_url = models.TextField(null=True, blank=True)
+
+
 class Cat(models.Model):
     name = models.TextField()
     home = models.ForeignKey('Location')
