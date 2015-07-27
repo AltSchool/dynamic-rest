@@ -254,12 +254,15 @@ class DynamicFilterBackend(BaseFilterBackend):
         )
 
     def _add_nested_prefetches(self, source, prefetch_related):
+        # NOTE: There may be an opportunity here to do some optimizaitons
+        #       where building a nested Prefetch tree would be beneficial.
+        #       For now, prefetch the deepest level, and let Django handle
+        #       prefetching of intermediate objects.
         source_parts = source.split('.')
-        for i in range(1, len(source_parts)):
-            k = '.'.join(source_parts[0:i])
-            if k in prefetch_related:
-                continue
-            prefetch_related[k] = '__'.join(source_parts[0:i])
+        last = len(source_parts) - 1
+        k = '.'.join(source_parts[0:last])
+        if k not in prefetch_related:
+            prefetch_related[k] = '__'.join(source_parts[0:last])
         return prefetch_related
 
     def _filter_queryset(
@@ -328,7 +331,8 @@ class DynamicFilterBackend(BaseFilterBackend):
 
                 # Prefetch nested references, where children are either
                 # deferred or not defined. If source is 'user.location.name'
-                # then we add prefetches for 'user' and 'user__location'.
+                # then we add prefetch for 'user__location' (which implicitly
+                # also prefetches 'user').
                 prefetch_related = self._add_nested_prefetches(
                     source, prefetch_related)
 
