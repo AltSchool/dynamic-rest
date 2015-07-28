@@ -1,7 +1,13 @@
 from dynamic_rest.patches import patch_prefetch_one_level
 patch_prefetch_one_level()
 
-from django.db.models import Q, Prefetch
+from django.db.models import (
+    ForeignKey,
+    OneToOneField,
+    Prefetch,
+    Q,
+)
+
 from django.db.models.related import RelatedObject
 from dynamic_rest.datastructures import TreeMap
 from dynamic_rest.fields import (
@@ -235,6 +241,32 @@ class DynamicFilterBackend(BaseFilterBackend):
                 q &= ~Q(**{k: v})
         return q
 
+    def _build_prefetch_queryset(self, name, original_field, field, filters):
+        related_queryset = getattr(original_field, 'queryset', None)
+
+        if callable(related_queryset):
+            related_queryset = related_queryset(field)
+
+        return self._filter_queryset(
+            serializer=field,
+            filters=filters.get(name, {}),
+            queryset=related_queryset
+        )
+
+    def _add_nested_prefetches(self, source, prefetch_related):
+        """Add prefetch for nested source.
+            e.g. 'user.location.name' => prefetch 'user__location'
+        """
+        # NOTE: There may be an opportunity here for some optimization
+        #       where building a nested Prefetch tree would be beneficial.
+        #       For now, prefetch the deepest level, and let Django handle
+        #       prefetching of intermediate objects.
+        source_parts = source.split('.')
+        k = '.'.join(source_parts[0:-1])
+        if k and k not in prefetch_related:
+            prefetch_related[k] = '__'.join(source_parts[0:-1])
+        return prefetch_related
+
     def _filter_queryset(
             self, serializer=None, filters=None, queryset=None):
         """
@@ -282,17 +314,8 @@ class DynamicFilterBackend(BaseFilterBackend):
                 remote = field_is_remote(model, source0)
                 id_only = getattr(field, 'id_only', lambda: False)()
                 if not id_only or remote:
-                    related_queryset = getattr(
-                        original_field,
-                        'queryset',
-                        None
-                    )
-                    if callable(related_queryset):
-                        related_queryset = related_queryset(field)
-                    prefetch_qs = self._filter_queryset(
-                        serializer=field,
-                        filters=filters.get(name, {}),
-                        queryset=related_queryset
+                    prefetch_qs = self._build_prefetch_queryset(
+                        name, original_field, field, filters
                     )
 
                     # Note: There can only be one prefetch per source, even
@@ -303,6 +326,20 @@ class DynamicFilterBackend(BaseFilterBackend):
                     prefetch_related[source] = Prefetch(
                         source,
                         queryset=prefetch_qs)
+            elif source0 is not source and (isinstance(
+                get_model_field(model, source0),
+                (OneToOneField, RelatedObject, ForeignKey))
+            ):
+
+                # Prefetch nested references, where children are either
+                # deferred or not defined. If source is 'user.location.name'
+                # then we add prefetch for 'user__location' (which implicitly
+                # also prefetches 'user').
+                # TODO(ryo): These prefetches could conflict with Prefetches
+                #            constructed on DynamicRelationFields above. They
+                #            should be consolidated... somehow.
+                prefetch_related = self._add_nested_prefetches(
+                    source, prefetch_related)
 
             if use_only:
                 if source == '*':

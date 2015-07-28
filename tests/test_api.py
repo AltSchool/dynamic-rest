@@ -2,7 +2,12 @@ import json
 from django.db import connection
 from rest_framework.test import APITestCase
 from tests.setup import create_fixture
-from tests.models import User, Group
+from tests.models import (
+    Location,
+    Group,
+    Profile,
+    User
+)
 
 
 class TestUsersAPI(APITestCase):
@@ -335,7 +340,8 @@ class TestUsersAPI(APITestCase):
         data = {
             'name': 'test',
             'last_name': 'last',
-            'location': 1
+            'location': 1,
+            'display_name': 'test last'  # Read only, should be ignored.
             }
         response = self.client.post(
             '/users/', json.dumps(data), content_type='application/json')
@@ -349,7 +355,9 @@ class TestUsersAPI(APITestCase):
                     "permissions": [],
                     "groups": [],
                     "location": 1,
-                    "last_name": "last"
+                    "last_name": "last",
+                    "display_name": None,
+                    "thumbnail_url": None,
                     }
             })
 
@@ -475,6 +483,48 @@ class TestUsersAPI(APITestCase):
         content = json.loads(response.content)
         self.assertEqual(200, response.status_code)
         self.assertEqual(expected, len(content['users']))
+
+    def testNestedSourceFields(self):
+        u1 = User.objects.create(name='test1', last_name='user')
+        Profile.objects.create(
+            user=u1,
+            display_name='foo',
+            thumbnail_url='http://thumbnail.url')
+
+        url = (
+            '/users/?filter{id}=%s&include[]=display_name'
+            '&include[]=thumbnail_url' % u1.pk
+        )
+        response = self.client.get(url)
+        content = json.loads(response.content)
+        self.assertEqual(200, response.status_code)
+        self.assertIsNotNone(content['users'][0]['display_name'])
+        self.assertIsNotNone(content['users'][0]['thumbnail_url'])
+
+    def testNestedSourceFieldsQueryCount(self):
+        loc = Location.objects.create(name='test location')
+        u1 = User.objects.create(name='test1', last_name='user', location=loc)
+        Profile.objects.create(user=u1, display_name='foo')
+        u2 = User.objects.create(name='test2', last_name='user', location=loc)
+        Profile.objects.create(user=u2, display_name='moo')
+
+        # Test prefetching to pull profile.display_name into UserSerializer
+        url = (
+            '/users/?include[]=display_name'
+            '&include[]=thumbnail_url'
+        )
+
+        with self.assertNumQueries(2):
+            response = self.client.get(url)
+            self.assertEqual(200, response.status_code)
+
+        # Test prefetching of user.location.name into ProfileSerializer
+        url = '/profiles/?include[]=user_location_name'
+        with self.assertNumQueries(3):
+            response = self.client.get(url)
+            self.assertEqual(200, response.status_code)
+            content = json.loads(response.content)
+            self.assertIsNotNone(content['profiles'][0]['user_location_name'])
 
 
 class TestLocationsAPI(APITestCase):

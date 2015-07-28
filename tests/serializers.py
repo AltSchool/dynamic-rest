@@ -1,4 +1,11 @@
-from tests.models import Location, Permission, Group, User, Cat
+from tests.models import (
+    Cat,
+    Group,
+    Location,
+    Permission,
+    Profile,
+    User
+)
 from dynamic_rest.serializers import DynamicModelSerializer
 from dynamic_rest.serializers import DynamicEphemeralSerializer
 from dynamic_rest.fields import DynamicRelationField, CountField, DynamicField
@@ -108,8 +115,10 @@ class UserSerializer(DynamicModelSerializer):
             'permissions',
             'groups',
             'location',
-            'last_name')
-        deferred_fields = ('last_name',)
+            'last_name',
+            'display_name',
+            'thumbnail_url')
+        deferred_fields = ('last_name', 'display_name', 'thumbnail_url')
 
     location = DynamicRelationField('LocationSerializer')
     permissions = DynamicRelationField(
@@ -117,6 +126,23 @@ class UserSerializer(DynamicModelSerializer):
         many=True,
         deferred=True)
     groups = DynamicRelationField('GroupSerializer', many=True, deferred=True)
+    display_name = DynamicField(source='profile.display_name', read_only=True)
+    thumbnail_url = DynamicField(
+        source='profile.thumbnail_url',
+        read_only=True
+    )
+
+
+class ProfileSerializer(DynamicModelSerializer):
+
+    class Meta:
+        model = Profile
+        name = 'profile'
+
+    user = DynamicRelationField('UserSerializer')
+    user_location_name = DynamicField(
+        source='user.location.name', read_only=True
+    )
 
 
 class LocationGroupSerializer(DynamicEphemeralSerializer):
@@ -150,6 +176,7 @@ class UserLocationSerializer(UserSerializer):
     class Meta:
         model = User
         name = 'user_location'
+        fields = ('groups', 'location', 'id')
 
     location = DynamicRelationField('LocationSerializer', embed=True)
     groups = DynamicRelationField('GroupSerializer', many=True, embed=True)
