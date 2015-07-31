@@ -1,19 +1,21 @@
 from collections import namedtuple
 from tests.models import (
-    User, Group, Location, Permission
+    User, Group, Location, Permission, Cat
 )
 
 
 def create_fixture():
     # 4 users sharing 2 groups, 4 permissions, and 3 locations
     # each group has 1 permission
+    # one location has a cat.
     # 2 of the users share the same location
     # 2 of the users have their own locations
 
-    types = ['users', 'groups', 'locations', 'permissions']
+    types = ['users', 'groups', 'locations', 'permissions', 'cats']
     Fixture = namedtuple('Fixture', types)
 
-    fixture = Fixture(users=[], groups=[], locations=[], permissions=[])
+    fixture = Fixture(
+        users=[], groups=[], locations=[], permissions=[], cats=[])
 
     for i in range(0, 4):
         fixture.users.append(
@@ -32,6 +34,14 @@ def create_fixture():
 
     for i in range(0, 3):
         fixture.locations.append(Location.objects.create(name=str(i)))
+
+    for i in range(0, 2):
+        fixture.cats.append(Cat.objects.create(
+            name=str(i),
+            home_id=fixture.locations[i].id,
+            backup_home_id=(
+                fixture.locations[len(fixture.locations) - 1 - i].id)))
+
     fixture.locations[0].blob = 'here'
     fixture.locations[0].save()
 

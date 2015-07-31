@@ -8,7 +8,8 @@ from tests.models import (
 )
 from dynamic_rest.serializers import DynamicModelSerializer
 from dynamic_rest.serializers import DynamicEphemeralSerializer
-from dynamic_rest.fields import DynamicRelationField, CountField, DynamicField
+from dynamic_rest.fields import (
+    DynamicMethodField, DynamicRelationField, CountField, DynamicField)
 
 
 class CatSerializer(DynamicModelSerializer):
@@ -117,7 +118,8 @@ class UserSerializer(DynamicModelSerializer):
             'location',
             'last_name',
             'display_name',
-            'thumbnail_url')
+            'thumbnail_url',
+            'number_of_cats')
         deferred_fields = ('last_name', 'display_name', 'thumbnail_url')
 
     location = DynamicRelationField('LocationSerializer')
@@ -131,6 +133,11 @@ class UserSerializer(DynamicModelSerializer):
         source='profile.thumbnail_url',
         read_only=True
     )
+    number_of_cats = DynamicMethodField(
+        requires=['location.cat_set.'], deferred=True)
+
+    def get_number_of_cats(self, user):
+        return len(user.location.cat_set.all())
 
 
 class ProfileSerializer(DynamicModelSerializer):

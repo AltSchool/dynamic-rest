@@ -4,6 +4,7 @@ import os
 
 from rest_framework import fields
 from rest_framework.exceptions import ParseError, NotFound
+from rest_framework.serializers import SerializerMethodField
 from django.conf import settings
 from django.db.models.related import RelatedObject
 from django.db.models import ManyToManyField
@@ -69,6 +70,12 @@ class DynamicField(fields.Field):
 
     def to_internal_value(self, data):
         return data
+
+
+class DynamicMethodField(SerializerMethodField, DynamicField):
+    def __init__(self, requires=[], **kwargs):
+        self.requires = kwargs.pop('requires', requires)
+        super(DynamicMethodField, self).__init__(**kwargs)
 
 
 class DynamicComputedField(DynamicField):
