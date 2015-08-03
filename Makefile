@@ -3,7 +3,7 @@ INSTALL_DIR  := /usr/local/dynamic-rest
 .PHONY: test
 
 install: $(INSTALL_DIR)
-	. $(INSTALL_DIR)/bin/activate; python setup.py install
+	. $(INSTALL_DIR)/bin/activate; python setup.py install > /dev/null
 
 $(INSTALL_DIR): $(INSTALL_DIR)/bin/activate
 $(INSTALL_DIR)/bin/activate: requirements.txt
