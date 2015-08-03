@@ -1,13 +1,15 @@
 from django.conf import settings
 from django.http import QueryDict
 
+from rest_framework import viewsets, exceptions
+from rest_framework.exceptions import ValidationError
+from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
+from rest_framework.response import Response
+
 from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.metadata import DynamicMetadata
 from dynamic_rest.filters import DynamicFilterBackend
 
-from rest_framework import viewsets, exceptions
-from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
-from rest_framework.response import Response
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
@@ -65,7 +67,6 @@ class WithDynamicViewSetMixin(object):
     sideload = True
     meta = None
     filter_backends = (DynamicFilterBackend,)
-    field_name = None
 
     def initialize_request(self, request, *args, **kargs):
         """
@@ -205,39 +206,42 @@ class WithDynamicViewSetMixin(object):
                 *args, **kwargs)
         return None
 
-    def list_related(self, request, pk=None):
-        """
-        This method gets mapped to `/<resource>/<pk>/<related>/` by
-        DynamicRouter for all DynamicRelationField fields. Individual
-        ViewSets can override this method entirely, or override individual
-        fields by implementing a method with that related field name.
-        For example, for the route `/users/<pk>/events/`, the UserViewSet
-        could implement an `events` method to override that specific endpoint.
+    def list_related(self, request, pk=None, field_name=None):
+        """Fetch related object(s), as if sideloaded (used to support
+        link objects).
 
-        TODO(ryo): Filtering/inclusion currently is off of top level object,
+        This method gets mapped to `/<resource>/<pk>/<field_name>/` by
+        DynamicRouter for all DynamicRelationField fields. Generally,
+        this method probably shouldn't be overridden.
 
-            e.g. /users/1/events/?filter{users|events.location}=1
-
-            which is a little counter-intuitive. One solution is to simply
-            prepend the field name to filter/include/exclude query params.
+        An alternative implementation would be to generate reverse queries.
+        For an exploration of that approach, see:
+            https://gist.github.com/ryochiji/54687d675978c7d96503
         """
 
-        # Trick DREST into thinking we're fetching the parent object with
-        # the related field sideloaded.
-        self.request.query_params.add('include[]', '%s.' % self.field_name)
+        # Primary usecase is to return related data identically to if it
+        # were sideloaded, so no field inclusion/exclusion and filtering is
+        # supported.
+        # NOTE: This also means sideload filters in the parent query also
+        #       do not get transferred to the link object. However, default
+        #       querysets on DynamicRelationFields are respected.
+        if self.get_request_feature(self.INCLUDE) \
+                or self.get_request_feature(self.EXCLUDE) \
+                or self.get_request_feature(self.FILTER):
+            raise ValidationError(
+                "Inclusion/exclusion and filtering is not enabled on "
+                "relation endpoints."
+            )
+
+        # Filter for parent object, include related field.
         self.request.query_params.add('filter{pk}', pk)
+        self.request.query_params.add('include[]', field_name + '.')
 
-        # Related field name is attached to the viewset on initialization.
-        # This behavior is defined in DynamicRouter, and mimics how  DRF
-        # handles @detail_view. Passing field_name in as a parameter to
-        # this method would be better, but would require more complex routing.
-        field_name = self.field_name
-
-        # Get serializer and field
+        # Get serializer and field.
         serializer = self.get_serializer()
         field = serializer.fields.get(field_name)
         if field is None:
-            return Response("Unknown field: %s" % field_name, status=400)
+            raise ValidationError("Unknown field: %s" % field_name)
 
         # Query for root object, with related field sideloaded/prefetched
         # Note: Filter against related field works here using standard
@@ -249,17 +253,12 @@ class WithDynamicViewSetMixin(object):
         if not obj:
             return Response("Not found", status=404)
 
-        # Serialize the whole thing
-        data = self.get_serializer(obj).data
-
-        # Hack: Remove parent object so result only contains related
-        #       object, and any of its sideloads.
-        if self.sideload:
-            del data[serializer.get_name()]
-        else:
-            data = data[self.field_name]
-
-        return Response(data, status=200)
+        # Serialize the related data
+        serializer = field.get_serializer(
+            getattr(obj, field.source),
+            sideload=getattr(self, 'sideload', True)
+        )
+        return Response(serializer.data)
 
 
 class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):

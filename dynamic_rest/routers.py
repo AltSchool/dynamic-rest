@@ -52,21 +52,15 @@ class DynamicRouter(DefaultRouter):
             if not isinstance(field, DynamicRelationField):
                 continue
 
-            methodname = field_name
-            if hasattr(viewset, methodname):
-                # See if a method with this name already exists, and is a
-                # DRF @detail_route or @list_route. If so, skip it.
-                if hasattr(getattr(viewset, methodname), 'bind_to_methods'):
-                    continue
-            else:
-                # Use DynamicViewSet.list_related()
-                methodname = 'list_related'
-
-            url = r'^{prefix}/{lookup}/%s{trailing_slash}$' % field_name
+            methodname = 'list_related'
+            url = (
+                r'^{prefix}/{lookup}/(?P<field_name>%s)'
+                '{trailing_slash}$' % field_name
+            )
             routes.append(Route(
                 url=url,
                 mapping={'get': methodname},
                 name=replace_methodname(route_name, field_name),
-                initkwargs={'field_name': field_name}  # attaches to viewset
+                initkwargs={}
             ))
         return routes
