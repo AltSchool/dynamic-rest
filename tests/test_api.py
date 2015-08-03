@@ -358,6 +358,7 @@ class TestUsersAPI(APITestCase):
                     "last_name": "last",
                     "display_name": None,
                     "thumbnail_url": None,
+                    "number_of_cats": 1,
                     }
             })
 
@@ -525,6 +526,85 @@ class TestUsersAPI(APITestCase):
             self.assertEqual(200, response.status_code)
             content = json.loads(response.content)
             self.assertIsNotNone(content['profiles'][0]['user_location_name'])
+
+    def testDynamicMethodField(self):
+        url = '/users/?include[]=number_of_cats'
+        with self.assertNumQueries(3):
+            response = self.client.get(url)
+            self.assertEqual(200, response.status_code)
+            self.assertEquals({
+                'users': [{
+                    'id': 1,
+                    'location': 1,
+                    'name': '0',
+                    'number_of_cats': 1,
+                }, {
+                    'id': 2,
+                    'location': 1,
+                    'name': '1',
+                    'number_of_cats': 1,
+                }, {
+                    'id': 3,
+                    'location': 2,
+                    'name': '2',
+                    'number_of_cats': 1,
+                }, {
+                    'id': 4,
+                    'location': 3,
+                    'name': '3',
+                    'number_of_cats': 0,
+                }]
+            }, json.loads(response.content))
+
+    def testDynamicMethodFieldRespectsSeparateFilter(self):
+        url = (
+            '/users/?include[]=number_of_cats&include[]=location.cats.'
+            '&filter{location.cats|name.icontains}=1'
+            )
+        with self.assertNumQueries(4):
+            response = self.client.get(url)
+            self.assertEqual(200, response.status_code)
+            self.assertEquals({
+                'cats': [{
+                    'hunting_grounds': [],
+                    'id': 2,
+                    'name': '1'
+                }],
+                'locations': [{
+                    'name': '0',
+                    'id': 1,
+                    'cats': []
+                }, {
+                    'name': '1',
+                    'id': 2,
+                    'cats': [2]
+                }, {
+                    'name': '2',
+                    'id': 3,
+                    'cats': []
+                }],
+                'users': [{
+                    'id': 1,
+                    'location': 1,
+                    'name': '0',
+                    'number_of_cats': 0,
+                }, {
+                    'id': 2,
+                    'location': 1,
+                    'name': '1',
+                    'number_of_cats': 0,
+                }, {
+                    'id': 3,
+                    'location': 2,
+                    'name': '2',
+                    'number_of_cats': 1,
+                }, {
+                    'id': 4,
+                    'location': 3,
+                    'name': '3',
+                    'number_of_cats': 0,
+                }]
+            }, json.loads(response.content))
 
 
 class TestLocationsAPI(APITestCase):
