@@ -229,6 +229,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
             if isinstance(inject, serializers.ListSerializer):
                 inject = inject.child
             if inject:
+                inject.sideload = self.sideload
                 inject.request_fields = sub_fields
 
         return serializer_fields

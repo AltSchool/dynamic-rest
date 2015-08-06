@@ -206,6 +206,16 @@ class WithDynamicViewSetMixin(object):
                 *args, **kwargs)
         return None
 
+    def _prefix_inex_params(self, request, feature, prefix):
+        values = self.get_request_feature(feature)
+        if not values:
+            return
+        del request.query_params[feature]
+        request.query_params.add(
+            feature,
+            [prefix + val for val in values]
+        )
+
     def list_related(self, request, pk=None, field_name=None):
         """Fetch related object(s), as if sideloaded (used to support
         link objects).
@@ -219,23 +229,23 @@ class WithDynamicViewSetMixin(object):
             https://gist.github.com/ryochiji/54687d675978c7d96503
         """
 
-        # Primary usecase is to return related data identically to if it
-        # were sideloaded, so no field inclusion/exclusion and filtering is
-        # supported.
-        # NOTE: This also means sideload filters in the parent query also
-        #       do not get transferred to the link object. However, default
-        #       querysets on DynamicRelationFields are respected.
-        if self.get_request_feature(self.INCLUDE) \
-                or self.get_request_feature(self.EXCLUDE) \
-                or self.get_request_feature(self.FILTER):
+        # Explicitly disable support filtering. Applying filters to this
+        # endpoint would require us to pass through sideload filters, which
+        # can have unintended consequences when applied asynchronously.
+        if self.get_request_feature(self.FILTER):
             raise ValidationError(
-                "Inclusion/exclusion and filtering is not enabled on "
-                "relation endpoints."
+                "Filtering is not enabled on relation endpoints."
             )
+
+        # Prefix include/exclude filters with field_name so it's scoped to
+        # the parent object.
+        field_prefix = field_name + '.'
+        self._prefix_inex_params(request, self.INCLUDE, field_prefix)
+        self._prefix_inex_params(request, self.EXCLUDE, field_prefix)
 
         # Filter for parent object, include related field.
         self.request.query_params.add('filter{pk}', pk)
-        self.request.query_params.add('include[]', field_name + '.')
+        self.request.query_params.add('include[]', field_prefix)
 
         # Get serializer and field.
         serializer = self.get_serializer()
@@ -253,11 +263,10 @@ class WithDynamicViewSetMixin(object):
         if not obj:
             return Response("Not found", status=404)
 
-        # Serialize the related data
-        serializer = field.get_serializer(
-            getattr(obj, field.source),
-            sideload=getattr(self, 'sideload', True)
-        )
+        # Serialize the related data. Use the field's serializer to ensure
+        # it's configured identically to the sideload case.
+        serializer = field.serializer
+        serializer.instance =getattr(obj, field.source)
         return Response(serializer.data)
 
 
