@@ -253,9 +253,7 @@ class WithDynamicViewSetMixin(object):
         if field is None:
             raise ValidationError("Unknown field: %s" % field_name)
 
-        # Query for root object, with related field sideloaded/prefetched
-        # Note: Filter against related field works here using standard
-        #       sideload filter query.
+        # Query for root object, with related field prefetched
         queryset = self.get_queryset()
         queryset = self.filter_queryset(queryset)
         obj = queryset.first()
