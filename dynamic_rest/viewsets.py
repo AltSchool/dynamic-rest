@@ -266,7 +266,7 @@ class WithDynamicViewSetMixin(object):
         # Serialize the related data. Use the field's serializer to ensure
         # it's configured identically to the sideload case.
         serializer = field.serializer
-        serializer.instance =getattr(obj, field.source)
+        serializer.instance = getattr(obj, field.source)
         return Response(serializer.data)
 
 
