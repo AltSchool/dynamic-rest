@@ -561,12 +561,11 @@ class TestUsersAPI(APITestCase):
             '/users/?include[]=number_of_cats&include[]=location.cats.'
             '&filter{location.cats|name.icontains}=1'
             )
-        with self.assertNumQueries(4):
+        with self.assertNumQueries(3):
             response = self.client.get(url)
             self.assertEqual(200, response.status_code)
             self.assertEquals({
                 'cats': [{
-                    'hunting_grounds': [],
                     'id': 2,
                     'name': '1'
                 }],
