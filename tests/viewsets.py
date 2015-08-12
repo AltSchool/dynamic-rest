@@ -1,5 +1,6 @@
 from dynamic_rest.viewsets import DynamicModelViewSet
 from tests.serializers import (
+    CatSerializer,
     LocationSerializer,
     GroupSerializer,
     ProfileSerializer,
@@ -7,6 +8,7 @@ from tests.serializers import (
     UserLocationSerializer
 )
 from tests.models import (
+    Cat,
     Group,
     Location,
     Profile,
@@ -73,3 +75,8 @@ class ProfileViewSet(DynamicModelViewSet):
     model = Profile
     serializer_class = ProfileSerializer
     queryset = Profile.objects.all()
+
+
+class CatViewSet(DynamicModelViewSet):
+    serializer_class = CatSerializer
+    queryset = Cat.objects.all()

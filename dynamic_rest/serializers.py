@@ -1,13 +1,18 @@
 import copy
+from django.conf import settings
 from django.db import models
 
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.processors import SideloadingProcessor
+from dynamic_rest.serializer_helpers import merge_link_object
 from dynamic_rest.wrappers import TaggedDict
 
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 from rest_framework import serializers, fields, exceptions
+
+
+dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 
 
 class DynamicListSerializer(serializers.ListSerializer):
@@ -24,6 +29,9 @@ class DynamicListSerializer(serializers.ListSerializer):
 
     def get_plural_name(self):
         return self.child.get_plural_name()
+
+    def id_only(self):
+        return self.child.id_only()
 
     @property
     def data(self):
@@ -176,6 +184,15 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
                 field.parent = self
         return self._all_fields
 
+    def _get_deferred_fields(self, serializer_fields):
+        """Return set of deferred field names."""
+        meta_deferred = set(getattr(self.Meta, 'deferred_fields', []))
+        return {
+            name for name, field in serializer_fields.iteritems()
+            if getattr(field, 'deferred', None) is True or name in
+            meta_deferred
+        }
+
     def get_fields(self):
         """Returns the serializer's field set.
 
@@ -191,14 +208,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
 
         serializer_fields = copy.deepcopy(all_fields)
         request_fields = self.request_fields
-
-        # determine fields that are deferred by default
-        meta_deferred = set(getattr(self.Meta, 'deferred_fields', []))
-        deferred = {
-            name for name, field in serializer_fields.iteritems()
-            if getattr(field, 'deferred', None) is True or name in
-            meta_deferred
-        }
+        deferred = self._get_deferred_fields(serializer_fields)
 
         # apply request overrides
         if request_fields:
@@ -234,6 +244,23 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
 
         return serializer_fields
 
+    def get_link_fields(self):
+        """Construct dict of name:field for linkable fields."""
+        if not hasattr(self, '_link_fields'):
+            all_fields = self.get_all_fields()
+            self._link_fields = {
+                name: field for name, field in all_fields.iteritems()
+                if isinstance(field, DynamicRelationField)
+                and getattr(field, 'link', True)
+                and not (
+                    # Skip sideloaded fields
+                    name in self.fields
+                    and not field.serializer.id_only()
+                )
+            }
+
+        return self._link_fields
+
     def to_representation(self, instance):
         if self.id_only():
             return instance.pk
@@ -241,6 +268,12 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
             representation = super(
                 WithDynamicSerializerMixin,
                 self).to_representation(instance)
+
+            if getattr(settings, 'DYNAMIC_REST', {}).get('ENABLE_LINKS', True):
+                # TODO: Make this function configurable to support other
+                #       formats like JSON API link objects.
+                representation = merge_link_object(
+                    self, representation, instance)
 
         # tag the representation with the serializer and instance
         return TaggedDict(

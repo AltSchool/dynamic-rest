@@ -31,3 +31,7 @@ REST_FRAMEWORK = {
 ROOT_URLCONF = 'tests.urls'
 
 BASE_DIR = os.path.dirname(__file__)
+
+DYNAMIC_REST = {
+    'ENABLE_LINKS': True,
+}

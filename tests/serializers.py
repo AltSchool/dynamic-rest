@@ -12,9 +12,14 @@ from dynamic_rest.fields import (
     DynamicMethodField, DynamicRelationField, CountField, DynamicField)
 
 
+def backup_home_link(name, field, data, obj):
+    return "/locations/%s/?include[]=address" % obj.backup_home_id
+
+
 class CatSerializer(DynamicModelSerializer):
-    home = DynamicRelationField('LocationSerializer')
-    backup_home = DynamicRelationField('LocationSerializer')
+    home = DynamicRelationField('LocationSerializer', link=None)
+    backup_home = DynamicRelationField(
+        'LocationSerializer', link=backup_home_link)
     foobar = DynamicRelationField(
         'LocationSerializer', source='hunting_grounds', many=True)
 

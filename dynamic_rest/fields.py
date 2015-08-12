@@ -125,6 +125,8 @@ class DynamicRelationField(DynamicField):
         self.embed = embed
         if '.' in self.kwargs.get('source', ''):
             raise Exception('Nested relationships are not supported')
+        if 'link' in kwargs:
+            self.link = kwargs.pop('link')
         super(DynamicRelationField, self).__init__(**kwargs)
         self.kwargs['many'] = many
 
