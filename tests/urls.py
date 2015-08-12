@@ -1,8 +1,8 @@
 from django.conf.urls import patterns, include, url
-from rest_framework import routers
+from dynamic_rest.routers import DynamicRouter
 from tests import viewsets
 
-router = routers.DefaultRouter()
+router = DynamicRouter()
 router.register(r'users', viewsets.UserViewSet)
 router.register(r'groups', viewsets.GroupViewSet)
 router.register(r'profiles', viewsets.ProfileViewSet)

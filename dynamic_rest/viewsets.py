@@ -1,12 +1,15 @@
 from django.conf import settings
 from django.http import QueryDict
 
+from rest_framework import viewsets, exceptions
+from rest_framework.exceptions import ValidationError
+from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
+from rest_framework.response import Response
+
 from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.metadata import DynamicMetadata
 from dynamic_rest.filters import DynamicFilterBackend
 
-from rest_framework import viewsets, exceptions
-from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
@@ -42,7 +45,6 @@ class QueryParams(QueryDict):
 
 
 class WithDynamicViewSetMixin(object):
-
     """A viewset that can support dynamic API features.
 
     Attributes:
@@ -203,6 +205,67 @@ class WithDynamicViewSetMixin(object):
                 WithDynamicViewSetMixin, self).paginate_queryset(
                 *args, **kwargs)
         return None
+
+    def _prefix_inex_params(self, request, feature, prefix):
+        values = self.get_request_feature(feature)
+        if not values:
+            return
+        del request.query_params[feature]
+        request.query_params.add(
+            feature,
+            [prefix + val for val in values]
+        )
+
+    def list_related(self, request, pk=None, field_name=None):
+        """Fetch related object(s), as if sideloaded (used to support
+        link objects).
+
+        This method gets mapped to `/<resource>/<pk>/<field_name>/` by
+        DynamicRouter for all DynamicRelationField fields. Generally,
+        this method probably shouldn't be overridden.
+
+        An alternative implementation would be to generate reverse queries.
+        For an exploration of that approach, see:
+            https://gist.github.com/ryochiji/54687d675978c7d96503
+        """
+
+        # Explicitly disable support filtering. Applying filters to this
+        # endpoint would require us to pass through sideload filters, which
+        # can have unintended consequences when applied asynchronously.
+        if self.get_request_feature(self.FILTER):
+            raise ValidationError(
+                "Filtering is not enabled on relation endpoints."
+            )
+
+        # Prefix include/exclude filters with field_name so it's scoped to
+        # the parent object.
+        field_prefix = field_name + '.'
+        self._prefix_inex_params(request, self.INCLUDE, field_prefix)
+        self._prefix_inex_params(request, self.EXCLUDE, field_prefix)
+
+        # Filter for parent object, include related field.
+        self.request.query_params.add('filter{pk}', pk)
+        self.request.query_params.add('include[]', field_prefix)
+
+        # Get serializer and field.
+        serializer = self.get_serializer()
+        field = serializer.fields.get(field_name)
+        if field is None:
+            raise ValidationError("Unknown field: %s" % field_name)
+
+        # Query for root object, with related field prefetched
+        queryset = self.get_queryset()
+        queryset = self.filter_queryset(queryset)
+        obj = queryset.first()
+
+        if not obj:
+            return Response("Not found", status=404)
+
+        # Serialize the related data. Use the field's serializer to ensure
+        # it's configured identically to the sideload case.
+        serializer = field.serializer
+        serializer.instance = getattr(obj, field.source)
+        return Response(serializer.data)
 
 
 class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):

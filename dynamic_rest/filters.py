@@ -59,6 +59,10 @@ class FilterNode(object):
             if field_name not in fields:
                 fields = getattr(s, 'get_all_fields', lambda: {})()
 
+            if field_name == 'pk':
+                rewritten.append('pk')
+                continue
+
             if field_name not in fields:
                 raise ValidationError(
                     "Invalid filter field: %s" % field_name)

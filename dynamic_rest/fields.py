@@ -156,21 +156,25 @@ class DynamicRelationField(DynamicField):
 
         self.model_field = model_field
 
-    @property
-    def serializer(self):
-        if hasattr(self, '_serializer'):
-            return self._serializer
-
+    def get_serializer(self, *args, **kwargs):
         init_args = {
             k: v for k, v in self.kwargs.iteritems()
             if k in self.SERIALIZER_KWARGS
         }
+        init_args.update(kwargs)
 
         if self.embed and issubclass(
                 self.serializer_class, DynamicSerializerBase):
             init_args['embed'] = True
 
-        serializer = self.serializer_class(**init_args)
+        return self.serializer_class(*args, **init_args)
+
+    @property
+    def serializer(self):
+        if hasattr(self, '_serializer'):
+            return self._serializer
+
+        serializer = self.get_serializer()
         serializer.parent = self
         self._serializer = serializer
         return serializer

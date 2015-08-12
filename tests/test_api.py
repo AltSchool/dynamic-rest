@@ -651,6 +651,56 @@ class TestLocationsAPI(APITestCase):
             self.assertEqual(200, response.status_code)
 
 
+class TestRelationsAPI(APITestCase):
+    """Test auto-generated relation endpoints."""
+
+    def setUp(self):
+        self.fixture = create_fixture()
+
+    def test_generated_relation_fields(self):
+        r = self.client.get('/users/1/location/')
+        self.assertEqual(200, r.status_code)
+
+        r = self.client.get('/users/1/permissions/')
+        self.assertEqual(200, r.status_code)
+
+        r = self.client.get('/users/1/groups/')
+        self.assertEqual(200, r.status_code)
+
+        # Not a relation field
+        r = self.client.get('/users/1/name/')
+        self.assertEqual(404, r.status_code)
+
+    def test_location_users_relations_identical_to_sideload(self):
+        r1 = self.client.get('/locations/1/?include[]=users.')
+        self.assertEqual(200, r1.status_code)
+        r1_data = json.loads(r1.content)
+
+        r2 = self.client.get('/locations/1/users/')
+        self.assertEqual(200, r2.status_code)
+        r2_data = json.loads(r2.content)
+
+        self.assertEqual(r2_data['users'], r1_data['users'])
+
+    def test_relation_includes(self):
+        r = self.client.get('/locations/1/users/?include[]=location.')
+        self.assertEqual(200, r.status_code)
+
+        content = json.loads(r.content)
+        self.assertTrue('locations' in content)
+
+    def test_relation_excludes(self):
+        r = self.client.get('/locations/1/users/?exclude[]=location')
+        self.assertEqual(200, r.status_code)
+        content = json.loads(r.content)
+
+        self.assertFalse('location' in content['users'][0])
+
+    def test_relation_filter_returns_error(self):
+        r = self.client.get('/locations/1/users/?filter{name}=foo')
+        self.assertEqual(400, r.status_code)
+
+
 class TestUserLocationsAPI(APITestCase):
     """
     Test API on serializer with embedded fields.
