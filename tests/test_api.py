@@ -1,8 +1,10 @@
 import json
 from django.db import connection
+from django.conf import settings
 from rest_framework.test import APITestCase
 from tests.setup import create_fixture
 from tests.models import (
+    Cat,
     Location,
     Group,
     Profile,
@@ -15,6 +17,7 @@ class TestUsersAPI(APITestCase):
     def setUp(self):
         self.fixture = create_fixture()
         self.maxDiff = None
+        settings.DYNAMIC_REST['ENABLE_LINKS'] = False
 
     def testDefault(self):
         with self.assertNumQueries(1):
@@ -720,3 +723,62 @@ class TestUserLocationsAPI(APITestCase):
         self.assertEqual(content['user_location']['location']['name'], '0')
         self.assertTrue(isinstance(groups[0], dict))
         self.assertTrue(isinstance(location, dict))
+
+
+class TestLinks(APITestCase):
+
+    def setUp(self):
+        self.fixture = create_fixture()
+        settings.DYNAMIC_REST['ENABLE_LINKS'] = True
+
+    def test_deferred_relations_have_links(self):
+        r = self.client.get('/cats/1/')
+        self.assertEqual(200, r.status_code)
+        content = json.loads(r.content)
+
+        cat = content['cat']
+        self.assertTrue('links' in cat)
+
+        # 'home' has link=None set so should not have a link object
+        self.assertTrue('home' not in cat['links'])
+
+        # test for default link (auto-generated relation endpoint)
+        self.assertEqual(cat['links']['foobar'], '/cats/1/foobar/')
+
+        # test for dynamically generated link URL
+        cat1 = Cat.objects.get(pk=1)
+        self.assertEqual(
+            cat['links']['backup_home'],
+            '/locations/%s/?include[]=address' % cat1.backup_home.pk
+        )
+
+    def test_including_empty_relation_hides_link(self):
+        r = self.client.get('/cats/1/?include[]=foobar')
+        self.assertEqual(200, r.status_code)
+        content = json.loads(r.content)
+
+        # 'foobar' is included but empty, so don't return a link
+        cat = content['cat']
+        self.assertFalse(cat['foobar'])
+        self.assertFalse('foobar' in cat['links'])
+
+    def test_including_relation_returns_link(self):
+        url = '/cats/1/?include=backup_home'
+        r = self.client.get(url)
+        self.assertEqual(200, r.status_code)
+        content = json.loads(r.content)
+
+        cat = content['cat']
+        self.assertTrue('backup_home' in cat['links'])
+        self.assertTrue(cat['links']['backup_home'])
+
+    def test_sideloading_relation_hides_link(self):
+        url = '/cats/1/?include[]=backup_home.'
+        r = self.client.get(url)
+        self.assertEqual(200, r.status_code)
+        content = json.loads(r.content)
+
+        cat = content['cat']
+        self.assertTrue('backup_home' in cat)
+        self.assertTrue('locations' in content)  # check for sideload
+        self.assertFalse('backup_home' in cat['links'])  # no link

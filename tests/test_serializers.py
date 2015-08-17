@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from django.conf import settings
 from django.test import TestCase
 
 from dynamic_rest.fields import DynamicRelationField
@@ -21,6 +22,7 @@ class TestDynamicSerializer(TestCase):
     def setUp(self):
         self.fixture = create_fixture()
         self.maxDiff = None
+        settings.DYNAMIC_REST['ENABLE_LINKS'] = False
 
     def testDefault(self):
         serializer = UserSerializer(
