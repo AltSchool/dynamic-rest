@@ -184,7 +184,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
                 field.parent = self
         return self._all_fields
 
-    def _get_deferred_fields(self, serializer_fields):
+    def _get_deferred_field_names(self, serializer_fields):
         """Return set of deferred field names."""
         meta_deferred = set(getattr(self.Meta, 'deferred_fields', []))
         return {
@@ -208,7 +208,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
 
         serializer_fields = copy.deepcopy(all_fields)
         request_fields = self.request_fields
-        deferred = self._get_deferred_fields(serializer_fields)
+        deferred = self._get_deferred_field_names(serializer_fields)
 
         # apply request overrides
         if request_fields:
