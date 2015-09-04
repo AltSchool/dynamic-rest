@@ -246,7 +246,13 @@ class DynamicFilterBackend(BaseFilterBackend):
         return q
 
     def _build_prefetch_queryset(
-            self, name, original_field, field, filters, use_only):
+        self,
+        name,
+        original_field,
+        field,
+        filters,
+        requirements
+    ):
         related_queryset = getattr(original_field, 'queryset', None)
 
         if callable(related_queryset):
@@ -256,28 +262,16 @@ class DynamicFilterBackend(BaseFilterBackend):
             serializer=field,
             filters=filters.get(name, {}),
             queryset=related_queryset,
-            use_only=use_only
+            requirements=requirements
         )
 
-    def _add_nested_prefetches(self, source, prefetch_related):
-        """Add prefetch for nested source.
-            e.g. 'user.location.name' => prefetch 'user__location'
-        """
-        # NOTE: There may be an opportunity here for some optimization
-        #       where building a nested Prefetch tree would be beneficial.
-        #       For now, prefetch the deepest level, and let Django handle
-        #       prefetching of intermediate objects.
-        source_parts = source.split('.')
-        k = '.'.join(source_parts[0:-1])
-        if k and k not in prefetch_related:
-            prefetch_related[k] = '__'.join(source_parts[0:-1])
-        return prefetch_related
-
-    def _breaks_use_only(self, field):
-        return bool(getattr(field, 'requires', list()))
-
     def _filter_queryset(
-            self, serializer=None, filters=None, queryset=None, use_only=True):
+            self,
+            serializer=None,
+            filters=None,
+            queryset=None,
+            requirements=None
+        ):
         """
         Recursive queryset builder.
         Handles nested prefetching of related data and deferring fields
@@ -289,6 +283,7 @@ class DynamicFilterBackend(BaseFilterBackend):
             be used to initialize the base serializer for the viewset.
           filters: Optional nested filter map (TreeMap)
           queryset: Optional queryset.
+          requirements: Optional nested requirements (TreeMap)
         """
 
         if serializer:
@@ -297,21 +292,14 @@ class DynamicFilterBackend(BaseFilterBackend):
         else:
             serializer = self.view.get_serializer()
 
-        prefetch_explicit = {}
-        prefetch_implicit = {}
-
         fields = serializer.fields
-
-        only = set()
-        # use_only allowed if (1) it was OK with the parent, and (2) it's OK
-        # with the current fields.
-        use_only = use_only and not any(
-            [self._breaks_use_only(fields[name]) for name in fields]
-        )
-
         model = getattr(serializer.Meta, 'model', None)
+
         if not model:
             return queryset
+
+        if requirements is None:
+            requirements = TreeMap()
 
         if filters is None:
             filters = self._extract_filters()
@@ -324,17 +312,20 @@ class DynamicFilterBackend(BaseFilterBackend):
                 field = field.child
 
             source = field.source or name
-            source0 = source.split('.')[0]
+            field_requires = getattr(field, 'requires', list())
+            requirements.insert(field_requires)
             remote = False
-
-            requires = getattr(field, 'requires', list())
 
             if isinstance(field, serializers.ModelSerializer):
                 remote = field_is_remote(model, source0)
                 id_only = getattr(field, 'id_only', lambda: False)()
                 if not id_only or remote:
-                    prefetch_qs = self._build_prefetch_queryset(
-                        name, original_field, field, filters, use_only
+                    prefetch_queryset = self._build_prefetch_queryset(
+                        name,
+                        original_field,
+                        field,
+                        filters,
+                        requirements
                     )
 
                     # Note: There can only be one prefetch per source, even
@@ -342,51 +333,23 @@ class DynamicFilterBackend(BaseFilterBackend):
                     #       the same source. This could break in some cases,
                     #       but is mostly an issue on writes when we use all
                     #       fields by default.
-                    prefetch_explicit[source] = Prefetch(
+                    prefetch[source] = Prefetch(
                         source,
-                        queryset=prefetch_qs)
-            elif source0 is not source and (isinstance(
-                get_model_field(model, source0),
-                (OneToOneField, RelatedObject, ForeignKey))
-            ):
+                        queryset=prefetch_queryset
+                    )
 
-                # Prefetch nested references, where children are either
-                # deferred or not defined. If source is 'user.location.name'
-                # then we add prefetch for 'user__location' (which implicitly
-                # also prefetches 'user').
-                #
-                # Note that such implicit prefetches can conflict with explicit
-                # prefetches defined above, but only if the explicit prefetch
-                # is defined *after* the implicit one. Consequently, it
-                # suffices to take care in the ordering of prefetch calls to
-                # avoid this issue.
-                prefetch_implicit = self._add_nested_prefetches(
-                    source, prefetch_implicit)
-            elif requires:
-                # Prefetch references explicitly marked as 'required', along
-                # all implicit refeneces (see above example treatment of
-                # 'user.location.name).
-                for requirement in requires:
-                    prefetch_implicit = self._add_nested_prefetches(
-                        requirement, prefetch_implicit)
 
-            if use_only:
-                if source == '*':
-                    use_only = False
-                elif not remote and not getattr(field, 'is_computed', False):
-                    # TODO: optimize for nested sources
-                    only.add(source0)
-
-        if use_only:
+        if not requirements['*']:
             id_fields = getattr(serializer, 'get_id_fields', lambda: [])()
-            only = set(id_fields + list(only))
+            only = set(id_fields + list(requires))
             queryset = queryset.only(*only)
 
         q = self._filters_to_query(
             includes=filters.get('_include'), excludes=filters.get('_exclude'),
-            serializer=serializer)
+            serializer=serializer
+        )
         if q:
             queryset = queryset.filter(q)
 
-        prefetches = prefetch_explicit.values() + prefetch_implicit.values()
+        prefetches = prefetch.values()
         return queryset.prefetch_related(*prefetches).distinct()
