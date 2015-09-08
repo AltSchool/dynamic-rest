@@ -3,11 +3,24 @@ class TreeMap(dict):
     """
     Basic nested-dict tree structure.
     """
+    def get_paths(self):
+        """Get all paths down from the root.
+
+        Returns ['a', 'b', 'c'] for {'a':{'b':{'c':None}}}
+        """
+        paths = []
+        for key, child in self.iteritems():
+            if child:
+                for path in child.get_paths():
+                    path.insert(0, key)
+                    paths.append(path)
+            else:
+                # current child is an endpoint
+                paths.append([key])
+        return paths
 
     def insert(self, parts, leaf_value, update=False):
-        """
-        Convert ['a','b','c'] into {'a':{'b':{'c':{}}}}
-        """
+        """Convert ['a','b','c'] into {'a':{'b':{'c':{}}}}."""
         tree = self
         if not parts:
             return tree
@@ -19,7 +32,8 @@ class TreeMap(dict):
                 cur[part] = TreeMap() if i != last else leaf_value
             elif i == last:  # found leaf
                 cur[part] = cur[part].update(
-                    leaf_value) if update else leaf_value
+                    leaf_value
+                ) if update else leaf_value
 
             cur = cur[part]
 

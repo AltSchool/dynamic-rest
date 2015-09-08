@@ -561,9 +561,11 @@ class TestUsersAPI(APITestCase):
 
     def testDynamicMethodFieldRespectsSeparateFilter(self):
         url = (
-            '/users/?include[]=number_of_cats&include[]=location.cats.'
-            '&filter{location.cats|name.icontains}=1'
-            )
+            '/users/?'
+            'include[]=number_of_cats&
+            'include[]=location.cats.&'
+            'filter{location.cats|name.icontains}=1'
+        )
         with self.assertNumQueries(3):
             response = self.client.get(url)
             self.assertEqual(200, response.status_code)

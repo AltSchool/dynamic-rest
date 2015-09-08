@@ -144,7 +144,9 @@ class UserSerializer(DynamicModelSerializer):
         read_only=True
     )
     number_of_cats = DynamicMethodField(
-        requires=['location.cat_set.'], deferred=True)
+        requires=['location.cat_set.*'],
+        deferred=True
+    )
 
     def get_number_of_cats(self, user):
         return len(user.location.cat_set.all())
@@ -177,8 +179,8 @@ class CountsSerializer(DynamicEphemeralSerializer):
         name = 'counts'
 
     values = DynamicField(field_type=list)
-    count = CountField(source='values', unique=False)
-    unique_count = CountField(source='values')
+    count = CountField('values', unique=False)
+    unique_count = CountField('values')
 
 
 class NestedEphemeralSerializer(DynamicEphemeralSerializer):
