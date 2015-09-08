@@ -562,7 +562,7 @@ class TestUsersAPI(APITestCase):
     def testDynamicMethodFieldRespectsSeparateFilter(self):
         url = (
             '/users/?'
-            'include[]=number_of_cats&
+            'include[]=number_of_cats&'
             'include[]=location.cats.&'
             'filter{location.cats|name.icontains}=1'
         )
