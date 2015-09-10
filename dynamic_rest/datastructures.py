@@ -6,11 +6,12 @@ class TreeMap(dict):
     def get_paths(self):
         """Get all paths down from the root.
 
-        Returns ['a', 'b', 'c'] for {'a':{'b':{'c':None}}}
+        Returns [['a', 'b', 'c']] for {'a':{'b':{'c':None}}}
         """
         paths = []
         for key, child in self.iteritems():
-            if child:
+            if isinstance(child, TreeMap) and child:
+                # current child is an intermediate node
                 for path in child.get_paths():
                     path.insert(0, key)
                     paths.append(path)

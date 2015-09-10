@@ -260,7 +260,10 @@ class DynamicFilterBackend(BaseFilterBackend):
             related_queryset = related_queryset(field)
 
         source = field.source or name
-        required = requirements.pop(source) if source in requirements else None
+        # Popping the source here (during explicit prefetch construction)
+        # guarantees that implicitly required prefetches that follow will
+        # not conflict.
+        required = requirements.pop(source, None)
 
         return self._filter_queryset(
             serializer=field,
@@ -299,33 +302,38 @@ class DynamicFilterBackend(BaseFilterBackend):
                 field = field.serializer
             if isinstance(field, serializers.ListSerializer):
                 field = field.child
-            if isinstance(field, serializers.ModelSerializer):
-                source = field.source or name
-                if '.' in source:
-                    raise ValidationError(
-                        'nested relationship values '
-                        'are not supported'
-                    )
-                is_remote = field_is_remote(model, source)
-                is_id_only = getattr(field, 'id_only', lambda: False)()
-                if not is_id_only or is_remote:
-                    prefetch_queryset = self._build_prefetch_queryset(
-                        name,
-                        original_field,
-                        field,
-                        filters,
-                        requirements
-                    )
+            if not isinstance(field, serializers.ModelSerializer):
+                continue
 
-                    # Note: There can only be one prefetch per source, even
-                    #       though there can be multiple fields pointing to
-                    #       the same source. This could break in some cases,
-                    #       but is mostly an issue on writes when we use all
-                    #       fields by default.
-                    prefetches[source] = Prefetch(
-                        source,
-                        queryset=prefetch_queryset
-                    )
+            source = field.source or name
+            if '.' in source:
+                raise ValidationError(
+                    'nested relationship values '
+                    'are not supported'
+                )
+
+            is_remote = field_is_remote(model, source)
+            is_id_only = getattr(field, 'id_only', lambda: False)()
+            if is_id_only and not is_remote:
+                continue
+
+            prefetch_queryset = self._build_prefetch_queryset(
+                name,
+                original_field,
+                field,
+                filters,
+                requirements
+            )
+
+            # Note: There can only be one prefetch per source, even
+            #       though there can be multiple fields pointing to
+            #       the same source. This could break in some cases,
+            #       but is mostly an issue on writes when we use all
+            #       fields by default.
+            prefetches[source] = Prefetch(
+                source,
+                queryset=prefetch_queryset
+            )
 
     def _extract_requirements(
         self,
@@ -339,14 +347,16 @@ class DynamicFilterBackend(BaseFilterBackend):
             # assume the field requires only its source.
             requires = getattr(field, 'requires', None) or [source]
             for require in requires:
-                if require:
+                if not require:
                     # ignore fields with empty source
-                    requirement = require.split('.')
-                    if requirement[-1] == '':
-                        # Change 'a.b.' -> 'a.b.*',
-                        # supporting 'a.b.' for backwards compatibility.
-                        requirement[-1] = '*'
-                    requirements.insert(requirement, TreeMap())
+                    continue
+
+                requirement = require.split('.')
+                if requirement[-1] == '':
+                    # Change 'a.b.' -> 'a.b.*',
+                    # supporting 'a.b.' for backwards compatibility.
+                    requirement[-1] = '*'
+                requirements.insert(requirement, TreeMap())
 
     def _filter_queryset(
         self,
