@@ -144,14 +144,10 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         if self.DEBUG:
             # in DEBUG mode, save a representation of the prefetch tree
-            prefetches = self.prefetches = {}
+            # on the viewset
+            self.view._prefetches = self._prefetches = {}
 
-        queryset = self._filter_queryset(queryset=queryset)
-
-        if self.DEBUG:
-            self.prefetches = self.view.prefetches = prefetches
-
-        return queryset
+        return self._filter_queryset(queryset=queryset)
 
     def _extract_filters(self, **kwargs):
         """
@@ -279,9 +275,9 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         if self.DEBUG:
             # push prefetches
-            prefetches = self.prefetches
-            self.prefetches[source] = {}
-            self.prefetches = self.prefetches[source]
+            prefetches = self._prefetches
+            self._prefetches[source] = {}
+            self._prefetches = self._prefetches[source]
 
         queryset = self._filter_queryset(
             serializer=field,
@@ -292,7 +288,7 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         if self.DEBUG:
             # pop back
-            self.prefetches = prefetches
+            self._prefetches = prefetches
 
         return queryset
 
@@ -312,7 +308,7 @@ class DynamicFilterBackend(BaseFilterBackend):
             if key:
                 prefetches[key] = key
                 if self.DEBUG:
-                    self.prefetches[key] = {}
+                    self._prefetches[key] = {}
 
     def _add_request_prefetches(
         self,
