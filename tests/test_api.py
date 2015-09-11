@@ -560,6 +560,24 @@ class TestUsersAPI(APITestCase):
             }, json.loads(response.content))
 
     def testDynamicMethodFieldRespectsSeparateFilter(self):
+        """
+        This tests conflicting external and internal prefetch requirements.
+
+        `location.cats` is an external requirement that points
+        to the `Location.cat_set` model relationship.
+
+        `user.number_of_cats` is an internal requirement that points to the same
+        relationship.
+
+        The prefetch tree produced by this call merges the two together
+        into a single prefetch:
+        {
+           'location': {
+              'cat_set': {}
+            }
+        }
+        """
+
         url = (
             '/users/?'
             'include[]=number_of_cats&'
