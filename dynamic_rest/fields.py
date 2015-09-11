@@ -54,15 +54,24 @@ class DynamicField(fields.Field):
     Generic field to capture additional custom field attributes
     """
 
-    def __init__(self, deferred=False, field_type=None, **kwargs):
+    def __init__(
+        self,
+        requires=None,
+        deferred=False,
+        field_type=None,
+        **kwargs
+    ):
         """
         Arguments:
-          deferred: Whether or not this field is deferred,
-              i.e. not included in the response unless specifically requested.
-          field_type: Field data type, if not inferrable from model.
+            deferred: Whether or not this field is deferred,
+                (not included in the response unless specifically requested).
+            field_type: Field data type, if not inferrable from model.
+            requires: List of fields that this field depends on.
+                Processed by the view layer during queryset build time.
         """
-        self.deferred = kwargs.pop('deferred', deferred)
-        self.field_type = kwargs.pop('field_type', field_type)
+        self.requires = requires
+        self.deferred = deferred
+        self.field_type = field_type
         super(DynamicField, self).__init__(**kwargs)
 
     def to_representation(self, value):
@@ -72,22 +81,12 @@ class DynamicField(fields.Field):
         return data
 
 
-class DynamicMethodField(SerializerMethodField, DynamicField):
-    def __init__(self, requires=[], **kwargs):
-        self.requires = kwargs.pop('requires', requires)
-        super(DynamicMethodField, self).__init__(**kwargs)
-
-
 class DynamicComputedField(DynamicField):
+    pass
 
-    """
-    Computed field base-class (i.e. fields that are dynamically computed,
-    rather than being tied to model fields.)
-    """
-    is_computed = True
 
-    def __init__(self, *args, **kwargs):
-        return super(DynamicComputedField, self).__init__(*args, **kwargs)
+class DynamicMethodField(SerializerMethodField, DynamicField):
+    pass
 
 
 class DynamicRelationField(DynamicField):
@@ -107,7 +106,7 @@ class DynamicRelationField(DynamicField):
             queryset=None,
             embed=False,
             **kwargs
-            ):
+    ):
         """
         Arguments:
           serializer_class: Serializer class (or string representation)
@@ -271,17 +270,23 @@ class CountField(DynamicComputedField):
     Field that counts number of elements in another specified field.
     """
 
-    def __init__(self, source, *args, **kwargs):
+    def __init__(self, serializer_source, *args, **kwargs):
         self.field_type = int
-        kwargs['source'] = source
+        # Use `serializer_source`, which indicates a field at the API level,
+        # instead of `source`, which indicates a field at the model level.
+        self.serializer_source = serializer_source
+        # Set `source` to an empty value rather than the field name to avoid
+        # an attempt to look up this field.
+        kwargs['source'] = ''
         self.unique = kwargs.pop('unique', True)
         return super(CountField, self).__init__(*args, **kwargs)
 
     def get_attribute(self, obj):
-        if self.source not in self.parent.fields:
+        source = self.serializer_source
+        if source not in self.parent.fields:
             return None
-        value = self.parent.fields[self.source].get_attribute(obj)
-        data = self.parent.fields[self.source].to_representation(value)
+        value = self.parent.fields[source].get_attribute(obj)
+        data = self.parent.fields[source].to_representation(value)
 
         # How to count None is undefined... let the consumer decide.
         if data is None:
@@ -292,8 +297,9 @@ class CountField(DynamicComputedField):
         if not isinstance(data, (list, set, tuple)):
             raise TypeError(
                 "'%s' is %s. Must be list, set or tuple to be countable." % (
-                    self.source, type(data))
+                    source, type(data)
                 )
+            )
 
         if self.unique:
             # Try to create unique set. This may fail if `data` contains

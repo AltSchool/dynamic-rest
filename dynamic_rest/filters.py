@@ -1,25 +1,26 @@
 from dynamic_rest.patches import patch_prefetch_one_level
 patch_prefetch_one_level()
 
+from django.conf import settings
 from django.db.models import (
-    ForeignKey,
-    OneToOneField,
     Prefetch,
-    Q,
+    Q
 )
 
 from django.db.models.related import RelatedObject
-from dynamic_rest.datastructures import TreeMap
-from dynamic_rest.fields import (
-    DynamicRelationField, field_is_remote, get_model_field
-)
-
 from rest_framework.exceptions import ValidationError
 from rest_framework import serializers
 from rest_framework.filters import BaseFilterBackend
 
 
+from dynamic_rest.datastructures import TreeMap
+from dynamic_rest.fields import (
+    DynamicRelationField, field_is_remote, get_model_field
+)
+
+
 class FilterNode(object):
+
     def __init__(self, field, operator, value):
         """
         Create an object representing filter, to be stored in TreeMap.
@@ -65,7 +66,8 @@ class FilterNode(object):
 
             if field_name not in fields:
                 raise ValidationError(
-                    "Invalid filter field: %s" % field_name)
+                    "Invalid filter field: %s" % field_name
+                )
 
             field = fields[field_name]
 
@@ -137,6 +139,13 @@ class DynamicFilterBackend(BaseFilterBackend):
         """
         self.request = request
         self.view = view
+
+        self.DEBUG = getattr(settings, 'DYNAMIC_REST', {}).get('DEBUG', False)
+
+        if self.DEBUG:
+            # in DEBUG mode, save a representation of the prefetch tree
+            # on the viewset
+            self.view._prefetches = self._prefetches = {}
 
         return self._filter_queryset(queryset=queryset)
 
@@ -246,38 +255,142 @@ class DynamicFilterBackend(BaseFilterBackend):
         return q
 
     def _build_prefetch_queryset(
-            self, name, original_field, field, filters, use_only):
+        self,
+        name,
+        original_field,
+        field,
+        filters,
+        requirements
+    ):
         related_queryset = getattr(original_field, 'queryset', None)
 
         if callable(related_queryset):
             related_queryset = related_queryset(field)
 
-        return self._filter_queryset(
+        source = field.source or name
+        # Popping the source here (during explicit prefetch construction)
+        # guarantees that implicitly required prefetches that follow will
+        # not conflict.
+        required = requirements.pop(source, None)
+
+        if self.DEBUG:
+            # push prefetches
+            prefetches = self._prefetches
+            self._prefetches[source] = {}
+            self._prefetches = self._prefetches[source]
+
+        queryset = self._filter_queryset(
             serializer=field,
             filters=filters.get(name, {}),
             queryset=related_queryset,
-            use_only=use_only
+            requirements=required
         )
 
-    def _add_nested_prefetches(self, source, prefetch_related):
-        """Add prefetch for nested source.
-            e.g. 'user.location.name' => prefetch 'user__location'
-        """
-        # NOTE: There may be an opportunity here for some optimization
-        #       where building a nested Prefetch tree would be beneficial.
-        #       For now, prefetch the deepest level, and let Django handle
-        #       prefetching of intermediate objects.
-        source_parts = source.split('.')
-        k = '.'.join(source_parts[0:-1])
-        if k and k not in prefetch_related:
-            prefetch_related[k] = '__'.join(source_parts[0:-1])
-        return prefetch_related
+        if self.DEBUG:
+            # pop back
+            self._prefetches = prefetches
 
-    def _breaks_use_only(self, field):
-        return bool(getattr(field, 'requires', list()))
+        return queryset
+
+    def _add_internal_prefetches(
+        self,
+        prefetches,
+        requirements
+    ):
+        """Add remaining prefetches as implicit prefetches."""
+        paths = requirements.get_paths()
+        for path in paths:
+            # Remove last segment, which indicates a field name or wildcard.
+            # For example, {model_a : {model_b : {field_c}}
+            # should be prefetched as a__b
+            prefetch_path = path[:-1]
+            key = '__'.join(prefetch_path)
+            if key:
+                prefetches[key] = key
+                if self.DEBUG:
+                    self._prefetches[key] = {}
+
+    def _add_request_prefetches(
+        self,
+        prefetches,
+        requirements,
+        model,
+        fields,
+        filters
+    ):
+        for name, field in fields.iteritems():
+            original_field = field
+            if isinstance(field, DynamicRelationField):
+                field = field.serializer
+            if isinstance(field, serializers.ListSerializer):
+                field = field.child
+            if not isinstance(field, serializers.ModelSerializer):
+                continue
+
+            source = field.source or name
+            if '.' in source:
+                raise ValidationError(
+                    'nested relationship values '
+                    'are not supported'
+                )
+
+            if source in prefetches:
+                # ignore duplicated sources
+                continue
+
+            is_remote = field_is_remote(model, source)
+            is_id_only = getattr(field, 'id_only', lambda: False)()
+            if is_id_only and not is_remote:
+                continue
+
+            prefetch_queryset = self._build_prefetch_queryset(
+                name,
+                original_field,
+                field,
+                filters,
+                requirements
+            )
+
+            # Note: There can only be one prefetch per source, even
+            #       though there can be multiple fields pointing to
+            #       the same source. This could break in some cases,
+            #       but is mostly an issue on writes when we use all
+            #       fields by default.
+            prefetches[source] = Prefetch(
+                source,
+                queryset=prefetch_queryset
+            )
+
+    def _extract_requirements(
+        self,
+        fields,
+        requirements
+    ):
+        """Extract requirements from serializer fields."""
+        for name, field in fields.iteritems():
+            source = field.source
+            # Requires may be manually set on the field -- if not,
+            # assume the field requires only its source.
+            requires = getattr(field, 'requires', None) or [source]
+            for require in requires:
+                if not require:
+                    # ignore fields with empty source
+                    continue
+
+                requirement = require.split('.')
+                if requirement[-1] == '':
+                    # Change 'a.b.' -> 'a.b.*',
+                    # supporting 'a.b.' for backwards compatibility.
+                    requirement[-1] = '*'
+                requirements.insert(requirement, TreeMap())
 
     def _filter_queryset(
-            self, serializer=None, filters=None, queryset=None, use_only=True):
+        self,
+        serializer=None,
+        filters=None,
+        queryset=None,
+        requirements=None
+    ):
         """
         Recursive queryset builder.
         Handles nested prefetching of related data and deferring fields
@@ -289,6 +402,7 @@ class DynamicFilterBackend(BaseFilterBackend):
             be used to initialize the base serializer for the viewset.
           filters: Optional nested filter map (TreeMap)
           queryset: Optional queryset.
+          requirements: Optional nested requirements (TreeMap)
         """
 
         if serializer:
@@ -297,96 +411,55 @@ class DynamicFilterBackend(BaseFilterBackend):
         else:
             serializer = self.view.get_serializer()
 
-        prefetch_explicit = {}
-        prefetch_implicit = {}
-
-        fields = serializer.fields
-
-        only = set()
-        # use_only allowed if (1) it was OK with the parent, and (2) it's OK
-        # with the current fields.
-        use_only = use_only and not any(
-            [self._breaks_use_only(fields[name]) for name in fields]
-        )
-
         model = getattr(serializer.Meta, 'model', None)
+
         if not model:
             return queryset
+
+        prefetches = {}
+        fields = serializer.fields
+
+        if requirements is None:
+            requirements = TreeMap()
+
+        self._extract_requirements(
+            fields,
+            requirements
+        )
 
         if filters is None:
             filters = self._extract_filters()
 
-        for name, field in fields.iteritems():
-            original_field = field
-            if isinstance(field, DynamicRelationField):
-                field = field.serializer
-            if isinstance(field, serializers.ListSerializer):
-                field = field.child
+        # build nested Prefetch queryset
+        self._add_request_prefetches(
+            prefetches,
+            requirements,
+            model,
+            fields,
+            filters
+        )
 
-            source = field.source or name
-            source0 = source.split('.')[0]
-            remote = False
+        # add any remaining requirements as prefetches
+        self._add_internal_prefetches(
+            prefetches,
+            requirements
+        )
 
-            requires = getattr(field, 'requires', list())
-
-            if isinstance(field, serializers.ModelSerializer):
-                remote = field_is_remote(model, source0)
-                id_only = getattr(field, 'id_only', lambda: False)()
-                if not id_only or remote:
-                    prefetch_qs = self._build_prefetch_queryset(
-                        name, original_field, field, filters, use_only
-                    )
-
-                    # Note: There can only be one prefetch per source, even
-                    #       though there can be multiple fields pointing to
-                    #       the same source. This could break in some cases,
-                    #       but is mostly an issue on writes when we use all
-                    #       fields by default.
-                    prefetch_explicit[source] = Prefetch(
-                        source,
-                        queryset=prefetch_qs)
-            elif source0 is not source and (isinstance(
-                get_model_field(model, source0),
-                (OneToOneField, RelatedObject, ForeignKey))
-            ):
-
-                # Prefetch nested references, where children are either
-                # deferred or not defined. If source is 'user.location.name'
-                # then we add prefetch for 'user__location' (which implicitly
-                # also prefetches 'user').
-                #
-                # Note that such implicit prefetches can conflict with explicit
-                # prefetches defined above, but only if the explicit prefetch
-                # is defined *after* the implicit one. Consequently, it
-                # suffices to take care in the ordering of prefetch calls to
-                # avoid this issue.
-                prefetch_implicit = self._add_nested_prefetches(
-                    source, prefetch_implicit)
-            elif requires:
-                # Prefetch references explicitly marked as 'required', along
-                # all implicit refeneces (see above example treatment of
-                # 'user.location.name).
-                for requirement in requires:
-                    prefetch_implicit = self._add_nested_prefetches(
-                        requirement, prefetch_implicit)
-
-            if use_only:
-                if source == '*':
-                    use_only = False
-                elif not remote and not getattr(field, 'is_computed', False):
-                    # TODO: optimize for nested sources
-                    only.add(source0)
-
-        if use_only:
+        # use requirements at this level to limit fields selected
+        if not requirements.get('*'):
             id_fields = getattr(serializer, 'get_id_fields', lambda: [])()
-            only = set(id_fields + list(only))
+            only = set(id_fields + list(requirements.keys()))
             queryset = queryset.only(*only)
 
-        q = self._filters_to_query(
-            includes=filters.get('_include'), excludes=filters.get('_exclude'),
-            serializer=serializer)
-        if q:
-            queryset = queryset.filter(q)
+        # add filters
+        query = self._filters_to_query(
+            includes=filters.get('_include'),
+            excludes=filters.get('_exclude'),
+            serializer=serializer
+        )
 
-        prefetches = prefetch_explicit.values() + prefetch_implicit.values()
-        return queryset.prefetch_related(*prefetches).distinct()
+        if query:
+            queryset = queryset.filter(query)
+
+        prefetch = prefetches.values()
+        return queryset.prefetch_related(*prefetch).distinct()
