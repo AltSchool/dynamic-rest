@@ -34,4 +34,5 @@ BASE_DIR = os.path.dirname(__file__)
 
 DYNAMIC_REST = {
     'ENABLE_LINKS': True,
+    'DEBUG': os.environ.get('DYNAMIC_REST_DEBUG', 'false').lower() == 'true'
 }

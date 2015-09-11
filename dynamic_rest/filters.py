@@ -1,6 +1,7 @@
 from dynamic_rest.patches import patch_prefetch_one_level
 patch_prefetch_one_level()
 
+from django.conf import settings
 from django.db.models import (
     Prefetch,
     Q
@@ -139,7 +140,18 @@ class DynamicFilterBackend(BaseFilterBackend):
         self.request = request
         self.view = view
 
-        return self._filter_queryset(queryset=queryset)
+        self.DEBUG = getattr(settings, 'DYNAMIC_REST', {}).get('DEBUG', False)
+
+        if self.DEBUG:
+            # in DEBUG mode, save a representation of the prefetch tree
+            prefetches = self.prefetches = {}
+
+        queryset = self._filter_queryset(queryset=queryset)
+
+        if self.DEBUG:
+            self.prefetches = self.view.prefetches = prefetches
+
+        return queryset
 
     def _extract_filters(self, **kwargs):
         """
@@ -265,14 +277,26 @@ class DynamicFilterBackend(BaseFilterBackend):
         # not conflict.
         required = requirements.pop(source, None)
 
-        return self._filter_queryset(
+        if self.DEBUG:
+            # push prefetches
+            prefetches = self.prefetches
+            self.prefetches[source] = {}
+            self.prefetches = self.prefetches[source]
+
+        queryset = self._filter_queryset(
             serializer=field,
             filters=filters.get(name, {}),
             queryset=related_queryset,
             requirements=required
         )
 
-    def _add_implicit_prefetches(
+        if self.DEBUG:
+            # pop back
+            self.prefetches = prefetches
+
+        return queryset
+
+    def _add_internal_prefetches(
         self,
         prefetches,
         requirements
@@ -287,8 +311,10 @@ class DynamicFilterBackend(BaseFilterBackend):
             key = '__'.join(prefetch_path)
             if key:
                 prefetches[key] = key
+                if self.DEBUG:
+                    self.prefetches[key] = {}
 
-    def _add_explicit_prefetches(
+    def _add_request_prefetches(
         self,
         prefetches,
         requirements,
@@ -311,6 +337,10 @@ class DynamicFilterBackend(BaseFilterBackend):
                     'nested relationship values '
                     'are not supported'
                 )
+
+            if source in prefetches:
+                # ignore duplicated sources
+                continue
 
             is_remote = field_is_remote(model, source)
             is_id_only = getattr(field, 'id_only', lambda: False)()
@@ -405,7 +435,7 @@ class DynamicFilterBackend(BaseFilterBackend):
             filters = self._extract_filters()
 
         # build nested Prefetch queryset
-        self._add_explicit_prefetches(
+        self._add_request_prefetches(
             prefetches,
             requirements,
             model,
@@ -414,7 +444,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         )
 
         # add any remaining requirements as prefetches
-        self._add_implicit_prefetches(
+        self._add_internal_prefetches(
             prefetches,
             requirements
         )
