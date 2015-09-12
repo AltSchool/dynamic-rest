@@ -12,6 +12,16 @@ from django.db.models import ManyToManyField
 from dynamic_rest.bases import DynamicSerializerBase
 
 
+def is_model_field(model, field_name):
+    """
+    Helper function to get model field.
+    """
+    try:
+        get_model_field(model, field_name)
+        return True
+    except AttributeError:
+        return False
+
 def get_model_field(model, field_name):
     """
     Helper function to get model field, including related fields.
@@ -35,7 +45,7 @@ def get_model_field(model, field_name):
             )
 
 
-def field_is_remote(model, field_name):
+def is_field_remote(model, field_name):
     """
     Helper function to determine whether model field is remote or not.
     Remote fields are many-to-many or many-to-one.

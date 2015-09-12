@@ -15,7 +15,10 @@ from rest_framework.filters import BaseFilterBackend
 
 from dynamic_rest.datastructures import TreeMap
 from dynamic_rest.fields import (
-    DynamicRelationField, field_is_remote, get_model_field
+    DynamicRelationField,
+    is_field_remote,
+    get_model_field,
+    is_model_field
 )
 
 
@@ -338,7 +341,7 @@ class DynamicFilterBackend(BaseFilterBackend):
                 # ignore duplicated sources
                 continue
 
-            is_remote = field_is_remote(model, source)
+            is_remote = is_field_remote(model, source)
             is_id_only = getattr(field, 'id_only', lambda: False)()
             if is_id_only and not is_remote:
                 continue
@@ -448,7 +451,10 @@ class DynamicFilterBackend(BaseFilterBackend):
         # use requirements at this level to limit fields selected
         if '*' not in requirements:
             id_fields = getattr(serializer, 'get_id_fields', lambda: [])()
-            only = set(id_fields + list(requirements.keys()))
+            only = [
+                field for field in set(id_fields + list(requirements.keys()))
+                if is_model_field(model, field)
+            ]
             queryset = queryset.only(*only)
 
         # add filters
