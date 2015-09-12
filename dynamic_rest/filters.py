@@ -446,7 +446,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         )
 
         # use requirements at this level to limit fields selected
-        if not requirements.get('*'):
+        if '*' not in requirements:
             id_fields = getattr(serializer, 'get_id_fields', lambda: [])()
             only = set(id_fields + list(requirements.keys()))
             queryset = queryset.only(*only)

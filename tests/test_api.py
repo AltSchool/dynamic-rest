@@ -566,8 +566,8 @@ class TestUsersAPI(APITestCase):
         `location.cats` is an external requirement that points
         to the `Location.cat_set` model relationship.
 
-        `user.number_of_cats` is an internal requirement that points to the same
-        relationship.
+        `user.number_of_cats` is an internal requirement that points
+        to the same relationship.
 
         The prefetch tree produced by this call merges the two together
         into a single prefetch:
