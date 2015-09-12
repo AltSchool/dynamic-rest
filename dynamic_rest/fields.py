@@ -22,6 +22,7 @@ def is_model_field(model, field_name):
     except AttributeError:
         return False
 
+
 def get_model_field(model, field_name):
     """
     Helper function to get model field, including related fields.
@@ -149,7 +150,7 @@ class DynamicRelationField(DynamicField):
         self.bound = True
         parent_model = getattr(self.parent.Meta, 'model', None)
 
-        remote = field_is_remote(parent_model, self.source)
+        remote = is_field_remote(parent_model, self.source)
         try:
             model_field = parent_model._meta.get_field_by_name(self.source)[0]
         except:
