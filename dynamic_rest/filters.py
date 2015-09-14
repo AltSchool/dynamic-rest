@@ -451,9 +451,11 @@ class DynamicFilterBackend(BaseFilterBackend):
         # use requirements at this level to limit fields selected
         if '*' not in requirements:
             id_fields = getattr(serializer, 'get_id_fields', lambda: [])()
+            # only include local model fields
             only = [
                 field for field in set(id_fields + list(requirements.keys()))
                 if is_model_field(model, field)
+                and not is_field_remote(model, field)
             ]
             queryset = queryset.only(*only)
 
