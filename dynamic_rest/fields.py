@@ -67,7 +67,6 @@ class DynamicField(fields.Field):
 
     def __init__(
         self,
-        source=None,
         requires=None,
         deferred=False,
         field_type=None,
@@ -81,7 +80,6 @@ class DynamicField(fields.Field):
             requires: List of fields that this field depends on.
                 Processed by the view layer during queryset build time.
         """
-        self.source = source
         self.requires = requires
         self.deferred = deferred
         self.field_type = field_type
