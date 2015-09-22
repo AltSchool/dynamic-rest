@@ -24,6 +24,10 @@ class DynamicMetadata(SimpleMetadata):
         metadata['features'] = getattr(view, 'features', [])
         if hasattr(view, 'get_serializer'):
             serializer = view.get_serializer(dynamic=False)
+            if hasattr(serializer, 'get_name'):
+                metadata['resource_name'] = serializer.get_name()
+            if hasattr(serializer, 'get_plural_name'):
+                metadata['resource_name_plural'] = serializer.get_plural_name()
         metadata['properties'] = self.get_serializer_info(serializer)
         return metadata
 
@@ -52,7 +56,7 @@ class DynamicMetadata(SimpleMetadata):
             many = True
         if isinstance(field, ModelSerializer):
             type = 'many' if many else 'one'
-            field_info['related_to'] = field.get_name()
+            field_info['related_to'] = field.get_plural_name()
         else:
             type = self.label_lookup[field]
 
