@@ -135,10 +135,11 @@ class TestMergeDictConvertsToDict(TestCase):
             'home': 1,
             'backup_home': 2
         }
-        # django test submits data as multipart-form by default
-        # this results in request.data being a MergeDict
-        # UserNoMergeDictViewSet raises an exception (return 400)
-        # if request.data ends up as MergeDict
+        # Django test submits data as multipart-form by default,
+        # which results in request.data being a MergeDict.
+        # Wrote UserNoMergeDictViewSet to raise an exception (return 400)
+        # if request.data ends up as MergeDict, is not a dict, or
+        # is a dict of lists.
         request = Request(self.rf.post('/cats/', data))
         response = self.view(request)
         self.assertEqual(response.status_code, 201)

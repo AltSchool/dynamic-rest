@@ -50,10 +50,15 @@ class GroupNoMergeDictViewSet(DynamicModelViewSet):
     queryset = Group.objects.all()
 
     def create(self, request, *args, **kwargs):
-        if hasattr(request, 'data') and isinstance(request.data, MergeDict):
-            raise exceptions.ValidationError("request.data is MergeDict")
-        if hasattr(request, 'data') and not isinstance(request.data, dict):
-            raise exceptions.ValidationError("request.data is not a dict")
+        if hasattr(request, 'data'):
+            if isinstance(request.data, MergeDict):
+                raise exceptions.ValidationError("request.data is MergeDict")
+            elif not isinstance(request.data, dict):
+                raise exceptions.ValidationError("request.data is not a dict")
+            elif isinstance(request.data[request.data.keys()[0]], list):
+                raise exceptions.ValidationError(
+                    "request.data is a dict of lists"
+                )
         return super(GroupNoMergeDictViewSet, self).create(
             request,
             *args,
