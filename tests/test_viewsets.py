@@ -2,7 +2,10 @@ from django.test import TestCase
 from django.test.client import RequestFactory
 
 from rest_framework import exceptions
-from rest_framework.request import Request
+from rest_framework.request import (
+    MergeDict,
+    Request
+)
 from dynamic_rest.filters import DynamicFilterBackend, FilterNode
 from tests.viewsets import UserViewSet
 from tests.serializers import GroupSerializer
@@ -116,3 +119,21 @@ class TestUserViewSet(TestCase):
         gs = GroupSerializer(include_fields='*')
         filter_key = node.generate_query_key(gs)
         self.assertEqual(filter_key, 'users__id__in')
+
+
+class TestMergeDictConvertsToDict(TestCase):
+
+    def setUp(self):
+        self.view = UserViewSet()
+        self.rf = RequestFactory()
+
+    def testMergeDictRequest(self):
+        data = {
+            'name': 'test'
+        }
+        request = Request(self.rf.post('/users/', data))
+        # force data to be a MergeDict
+        request._data = MergeDict(request.data)
+        view_request = self.view.dispatch(request)
+        self.assertIsInstance(view_request.data, dict)
+        self.assertNotIsInstance(view_request.data, MergeDict)

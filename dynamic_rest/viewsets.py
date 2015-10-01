@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.http import QueryDict
+from django.utils.datastructures import MergeDict
 
 from rest_framework import viewsets, exceptions
 from rest_framework.exceptions import ValidationError
@@ -72,9 +73,17 @@ class WithDynamicViewSetMixin(object):
         """
         Override DRF initialize_request() method to swap request.GET
         (which is aliased by request.QUERY_PARAMS) with a mutable instance
-        of QueryParams.
+        of QueryParams, and to convert request MergeDict to dict 
+        for consistency
         """
         request.GET = QueryParams(request.GET)
+        
+        if hasattr(request, 'data') and isinstance(request.data, MergeDict):
+            data_as_dict = dict()
+            for d in request.data.dicts:
+                data_as_dict.update(d)
+            request._data = data_as_dict
+
         return super(WithDynamicViewSetMixin, self).initialize_request(
             request, *args, **kargs)
 
