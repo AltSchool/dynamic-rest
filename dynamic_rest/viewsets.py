@@ -74,13 +74,17 @@ class WithDynamicViewSetMixin(object):
         Override DRF initialize_request() method to swap request.GET
         (which is aliased by request.QUERY_PARAMS) with a mutable instance
         of QueryParams, and to convert request MergeDict to dict
-        for consistency
+        for consistency (MergeDict is not a subclass of dict)
         """
         request.GET = QueryParams(request.GET)
 
         request = super(WithDynamicViewSetMixin, self).initialize_request(
             request, *args, **kargs)
 
+        # MergeDict is not a dict subclass, doesnt have same API
+        # Django has deprecated MergeDict and DRF is moving away from
+        # using it - thus, were comfortable replacing it with a normal dict
+        # this will allow data attribute to have normal dict methods
         if hasattr(request, 'data') and isinstance(request.data, MergeDict):
             data_as_dict = dict()
             for d in request.data.dicts:
