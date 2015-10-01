@@ -73,19 +73,21 @@ class WithDynamicViewSetMixin(object):
         """
         Override DRF initialize_request() method to swap request.GET
         (which is aliased by request.QUERY_PARAMS) with a mutable instance
-        of QueryParams, and to convert request MergeDict to dict 
+        of QueryParams, and to convert request MergeDict to dict
         for consistency
         """
         request.GET = QueryParams(request.GET)
-        
+
+        request = super(WithDynamicViewSetMixin, self).initialize_request(
+            request, *args, **kargs)
+
         if hasattr(request, 'data') and isinstance(request.data, MergeDict):
             data_as_dict = dict()
             for d in request.data.dicts:
                 data_as_dict.update(d)
-            request._data = data_as_dict
+            request._full_data = data_as_dict
 
-        return super(WithDynamicViewSetMixin, self).initialize_request(
-            request, *args, **kargs)
+        return request
 
     def get_request_feature(self, name):
         """Parses the request for a particular feature.

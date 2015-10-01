@@ -2,12 +2,13 @@ from django.test import TestCase
 from django.test.client import RequestFactory
 
 from rest_framework import exceptions
-from rest_framework.request import (
-    MergeDict,
-    Request
-)
+from rest_framework.request import Request
 from dynamic_rest.filters import DynamicFilterBackend, FilterNode
-from tests.viewsets import UserViewSet
+from tests.setup import create_fixture
+from tests.viewsets import (
+    GroupNoMergeDictViewSet,
+    UserViewSet
+)
 from tests.serializers import GroupSerializer
 
 
@@ -124,16 +125,20 @@ class TestUserViewSet(TestCase):
 class TestMergeDictConvertsToDict(TestCase):
 
     def setUp(self):
-        self.view = UserViewSet()
+        self.fixture = create_fixture()
+        self.view = GroupNoMergeDictViewSet.as_view({'post': 'create'})
         self.rf = RequestFactory()
 
     def testMergeDictRequest(self):
         data = {
-            'name': 'test'
+            'name': 'miao',
+            'home': 1,
+            'backup_home': 2
         }
-        request = Request(self.rf.post('/users/', data))
-        # force data to be a MergeDict
-        request._data = MergeDict(request.data)
-        view_request = self.view.dispatch(request)
-        self.assertIsInstance(view_request.data, dict)
-        self.assertNotIsInstance(view_request.data, MergeDict)
+        # django test submits data as multipart-form by default
+        # this results in request.data being a MergeDict
+        # UserNoMergeDictViewSet raises an exception (return 400)
+        # if request.data ends up as MergeDict
+        request = Request(self.rf.post('/cats/', data))
+        response = self.view(request)
+        self.assertEqual(response.status_code, 201)
