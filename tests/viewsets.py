@@ -55,10 +55,6 @@ class GroupNoMergeDictViewSet(DynamicModelViewSet):
                 raise exceptions.ValidationError("request.data is MergeDict")
             elif not isinstance(request.data, dict):
                 raise exceptions.ValidationError("request.data is not a dict")
-            elif isinstance(request.data[request.data.keys()[0]], list):
-                raise exceptions.ValidationError(
-                    "request.data is a dict of lists"
-                )
         return super(GroupNoMergeDictViewSet, self).create(
             request,
             *args,
