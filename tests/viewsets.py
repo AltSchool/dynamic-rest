@@ -1,3 +1,7 @@
+from django.utils.datastructures import MergeDict
+
+from rest_framework import exceptions
+
 from dynamic_rest.viewsets import DynamicModelViewSet
 from tests.serializers import (
     CatSerializer,
@@ -38,6 +42,24 @@ class UserViewSet(DynamicModelViewSet):
         if query_params.get('name'):
             query_params.add('filter{name}', query_params.get('name'))
         return super(UserViewSet, self).list(request, *args, **kwargs)
+
+
+class GroupNoMergeDictViewSet(DynamicModelViewSet):
+    model = Group
+    serializer_class = GroupSerializer
+    queryset = Group.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        if hasattr(request, 'data'):
+            if isinstance(request.data, MergeDict):
+                raise exceptions.ValidationError("request.data is MergeDict")
+            elif not isinstance(request.data, dict):
+                raise exceptions.ValidationError("request.data is not a dict")
+        return super(GroupNoMergeDictViewSet, self).create(
+            request,
+            *args,
+            **kwargs
+        )
 
 
 class GroupViewSet(DynamicModelViewSet):

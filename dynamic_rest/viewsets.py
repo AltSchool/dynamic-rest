@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.http import QueryDict
+from django.utils.datastructures import MergeDict
 
 from rest_framework import viewsets, exceptions
 from rest_framework.exceptions import ValidationError
@@ -72,11 +73,25 @@ class WithDynamicViewSetMixin(object):
         """
         Override DRF initialize_request() method to swap request.GET
         (which is aliased by request.QUERY_PARAMS) with a mutable instance
-        of QueryParams.
+        of QueryParams, and to convert request MergeDict to a subclass of dict
+        for consistency (MergeDict is not a subclass of dict)
         """
         request.GET = QueryParams(request.GET)
-        return super(WithDynamicViewSetMixin, self).initialize_request(
+
+        request = super(WithDynamicViewSetMixin, self).initialize_request(
             request, *args, **kargs)
+
+        # MergeDict doesn't have the same API as dict.
+        # Django has deprecated MergeDict and DRF is moving away from
+        # using it - thus, were comfortable replacing it with a QueryDict
+        # This will allow the data property to have normal dict methods.
+        if isinstance(request._full_data, MergeDict):
+            data_as_dict = request.data.dicts[0]
+            for d in request.data.dicts[1:]:
+                data_as_dict.update(d)
+            request._full_data = data_as_dict
+
+        return request
 
     def get_request_feature(self, name):
         """Parses the request for a particular feature.

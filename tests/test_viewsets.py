@@ -4,7 +4,11 @@ from django.test.client import RequestFactory
 from rest_framework import exceptions
 from rest_framework.request import Request
 from dynamic_rest.filters import DynamicFilterBackend, FilterNode
-from tests.viewsets import UserViewSet
+from tests.setup import create_fixture
+from tests.viewsets import (
+    GroupNoMergeDictViewSet,
+    UserViewSet
+)
 from tests.serializers import GroupSerializer
 
 
@@ -116,3 +120,25 @@ class TestUserViewSet(TestCase):
         gs = GroupSerializer(include_fields='*')
         filter_key = node.generate_query_key(gs)
         self.assertEqual(filter_key, 'users__id__in')
+
+
+class TestMergeDictConvertsToDict(TestCase):
+
+    def setUp(self):
+        self.fixture = create_fixture()
+        self.view = GroupNoMergeDictViewSet.as_view({'post': 'create'})
+        self.rf = RequestFactory()
+
+    def testMergeDictRequest(self):
+        data = {
+            'name': 'miao',
+            'random_input': [1, 2, 3]
+        }
+        # Django test submits data as multipart-form by default,
+        # which results in request.data being a MergeDict.
+        # Wrote UserNoMergeDictViewSet to raise an exception (return 400)
+        # if request.data ends up as MergeDict, is not a dict, or
+        # is a dict of lists.
+        request = Request(self.rf.post('/groups/', data))
+        response = self.view(request)
+        self.assertEqual(response.status_code, 201)
