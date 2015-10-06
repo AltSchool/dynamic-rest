@@ -1,4 +1,7 @@
-from setuptools import setup
+from setuptools import (
+    find_packages,
+    setup
+)
 import codecs
 import os
 import re
@@ -8,10 +11,15 @@ BASE_DIR = os.path.dirname(__file__) or "."
 VERSION = re.search(
     '__version__ = "([^"]+)"',
     codecs.open(
-        "%s/%s/__init__.py" %
-        (BASE_DIR,
-         PACKAGE_NAME),
-        encoding='utf-8').read()).group(1)
+        "%s/%s/__init__.py" % (
+            BASE_DIR,
+            PACKAGE_NAME
+        ),
+        encoding='utf-8'
+    ).read()
+).group(1)
+
+EXCLUDE_FROM_PACKAGES = []
 
 setup(
     author="Anthony Leontiev",
@@ -19,10 +27,19 @@ setup(
     description="Dynamic extensions for Django REST Framework",
     long_description=open("README.md").read(),
     name=PACKAGE_NAME,
-    packages=[
-        PACKAGE_NAME,
-        "tests",
-    ],
+    package_data={
+        '': [
+            '*.css',
+            '*.csv',
+            '*.html',
+            '*.ini',
+            '*.js',
+            '*.json'
+            '*.png',
+            '*.xlsx',
+        ]
+    },
+    packages=find_packages(exclude=EXCLUDE_FROM_PACKAGES),
     scripts=['manage.py'],
     url="http://github.com/AltSchool/dynamic-rest",
     version=VERSION,
