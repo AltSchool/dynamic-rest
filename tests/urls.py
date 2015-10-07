@@ -7,8 +7,8 @@ router.register(r'users', viewsets.UserViewSet)
 router.register(r'groups', viewsets.GroupViewSet)
 router.register(r'profiles', viewsets.ProfileViewSet)
 router.register(r'locations', viewsets.LocationViewSet)
-router.register(r'cats', viewsets.CatViewSet)
-router.register(r'user_locations', viewsets.UserLocationViewSet, base_name='user_locations')
+router.register(r'v2/cats', viewsets.CatViewSet)
+router.register(r'v1/user_locations', viewsets.UserLocationViewSet, base_name='user_locations')
 
 urlpatterns = patterns(
     '',

@@ -21,7 +21,7 @@ class DynamicBrowsableAPIRenderer(BrowsableAPIRenderer):
         # TODO(ant): support arbitrarily nested
         # structure, for now it is capped at a single level
         # for UX reasons
-        for group, endpoints in sorted(
+        for group_name, endpoints in sorted(
             directory.iteritems(),
             key=sort_key
         ):
@@ -31,11 +31,14 @@ class DynamicBrowsableAPIRenderer(BrowsableAPIRenderer):
                 key=sort_key
             ):
                 if endpoint_name == '_url':
-                    url = reverse(endpoint)
                     continue
                 endpoint_url = endpoint.get('_url', None)
                 if endpoint_url:
                     endpoint_url = reverse(endpoint_url)
-                endpoints_list.append((endpoint, endpoint_url, []))
-            directory_list.append((group, url, endpoints_list))
+                endpoints_list.append((endpoint_name, endpoint_url, []))
+
+            url = endpoints.get('_url', None)
+            if url:
+                url = reverse(url)
+            directory_list.append((group_name, url, endpoints_list))
         return directory_list

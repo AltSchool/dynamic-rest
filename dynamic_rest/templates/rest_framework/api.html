@@ -3,43 +3,50 @@
 {% load rest_framework %}
 {% load static %}
 
+{% block style %}
+    {% block bootstrap_theme %}
+        <link rel="stylesheet" type="text/css" href="{% static "rest_framework/css/bootstrap.min.css" %}"/>
+    {% endblock %}
+    <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/default.css" %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/flexboxgrid.css" %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static "rest_framework/css/prettify.css" %}"/>
+    <link rel="stylesheet" type="text/css" href="{% static "rest_framework/css/default.css" %}"/>
+{% endblock %}
 
 {% block body %}
     <body class="{% block bodyclass %}{% endblock %}">
 
-        <div class="wrapper">
-
-            {% block navbar %}
-                <div class="navbar navbar-static-top {% block bootstrap_navbar_variant %}navbar-inverse{% endblock %}">
-                    <div class="container">
-                        <span>
-                            {% block branding %}
-                                <a class='navbar-brand' rel="nofollow" href='http://www.django-rest-framework.org'>
-                                    (Dynamic) Django REST framework <span class="version">{{ version }}</span>
-                                </a>
-                            {% endblock %}
-                        </span>
-                        <ul class="nav navbar-nav pull-right">
-                            {% block userlinks %}
-                                {% if user.is_authenticated %}
-                                    {% optional_logout request user %}
-                                {% else %}
-                                    {% optional_login request %}
-                                {% endif %}
-                            {% endblock %}
-                        </ul>
-                    </div>
+            {% block header %}
+                <div class="header row middle-xs">
+                    {% block branding %}
+                        <div class="col-xs pad-left-md">
+                            <a class='navbar-brand' rel="nofollow" href='http://www.django-rest-framework.org'>
+                                (Dynamic) Django REST framework <span class="version">{{ version }}</span>
+                            </a>
+                        </div>
+                    {% endblock %}
+                    <ul class="col-xs last-xs">
+                        {% block userlinks %}
+                            {% if user.is_authenticated %}
+                                {% optional_logout request user %}
+                            {% else %}
+                                {% optional_login request %}
+                            {% endif %}
+                        {% endblock %}
+                    </ul>
                 </div>
             {% endblock %}
 
+            <div class="wrapper row">
 
             {% block directory %}
-            <div class="directory">
+            <div class="col-xs-2 side-panel directory">
+                <li><a href="/">/</a>
                 <ul>
                     {% for l1_name, l1_link, l1_items in directory %}
                         <li>
                             {% if l1_link %}
-                                <a href="{{l1_link}}">{{l1_name}}</a>
+                                <a href="{{l1_link}}">{{l1_name}}/</a>
                             {% else %}
                                 {{l1_name}}
                             {% endif %}
@@ -47,7 +54,7 @@
                                 {% for l2_name, l2_link, l2_items in l1_items %}
                                     <li>
                                         {% if l2_link %}
-                                            <a href="{{l2_link}}">{{l2_name}}</a>
+                                            <a href="{{l2_link}}">{{l2_name}}/</a>
                                         {% else %}
                                             {{l2_name}}
                                         {% endif %}
@@ -57,10 +64,11 @@
                         </li>
                     {% endfor %}
                 </ul>
+                </li>
             </div>
             {% endblock %}
 
-            <div class="container">
+            <div class="main col-xs pad-lg">
             {% block breadcrumbs %}
                 <ul class="breadcrumb">
                     {% for breadcrumb_name, breadcrumb_url in breadcrumblist %}
@@ -252,7 +260,7 @@
                 {% endif %}
             </div>
             <!-- END Content -->
-            </div><!-- /.container -->
+            </div><!-- /.main -->
         </div><!-- ./wrapper -->
 
         {% block script %}

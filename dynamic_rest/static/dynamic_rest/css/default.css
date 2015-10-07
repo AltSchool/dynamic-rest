@@ -1,0 +1,107 @@
+.header, .directory {
+    font-family: 'Open Sans', 'Helvetica Neue', Helvetica, sans-serif;
+}
+.header {
+    background-color: rgb(70, 178, 222);
+    box-sizing: border-box;
+    color: rgb(34, 34, 34);
+    display: block;
+    height: 70px;
+    line-height: 22.5px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2000;
+}
+
+.wrapper {
+    padding-top: 70px;
+    min-height: 100vh;
+}
+
+.main ul.breadcrumb {
+    margin-top: 0px;
+}
+
+.directory {
+    min-width: 250px;
+    padding-top: 20px;
+    background-color: #222;
+}
+
+.directory ul {
+    margin: 0;
+    padding: 0;
+}
+
+.directory li {
+    margin: 0;
+    padding-left: 20px;
+    list-style-type: none;
+}
+
+.directory li a:hover {
+    color: rgba(255, 255, 255, .90);
+    text-decoration: none;
+}
+
+.directory li ul {
+    padding-left: 20px;
+}
+
+a {
+    text-decoration: none;
+}
+
+.header a {
+    color: white;
+}
+
+.directory a, .directory li {
+    display: block;
+    font-size: 16px;
+    color: rgba(255, 255, 255, .60);
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+.pad-sm {
+    padding: 10px;
+}
+
+.pad-md {
+    padding: 15px;
+}
+
+.pad-lg {
+    padding: 20px;
+}
+
+.pad-left-sm {
+    padding-left: 10px;
+}
+
+.pad-left-md {
+    padding-left: 15px;
+}
+
+.pad-left-lg {
+    padding-left: 20px;
+}
+
+.pad-right-sm {
+    padding-right: 10px;
+}
+
+.pad-right-md {
+    padding-right: 15px;
+}
+
+.pad-right-lg {
+    padding-right: 20px;
+}

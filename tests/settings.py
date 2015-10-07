@@ -40,6 +40,10 @@ TEMPLATE_DIRS = (
     os.path.join(BASE_DIR, '../dynamic_rest/templates'),
 )
 
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, '../dynamic_rest/static'),
+)
+
 DYNAMIC_REST = {
     'ENABLE_LINKS': True,
     'DEBUG': os.environ.get('DYNAMIC_REST_DEBUG', 'false').lower() == 'true'
