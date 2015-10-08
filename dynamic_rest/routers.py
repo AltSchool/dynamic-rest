@@ -28,7 +28,7 @@ class DynamicRouter(DefaultRouter):
         }
         """
         if base_name is None:
-            base_name = self.get_default_base_name(viewset)
+            base_name = prefix
 
         super(DynamicRouter, self).register(prefix, viewset, base_name)
 

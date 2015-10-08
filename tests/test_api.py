@@ -733,7 +733,7 @@ class TestUserLocationsAPI(APITestCase):
 
     def testGetEmbedded(self):
         with self.assertNumQueries(3):
-            url = '/user_locations/1/'
+            url = '/v1/user_locations/1/'
             response = self.client.get(url)
 
         self.assertEqual(200, response.status_code)
@@ -752,7 +752,7 @@ class TestLinks(APITestCase):
         settings.DYNAMIC_REST['ENABLE_LINKS'] = True
 
     def test_deferred_relations_have_links(self):
-        r = self.client.get('/cats/1/')
+        r = self.client.get('/v2/cats/1/')
         self.assertEqual(200, r.status_code)
         content = json.loads(r.content)
 
@@ -763,7 +763,7 @@ class TestLinks(APITestCase):
         self.assertTrue('home' not in cat['links'])
 
         # test for default link (auto-generated relation endpoint)
-        self.assertEqual(cat['links']['foobar'], '/cats/1/foobar/')
+        self.assertEqual(cat['links']['foobar'], '/v2/cats/1/foobar/')
 
         # test for dynamically generated link URL
         cat1 = Cat.objects.get(pk=1)
@@ -773,7 +773,7 @@ class TestLinks(APITestCase):
         )
 
     def test_including_empty_relation_hides_link(self):
-        r = self.client.get('/cats/1/?include[]=foobar')
+        r = self.client.get('/v2/cats/1/?include[]=foobar')
         self.assertEqual(200, r.status_code)
         content = json.loads(r.content)
 
@@ -783,7 +783,7 @@ class TestLinks(APITestCase):
         self.assertFalse('foobar' in cat['links'])
 
     def test_including_relation_returns_link(self):
-        url = '/cats/1/?include=backup_home'
+        url = '/v2/cats/1/?include=backup_home'
         r = self.client.get(url)
         self.assertEqual(200, r.status_code)
         content = json.loads(r.content)
@@ -793,7 +793,7 @@ class TestLinks(APITestCase):
         self.assertTrue(cat['links']['backup_home'])
 
     def test_sideloading_relation_hides_link(self):
-        url = '/cats/1/?include[]=backup_home.'
+        url = '/v2/cats/1/?include[]=backup_home.'
         r = self.client.get(url)
         self.assertEqual(200, r.status_code)
         content = json.loads(r.content)
