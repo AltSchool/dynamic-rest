@@ -42,7 +42,7 @@
 }
 
 .directory li a:hover {
-    color: rgba(255, 255, 255, .90);
+    color: white;
     text-decoration: none;
 }
 
@@ -62,6 +62,10 @@ a {
     display: block;
     font-size: 16px;
     color: rgba(255, 255, 255, .60);
+}
+
+.directory a.active, .directory li.active {
+    color: white;
 }
 
 html, body {

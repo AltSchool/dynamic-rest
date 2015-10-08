@@ -43,20 +43,20 @@
             <div class="col-xs-2 side-panel directory">
                 <li><a href="/">/</a>
                 <ul>
-                    {% for l1_name, l1_link, l1_items in directory %}
+                    {% for l1_name, l1_link, l1_items, l1_active in directory %}
                         <li>
                             {% if l1_link %}
-                                <a href="{{l1_link}}">{{l1_name}}/</a>
+                                <a {% if l1_active %}class="active"{% endif %} href="{{l1_link}}">{{l1_name}}/</a>
                             {% else %}
-                                {{l1_name}}
+                                {{l1_name}}/
                             {% endif %}
                             <ul>
-                                {% for l2_name, l2_link, l2_items in l1_items %}
+                                {% for l2_name, l2_link, l2_items, l2_active in l1_items %}
                                     <li>
                                         {% if l2_link %}
-                                            <a href="{{l2_link}}">{{l2_name}}/</a>
+                                            <a {% if l2_active %}class="active"{% endif %} href="{{l2_link}}">{{l2_name}}/</a>
                                         {% else %}
-                                            {{l2_name}}
+                                            {{l2_name}}/
                                         {% endif %}
                                     </li>
                                 {% endfor %}
