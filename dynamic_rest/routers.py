@@ -32,6 +32,7 @@ class DynamicRouter(DefaultRouter):
 
         super(DynamicRouter, self).register(prefix, viewset, base_name)
 
+
         prefix_parts = prefix.split('/')
         if len(prefix_parts) > 1:
             prefix = prefix_parts[0]
@@ -43,7 +44,7 @@ class DynamicRouter(DefaultRouter):
         if prefix and prefix not in directory:
             current = directory[prefix] = {}
         else:
-            current = directory
+            current = directory.get(prefix, directory)
 
         list_name = self.routes[0].name
         url_name = list_name.format(basename=base_name)

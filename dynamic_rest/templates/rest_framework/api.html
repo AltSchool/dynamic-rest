@@ -25,7 +25,7 @@
                             </a>
                         </div>
                     {% endblock %}
-                    <ul class="col-xs last-xs">
+                    <ul class="user-menu">
                         {% block userlinks %}
                             {% if user.is_authenticated %}
                                 {% optional_logout request user %}
@@ -68,7 +68,7 @@
             </div>
             {% endblock %}
 
-            <div class="main col-xs pad-lg">
+            <div class="main col-xs pad-xl">
             {% block breadcrumbs %}
                 <ul class="breadcrumb">
                     {% for breadcrumb_name, breadcrumb_url in breadcrumblist %}

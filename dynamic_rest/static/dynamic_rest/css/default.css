@@ -15,6 +15,30 @@
     z-index: 2000;
 }
 
+.header .user-menu {
+    float: right;
+    height: 100%;
+    line-height: 70px;
+    margin: 0;
+    padding: 0;
+}
+
+.header li {
+    list-style-type: none;
+}
+.header a {
+    color: white;
+    text-decoration: none;
+}
+
+.header .dropdown.open {
+    background-color: #106E92;
+}
+
+.header .user-menu > li > a {
+    padding: 30px 50px 30px 30px;
+}
+
 .wrapper {
     padding-top: 70px;
     min-height: 100vh;
@@ -25,7 +49,7 @@
 }
 
 .directory {
-    min-width: 250px;
+    min-width: 320px;
     padding-top: 20px;
     background-color: #222;
 }
@@ -54,10 +78,6 @@ a {
     text-decoration: none;
 }
 
-.header a {
-    color: white;
-}
-
 .directory a, .directory li {
     display: block;
     font-size: 16px;
@@ -84,6 +104,10 @@ html, body {
 
 .pad-lg {
     padding: 20px;
+}
+
+.pad-xl {
+    padding: 30px;
 }
 
 .pad-left-sm {
