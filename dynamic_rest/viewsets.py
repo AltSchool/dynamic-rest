@@ -4,7 +4,8 @@ from django.utils.datastructures import MergeDict
 
 from rest_framework import viewsets, exceptions
 from rest_framework.exceptions import ValidationError
-from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
+from rest_framework.renderers import JSONRenderer
+from dynamic_rest.renderers import DynamicBrowsableAPIRenderer
 from rest_framework.response import Response
 
 from dynamic_rest.pagination import DynamicPageNumberPagination
@@ -63,7 +64,7 @@ class WithDynamicViewSetMixin(object):
     # TODO: add support for `sort{}`
     pagination_class = DynamicPageNumberPagination
     metadata_class = DynamicMetadata
-    renderer_classes = (JSONRenderer, BrowsableAPIRenderer)
+    renderer_classes = (JSONRenderer, DynamicBrowsableAPIRenderer)
     features = (INCLUDE, EXCLUDE, FILTER, PAGE, PER_PAGE)
     sideload = True
     meta = None

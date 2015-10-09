@@ -26,11 +26,23 @@ INSTALLED_APPS = (
 )
 
 REST_FRAMEWORK = {
-    'PAGE_SIZE': 50
+    'PAGE_SIZE': 50,
+    'DEFAULT_RENDERER_CLASSES': (
+        'rest_framework.renderers.JSONRenderer',
+        'dynamic_rest.renderers.DynamicBrowsableAPIRenderer'
+    )
 }
 ROOT_URLCONF = 'tests.urls'
 
 BASE_DIR = os.path.dirname(__file__)
+
+TEMPLATE_DIRS = (
+    os.path.join(BASE_DIR, '../dynamic_rest/templates'),
+)
+
+STATICFILES_DIRS = (
+    os.path.join(BASE_DIR, '../dynamic_rest/static'),
+)
 
 DYNAMIC_REST = {
     'ENABLE_LINKS': True,

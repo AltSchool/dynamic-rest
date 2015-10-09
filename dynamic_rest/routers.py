@@ -1,8 +1,55 @@
 from rest_framework.routers import DefaultRouter, Route, replace_methodname
 from dynamic_rest.fields import DynamicRelationField
 
+directory = {}
+
 
 class DynamicRouter(DefaultRouter):
+
+    def register(self, prefix, viewset, base_name=None):
+        """Add any registered route into a global API directory.
+
+        If the prefix includes a path separator,
+        store the URL in the directory under the first path segment.
+        Otherwise, store it as-is.
+
+        For example, if there are two registered prefixes,
+        'v1/users' and 'groups', `directory` will look liks:
+
+        {
+            'v1': {
+                'users': {
+                    '_url': 'users-list'
+                },
+            }
+            'groups': {
+               '_url': 'groups-list'
+            }
+        }
+        """
+        if base_name is None:
+            base_name = prefix
+
+        super(DynamicRouter, self).register(prefix, viewset, base_name)
+
+        prefix_parts = prefix.split('/')
+        if len(prefix_parts) > 1:
+            prefix = prefix_parts[0]
+            endpoint = '/'.join(prefix_parts[1:])
+        else:
+            endpoint = prefix
+            prefix = None
+
+        if prefix and prefix not in directory:
+            current = directory[prefix] = {}
+        else:
+            current = directory
+
+        list_name = self.routes[0].name
+        url_name = list_name.format(basename=base_name)
+        if endpoint not in current:
+            current[endpoint] = {}
+        current[endpoint]['_url'] = url_name
 
     def get_routes(self, viewset):
         """
