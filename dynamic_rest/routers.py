@@ -32,7 +32,6 @@ class DynamicRouter(DefaultRouter):
 
         super(DynamicRouter, self).register(prefix, viewset, base_name)
 
-
         prefix_parts = prefix.split('/')
         if len(prefix_parts) > 1:
             prefix = prefix_parts[0]
