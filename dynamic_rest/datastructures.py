@@ -32,9 +32,10 @@ class TreeMap(dict):
             if part not in cur:
                 cur[part] = TreeMap() if i != last else leaf_value
             elif i == last:  # found leaf
-                cur[part] = cur[part].update(
-                    leaf_value
-                ) if update else leaf_value
+                if update:
+                    cur[part].update(leaf_value)
+                else:
+                    cur[part] = leaf_value
 
             cur = cur[part]
 

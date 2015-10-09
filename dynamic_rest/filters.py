@@ -385,7 +385,7 @@ class DynamicFilterBackend(BaseFilterBackend):
                     # Change 'a.b.' -> 'a.b.*',
                     # supporting 'a.b.' for backwards compatibility.
                     requirement[-1] = '*'
-                requirements.insert(requirement, TreeMap())
+                requirements.insert(requirement, TreeMap(), update=True)
 
     def _filter_queryset(
         self,
