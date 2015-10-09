@@ -7,6 +7,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.renderers import JSONRenderer
 from dynamic_rest.renderers import DynamicBrowsableAPIRenderer
 from rest_framework.response import Response
+from rest_framework.renderers import BrowsableAPIRenderer
 
 from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.metadata import DynamicMetadata
@@ -93,6 +94,16 @@ class WithDynamicViewSetMixin(object):
             request._full_data = data_as_dict
 
         return request
+
+    def get_renderers(self):
+        """Optionally block Browsable API rendering. """
+        renderers = super(WithDynamicViewSetMixin, self).get_renderers()
+        if dynamic_settings.get('ENABLE_BROWSABLE_API') is False:
+            return [
+                r for r in renderers if not isinstance(r, BrowsableAPIRenderer)
+            ]
+        else:
+            return renderers
 
     def get_request_feature(self, name):
         """Parses the request for a particular feature.
