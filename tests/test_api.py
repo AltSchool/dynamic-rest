@@ -763,7 +763,7 @@ class TestLinks(APITestCase):
         self.assertTrue('home' not in cat['links'])
 
         # test for default link (auto-generated relation endpoint)
-        self.assertEqual(cat['links']['foobar'], '/cats/1/foobar/')
+        self.assertEqual(cat['links']['foobar'], 'foobar/')
 
         # test for dynamically generated link URL
         cat1 = Cat.objects.get(pk=1)

@@ -14,11 +14,7 @@ def merge_link_object(serializer, data, instance):
             continue
 
         # Default to DREST-generated relation endpoints.
-        link = getattr(field, 'link', "/%s/%s/%s/" % (
-            serializer.get_plural_name(),
-            instance.pk,
-            name
-        ))
+        link = getattr(field, 'link', "%s/" % name)
         if callable(link):
             link = link(name, field, data, instance)
 
