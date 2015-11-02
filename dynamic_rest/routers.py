@@ -1,10 +1,74 @@
 from rest_framework.routers import DefaultRouter, Route, replace_methodname
+from rest_framework.reverse import reverse
+from rest_framework import views
+from rest_framework.response import Response
 from dynamic_rest.fields import DynamicRelationField
+from collections import OrderedDict
 
 directory = {}
 
 
+def get_directory(request):
+    """Get API directory as a nested list of lists."""
+
+    def get_url(url):
+        return reverse(url, request=request) if url else url
+
+    def is_active_url(path, url):
+        return path.startswith(url) if url and path else False
+
+    path = request.path
+    directory_list = []
+    sort_key = lambda r: r[0]
+    # TODO(ant): support arbitrarily nested
+    # structure, for now it is capped at a single level
+    # for UX reasons
+    for group_name, endpoints in sorted(
+        directory.iteritems(),
+        key=sort_key
+    ):
+        endpoints_list = []
+        for endpoint_name, endpoint in sorted(
+            endpoints.iteritems(),
+            key=sort_key
+        ):
+            if endpoint_name == '_url':
+                continue
+            endpoint_url = get_url(endpoint.get('_url', None))
+            active = is_active_url(path, endpoint_url)
+            endpoints_list.append(
+                (endpoint_name, endpoint_url, [], active)
+            )
+
+        url = get_url(endpoints.get('_url', None))
+        active = is_active_url(path, url)
+        directory_list.append(
+            (group_name, url, endpoints_list, active)
+        )
+    return directory_list
+
+
 class DynamicRouter(DefaultRouter):
+
+    def get_api_root_view(self):
+        """Return API root view, using the global directory."""
+        class API(views.APIView):
+            _ignore_model_permissions = True
+
+            def get(self, request, *args, **kwargs):
+                directory_list = get_directory(request)
+                result = OrderedDict()
+                for group_name, url, endpoints, _ in directory_list:
+                    if url:
+                        result[group_name] = url
+                    else:
+                        group = OrderedDict()
+                        for endpoint_name, url, _, _ in endpoints:
+                            group[endpoint_name] = url
+                        result[group_name] = group
+                return Response(result)
+
+        return API.as_view()
 
     def register(self, prefix, viewset, base_name=None):
         """Add any registered route into a global API directory.
@@ -31,7 +95,6 @@ class DynamicRouter(DefaultRouter):
             base_name = prefix
 
         super(DynamicRouter, self).register(prefix, viewset, base_name)
-
 
         prefix_parts = prefix.split('/')
         if len(prefix_parts) > 1:
