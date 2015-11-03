@@ -50,6 +50,10 @@ def get_directory(request):
 
 class DynamicRouter(DefaultRouter):
 
+    def __init__(self, *args, **kwargs):
+        super(DynamicRouter, self).__init__(*args, **kwargs)
+        self.trailing_slash = '/?'
+
     def get_api_root_view(self):
         """Return API root view, using the global directory."""
         class API(views.APIView):
