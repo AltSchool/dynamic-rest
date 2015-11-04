@@ -44,6 +44,10 @@ class TestUsersAPI(APITestCase):
             }]
         }, json.loads(response.content))
 
+    def test_optional_trailing_slash(self):
+        response = self.client.get('/users/1')
+        self.assertEquals(200, response.status_code)
+
     def testInclude(self):
         with self.assertNumQueries(2):
             # 2 queries: 1 for User, 1 for Group, 0 for Location
