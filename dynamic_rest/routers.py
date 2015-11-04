@@ -51,7 +51,7 @@ def get_directory(request):
 class DynamicRouter(DefaultRouter):
 
     def __init__(self, *args, **kwargs):
-        optional_trailing_slash = kwargs.pop('optional_trailing_slash', False)
+        optional_trailing_slash = kwargs.pop('optional_trailing_slash', True)
         super(DynamicRouter, self).__init__(*args, **kwargs)
         if optional_trailing_slash:
             self.trailing_slash = '/?'

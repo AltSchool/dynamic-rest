@@ -2,7 +2,7 @@ from django.conf.urls import patterns, include, url
 from dynamic_rest.routers import DynamicRouter
 from tests import viewsets
 
-router = DynamicRouter(optional_trailing_slash=True)
+router = DynamicRouter()
 router.register(r'users', viewsets.UserViewSet)
 router.register(r'groups', viewsets.GroupViewSet)
 router.register(r'profiles', viewsets.ProfileViewSet)
