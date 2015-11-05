@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 from django.db import connection
 from django.conf import settings
@@ -807,3 +808,11 @@ class TestLinks(APITestCase):
         self.assertTrue('backup_home' in cat)
         self.assertTrue('locations' in content)  # check for sideload
         self.assertFalse('backup_home' in cat['links'])  # no link
+
+    def test_unicode_values(self):
+        url = u'/v2/cats/?foo=☂'
+        r = self.client.get(
+            url,
+            content_type='application/json'
+        )
+        self.assertEqual(200, r.status_code)
