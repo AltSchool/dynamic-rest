@@ -204,6 +204,38 @@ class TestUsersAPI(APITestCase):
              }]},
             json.loads(response.content))
 
+    def testNestedExcludeAll(self):
+        with self.assertNumQueries(2):
+            # 2 queries: 1 for User, 1 for Group
+            url = '/users/?exclude[]=groups.*&include[]=groups.name'
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code, response.content)
+        self.assertEquals(
+            {
+                'groups': [{'name': '0'}, {'name': '1'}],
+                'users': [{
+                    'groups': [1, 2], 'id': 1, 'location': 1, 'name': '0'
+                }, {
+                    'groups': [1, 2], 'id': 2, 'location': 1, 'name': '1'
+                }, {
+                    'groups': [1, 2], 'id': 3, 'location': 2, 'name': '2'
+                }, {
+                    'groups': [1, 2], 'id': 4, 'location': 3, 'name': '3'
+                }]
+            },
+            json.loads(response.content))
+
+    def testExcludeAll(self):
+        with self.assertNumQueries(1):
+            url = '/users/?exclude[]=*&include[]=id'
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code, response.content)
+        data = json.loads(response.content)
+        self.assertEqual(
+            set(['id']),
+            set(data['users'][0].keys())
+        )
+
     def testSingleResourceSideload(self):
         with self.assertNumQueries(2):
             # 2 queries: 1 for User, 1 for Group

@@ -111,8 +111,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         self.request_fields = request_fields or {}
         self.embed = embed
 
-        if dynamic:
-            self._dynamic_init(only_fields, include_fields, exclude_fields)
+        self._dynamic_init(only_fields, include_fields, exclude_fields)
 
     def _dynamic_init(self, only_fields, include_fields, exclude_fields):
         """
@@ -128,6 +127,15 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
                 Removes from default field set.
         """
 
+        if not self.dynamic:
+            return
+
+        if (
+            isinstance(self.request_fields, dict)
+            and self.request_fields.pop('*', None) is False
+        ):
+            exclude_fields = '*'
+
         only_fields = set(only_fields or [])
         include_fields = include_fields or []
         exclude_fields = exclude_fields or []
@@ -137,7 +145,16 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
             include_fields = only_fields
             exclude_fields = all_fields - only_fields
 
-        if include_fields == '*':
+        if exclude_fields == '*':
+            # First exclude all, then add back in explicitly included fields.
+            exclude_fields = all_fields
+            include_fields = list(set(
+                include_fields + [
+                    field for field, val in self.request_fields.iteritems()
+                    if val
+                ]
+            ))
+        elif include_fields == '*':
             include_fields = all_fields
 
         for name in exclude_fields:
@@ -147,6 +164,10 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
             if not isinstance(self.request_fields.get(name), dict):
                 # not sideloading this field
                 self.request_fields[name] = True
+
+    def set_request_fields(self, request_fields):
+        self.request_fields = request_fields
+        self._dynamic_init(None, None, None)
 
     def get_model(self):
         """Get the model, if the serializer has one.
@@ -240,7 +261,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
                 inject = inject.child
             if inject:
                 inject.sideload = self.sideload
-                inject.request_fields = sub_fields
+                inject.set_request_fields(sub_fields)
 
         return serializer_fields
 
