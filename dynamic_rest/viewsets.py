@@ -198,13 +198,21 @@ class WithDynamicViewSetMixin(object):
         self._request_fields = request_fields
         return request_fields
 
+    def is_update(self):
+        if (
+            self.request and
+            self.request.method.upper() in UPDATE_REQUEST_METHODS
+        ):
+            return True
+        else:
+            return False
+
     def get_serializer(self, *args, **kwargs):
         if 'request_fields' not in kwargs:
             kwargs['request_fields'] = self.get_request_fields()
         if 'sideload' not in kwargs:
             kwargs['sideload'] = self.sideload
-        if self.request and self.request.method.upper() \
-                in UPDATE_REQUEST_METHODS:
+        if self.is_update():
             kwargs['include_fields'] = '*'
         return super(
             WithDynamicViewSetMixin, self).get_serializer(
