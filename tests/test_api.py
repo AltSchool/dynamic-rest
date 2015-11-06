@@ -236,6 +236,18 @@ class TestUsersAPI(APITestCase):
             set(data['users'][0].keys())
         )
 
+    def testExcludeAllIncludeSideload(self):
+        with self.assertNumQueries(2):
+            url = '/users/?exclude[]=*&include[]=groups.'
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code, response.content)
+        data = json.loads(response.content)
+        self.assertEquals(
+            set(['groups']),
+            set(data['users'][0].keys())
+        )
+        self.assertTrue('groups' in data)
+
     def testSingleResourceSideload(self):
         with self.assertNumQueries(2):
             # 2 queries: 1 for User, 1 for Group

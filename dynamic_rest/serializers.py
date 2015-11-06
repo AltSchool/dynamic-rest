@@ -124,7 +124,8 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
                 Adds to default field set, (respects sideloads).
                 `*` means include all fields.
             exclude_fields: List of field names to exclude.
-                Removes from default field set.
+                Removes from default field set. If set to '*', all fields are
+                removed, except for ones that are explicitly included.
         """
 
         if not self.dynamic:
@@ -142,18 +143,18 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         all_fields = set(self.get_all_fields().keys())
 
         if only_fields:
+            exclude_fields = '*'
             include_fields = only_fields
-            exclude_fields = all_fields - only_fields
 
         if exclude_fields == '*':
             # First exclude all, then add back in explicitly included fields.
-            exclude_fields = all_fields
-            include_fields = list(set(
-                include_fields + [
+            include_fields = set(
+                list(include_fields) + [
                     field for field, val in self.request_fields.iteritems()
-                    if val
+                    if val or val == {}
                 ]
-            ))
+            )
+            exclude_fields = all_fields - include_fields
         elif include_fields == '*':
             include_fields = all_fields
 
