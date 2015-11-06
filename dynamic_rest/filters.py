@@ -449,7 +449,9 @@ class DynamicFilterBackend(BaseFilterBackend):
         )
 
         # use requirements at this level to limit fields selected
-        if '*' not in requirements:
+        # only do this for GET requests where we are not requesting the
+        # entire fieldset
+        if '*' not in requirements and not self.view.is_update():
             id_fields = getattr(serializer, 'get_id_fields', lambda: [])()
             # only include local model fields
             only = [
