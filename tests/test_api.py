@@ -20,6 +20,14 @@ class TestUsersAPI(APITestCase):
         self.maxDiff = None
         settings.DYNAMIC_REST['ENABLE_LINKS'] = False
 
+    def addLocationsForSorting(self):
+        # create 2 locations with same name
+        self.loc4 = Location.objects.create(id=4, name='locates')
+        self.loc5 = Location.objects.create(id=5, name='locates')
+
+        # create a location with name '00'
+        self.loc6 = Location.objects.create(id=6, name='00')
+
     def testDefault(self):
         with self.assertNumQueries(1):
             # 1 for User, 0 for Location
@@ -676,6 +684,66 @@ class TestUsersAPI(APITestCase):
                     'number_of_cats': 0,
                 }]
             }, json.loads(response.content))
+
+    def testSortingBasic(self):
+        self.addLocationsForSorting()
+
+        url = '/locations/?sort[]=name'
+        with self.assertNumQueries(1):
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code)
+        self.assertEquals(
+            {
+                'locations': [
+                    {'id': 1, 'name': '0'},
+                    {'id': self.loc6.id, 'name': self.loc6.name},
+                    {'id': 2, 'name': '1'},
+                    {'id': 3, 'name': '2'},
+                    {'id': self.loc4.id, 'name': self.loc4.name},
+                    {'id': self.loc5.id, 'name': self.loc5.name}
+                ]
+            },
+            json.loads(response.content))
+
+    def testSortingReverse(self):
+        self.addLocationsForSorting()
+
+        url = '/locations/?sort[]=-name'
+        with self.assertNumQueries(1):
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code)
+        self.assertEquals(
+            {
+                'locations': [
+                    {'id': self.loc4.id, 'name': self.loc4.name},
+                    {'id': self.loc5.id, 'name': self.loc5.name},
+                    {'id': 3, 'name': '2'},
+                    {'id': 2, 'name': '1'},
+                    {'id': self.loc6.id, 'name': self.loc6.name},
+                    {'id': 1, 'name': '0'}
+                ]
+            },
+            json.loads(response.content))
+
+    def testSortingMultipleCriteria(self):
+        self.addLocationsForSorting()
+
+        url = '/locations/?sort[]=-name&sort[]=-id'
+        with self.assertNumQueries(1):
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code)
+        self.assertEquals(
+            {
+                'locations': [
+                    {'id': self.loc5.id, 'name': self.loc5.name},
+                    {'id': self.loc4.id, 'name': self.loc4.name},
+                    {'id': 3, 'name': '2'},
+                    {'id': 2, 'name': '1'},
+                    {'id': self.loc6.id, 'name': self.loc6.name},
+                    {'id': 1, 'name': '0'}
+                ]
+            },
+            json.loads(response.content))
 
 
 class TestLocationsAPI(APITestCase):

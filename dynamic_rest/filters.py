@@ -11,6 +11,9 @@ from django.db.models.related import RelatedObject
 from rest_framework.exceptions import ValidationError
 from rest_framework import serializers
 from rest_framework.filters import BaseFilterBackend
+from rest_framework.filters import OrderingFilter
+
+dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 
 
 from dynamic_rest.datastructures import TreeMap
@@ -473,3 +476,26 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         prefetch = prefetches.values()
         return queryset.prefetch_related(*prefetch).distinct()
+
+
+class DynamicSortingFilter(OrderingFilter):
+    ordering_param = dynamic_settings.get('ORDERING_PARAM', 'sort[]')
+
+    def get_ordering(self, request, queryset, view):
+            """
+            Ordering is set by a ?sort[]=... query parameter.
+            The `sort[]` query parameter is set by the `ordering_param` above.
+            The default for django-rest-framework is `ordering`.
+
+            DRF expects a comma separated list, while drest expects an array.
+            This method overwrites the drest default so it can parse the array.
+            """
+            params = request.query_params.getlist(self.ordering_param)
+            if params:
+                fields = [param.strip() for param in params]
+                ordering = self.remove_invalid_fields(queryset, fields, view)
+                if ordering:
+                    return ordering
+
+            # No sorting was included, or all the sorting fields were invalid
+            return self.get_default_ordering(view)

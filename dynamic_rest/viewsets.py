@@ -11,7 +11,7 @@ from rest_framework.renderers import BrowsableAPIRenderer
 
 from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.metadata import DynamicMetadata
-from dynamic_rest.filters import DynamicFilterBackend
+from dynamic_rest.filters import DynamicFilterBackend, DynamicSortingFilter
 
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
@@ -69,7 +69,7 @@ class WithDynamicViewSetMixin(object):
     features = (INCLUDE, EXCLUDE, FILTER, PAGE, PER_PAGE)
     sideload = True
     meta = None
-    filter_backends = (DynamicFilterBackend,)
+    filter_backends = (DynamicFilterBackend, DynamicSortingFilter)
 
     def initialize_request(self, request, *args, **kargs):
         """
