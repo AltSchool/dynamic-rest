@@ -5,6 +5,7 @@ from rest_framework import exceptions
 from dynamic_rest.viewsets import DynamicModelViewSet
 from tests.serializers import (
     CatSerializer,
+    DogSerializer,
     LocationSerializer,
     GroupSerializer,
     ProfileSerializer,
@@ -13,6 +14,7 @@ from tests.serializers import (
 )
 from tests.models import (
     Cat,
+    Dog,
     Group,
     Location,
     Profile,
@@ -23,7 +25,7 @@ from tests.models import (
 class UserViewSet(DynamicModelViewSet):
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
-        DynamicModelViewSet.FILTER
+        DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT
     )
     model = User
     serializer_class = UserSerializer
@@ -65,7 +67,7 @@ class GroupNoMergeDictViewSet(DynamicModelViewSet):
 class GroupViewSet(DynamicModelViewSet):
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
-        DynamicModelViewSet.FILTER
+        DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT
     )
     model = Group
     serializer_class = GroupSerializer
@@ -75,7 +77,7 @@ class GroupViewSet(DynamicModelViewSet):
 class LocationViewSet(DynamicModelViewSet):
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
-        DynamicModelViewSet.FILTER
+        DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT
     )
     model = Location
     serializer_class = LocationSerializer
@@ -93,6 +95,7 @@ class ProfileViewSet(DynamicModelViewSet):
         DynamicModelViewSet.EXCLUDE,
         DynamicModelViewSet.FILTER,
         DynamicModelViewSet.INCLUDE,
+        DynamicModelViewSet.SORT
     )
     model = Profile
     serializer_class = ProfileSerializer
@@ -102,3 +105,9 @@ class ProfileViewSet(DynamicModelViewSet):
 class CatViewSet(DynamicModelViewSet):
     serializer_class = CatSerializer
     queryset = Cat.objects.all()
+
+
+class DogViewSet(DynamicModelViewSet):
+    model = Dog
+    serializer_class = DogSerializer
+    queryset = Dog.objects.all()

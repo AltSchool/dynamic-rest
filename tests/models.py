@@ -28,6 +28,12 @@ class Cat(models.Model):
     )
 
 
+class Dog(models.Model):
+    name = models.TextField()
+    fur_color = models.TextField()
+    origin = models.TextField()
+
+
 class Group(models.Model):
     name = models.TextField()
     permissions = models.ManyToManyField('Permission', related_name='groups')

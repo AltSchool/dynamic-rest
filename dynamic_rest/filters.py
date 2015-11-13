@@ -2,6 +2,7 @@ from dynamic_rest.patches import patch_prefetch_one_level
 patch_prefetch_one_level()
 
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from django.db.models import (
     Prefetch,
     Q
@@ -12,8 +13,6 @@ from rest_framework.exceptions import ValidationError
 from rest_framework import serializers
 from rest_framework.filters import BaseFilterBackend
 from rest_framework.filters import OrderingFilter
-
-dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 
 
 from dynamic_rest.datastructures import TreeMap
@@ -479,23 +478,100 @@ class DynamicFilterBackend(BaseFilterBackend):
 
 
 class DynamicSortingFilter(OrderingFilter):
-    ordering_param = dynamic_settings.get('ORDERING_PARAM', 'sort[]')
+    def filter_queryset(self, request, queryset, view):
+        """"
+        Overwrite this method to set the 'ordering_param' on this class.
+        Under DRF, the ordering_param is 'ordering', but we are changing it
+        to what we specified on the SORT property in our viewset.
+        """
+        self.ordering_param = view.SORT
+
+        ordering = self.get_ordering(request, queryset, view)
+        if ordering:
+            return queryset.order_by(*ordering)
+
+        return queryset
 
     def get_ordering(self, request, queryset, view):
-            """
-            Ordering is set by a ?sort[]=... query parameter.
-            The `sort[]` query parameter is set by the `ordering_param` above.
-            The default for django-rest-framework is `ordering`.
+        """
+        Ordering is set by a ?sort[]=... query parameter.
+        The `sort[]` query parameter is set by the `ordering_param` above.
+        The default for django-rest-framework is `ordering`.
 
-            DRF expects a comma separated list, while drest expects an array.
-            This method overwrites the drest default so it can parse the array.
-            """
-            params = request.query_params.getlist(self.ordering_param)
-            if params:
-                fields = [param.strip() for param in params]
-                ordering = self.remove_invalid_fields(queryset, fields, view)
-                if ordering:
-                    return ordering
+        DRF expects a comma separated list, while drest expects an array.
+        This method overwrites the DRF default so it can parse the array.
+        """
+        params = view.get_request_feature(self.ordering_param)
+        if params:
+            fields = [param.strip() for param in params]
+            valid_ordering, invalid_ordering = self.remove_invalid_fields(
+                queryset, fields, view
+            )
 
-            # No sorting was included, or all the sorting fields were invalid
-            return self.get_default_ordering(view)
+            # if any of the sort fields are invalid, throw an error.
+            # else return the ordering
+            if invalid_ordering:
+                raise ValidationError(
+                    "Invalid filter field: %s" % invalid_ordering
+                )
+            else:
+                return valid_ordering
+
+        # No sorting was included
+        return self.get_default_ordering(view)
+
+    def remove_invalid_fields(self, queryset, fields, view):
+        """
+        Overwrite the DRF default remove_invalid_fields method to return
+        both valid orderings and any invalid orderings
+        """
+        # get valid field names for sorting
+        valid_fields_serializer_name = []
+        valid_fields_model_name = []
+        for item in self.get_valid_fields(queryset, view):
+            valid_fields_serializer_name.append(item[0])
+            valid_fields_model_name.append(item[2])
+
+        valid_orderings = []
+        invalid_orderings = []
+
+        # for each field sent down from the query param,
+        # determine if its valid or invalid
+        for term in fields:
+            stripped_term = term.lstrip('-')
+            # add back the '-' add the end if necessary
+            reverse_sort_term = '' if len(stripped_term) is len(term) else '-'
+            if stripped_term in valid_fields_serializer_name:
+                idx = valid_fields_serializer_name.index(stripped_term)
+                name_to_use = reverse_sort_term + valid_fields_model_name[idx]
+                valid_orderings.append(name_to_use)
+            else:
+                invalid_orderings.append(term)
+
+        return valid_orderings, invalid_orderings
+
+    def get_valid_fields(self, queryset, view):
+        """
+        Overwrite get_valid_fields method so that valid_fields returns only
+        serializer fields, not model fields.
+        """
+        valid_fields = getattr(view, 'ordering_fields', self.ordering_fields)
+
+        if valid_fields is None:
+            # Default to allowing filtering on serializer fields
+            serializer_class = getattr(view, 'serializer_class')
+            if serializer_class is None:
+                msg = ("Cannot use %s on a view which does not have either a "
+                       "'serializer_class' or 'ordering_fields' attribute.")
+                raise ImproperlyConfigured(msg % self.__class__.__name__)
+            valid_fields = [
+                (field_name, field.label, field.source or field_name)
+                for field_name, field in serializer_class().fields.items()
+                if not getattr(
+                    field, 'write_only', False
+                    ) and not field.source == '*'
+            ]
+            return valid_fields
+        else:
+            # invoke default DRF get_valid_fields
+            return super(OrderingFilter, self).get_valid_fields(queryset, view)

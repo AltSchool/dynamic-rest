@@ -1,6 +1,6 @@
 from collections import namedtuple
 from tests.models import (
-    User, Group, Location, Permission, Cat
+    User, Group, Location, Permission, Cat, Dog
 )
 
 
@@ -10,12 +10,13 @@ def create_fixture():
     # one location has a cat.
     # 2 of the users share the same location
     # 2 of the users have their own locations
+    # Create 4 dogs.
 
-    types = ['users', 'groups', 'locations', 'permissions', 'cats']
+    types = ['users', 'groups', 'locations', 'permissions', 'cats', 'dogs']
     Fixture = namedtuple('Fixture', types)
 
     fixture = Fixture(
-        users=[], groups=[], locations=[], permissions=[], cats=[])
+        users=[], groups=[], locations=[], permissions=[], cats=[], dogs=[])
 
     for i in range(0, 4):
         fixture.users.append(
@@ -41,6 +42,35 @@ def create_fixture():
             home_id=fixture.locations[i].id,
             backup_home_id=(
                 fixture.locations[len(fixture.locations) - 1 - i].id)))
+
+    dogs = [{
+        'name': 'Clifford',
+        'fur_color': 'red',
+        'origin': 'Clifford the big red dog'
+    }, {
+        'name': 'Air-Bud',
+        'fur_color': 'gold',
+        'origin': 'Air Bud 4: Seventh Inning Fetch'
+    }, {
+        'name': 'Spike',
+        'fur_color': 'brown',
+        'origin': 'Rugrats'
+    }, {
+        'name': 'Pluto',
+        'fur_color': 'brown and white',
+        'origin': 'Mickey Mouse'
+    }, {
+        'name': 'Spike',
+        'fur_color': 'light-brown',
+        'origin': 'Tom and Jerry'
+    }]
+
+    for dog in dogs:
+        fixture.dogs.append(Dog.objects.create(
+            name=dog.get('name'),
+            fur_color=dog.get('fur_color'),
+            origin=dog.get('origin')
+        ))
 
     fixture.locations[0].blob = 'here'
     fixture.locations[0].save()

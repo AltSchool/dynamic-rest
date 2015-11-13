@@ -1,5 +1,6 @@
 from tests.models import (
     Cat,
+    Dog,
     Group,
     Location,
     Permission,
@@ -10,6 +11,7 @@ from dynamic_rest.serializers import DynamicModelSerializer
 from dynamic_rest.serializers import DynamicEphemeralSerializer
 from dynamic_rest.fields import (
     DynamicMethodField, DynamicRelationField, CountField, DynamicField)
+from rest_framework.serializers import CharField
 
 
 def backup_home_link(name, field, data, obj):
@@ -199,3 +201,13 @@ class UserLocationSerializer(UserSerializer):
 
     location = DynamicRelationField('LocationSerializer', embed=True)
     groups = DynamicRelationField('GroupSerializer', many=True, embed=True)
+
+
+class DogSerializer(DynamicModelSerializer):
+
+    class Meta:
+        model = Dog
+        name = 'dog'
+        fields = ('id', 'name', 'origin', 'fur')
+
+    fur = CharField(source='fur_color')

@@ -59,6 +59,7 @@ class WithDynamicViewSetMixin(object):
     INCLUDE = 'include[]'
     EXCLUDE = 'exclude[]'
     FILTER = 'filter{}'
+    SORT = 'sort[]'
     PAGE = dynamic_settings.get('PAGE_QUERY_PARAM', 'page')
     PER_PAGE = dynamic_settings.get('PAGE_SIZE_QUERY_PARAM', 'per_page')
 
@@ -66,7 +67,7 @@ class WithDynamicViewSetMixin(object):
     pagination_class = DynamicPageNumberPagination
     metadata_class = DynamicMetadata
     renderer_classes = (JSONRenderer, DynamicBrowsableAPIRenderer)
-    features = (INCLUDE, EXCLUDE, FILTER, PAGE, PER_PAGE)
+    features = (INCLUDE, EXCLUDE, FILTER, PAGE, PER_PAGE, SORT)
     sideload = True
     meta = None
     filter_backends = (DynamicFilterBackend, DynamicSortingFilter)

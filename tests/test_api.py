@@ -20,14 +20,6 @@ class TestUsersAPI(APITestCase):
         self.maxDiff = None
         settings.DYNAMIC_REST['ENABLE_LINKS'] = False
 
-    def addLocationsForSorting(self):
-        # create 2 locations with same name
-        self.loc4 = Location.objects.create(id=4, name='locates')
-        self.loc5 = Location.objects.create(id=5, name='locates')
-
-        # create a location with name '00'
-        self.loc6 = Location.objects.create(id=6, name='00')
-
     def testDefault(self):
         with self.assertNumQueries(1):
             # 1 for User, 0 for Location
@@ -685,66 +677,6 @@ class TestUsersAPI(APITestCase):
                 }]
             }, json.loads(response.content))
 
-    def testSortingBasic(self):
-        self.addLocationsForSorting()
-
-        url = '/locations/?sort[]=name'
-        with self.assertNumQueries(1):
-            response = self.client.get(url)
-        self.assertEquals(200, response.status_code)
-        self.assertEquals(
-            {
-                'locations': [
-                    {'id': 1, 'name': '0'},
-                    {'id': self.loc6.id, 'name': self.loc6.name},
-                    {'id': 2, 'name': '1'},
-                    {'id': 3, 'name': '2'},
-                    {'id': self.loc4.id, 'name': self.loc4.name},
-                    {'id': self.loc5.id, 'name': self.loc5.name}
-                ]
-            },
-            json.loads(response.content))
-
-    def testSortingReverse(self):
-        self.addLocationsForSorting()
-
-        url = '/locations/?sort[]=-name'
-        with self.assertNumQueries(1):
-            response = self.client.get(url)
-        self.assertEquals(200, response.status_code)
-        self.assertEquals(
-            {
-                'locations': [
-                    {'id': self.loc4.id, 'name': self.loc4.name},
-                    {'id': self.loc5.id, 'name': self.loc5.name},
-                    {'id': 3, 'name': '2'},
-                    {'id': 2, 'name': '1'},
-                    {'id': self.loc6.id, 'name': self.loc6.name},
-                    {'id': 1, 'name': '0'}
-                ]
-            },
-            json.loads(response.content))
-
-    def testSortingMultipleCriteria(self):
-        self.addLocationsForSorting()
-
-        url = '/locations/?sort[]=-name&sort[]=-id'
-        with self.assertNumQueries(1):
-            response = self.client.get(url)
-        self.assertEquals(200, response.status_code)
-        self.assertEquals(
-            {
-                'locations': [
-                    {'id': self.loc5.id, 'name': self.loc5.name},
-                    {'id': self.loc4.id, 'name': self.loc4.name},
-                    {'id': 3, 'name': '2'},
-                    {'id': 2, 'name': '1'},
-                    {'id': self.loc6.id, 'name': self.loc6.name},
-                    {'id': 1, 'name': '0'}
-                ]
-            },
-            json.loads(response.content))
-
 
 class TestLocationsAPI(APITestCase):
 
@@ -928,3 +860,152 @@ class TestLinks(APITestCase):
             content_type='application/json'
         )
         self.assertEqual(200, r.status_code)
+
+
+class TestDogsAPI(APITestCase):
+    """
+    Tests for sorting
+    """
+
+    def setUp(self):
+        self.fixture = create_fixture()
+
+    def testSortingBasic(self):
+        url = '/dogs/?sort[]=name'
+        # 2 queries - one for getting dogs, one for the meta (count)
+        with self.assertNumQueries(2):
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code)
+        expected_response = [{
+            'id': 2,
+            'name': 'Air-Bud',
+            'origin': 'Air Bud 4: Seventh Inning Fetch',
+            'fur': 'gold'
+        }, {
+            'id': 1,
+            'name': 'Clifford',
+            'origin': 'Clifford the big red dog',
+            'fur': 'red'
+        }, {
+            'id': 4,
+            'name': 'Pluto',
+            'origin': 'Mickey Mouse',
+            'fur': 'brown and white'
+        }, {
+            'id': 3,
+            'name': 'Spike',
+            'origin': 'Rugrats',
+            'fur': 'brown'
+        }, {
+            'id': 5,
+            'name': 'Spike',
+            'origin': 'Tom and Jerry',
+            'fur': 'light-brown'
+        }]
+        actual_response = json.loads(response.content).get('dogs')
+        self.assertEquals(expected_response, actual_response)
+
+    def testSortingReverse(self):
+        url = '/dogs/?sort[]=-name'
+        # 2 queries - one for getting dogs, one for the meta (count)
+        with self.assertNumQueries(2):
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code)
+        expected_response = [{
+            'id': 3,
+            'name': 'Spike',
+            'origin': 'Rugrats',
+            'fur': 'brown'
+        }, {
+            'id': 5,
+            'name': 'Spike',
+            'origin': 'Tom and Jerry',
+            'fur': 'light-brown'
+        }, {
+            'id': 4,
+            'name': 'Pluto',
+            'origin': 'Mickey Mouse',
+            'fur': 'brown and white'
+        }, {
+            'id': 1,
+            'name': 'Clifford',
+            'origin': 'Clifford the big red dog',
+            'fur': 'red'
+        }, {
+            'id': 2,
+            'name': 'Air-Bud',
+            'origin': 'Air Bud 4: Seventh Inning Fetch',
+            'fur': 'gold'
+        }]
+        actual_response = json.loads(response.content).get('dogs')
+        self.assertEquals(expected_response, actual_response)
+
+    def testSortingMultipleCriteria(self):
+        url = '/dogs/?sort[]=-name&sort[]=-origin'
+        # 2 queries - one for getting dogs, one for the meta (count)
+        with self.assertNumQueries(2):
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code)
+        expected_response = [{
+            'id': 5,
+            'name': 'Spike',
+            'origin': 'Tom and Jerry',
+            'fur': 'light-brown'
+        }, {
+            'id': 3,
+            'name': 'Spike',
+            'origin': 'Rugrats',
+            'fur': 'brown'
+        }, {
+            'id': 4,
+            'name': 'Pluto',
+            'origin': 'Mickey Mouse',
+            'fur': 'brown and white'
+        }, {
+            'id': 1,
+            'name': 'Clifford',
+            'origin': 'Clifford the big red dog',
+            'fur': 'red'
+        }, {
+            'id': 2,
+            'name': 'Air-Bud',
+            'origin': 'Air Bud 4: Seventh Inning Fetch',
+            'fur': 'gold'
+        }]
+        actual_response = json.loads(response.content).get('dogs')
+        self.assertEquals(expected_response, actual_response)
+
+    def testSortingUsingSerializedField(self):
+        url = '/dogs/?sort[]=fur'
+        # 2 queries - one for getting dogs, one for the meta (count)
+        with self.assertNumQueries(2):
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code)
+        expected_response = [{
+            'id': 3,
+            'name': 'Spike',
+            'origin': 'Rugrats',
+            'fur': 'brown'
+        }, {
+            'id': 4,
+            'name': 'Pluto',
+            'origin': 'Mickey Mouse',
+            'fur': 'brown and white'
+        }, {
+            'id': 2,
+            'name': 'Air-Bud',
+            'origin': 'Air Bud 4: Seventh Inning Fetch',
+            'fur': 'gold'
+        }, {
+            'id': 5,
+            'name': 'Spike',
+            'origin': 'Tom and Jerry',
+            'fur': 'light-brown'
+        }, {
+            'id': 1,
+            'name': 'Clifford',
+            'origin': 'Clifford the big red dog',
+            'fur': 'red'
+        }]
+        actual_response = json.loads(response.content).get('dogs')
+        self.assertEquals(expected_response, actual_response)

@@ -85,5 +85,50 @@
       "users": [1,2,3],
       "location": 2
     }
+  },
+  {
+    "model" : "tests.Dog",
+    "pk": 1,
+    "fields": {
+      "name": "Clifford",
+      "fur_color": "red",
+      "origin": "Clifford the big red dog"
+    }
+  },
+  {
+    "model" : "tests.Dog",
+    "pk": 2,
+    "fields": {
+      "name": "Air-Bud",
+      "fur_color": "gold",
+      "origin": "Air Bud 4: Seventh Inning Fetch"
+    }
+  },
+  {
+    "model" : "tests.Dog",
+    "pk": 3,
+    "fields": {
+      "name": "Spike",
+      "fur_color": "brown",
+      "origin": "Rugrats"
+    }
+  },
+  {
+    "model" : "tests.Dog",
+    "pk": 4,
+    "fields": {
+      "name": "Pluto",
+      "fur_color": "brown and white",
+      "origin": "Mickey Mouse"
+    }
+  },
+  {
+    "model" : "tests.Dog",
+    "pk": 5,
+    "fields": {
+      "name": "Spike",
+      "fur_color": "light-brown",
+      "origin": "Tom and Jerry"
+    }
   }
 ]
