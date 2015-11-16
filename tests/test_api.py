@@ -1090,12 +1090,3 @@ class TestZebrasAPI(APITestCase):
         }
         actual_response = json.loads(response.content)
         self.assertEquals(expected_response, actual_response)
-
-    def testSortingNotSpecifiedOrdering(self):
-        url = '/horses?sort[]=origin'
-        response = self.client.get(url)
-
-        # if `ordering_fields` are specified in the viewset, only allow sorting
-        # based off those fields. If a field is listed in the url that is not
-        # specified, return a 400
-        self.assertEquals(400, response.status_code)

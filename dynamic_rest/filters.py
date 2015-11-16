@@ -501,7 +501,7 @@ class DynamicSortingFilter(OrderingFilter):
         DRF expects a comma separated list, while drest expects an array.
         This method overwrites the DRF default so it can parse the array.
         """
-        params = view.get_request_feature(self.ordering_param)
+        params = view.get_request_feature(view.SORT)
         if params:
             fields = [param.strip() for param in params]
             valid_ordering, invalid_ordering = self.remove_invalid_fields(
@@ -526,11 +526,10 @@ class DynamicSortingFilter(OrderingFilter):
         both valid orderings and any invalid orderings
         """
         # get valid field names for sorting
-        valid_fields_serializer_name = []
-        valid_fields_model_name = []
-        for item in self.get_valid_fields(queryset, view):
-            valid_fields_serializer_name.append(item[0])
-            valid_fields_model_name.append(item[2])
+        valid_fields_map = {
+            name: source for name, label, source in self.get_valid_fields(
+                queryset, view)
+        }
 
         valid_orderings = []
         invalid_orderings = []
@@ -541,10 +540,9 @@ class DynamicSortingFilter(OrderingFilter):
             stripped_term = term.lstrip('-')
             # add back the '-' add the end if necessary
             reverse_sort_term = '' if len(stripped_term) is len(term) else '-'
-            if stripped_term in valid_fields_serializer_name:
-                idx = valid_fields_serializer_name.index(stripped_term)
-                name_to_use = reverse_sort_term + valid_fields_model_name[idx]
-                valid_orderings.append(name_to_use)
+            if stripped_term in valid_fields_map:
+                name = reverse_sort_term + valid_fields_map[stripped_term]
+                valid_orderings.append(name)
             else:
                 invalid_orderings.append(term)
 
