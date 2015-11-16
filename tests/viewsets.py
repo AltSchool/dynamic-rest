@@ -8,17 +8,21 @@ from tests.serializers import (
     DogSerializer,
     LocationSerializer,
     GroupSerializer,
+    HorseSerializer,
     ProfileSerializer,
     UserSerializer,
-    UserLocationSerializer
+    UserLocationSerializer,
+    ZebraSerializer
 )
 from tests.models import (
     Cat,
     Dog,
     Group,
+    Horse,
     Location,
     Profile,
     User,
+    Zebra
 )
 
 
@@ -111,3 +115,20 @@ class DogViewSet(DynamicModelViewSet):
     model = Dog
     serializer_class = DogSerializer
     queryset = Dog.objects.all()
+
+
+class HorseViewSet(DynamicModelViewSet):
+    features = (DynamicModelViewSet.SORT,)
+    model = Horse
+    serializer_class = HorseSerializer
+    queryset = Horse.objects.all()
+    ordering_fields = ('name',)
+    ordering = ('-name',)
+
+
+class ZebraViewSet(DynamicModelViewSet):
+    features = (DynamicModelViewSet.SORT,)
+    model = Zebra
+    serializer_class = ZebraSerializer
+    queryset = Zebra.objects.all()
+    ordering_fields = '__all__'

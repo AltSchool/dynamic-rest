@@ -2,10 +2,12 @@ from tests.models import (
     Cat,
     Dog,
     Group,
+    Horse,
     Location,
     Permission,
     Profile,
-    User
+    User,
+    Zebra
 )
 from dynamic_rest.serializers import DynamicModelSerializer
 from dynamic_rest.serializers import DynamicEphemeralSerializer
@@ -211,3 +213,17 @@ class DogSerializer(DynamicModelSerializer):
         fields = ('id', 'name', 'origin', 'fur')
 
     fur = CharField(source='fur_color')
+
+
+class HorseSerializer(DynamicModelSerializer):
+
+    class Meta:
+        model = Horse
+        name = 'horse'
+
+
+class ZebraSerializer(DynamicModelSerializer):
+
+    class Meta:
+        model = Zebra
+        name = 'zebra'

@@ -1,6 +1,6 @@
 from collections import namedtuple
 from tests.models import (
-    User, Group, Location, Permission, Cat, Dog
+    User, Group, Location, Permission, Cat, Dog, Horse, Zebra
 )
 
 
@@ -12,11 +12,16 @@ def create_fixture():
     # 2 of the users have their own locations
     # Create 4 dogs.
 
-    types = ['users', 'groups', 'locations', 'permissions', 'cats', 'dogs']
+    types = [
+        'users', 'groups', 'locations', 'permissions',
+        'cats', 'dogs', 'horses', 'zebras'
+        ]
     Fixture = namedtuple('Fixture', types)
 
     fixture = Fixture(
-        users=[], groups=[], locations=[], permissions=[], cats=[], dogs=[])
+        users=[], groups=[], locations=[], permissions=[],
+        cats=[], dogs=[], horses=[], zebras=[]
+    )
 
     for i in range(0, 4):
         fixture.users.append(
@@ -65,11 +70,39 @@ def create_fixture():
         'origin': 'Tom and Jerry'
     }]
 
+    horses = [{
+        'name': 'Seabiscuit',
+        'origin': 'LA'
+    }, {
+        'name': 'Secretariat',
+        'origin': 'Kentucky'
+    }]
+
+    zebras = [{
+        'name': 'Ralph',
+        'origin': 'new york'
+    }, {
+        'name': 'Ted',
+        'origin': 'africa'
+    }]
+
     for dog in dogs:
         fixture.dogs.append(Dog.objects.create(
             name=dog.get('name'),
             fur_color=dog.get('fur_color'),
             origin=dog.get('origin')
+        ))
+
+    for horse in horses:
+        fixture.horses.append(Horse.objects.create(
+            name=horse.get('name'),
+            origin=horse.get('origin')
+        ))
+
+    for zebra in zebras:
+        fixture.zebras.append(Zebra.objects.create(
+            name=zebra.get('name'),
+            origin=zebra.get('origin')
         ))
 
     fixture.locations[0].blob = 'here'
