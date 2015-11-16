@@ -557,7 +557,7 @@ class DynamicSortingFilter(OrderingFilter):
         """
         valid_fields = getattr(view, 'ordering_fields', self.ordering_fields)
 
-        if valid_fields is None:
+        if valid_fields is None or valid_fields == '__all__':
             # Default to allowing filtering on serializer fields
             serializer_class = getattr(view, 'serializer_class')
             if serializer_class is None:
@@ -571,7 +571,12 @@ class DynamicSortingFilter(OrderingFilter):
                     field, 'write_only', False
                     ) and not field.source == '*'
             ]
-            return valid_fields
         else:
-            # invoke default DRF get_valid_fields
-            return super(OrderingFilter, self).get_valid_fields(queryset, view)
+            serializer_class = getattr(view, 'serializer_class')
+            valid_fields = [
+                (field_name, field.label, field.source or field_name)
+                for field_name, field in serializer_class().fields.items()
+                if not getattr(field, 'write_only', False)
+                and not field.source == '*' and field_name in valid_fields
+            ]
+        return valid_fields
