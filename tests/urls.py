@@ -9,6 +9,9 @@ router.register(r'profiles', viewsets.ProfileViewSet)
 router.register(r'locations', viewsets.LocationViewSet)
 
 router.register(r'cats', viewsets.CatViewSet)
+router.register(r'dogs', viewsets.DogViewSet)
+router.register(r'horses', viewsets.HorseViewSet)
+router.register(r'zebras', viewsets.ZebraViewSet)
 router.register(r'user_locations', viewsets.UserLocationViewSet)
 
 # the above routes are duplicated to test versioned prefixes

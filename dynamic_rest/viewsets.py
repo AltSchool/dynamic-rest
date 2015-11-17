@@ -11,7 +11,7 @@ from rest_framework.renderers import BrowsableAPIRenderer
 
 from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.metadata import DynamicMetadata
-from dynamic_rest.filters import DynamicFilterBackend
+from dynamic_rest.filters import DynamicFilterBackend, DynamicSortingFilter
 
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
@@ -59,6 +59,7 @@ class WithDynamicViewSetMixin(object):
     INCLUDE = 'include[]'
     EXCLUDE = 'exclude[]'
     FILTER = 'filter{}'
+    SORT = 'sort[]'
     PAGE = dynamic_settings.get('PAGE_QUERY_PARAM', 'page')
     PER_PAGE = dynamic_settings.get('PAGE_SIZE_QUERY_PARAM', 'per_page')
 
@@ -66,10 +67,10 @@ class WithDynamicViewSetMixin(object):
     pagination_class = DynamicPageNumberPagination
     metadata_class = DynamicMetadata
     renderer_classes = (JSONRenderer, DynamicBrowsableAPIRenderer)
-    features = (INCLUDE, EXCLUDE, FILTER, PAGE, PER_PAGE)
+    features = (INCLUDE, EXCLUDE, FILTER, PAGE, PER_PAGE, SORT)
     sideload = True
     meta = None
-    filter_backends = (DynamicFilterBackend,)
+    filter_backends = (DynamicFilterBackend, DynamicSortingFilter)
 
     def initialize_request(self, request, *args, **kargs):
         """

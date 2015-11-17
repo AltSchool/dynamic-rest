@@ -860,3 +860,233 @@ class TestLinks(APITestCase):
             content_type='application/json'
         )
         self.assertEqual(200, r.status_code)
+
+
+class TestDogsAPI(APITestCase):
+    """
+    Tests for sorting
+    """
+
+    def setUp(self):
+        self.fixture = create_fixture()
+
+    def testSortingBasic(self):
+        url = '/dogs/?sort[]=name'
+        # 2 queries - one for getting dogs, one for the meta (count)
+        with self.assertNumQueries(2):
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code)
+        expected_response = [{
+            'id': 2,
+            'name': 'Air-Bud',
+            'origin': 'Air Bud 4: Seventh Inning Fetch',
+            'fur': 'gold'
+        }, {
+            'id': 1,
+            'name': 'Clifford',
+            'origin': 'Clifford the big red dog',
+            'fur': 'red'
+        }, {
+            'id': 4,
+            'name': 'Pluto',
+            'origin': 'Mickey Mouse',
+            'fur': 'brown and white'
+        }, {
+            'id': 3,
+            'name': 'Spike',
+            'origin': 'Rugrats',
+            'fur': 'brown'
+        }, {
+            'id': 5,
+            'name': 'Spike',
+            'origin': 'Tom and Jerry',
+            'fur': 'light-brown'
+        }]
+        actual_response = json.loads(response.content).get('dogs')
+        self.assertEquals(expected_response, actual_response)
+
+    def testSortingReverse(self):
+        url = '/dogs/?sort[]=-name'
+        # 2 queries - one for getting dogs, one for the meta (count)
+        with self.assertNumQueries(2):
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code)
+        expected_response = [{
+            'id': 3,
+            'name': 'Spike',
+            'origin': 'Rugrats',
+            'fur': 'brown'
+        }, {
+            'id': 5,
+            'name': 'Spike',
+            'origin': 'Tom and Jerry',
+            'fur': 'light-brown'
+        }, {
+            'id': 4,
+            'name': 'Pluto',
+            'origin': 'Mickey Mouse',
+            'fur': 'brown and white'
+        }, {
+            'id': 1,
+            'name': 'Clifford',
+            'origin': 'Clifford the big red dog',
+            'fur': 'red'
+        }, {
+            'id': 2,
+            'name': 'Air-Bud',
+            'origin': 'Air Bud 4: Seventh Inning Fetch',
+            'fur': 'gold'
+        }]
+        actual_response = json.loads(response.content).get('dogs')
+        self.assertEquals(expected_response, actual_response)
+
+    def testSortingMultipleCriteria(self):
+        url = '/dogs/?sort[]=-name&sort[]=-origin'
+        # 2 queries - one for getting dogs, one for the meta (count)
+        with self.assertNumQueries(2):
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code)
+        expected_response = [{
+            'id': 5,
+            'name': 'Spike',
+            'origin': 'Tom and Jerry',
+            'fur': 'light-brown'
+        }, {
+            'id': 3,
+            'name': 'Spike',
+            'origin': 'Rugrats',
+            'fur': 'brown'
+        }, {
+            'id': 4,
+            'name': 'Pluto',
+            'origin': 'Mickey Mouse',
+            'fur': 'brown and white'
+        }, {
+            'id': 1,
+            'name': 'Clifford',
+            'origin': 'Clifford the big red dog',
+            'fur': 'red'
+        }, {
+            'id': 2,
+            'name': 'Air-Bud',
+            'origin': 'Air Bud 4: Seventh Inning Fetch',
+            'fur': 'gold'
+        }]
+        actual_response = json.loads(response.content).get('dogs')
+        self.assertEquals(expected_response, actual_response)
+
+    def testSortingUsingSerializedField(self):
+        url = '/dogs/?sort[]=fur'
+        # 2 queries - one for getting dogs, one for the meta (count)
+        with self.assertNumQueries(2):
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code)
+        expected_response = [{
+            'id': 3,
+            'name': 'Spike',
+            'origin': 'Rugrats',
+            'fur': 'brown'
+        }, {
+            'id': 4,
+            'name': 'Pluto',
+            'origin': 'Mickey Mouse',
+            'fur': 'brown and white'
+        }, {
+            'id': 2,
+            'name': 'Air-Bud',
+            'origin': 'Air Bud 4: Seventh Inning Fetch',
+            'fur': 'gold'
+        }, {
+            'id': 5,
+            'name': 'Spike',
+            'origin': 'Tom and Jerry',
+            'fur': 'light-brown'
+        }, {
+            'id': 1,
+            'name': 'Clifford',
+            'origin': 'Clifford the big red dog',
+            'fur': 'red'
+        }]
+        actual_response = json.loads(response.content).get('dogs')
+        self.assertEquals(expected_response, actual_response)
+
+    def testInvalidSortField(self):
+        url = '/horses?sort[]=borigin'
+        response = self.client.get(url)
+
+        # expected server to throw a 400 if an incorrect
+        # sort field is specified
+        self.assertEquals(400, response.status_code)
+
+
+class TestHorsesAPI(APITestCase):
+    """
+    Tests for sorting on default fields and limit sorting fields
+    """
+
+    def setUp(self):
+        self.fixture = create_fixture()
+
+    def testSortingDefault(self):
+        url = '/horses'
+        # 1 query - one for getting horses
+        # (the viewset as features specified, so no meta is returned)
+        with self.assertNumQueries(1):
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code)
+
+        # expect the default for horses to be sorted by -name
+        expected_response = {
+            'horses': [{
+                'id': 2,
+                'name': 'Secretariat',
+                'origin': 'Kentucky'
+            }, {
+                'id': 1,
+                'name': 'Seabiscuit',
+                'origin': 'LA'
+            }]
+        }
+        actual_response = json.loads(response.content)
+        self.assertEquals(expected_response, actual_response)
+
+    def testSortingNotSpecifiedOrdering(self):
+        url = '/horses?sort[]=origin'
+        response = self.client.get(url)
+
+        # if `ordering_fields` are specified in the viewset, only allow sorting
+        # based off those fields. If a field is listed in the url that is not
+        # specified, return a 400
+        self.assertEquals(400, response.status_code)
+
+
+class TestZebrasAPI(APITestCase):
+    """
+    Tests for sorting on when ordering_fields is __all__
+    """
+
+    def setUp(self):
+        self.fixture = create_fixture()
+
+    def testSortingDefault(self):
+        url = '/zebras?sort[]=-name'
+        # 1 query - one for getting zebras
+        # (the viewset as features specified, so no meta is returned)
+        with self.assertNumQueries(1):
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code)
+
+        # expect sortable on any field on horses because __all__ is specified
+        expected_response = {
+            'zebras': [{
+                'id': 2,
+                'name': 'Ted',
+                'origin': 'africa'
+            }, {
+                'id': 1,
+                'name': 'Ralph',
+                'origin': 'new york'
+            }]
+        }
+        actual_response = json.loads(response.content)
+        self.assertEquals(expected_response, actual_response)

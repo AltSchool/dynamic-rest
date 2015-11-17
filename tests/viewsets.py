@@ -5,25 +5,31 @@ from rest_framework import exceptions
 from dynamic_rest.viewsets import DynamicModelViewSet
 from tests.serializers import (
     CatSerializer,
+    DogSerializer,
     LocationSerializer,
     GroupSerializer,
+    HorseSerializer,
     ProfileSerializer,
     UserSerializer,
-    UserLocationSerializer
+    UserLocationSerializer,
+    ZebraSerializer
 )
 from tests.models import (
     Cat,
+    Dog,
     Group,
+    Horse,
     Location,
     Profile,
     User,
+    Zebra
 )
 
 
 class UserViewSet(DynamicModelViewSet):
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
-        DynamicModelViewSet.FILTER
+        DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT
     )
     model = User
     serializer_class = UserSerializer
@@ -65,7 +71,7 @@ class GroupNoMergeDictViewSet(DynamicModelViewSet):
 class GroupViewSet(DynamicModelViewSet):
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
-        DynamicModelViewSet.FILTER
+        DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT
     )
     model = Group
     serializer_class = GroupSerializer
@@ -75,7 +81,7 @@ class GroupViewSet(DynamicModelViewSet):
 class LocationViewSet(DynamicModelViewSet):
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
-        DynamicModelViewSet.FILTER
+        DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT
     )
     model = Location
     serializer_class = LocationSerializer
@@ -93,6 +99,7 @@ class ProfileViewSet(DynamicModelViewSet):
         DynamicModelViewSet.EXCLUDE,
         DynamicModelViewSet.FILTER,
         DynamicModelViewSet.INCLUDE,
+        DynamicModelViewSet.SORT
     )
     model = Profile
     serializer_class = ProfileSerializer
@@ -102,3 +109,26 @@ class ProfileViewSet(DynamicModelViewSet):
 class CatViewSet(DynamicModelViewSet):
     serializer_class = CatSerializer
     queryset = Cat.objects.all()
+
+
+class DogViewSet(DynamicModelViewSet):
+    model = Dog
+    serializer_class = DogSerializer
+    queryset = Dog.objects.all()
+
+
+class HorseViewSet(DynamicModelViewSet):
+    features = (DynamicModelViewSet.SORT,)
+    model = Horse
+    serializer_class = HorseSerializer
+    queryset = Horse.objects.all()
+    ordering_fields = ('name',)
+    ordering = ('-name',)
+
+
+class ZebraViewSet(DynamicModelViewSet):
+    features = (DynamicModelViewSet.SORT,)
+    model = Zebra
+    serializer_class = ZebraSerializer
+    queryset = Zebra.objects.all()
+    ordering_fields = '__all__'
