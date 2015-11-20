@@ -27,18 +27,7 @@ setup(
     description="Dynamic extensions for Django REST Framework",
     long_description=open("README.md").read(),
     name=PACKAGE_NAME,
-    package_data={
-        '': [
-            '*.css',
-            '*.csv',
-            '*.html',
-            '*.ini',
-            '*.js',
-            '*.json'
-            '*.png',
-            '*.xlsx',
-        ]
-    },
+    include_package_data=True,
     packages=find_packages(exclude=EXCLUDE_FROM_PACKAGES),
     scripts=['manage.py'],
     url="http://github.com/AltSchool/dynamic-rest",
