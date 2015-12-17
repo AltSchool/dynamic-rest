@@ -1,7 +1,11 @@
 from collections import OrderedDict
 
 
-class TaggedDict(OrderedDict):
+class TaggedDict(object):
+    pass
+
+
+class TaggedDictMixin(TaggedDict):
 
     """
     Return object from `to_representation` for the `Serializer` class.
@@ -12,7 +16,7 @@ class TaggedDict(OrderedDict):
         self.serializer = kwargs.pop('serializer')
         self.instance = kwargs.pop('instance')
         self.embed = kwargs.pop('embed', False)
-        super(TaggedDict, self).__init__(*args, **kwargs)
+        super(TaggedDictMixin, self).__init__(*args, **kwargs)
 
     def copy(self):
         return TaggedDict(
@@ -23,3 +27,11 @@ class TaggedDict(OrderedDict):
 
     def __reduce__(self):
         return (dict, (dict(self),))
+
+
+class TaggedOrderedDict(TaggedDictMixin, OrderedDict):
+    pass
+
+
+class TaggedPlainDict(TaggedDictMixin, dict):
+    pass
