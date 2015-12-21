@@ -1,11 +1,29 @@
 from collections import OrderedDict
+from django.conf import settings
+
+
+dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
+
+
+class SerializerDict(object):
+    def __new__(cls):
+        if dynamic_settings.get('USE_ORDERED_DICT', False):
+            return OrderedDict()
+        else:
+            return {}
+
+
+def tagged_dict(*args, **kwargs):
+    """Create a TaggedDict instance. Will either be a TaggedOrderedDict
+    or TaggedPlainDict depending on settings."""
+
+    if dynamic_settings.get('USE_ORDERED_DICT', False):
+        return _TaggedOrderedDict(*args, **kwargs)
+    else:
+        return _TaggedPlainDict(*args, **kwargs)
 
 
 class TaggedDict(object):
-    pass
-
-
-class TaggedDictMixin(TaggedDict):
 
     """
     Return object from `to_representation` for the `Serializer` class.
@@ -16,11 +34,19 @@ class TaggedDictMixin(TaggedDict):
         self.serializer = kwargs.pop('serializer')
         self.instance = kwargs.pop('instance')
         self.embed = kwargs.pop('embed', False)
-        super(TaggedDictMixin, self).__init__(*args, **kwargs)
+        if not isinstance(self, dict):
+            raise Exception(
+                "TaggedDict constructed not as a dict"
+            )
+        super(TaggedDict, self).__init__(*args, **kwargs)
 
     def copy(self):
-        return TaggedDict(
-            self, serializer=self.serializer, instance=self.instance)
+        return tagged_dict(
+            self,
+            serializer=self.serializer,
+            instance=self.instance,
+            embed=self.embed
+        )
 
     def __repr__(self):
         return dict.__repr__(self)
@@ -29,9 +55,9 @@ class TaggedDictMixin(TaggedDict):
         return (dict, (dict(self),))
 
 
-class TaggedOrderedDict(TaggedDictMixin, OrderedDict):
+class _TaggedPlainDict(TaggedDict, dict):
     pass
 
 
-class TaggedPlainDict(TaggedDictMixin, dict):
+class _TaggedOrderedDict(TaggedDict, OrderedDict):
     pass

@@ -9,8 +9,9 @@ from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.serializer_helpers import merge_link_object
 from dynamic_rest.wrappers import (
-    TaggedOrderedDict,
-    TaggedPlainDict
+    SerializerDict,
+    # TaggedDict,
+    tagged_dict
 )
 
 from rest_framework.fields import SkipField
@@ -317,7 +318,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
            3.1)
         """
 
-        ret = {}  # Use plain dict instead of OrderedDict
+        ret = SerializerDict()
         fields = self._readable_fields
 
         for field in fields:
@@ -341,9 +342,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         else:
             if self.use_perf_hack1:
                 representation = self._faster_to_representation(instance)
-                dict_class = TaggedPlainDict
             else:
-                dict_class = TaggedOrderedDict
                 representation = super(
                     WithDynamicSerializerMixin,
                     self
@@ -356,7 +355,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
                     self, representation, instance)
 
         # tag the representation with the serializer and instance
-        return dict_class(
+        return tagged_dict(
             representation,
             serializer=self,
             instance=instance,
@@ -482,4 +481,4 @@ class DynamicEphemeralSerializer(
         if self.id_only():
             return data
         else:
-            return TaggedOrderedDict(data, serializer=self, instance=instance)
+            return tagged_dict(data, serializer=self, instance=instance)
