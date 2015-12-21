@@ -133,8 +133,15 @@ class UserSerializer(DynamicModelSerializer):
             'last_name',
             'display_name',
             'thumbnail_url',
-            'number_of_cats')
-        deferred_fields = ('last_name', 'display_name', 'thumbnail_url')
+            'number_of_cats',
+            'profile'
+        )
+        deferred_fields = (
+            'last_name',
+            'display_name',
+            'profile',
+            'thumbnail_url'
+        )
 
     location = DynamicRelationField('LocationSerializer')
     permissions = DynamicRelationField(
@@ -149,6 +156,10 @@ class UserSerializer(DynamicModelSerializer):
     )
     number_of_cats = DynamicMethodField(
         requires=['location.cat_set.*'],
+        deferred=True
+    )
+    profile = DynamicRelationField(
+        'ProfileSerializer',
         deferred=True
     )
 

@@ -411,6 +411,7 @@ class TestUsersAPI(APITestCase):
                     "display_name": None,
                     "thumbnail_url": None,
                     "number_of_cats": 1,
+                    "profile": None
                     }
             })
 
@@ -860,6 +861,15 @@ class TestLinks(APITestCase):
             content_type='application/json'
         )
         self.assertEqual(200, r.status_code)
+
+    def test_one_to_one_dne(self):
+        user = User.objects.create(name='foo', last_name='bar')
+
+        url = '/users/%s/profile/' % user.pk
+        r = self.client.get(url)
+        self.assertEqual(404, r.status_code)
+        # Check error message to differentiate from a routing error 404
+        self.assertEqual('"Does not exist"', r.content)
 
 
 class TestDogsAPI(APITestCase):

@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.http import QueryDict
 from django.utils.datastructures import MergeDict
 
@@ -309,7 +310,13 @@ class WithDynamicViewSetMixin(object):
         # Serialize the related data. Use the field's serializer to ensure
         # it's configured identically to the sideload case.
         serializer = field.serializer
-        serializer.instance = getattr(obj, field.source)
+        try:
+            # TODO(ryo): Probably should use field.get_attribute() but that
+            #            seems to break a bunch of things. Investigate later.
+            serializer.instance = getattr(obj, field.source)
+        except ObjectDoesNotExist:
+            return Response("Does not exist", status=404)
+
         return Response(serializer.data)
 
 
