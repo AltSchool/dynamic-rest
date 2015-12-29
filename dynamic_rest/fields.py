@@ -168,41 +168,53 @@ class DynamicRelationField(DynamicField):
 
         self.model_field = model_field
 
-    def _get_cached_serializer(self, args, init_args):
+    @property
+    def root_serializer(self):
+        if hasattr(self, '_root_serializer'):
+            return self._root_serializer
+
         if not self.parent:
-            # print "No parent!"
+            # Don't cache, so that we'd recompute if parent is set.
+            return None
+
+        self._root_serializer = node = self
+        while True:
+            if getattr(node, 'parent', None):
+                node = node.parent
+            else:
+                self._root_serializer = node
+                break
+
+        return self._root_serializer
+
+    def _get_cached_serializer(self, args, init_args):
+        root = self.root_serializer
+        if not root or not self.field_name:
+            # Not enough info to use cache.
             return self.serializer_class(*args, **init_args)
-        else:
-            root = node = self
-            while True:
-                if getattr(node, 'parent', None):
-                    node = node.parent
-                else:
-                    root = node
-                    break
 
         if not hasattr(root, '_descendant_serializer_cache'):
+            # Initialize dict to use as cache on root serializer.
+            # Arguably this is a Serializer concern, but we'll do it
+            # here so it's agnostic to the exact type of the root
+            # serializer (i.e. it could be a DRF serializer).
             root._descendant_serializer_cache = {}
 
         key_dict = {
             'parent': self.parent.__class__.__name__,
-            'serializer': self.serializer_class.__name__,
             'field': self.field_name,
             'args': frozenset(args),
             'init_args': frozenset(init_args.items())
         }
-        # print key_dict
         cache_key = hash(frozenset(key_dict.items()))
+
         if cache_key not in root._descendant_serializer_cache:
-            # print "serializer cache miss (%s)" % cache_key
             szr = self.serializer_class(
                 *args,
                 **init_args
             )
             root._descendant_serializer_cache[cache_key] = szr
-        else:
-            # print "serializer cache hit (%s)" % cache_key
-            pass
+
         return root._descendant_serializer_cache[cache_key]
 
     def get_serializer(self, *args, **kwargs):
@@ -216,10 +228,7 @@ class DynamicRelationField(DynamicField):
                 self.serializer_class, DynamicSerializerBase):
             init_args['embed'] = True
 
-        if os.environ.get('USE_PERF_HACK2'):
-            return self._get_cached_serializer(args, init_args)
-        else:
-            return self.serializer_class(*args, **init_args)
+        return self._get_cached_serializer(args, init_args)
 
     @property
     def serializer(self):
