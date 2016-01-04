@@ -177,10 +177,14 @@ class DynamicRelationField(DynamicField):
             # Don't cache, so that we'd recompute if parent is set.
             return None
 
-        self._root_serializer = node = self
+        node = self
+        seen = set()
         while True:
+            seen.add(node)
             if getattr(node, 'parent', None):
                 node = node.parent
+                if node in seen:
+                    return None
             else:
                 self._root_serializer = node
                 break
