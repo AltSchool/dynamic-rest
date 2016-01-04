@@ -5,22 +5,14 @@ from django.conf import settings
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 
 
-class SerializerDict(object):
-    def __new__(cls):
-        if dynamic_settings.get('USE_ORDERED_DICT', False):
-            return OrderedDict()
-        else:
-            return {}
-
-
-def tagged_dict(*args, **kwargs):
+def tag_dict(obj, *args, **kwargs):
     """Create a TaggedDict instance. Will either be a TaggedOrderedDict
-    or TaggedPlainDict depending on settings."""
+    or TaggedPlainDict depending on the type of `obj`."""
 
-    if dynamic_settings.get('USE_ORDERED_DICT', False):
-        return _TaggedOrderedDict(*args, **kwargs)
+    if isinstance(obj, OrderedDict):
+        return _TaggedOrderedDict(obj, *args, **kwargs)
     else:
-        return _TaggedPlainDict(*args, **kwargs)
+        return _TaggedPlainDict(obj, *args, **kwargs)
 
 
 class TaggedDict(object):
@@ -41,7 +33,7 @@ class TaggedDict(object):
         super(TaggedDict, self).__init__(*args, **kwargs)
 
     def copy(self):
-        return tagged_dict(
+        return tag_dict(
             self,
             serializer=self.serializer,
             instance=self.instance,

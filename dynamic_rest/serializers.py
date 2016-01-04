@@ -2,17 +2,12 @@ import copy
 from django.conf import settings
 from django.db import models
 from django.utils.functional import cached_property
-import os
 
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.serializer_helpers import merge_link_object
-from dynamic_rest.wrappers import (
-    SerializerDict,
-    # TaggedDict,
-    tagged_dict
-)
+from dynamic_rest.wrappers import tag_dict
 
 from rest_framework.fields import SkipField
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
@@ -123,7 +118,10 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         self.embed = embed
 
         self._dynamic_init(only_fields, include_fields, exclude_fields)
-        self.use_perf_hack1 = os.environ.get('USE_PERF_HACK1')
+        self.enable_optimization = dynamic_settings.get(
+            'ENABLE_SERIALIZER_OPTIMIZATIONS',
+            True
+        )
 
     def _dynamic_init(self, only_fields, include_fields, exclude_fields):
         """
@@ -311,14 +309,13 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
 
         Copy of DRF's default to_representation with a couple of changes:
 
-        1) Returns a plain old dict as opposed to OrderedDict. This change
-           alone in one benchmark reduced serialization time from 550ms to
-           370ms.
+        1) Returns a plain old dict as opposed to OrderedDict. (Constructing
+           ordered dict is ~100x slower than `{}`.)
         2) Ensure we use a cached list of fields (this is in DRF 3.2 but not
            3.1)
         """
 
-        ret = SerializerDict()
+        ret = {}
         fields = self._readable_fields
 
         for field in fields:
@@ -340,7 +337,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         if self.id_only():
             return instance.pk
         else:
-            if self.use_perf_hack1:
+            if self.enable_optimization:
                 representation = self._faster_to_representation(instance)
             else:
                 representation = super(
@@ -355,7 +352,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
                     self, representation, instance)
 
         # tag the representation with the serializer and instance
-        return tagged_dict(
+        return tag_dict(
             representation,
             serializer=self,
             instance=instance,
@@ -481,4 +478,4 @@ class DynamicEphemeralSerializer(
         if self.id_only():
             return data
         else:
-            return tagged_dict(data, serializer=self, instance=instance)
+            return tag_dict(data, serializer=self, instance=instance)
