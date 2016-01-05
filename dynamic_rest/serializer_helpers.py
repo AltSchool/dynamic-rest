@@ -7,6 +7,12 @@ def merge_link_object(serializer, data, instance):
 
     link_object = {}
 
+    if not getattr(instance, 'pk', None):
+        # If instance doesn't have a `pk` field, we'll assume it doesn't
+        # have a canonical resource URL to hang a link off of.
+        # This generally only affectes Ephemeral Objects.
+        return data
+
     link_fields = serializer.get_link_fields()
     for name, field in link_fields.iteritems():
         # For included fields, omit link if there's no data.

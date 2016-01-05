@@ -11,6 +11,7 @@ from tests.models import (
     Profile,
     User
 )
+from tests.serializers import NestedEphemeralSerializer
 
 
 class TestUsersAPI(APITestCase):
@@ -870,6 +871,19 @@ class TestLinks(APITestCase):
         self.assertEqual(404, r.status_code)
         # Check error message to differentiate from a routing error 404
         self.assertEqual('"Does not exist"', r.content)
+
+    def test_ephemeral_object_link(self):
+
+        class FakeCountObject(object):
+            pk = 1
+            values = []
+
+        class FakeNested(object):
+            value_count = FakeCountObject()
+
+        szr = NestedEphemeralSerializer()
+        data = szr.to_representation(FakeNested())
+        self.assertEqual(data, {'value_count': 1}, data)
 
 
 class TestDogsAPI(APITestCase):
