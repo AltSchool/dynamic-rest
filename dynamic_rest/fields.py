@@ -168,6 +168,59 @@ class DynamicRelationField(DynamicField):
 
         self.model_field = model_field
 
+    @property
+    def root_serializer(self):
+        if hasattr(self, '_root_serializer'):
+            return self._root_serializer
+
+        if not self.parent:
+            # Don't cache, so that we'd recompute if parent is set.
+            return None
+
+        node = self
+        seen = set()
+        while True:
+            seen.add(node)
+            if getattr(node, 'parent', None):
+                node = node.parent
+                if node in seen:
+                    return None
+            else:
+                self._root_serializer = node
+                break
+
+        return self._root_serializer
+
+    def _get_cached_serializer(self, args, init_args):
+        root = self.root_serializer
+        if not root or not self.field_name:
+            # Not enough info to use cache.
+            return self.serializer_class(*args, **init_args)
+
+        if not hasattr(root, '_descendant_serializer_cache'):
+            # Initialize dict to use as cache on root serializer.
+            # Arguably this is a Serializer concern, but we'll do it
+            # here so it's agnostic to the exact type of the root
+            # serializer (i.e. it could be a DRF serializer).
+            root._descendant_serializer_cache = {}
+
+        key_dict = {
+            'parent': self.parent.__class__.__name__,
+            'field': self.field_name,
+            'args': frozenset(args),
+            'init_args': frozenset(init_args.items())
+        }
+        cache_key = hash(frozenset(key_dict.items()))
+
+        if cache_key not in root._descendant_serializer_cache:
+            szr = self.serializer_class(
+                *args,
+                **init_args
+            )
+            root._descendant_serializer_cache[cache_key] = szr
+
+        return root._descendant_serializer_cache[cache_key]
+
     def get_serializer(self, *args, **kwargs):
         init_args = {
             k: v for k, v in self.kwargs.iteritems()
@@ -179,7 +232,7 @@ class DynamicRelationField(DynamicField):
                 self.serializer_class, DynamicSerializerBase):
             init_args['embed'] = True
 
-        return self.serializer_class(*args, **init_args)
+        return self._get_cached_serializer(args, init_args)
 
     @property
     def serializer(self):

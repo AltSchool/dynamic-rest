@@ -1,13 +1,15 @@
 import copy
 from django.conf import settings
 from django.db import models
+from django.utils.functional import cached_property
 
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.serializer_helpers import merge_link_object
-from dynamic_rest.wrappers import TaggedDict
+from dynamic_rest.wrappers import tag_dict
 
+from rest_framework.fields import SkipField
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 from rest_framework import serializers, fields, exceptions
 
@@ -16,6 +18,10 @@ dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 
 
 class DynamicListSerializer(serializers.ListSerializer):
+
+    def __init__(self, *args, **kwargs):
+        super(DynamicListSerializer, self).__init__(*args, **kwargs)
+        self.child.parent = self
 
     def to_representation(self, data):
         iterable = data.all() if isinstance(data, models.Manager) else data
@@ -112,6 +118,10 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         self.embed = embed
 
         self._dynamic_init(only_fields, include_fields, exclude_fields)
+        self.enable_optimization = dynamic_settings.get(
+            'ENABLE_SERIALIZER_OPTIMIZATIONS',
+            True
+        )
 
     def _dynamic_init(self, only_fields, include_fields, exclude_fields):
         """
@@ -203,6 +213,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
                 WithDynamicSerializerMixin,
                 self).get_fields()
             for k, field in self._all_fields.iteritems():
+                field.field_name = k
                 field.parent = self
         return self._all_fields
 
@@ -254,6 +265,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
             if isinstance(field, serializers.BaseSerializer):
                 inject = field
             elif isinstance(field, DynamicRelationField):
+                field.field_name = field.field_name or name
                 field.parent = self
                 inject = field.serializer
                 if field.embed and sub_fields is True:
@@ -283,13 +295,55 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
 
         return self._link_fields
 
+    @cached_property
+    def _readable_fields(self):
+        # NOTE: Copied from DRF, exists in 3.2.x but not 3.1
+        return [
+            field for field in self.fields.values()
+            if not field.write_only
+        ]
+
+    def _faster_to_representation(self, instance):
+        """
+        Object instance -> Dict of primitive datatypes.
+
+        Copy of DRF's default to_representation with a couple of changes:
+
+        1) Returns a plain old dict as opposed to OrderedDict. (Constructing
+           ordered dict is ~100x slower than `{}`.)
+        2) Ensure we use a cached list of fields (this is in DRF 3.2 but not
+           3.1)
+        """
+
+        ret = {}
+        fields = self._readable_fields
+
+        for field in fields:
+            try:
+                attribute = field.get_attribute(instance)
+            except SkipField:
+                continue
+
+            if attribute is None:
+                # We skip `to_representation` for `None` values so that
+                # fields do not have to explicitly deal with that case.
+                ret[field.field_name] = None
+            else:
+                ret[field.field_name] = field.to_representation(attribute)
+
+        return ret
+
     def to_representation(self, instance):
         if self.id_only():
             return instance.pk
         else:
-            representation = super(
-                WithDynamicSerializerMixin,
-                self).to_representation(instance)
+            if self.enable_optimization:
+                representation = self._faster_to_representation(instance)
+            else:
+                representation = super(
+                    WithDynamicSerializerMixin,
+                    self
+                ).to_representation(instance)
 
             if getattr(settings, 'DYNAMIC_REST', {}).get('ENABLE_LINKS', True):
                 # TODO: Make this function configurable to support other
@@ -298,7 +352,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
                     self, representation, instance)
 
         # tag the representation with the serializer and instance
-        return TaggedDict(
+        return tag_dict(
             representation,
             serializer=self,
             instance=instance,
@@ -424,4 +478,4 @@ class DynamicEphemeralSerializer(
         if self.id_only():
             return data
         else:
-            return TaggedDict(data, serializer=self, instance=instance)
+            return tag_dict(data, serializer=self, instance=instance)

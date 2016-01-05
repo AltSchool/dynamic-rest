@@ -7,7 +7,8 @@ from dynamic_rest.serializers import EphemeralObject, DynamicListSerializer
 from tests.serializers import (
     UserSerializer, GroupSerializer, LocationGroupSerializer,
     CountsSerializer, NestedEphemeralSerializer,
-    UserLocationSerializer, LocationSerializer
+    UserLocationSerializer, LocationSerializer,
+    CatSerializer
 )
 from tests.setup import create_fixture
 from tests.models import User
@@ -551,3 +552,81 @@ class TestUserLocationSerializer(TestCase):
             }).data
         self.assertTrue('location' in data)
         self.assertEqual(data['location']['name'], '0')
+
+
+class TestSerializerCaching(TestCase):
+
+    def setUp(self):
+        self.serializer = CatSerializer(
+            request_fields={'home': {}, 'backup_home': True}
+        )
+
+    def test_basic(self):
+        all_fields = self.serializer.get_all_fields()
+
+        # These are two different instances of the field object
+        # because get_all_fields() does a copy().
+        home_field_1 = self.serializer.fields['home']
+        home_field_2 = all_fields['home']
+
+        self.assertNotEqual(
+            home_field_1,
+            home_field_2,
+            "Expected different field instances, got same."
+        )
+
+        self.assertEqual(
+            home_field_1.serializer,
+            home_field_2.serializer,
+            "Expected same serializer instance, got different."
+        )
+
+    def test_serializer_args_busts_cache(self):
+        home_field = self.serializer.fields['home']
+
+        self.assertIsNot(
+            home_field.get_serializer(),
+            home_field.get_serializer('foo'),
+            (
+                "Passing arg to get_serializer should construct new"
+                " serializer. Instead got same one."
+            )
+        )
+
+    def test_same_serializer_class_different_fields(self):
+        # These two use the same serializer class, but are different
+        # fields, so they should use different serializer instances.
+        home_field = self.serializer.fields['home']
+        backup_home_field = self.serializer.fields['backup_home']
+
+        self.assertIsNot(
+            home_field.serializer,
+            backup_home_field.serializer,
+            (
+                "Different fields that use same serializer should get",
+                " separate serializer instances."
+            )
+        )
+
+    def test_different_roots(self):
+        serializer2 = CatSerializer(
+            request_fields={'home': {}, 'backup_home': {}}
+        )
+
+        home1 = self.serializer.fields['home']
+        home2 = serializer2.fields['home']
+
+        self.assertIsNot(
+            home1.serializer,
+            home2.serializer,
+            "Different root serializers should yield different instances."
+        )
+
+    def test_root_serializer_cycle_busting(self):
+        s = CatSerializer(
+            request_fields={'home': {}, 'backup_home': {}}
+        )
+
+        s.parent = s  # Create cycle.
+
+        self.assertIsNone(s.fields['home'].root_serializer)
