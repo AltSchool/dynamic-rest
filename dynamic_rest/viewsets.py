@@ -315,7 +315,11 @@ class WithDynamicViewSetMixin(object):
             #            seems to break a bunch of things. Investigate later.
             serializer.instance = getattr(obj, field.source)
         except ObjectDoesNotExist:
-            return Response("Does not exist", status=404)
+            # See:
+            # http://jsonapi.org/format/#fetching-relationships-responses-404
+            # This is a case where the "link URL exists but the relationship
+            # is empty" and therefore must return a 200.
+            return Response({}, status=200)
 
         return Response(serializer.data)
 
