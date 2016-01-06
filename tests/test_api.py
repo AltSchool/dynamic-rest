@@ -868,9 +868,10 @@ class TestLinks(APITestCase):
 
         url = '/users/%s/profile/' % user.pk
         r = self.client.get(url)
-        self.assertEqual(404, r.status_code)
+        self.assertEqual(200, r.status_code)
         # Check error message to differentiate from a routing error 404
-        self.assertEqual('"Does not exist"', r.content)
+        content = json.loads(r.content)
+        self.assertEqual({}, content)
 
     def test_ephemeral_object_link(self):
 
