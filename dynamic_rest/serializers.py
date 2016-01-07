@@ -176,10 +176,6 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
                 # not sideloading this field
                 self.request_fields[name] = True
 
-    def set_request_fields(self, request_fields):
-        self.request_fields = request_fields
-        self._dynamic_init(None, None, None)
-
     def get_model(self):
         """Get the model, if the serializer has one.
 
@@ -257,24 +253,6 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
 
         for name in deferred:
             serializer_fields.pop(name)
-
-        # inject request_fields into sub-serializers
-        for name, field in serializer_fields.iteritems():
-            sub_fields = request_fields.get(name, True)
-            inject = None
-            if isinstance(field, serializers.BaseSerializer):
-                inject = field
-            elif isinstance(field, DynamicRelationField):
-                field.field_name = field.field_name or name
-                field.parent = self
-                inject = field.serializer
-                if field.embed and sub_fields is True:
-                    sub_fields = {}
-            if isinstance(inject, serializers.ListSerializer):
-                inject = inject.child
-            if inject:
-                inject.sideload = self.sideload
-                inject.set_request_fields(sub_fields)
 
         return serializer_fields
 

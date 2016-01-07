@@ -450,6 +450,18 @@ class TestDynamicSerializer(TestCase):
         )
         self.assertEqual(set(serializer.fields.keys()), expected)
 
+    def test_serializer_propagation_consistency(self):
+        s = CatSerializer(
+            request_fields={'home': True}
+        )
+
+        # In version <= 1.3.7 these will have returned different values.
+        r1 = s.get_all_fields()['home'].serializer.id_only()
+        r2 = s.fields['home'].serializer.id_only()
+        r3 = s.get_all_fields()['home'].serializer.id_only()
+        self.assertEqual(r1, r2)
+        self.assertEqual(r2, r3)
+
 
 class TestListSerializer(TestCase):
 
