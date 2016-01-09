@@ -1,6 +1,7 @@
 import importlib
 from itertools import chain
 import os
+import pickle
 
 from rest_framework import fields
 from rest_framework.exceptions import ParseError, NotFound
@@ -8,6 +9,7 @@ from rest_framework.serializers import SerializerMethodField
 from django.conf import settings
 from django.db.models.related import RelatedObject
 from django.db.models import ManyToManyField
+from django.utils.functional import cached_property
 
 from dynamic_rest.bases import DynamicSerializerBase
 
@@ -195,8 +197,7 @@ class DynamicRelationField(DynamicField):
         return self._root_serializer
 
     def _get_cached_serializer(self, args, init_args):
-        # TODO(ryo): Default to True after #61 merges
-        enabled = dynamic_settings.get('ENABLE_SERIALIZER_CACHE')
+        enabled = dynamic_settings.get('ENABLE_SERIALIZER_CACHE', True)
 
         root = self.root_serializer
         if not root or not self.field_name or not enabled:
@@ -214,9 +215,9 @@ class DynamicRelationField(DynamicField):
             'parent': self.parent.__class__.__name__,
             'field': self.field_name,
             'args': frozenset(args),
-            'init_args': frozenset(init_args.items())
+            'init_args': init_args.items()
         }
-        cache_key = hash(frozenset(key_dict.items()))
+        cache_key = hash(pickle.dumps(key_dict))
 
         if cache_key not in root._descendant_serializer_cache:
             szr = self.serializer_class(
@@ -227,15 +228,54 @@ class DynamicRelationField(DynamicField):
 
         return root._descendant_serializer_cache[cache_key]
 
+    def _get_request_fields_from_parent(self):
+        if not self.parent:
+            return None
+
+        if not getattr(self.parent, 'request_fields'):
+            return None
+
+        if not isinstance(self.parent.request_fields, dict):
+            return None
+
+        return self.parent.request_fields.get(self.field_name)
+
+    def _inherit_parent_kwargs(self, kwargs):
+        """Extract any necessary attributes from parent serializer to
+        propagate down to child serializer.
+        """
+
+        if not self.parent or not self._is_dynamic:
+            return kwargs
+
+        if 'request_fields' not in kwargs:
+            # If 'request_fields' isn't explicitly set, pull it from the
+            # parent serializer.
+            request_fields = self._get_request_fields_from_parent()
+            if request_fields is None:
+                # Default to 'id_only' for nested serializers.
+                request_fields = True
+            kwargs['request_fields'] = request_fields
+
+        if self.embed and kwargs.get('request_fields') is True:
+            # If 'embed' then make sure we fetch the full object.
+            kwargs['request_fields'] = {}
+
+        if hasattr(self.parent, 'sideload'):
+            kwargs['sideload'] = self.parent.sideload
+
+        return kwargs
+
     def get_serializer(self, *args, **kwargs):
         init_args = {
             k: v for k, v in self.kwargs.iteritems()
             if k in self.SERIALIZER_KWARGS
         }
+
+        kwargs = self._inherit_parent_kwargs(kwargs)
         init_args.update(kwargs)
 
-        if self.embed and issubclass(
-                self.serializer_class, DynamicSerializerBase):
+        if self.embed and self._is_dynamic:
             init_args['embed'] = True
 
         return self._get_cached_serializer(args, init_args)
@@ -249,6 +289,13 @@ class DynamicRelationField(DynamicField):
         serializer.parent = self
         self._serializer = serializer
         return serializer
+
+    @cached_property
+    def _is_dynamic(self):
+        return issubclass(
+            self.serializer_class,
+            DynamicSerializerBase
+        )
 
     def get_attribute(self, instance):
         return instance
