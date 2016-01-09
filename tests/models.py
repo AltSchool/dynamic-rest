@@ -26,6 +26,11 @@ class Cat(models.Model):
         related_name='annoying_cats',
         related_query_name='getoffmylawn'
     )
+    parent = models.ForeignKey(
+        'Cat',
+        null=True,
+        blank=True,
+        related_name='kittens')
 
 
 class Dog(models.Model):

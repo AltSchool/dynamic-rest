@@ -643,3 +643,33 @@ class TestSerializerCaching(TestCase):
         s.parent = s  # Create cycle.
 
         self.assertIsNone(s.fields['home'].root_serializer)
+
+    def test_root_serializer_trickledown_request_fields(self):
+        s = CatSerializer(
+            request_fields=True
+        )
+
+        self.assertIsNotNone(s.get_all_fields()['home'].serializer)
+
+    def test_recursive_serializer(self):
+        s = LocationSerializer(
+            request_fields={
+                'cats': {
+                    'parent': {
+                        'parent': True
+                    }
+                }
+            }
+        )
+
+        cats_field = s.get_all_fields()['cats']
+
+        l1 = cats_field.serializer.child  # .child because list
+        l2 = l1.get_all_fields()['parent'].serializer
+        l3 = l2.get_all_fields()['parent'].serializer
+        l4 = l3.get_all_fields()['parent'].serializer
+        self.assertIsNot(l2, l3)
+
+        # l3 and l4 should be same cached instance because both have
+        # request_fields=True (l3 by inheritence, l4 by default)
+        self.assertIs(l3, l4)

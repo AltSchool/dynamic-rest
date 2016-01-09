@@ -1,6 +1,7 @@
 import importlib
 from itertools import chain
 import os
+import pickle
 
 from rest_framework import fields
 from rest_framework.exceptions import ParseError, NotFound
@@ -11,7 +12,6 @@ from django.db.models import ManyToManyField
 from django.utils.functional import cached_property
 
 from dynamic_rest.bases import DynamicSerializerBase
-from dynamic_rest.wrappers import hash_dict
 
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
@@ -197,8 +197,7 @@ class DynamicRelationField(DynamicField):
         return self._root_serializer
 
     def _get_cached_serializer(self, args, init_args):
-        # TODO(ryo): Default to True after #61 merges
-        enabled = dynamic_settings.get('ENABLE_SERIALIZER_CACHE')
+        enabled = dynamic_settings.get('ENABLE_SERIALIZER_CACHE', True)
 
         root = self.root_serializer
         if not root or not self.field_name or not enabled:
@@ -218,7 +217,7 @@ class DynamicRelationField(DynamicField):
             'args': frozenset(args),
             'init_args': init_args.items()
         }
-        cache_key = hash_dict(key_dict)
+        cache_key = hash(pickle.dumps(key_dict))
 
         if cache_key not in root._descendant_serializer_cache:
             szr = self.serializer_class(
@@ -228,6 +227,18 @@ class DynamicRelationField(DynamicField):
             root._descendant_serializer_cache[cache_key] = szr
 
         return root._descendant_serializer_cache[cache_key]
+
+    def _get_request_fields_from_parent(self):
+        if not self.parent:
+            return None
+
+        if not getattr(self.parent, 'request_fields'):
+            return None
+
+        if not isinstance(self.parent.request_fields, dict):
+            return None
+
+        return self.parent.request_fields.get(self.field_name)
 
     def _inherit_parent_kwargs(self, kwargs):
         """Extract any necessary attributes from parent serializer to
@@ -240,12 +251,11 @@ class DynamicRelationField(DynamicField):
         if 'request_fields' not in kwargs:
             # If 'request_fields' isn't explicitly set, pull it from the
             # parent serializer.
-            request_fields = self.parent.request_fields.get(
-                self.field_name,
-                True  # Defaults to "id_only" unless included explicitly.
-            )
-            if request_fields is not None:
-                kwargs['request_fields'] = request_fields
+            request_fields = self._get_request_fields_from_parent()
+            if request_fields is None:
+                # Default to 'id_only' for nested serializers.
+                request_fields = True
+            kwargs['request_fields'] = request_fields
 
         if self.embed and kwargs.get('request_fields') is True:
             # If 'embed' then make sure we fetch the full object.

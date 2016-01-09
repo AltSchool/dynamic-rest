@@ -53,21 +53,3 @@ class _TaggedPlainDict(TaggedDict, dict):
 
 class _TaggedOrderedDict(TaggedDict, OrderedDict):
     pass
-
-
-def hash_dict(obj):
-    """Hash a dict (which aren't normally hashable)."""
-
-    def _convert(o):
-        # Recursively convert to hashable types
-        if isinstance(o, dict):
-            o = o.items()
-        if hasattr(o, '__iter__'):
-            out = []
-            for i in o:
-                out.append(_convert(i))
-            return frozenset(out)
-        else:
-            return o
-
-    return hash(_convert(obj))

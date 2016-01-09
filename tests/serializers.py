@@ -26,12 +26,13 @@ class CatSerializer(DynamicModelSerializer):
         'LocationSerializer', link=backup_home_link)
     foobar = DynamicRelationField(
         'LocationSerializer', source='hunting_grounds', many=True)
+    parent = DynamicRelationField('CatSerializer')
 
     class Meta:
         model = Cat
         name = 'cat'
-        fields = ('id', 'name', 'home', 'backup_home', 'foobar')
-        deferred_fields = ('home', 'backup_home', 'foobar')
+        fields = ('id', 'name', 'home', 'backup_home', 'foobar', 'parent')
+        deferred_fields = ('home', 'backup_home', 'foobar', 'parent')
 
 
 class LocationSerializer(DynamicModelSerializer):
