@@ -12,6 +12,9 @@ from django.db.models import ManyToManyField
 from dynamic_rest.bases import DynamicSerializerBase
 
 
+dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
+
+
 def is_model_field(model, field_name):
     """
     Helper function to get model field.
@@ -192,8 +195,11 @@ class DynamicRelationField(DynamicField):
         return self._root_serializer
 
     def _get_cached_serializer(self, args, init_args):
+        # TODO(ryo): Default to True after #61 merges
+        enabled = dynamic_settings.get('ENABLE_SERIALIZER_CACHE')
+
         root = self.root_serializer
-        if not root or not self.field_name:
+        if not root or not self.field_name or not enabled:
             # Not enough info to use cache.
             return self.serializer_class(*args, **init_args)
 

@@ -560,6 +560,7 @@ class TestSerializerCaching(TestCase):
         self.serializer = CatSerializer(
             request_fields={'home': {}, 'backup_home': True}
         )
+        settings.DYNAMIC_REST['ENABLE_SERIALIZER_CACHE'] = True
 
     def test_basic(self):
         all_fields = self.serializer.get_all_fields()
