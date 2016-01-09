@@ -567,7 +567,7 @@ class DynamicSortingFilter(OrderingFilter):
                 for field_name, field in serializer_class().fields.items()
                 if not getattr(
                     field, 'write_only', False
-                    ) and not field.source == '*'
+                ) and not field.source == '*'
             ]
         else:
             serializer_class = getattr(view, 'serializer_class')

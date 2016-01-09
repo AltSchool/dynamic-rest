@@ -275,6 +275,25 @@ class TestUsersAPI(APITestCase):
             },
             json.loads(response.content))
 
+    def testFilterForNonexistingMatch(self):
+        with self.assertNumQueries(1):
+            response = self.client.get('/users/?filter{name}[]=foo')
+        self.assertEquals(200, response.status_code)
+        self.assertEquals({'users': []}, json.loads(response.content))
+
+    def testFilterWithUnicodeNonexistingMatch(self):
+        with self.assertNumQueries(1):
+            response = self.client.get(u'/users/?filter{name}[]=%E2%98%82')  # ☂
+        self.assertEquals(200, response.status_code)
+        self.assertEquals({'users': []}, json.loads(response.content))
+
+    def testUnicodeFilter(self):
+        User.objects.create(name=u'☂', last_name='Undermy')
+        with self.assertNumQueries(1):
+            response = self.client.get(u'/users/?filter{name}[]=☂')  # %E2%98%82
+        self.assertEquals(200, response.status_code)
+        self.assertEquals(1, len(json.loads(response.content)['users']))
+
     def testFilterIn(self):
         url = '/users/?filter{name.in}=1&filter{name.in}=2'
         with self.assertNumQueries(1):
@@ -395,7 +414,7 @@ class TestUsersAPI(APITestCase):
             'last_name': 'last',
             'location': 1,
             'display_name': 'test last'  # Read only, should be ignored.
-            }
+        }
         response = self.client.post(
             '/users/', json.dumps(data), content_type='application/json')
         self.assertEquals(201, response.status_code)
@@ -413,14 +432,14 @@ class TestUsersAPI(APITestCase):
                     "thumbnail_url": None,
                     "number_of_cats": 1,
                     "profile": None
-                    }
+                }
             })
 
     def testUpdate(self):
         group = Group.objects.create(name='test group')
         data = {
             'name': 'updated'
-            }
+        }
         response = self.client.put(
             '/groups/%s/' % group.pk,
             json.dumps(data),
@@ -455,7 +474,7 @@ class TestUsersAPI(APITestCase):
             '/groups/?filter{id}=1&include[]=loc1users'
             '&filter{loc1users|id.in}=3'
             '&filter{loc1users|id.in}=1'
-            )
+        )
         response = self.client.get(url)
         content = json.loads(response.content)
         self.assertEqual(200, response.status_code)
