@@ -131,7 +131,7 @@ class WithDynamicViewSetMixin(object):
         """
         if '[]' in name:
             # array-type
-            return self.request.QUERY_PARAMS.getlist(
+            return self.request.query_params.getlist(
                 name) if name in self.features else None
         elif '{}' in name:
             # object-type (keys are not consistent)
@@ -139,7 +139,7 @@ class WithDynamicViewSetMixin(object):
                 name) if name in self.features else {}
         else:
             # single-type
-            return self.request.QUERY_PARAMS.get(
+            return self.request.query_params.get(
                 name) if name in self.features else None
 
     def _extract_object_params(self, name):
@@ -248,9 +248,9 @@ class WithDynamicViewSetMixin(object):
         if self.PAGE in self.features:
             # make sure pagination is enabled
             if self.PER_PAGE not in self.features and \
-                    self.PER_PAGE in self.request.QUERY_PARAMS:
+                    self.PER_PAGE in self.request.query_params:
                 # remove per_page if it is disabled
-                self.request.QUERY_PARAMS[self.PER_PAGE] = None
+                self.request.query_params[self.PER_PAGE] = None
             return super(
                 WithDynamicViewSetMixin, self).paginate_queryset(
                 *args, **kwargs)
