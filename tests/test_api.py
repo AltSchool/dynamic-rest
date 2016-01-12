@@ -283,14 +283,22 @@ class TestUsersAPI(APITestCase):
 
     def testFilterWithUnicodeNonexistingMatch(self):
         with self.assertNumQueries(1):
-            response = self.client.get(u'/users/?filter{name}[]=%E2%98%82')  # ☂
+            response = self.client.get(u'/users/?filter{name}[]=%E2%98%82')
+        self.assertEquals(200, response.status_code)
+        self.assertEquals({'users': []}, json.loads(response.content))
+        with self.assertNumQueries(1):
+            response = self.client.get(u'/users/?filter{name}[]=☂')
         self.assertEquals(200, response.status_code)
         self.assertEquals({'users': []}, json.loads(response.content))
 
     def testUnicodeFilter(self):
         User.objects.create(name=u'☂', last_name='Undermy')
         with self.assertNumQueries(1):
-            response = self.client.get(u'/users/?filter{name}[]=☂')  # %E2%98%82
+            response = self.client.get(u'/users/?filter{name}[]=%E2%98%82')
+        self.assertEquals(200, response.status_code)
+        self.assertEquals(1, len(json.loads(response.content)['users']))
+        with self.assertNumQueries(1):
+            response = self.client.get(u'/users/?filter{name}[]=☂')
         self.assertEquals(200, response.status_code)
         self.assertEquals(1, len(json.loads(response.content)['users']))
 
