@@ -28,7 +28,11 @@ class QueryParams(QueryDict):
     """
 
     def __init__(self, query_params, *args, **kwargs):
-        query_string = getattr(query_params, 'urlencode', lambda: '')()
+        if hasattr(query_params, 'urlencode'):
+            query_string = query_params.urlencode()
+        else:
+            assert isinstance(query_params, str)
+            query_string = query_params
         kwargs['mutable'] = True
         super(QueryParams, self).__init__(query_string, *args, **kwargs)
 
