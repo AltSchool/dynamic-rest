@@ -15,6 +15,7 @@ from dynamic_rest.bases import DynamicSerializerBase
 
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
+serializer_cache = {}
 
 
 def is_model_field(model, field_name):
@@ -219,14 +220,14 @@ class DynamicRelationField(DynamicField):
         }
         cache_key = hash(pickle.dumps(key_dict))
 
-        if cache_key not in root._descendant_serializer_cache:
+        if cache_key not in serializer_cache:
             szr = self.serializer_class(
                 *args,
                 **init_args
             )
-            root._descendant_serializer_cache[cache_key] = szr
+            serializer_cache[cache_key] = szr
 
-        return root._descendant_serializer_cache[cache_key]
+        return serializer_cache[cache_key]
 
     def _get_request_fields_from_parent(self):
         if not self.parent:
