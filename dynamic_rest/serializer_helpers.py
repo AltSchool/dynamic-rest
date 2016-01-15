@@ -7,7 +7,8 @@ def merge_link_object(serializer, data, instance):
 
     link_object = {}
 
-    if not getattr(instance, 'pk', None):
+    pk = getattr(instance, 'pk', None)
+    if pk is None:
         # If instance doesn't have a `pk` field, we'll assume it doesn't
         # have a canonical resource URL to hang a link off of.
         # This generally only affectes Ephemeral Objects.
@@ -22,7 +23,7 @@ def merge_link_object(serializer, data, instance):
         # Default to DREST-generated relation endpoints.
         link = getattr(field, 'link', "/%s/%s/%s/" % (
             serializer.get_plural_name(),
-            instance.pk,
+            pk,
             name
         ))
         if callable(link):
