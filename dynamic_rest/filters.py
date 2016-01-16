@@ -38,6 +38,7 @@ class FilterNode(object):
         self.field = field
         self.operator = operator
         self.value = value
+        self.is_remote = False  # is filter on a join
 
     @property
     def key(self):
@@ -98,6 +99,8 @@ class FilterNode(object):
                 raise ValidationError(
                     "Invalid nested filter field: %s" % field_name
                 )
+
+        self.is_remote = len(rewritten) > 1
 
         if self.operator:
             rewritten.append(self.operator)
@@ -239,25 +242,29 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         def rewrite_filters(filters, serializer):
             out = {}
+            has_remote_filter = False
             for k, node in filters.iteritems():
                 filter_key = node.generate_query_key(serializer)
                 out[filter_key] = node.value
+                has_remote_filter |= node.is_remote
 
-            return out
+            return out, has_remote_filter
 
         q = q or Q()
 
         if not includes and not excludes:
-            return None
+            return None, False
 
+        incl_has_remote = excl_has_remote = False
         if includes:
-            includes = rewrite_filters(includes, serializer)
+            includes, incl_has_remote = rewrite_filters(includes, serializer)
             q &= Q(**includes)
         if excludes:
-            excludes = rewrite_filters(excludes, serializer)
+            excludes, excl_has_remote = rewrite_filters(excludes, serializer)
             for k, v in excludes.iteritems():
                 q &= ~Q(**{k: v})
-        return q
+
+        return q, (incl_has_remote or excl_has_remote)
 
     def _build_prefetch_queryset(
         self,
@@ -464,7 +471,7 @@ class DynamicFilterBackend(BaseFilterBackend):
             queryset = queryset.only(*only)
 
         # add filters
-        query = self._filters_to_query(
+        query, has_remote_filter = self._filters_to_query(
             includes=filters.get('_include'),
             excludes=filters.get('_exclude'),
             serializer=serializer
@@ -474,7 +481,12 @@ class DynamicFilterBackend(BaseFilterBackend):
             queryset = queryset.filter(query)
 
         prefetch = prefetches.values()
-        return queryset.prefetch_related(*prefetch).distinct()
+        queryset = queryset.prefetch_related(*prefetch)
+
+        if has_remote_filter:
+            queryset = queryset.distinct()
+
+        return queryset
 
 
 class DynamicSortingFilter(OrderingFilter):
