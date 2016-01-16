@@ -621,20 +621,6 @@ class TestSerializerCaching(TestCase):
             )
         )
 
-    def test_different_roots(self):
-        serializer2 = CatSerializer(
-            request_fields={'home': {}, 'backup_home': {}}
-        )
-
-        home1 = self.serializer.fields['home']
-        home2 = serializer2.fields['home']
-
-        self.assertIsNot(
-            home1.serializer,
-            home2.serializer,
-            "Different root serializers should yield different instances."
-        )
-
     def test_root_serializer_cycle_busting(self):
         s = CatSerializer(
             request_fields={'home': {}, 'backup_home': {}}
