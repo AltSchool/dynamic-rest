@@ -12,6 +12,7 @@ from rest_framework.exceptions import NotFound, ParseError
 from rest_framework.serializers import SerializerMethodField
 
 from dynamic_rest.bases import DynamicSerializerBase
+from dynamic_rest.related import RelatedObject
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 
