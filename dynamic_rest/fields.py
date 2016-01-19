@@ -5,7 +5,6 @@ from itertools import chain
 
 from django.conf import settings
 from django.db.models import ManyToManyField
-from django.db.models.related import RelatedObject
 from django.utils.functional import cached_property
 from rest_framework import fields
 from rest_framework.exceptions import NotFound, ParseError

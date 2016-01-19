@@ -1,21 +1,13 @@
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.db.models import (
-    Prefetch,
-    Q
-)
-
-from rest_framework.exceptions import ValidationError
+from django.db.models import Q, Prefetch
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 from rest_framework.filters import BaseFilterBackend, OrderingFilter
 
 from dynamic_rest.datastructures import TreeMap
-from dynamic_rest.fields import (
-    DynamicRelationField,
-    is_field_remote,
-    get_model_field,
-    is_model_field
-)
+from dynamic_rest.fields import (DynamicRelationField, get_model_field,
+                                 is_field_remote, is_model_field)
 from dynamic_rest.patches import patch_prefetch_one_level
 from dynamic_rest.related import RelatedObject
 
