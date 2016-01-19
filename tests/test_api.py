@@ -105,7 +105,7 @@ class TestUsersAPI(APITestCase):
                 'profile': {
                     'default': None,
                     'label': 'Profile',
-                    'nullable': True,
+                    'nullable': False,
                     'read_only': False,
                     'related_to': 'profiles',
                     'required': False,
