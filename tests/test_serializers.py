@@ -7,10 +7,16 @@ from django.utils import six
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.serializers import DynamicListSerializer, EphemeralObject
 from tests.models import User
-from tests.serializers import (CatSerializer, CountsSerializer,
-                               GroupSerializer, LocationGroupSerializer,
-                               LocationSerializer, NestedEphemeralSerializer,
-                               UserLocationSerializer, UserSerializer)
+from tests.serializers import (
+    CatSerializer,
+    CountsSerializer,
+    GroupSerializer,
+    LocationGroupSerializer,
+    LocationSerializer,
+    NestedEphemeralSerializer,
+    UserLocationSerializer,
+    UserSerializer,
+)
 from tests.setup import create_fixture
 
 
@@ -551,6 +557,7 @@ class TestUserLocationSerializer(TestCase):
     def test_data_with_embed_deferred(self):
         # Make sure 'embed' fields can be deferred
         class UserDeferredLocationSerializer(UserLocationSerializer):
+
             class Meta:
                 model = User
                 name = 'user_deferred_location'

@@ -1,7 +1,15 @@
 from collections import namedtuple
 
-from tests.models import (Cat, Dog, Group, Horse, Location, Permission, User,
-                          Zebra)
+from tests.models import (
+    Cat,
+    Dog,
+    Group,
+    Horse,
+    Location,
+    Permission,
+    User,
+    Zebra,
+)
 
 
 def create_fixture():

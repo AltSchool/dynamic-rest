@@ -5,7 +5,13 @@ from django.db import connection
 from django.utils import six
 from rest_framework.test import APITestCase
 
-from tests.models import Cat, Group, Location, Profile, User
+from tests.models import (
+    Cat,
+    Group,
+    Location,
+    Profile,
+    User,
+)
 from tests.serializers import NestedEphemeralSerializer
 from tests.setup import create_fixture
 
