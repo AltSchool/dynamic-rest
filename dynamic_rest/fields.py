@@ -7,11 +7,11 @@ from rest_framework import fields
 from rest_framework.exceptions import ParseError, NotFound
 from rest_framework.serializers import SerializerMethodField
 from django.conf import settings
-from django.db.models.related import RelatedObject
 from django.db.models import ManyToManyField
 from django.utils.functional import cached_property
 
 from dynamic_rest.bases import DynamicSerializerBase
+from dynamic_rest.related import RelatedObject
 
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})

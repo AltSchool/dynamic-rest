@@ -8,7 +8,6 @@ from django.db.models import (
     Q
 )
 
-from django.db.models.related import RelatedObject
 from rest_framework.exceptions import ValidationError
 from rest_framework import serializers
 from rest_framework.filters import BaseFilterBackend
@@ -22,6 +21,7 @@ from dynamic_rest.fields import (
     get_model_field,
     is_model_field
 )
+from dynamic_rest.related import RelatedObject
 
 
 class FilterNode(object):
