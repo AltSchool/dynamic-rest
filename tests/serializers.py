@@ -33,7 +33,7 @@ class LocationSerializer(DynamicModelSerializer):
         model = Location
         name = 'location'
         fields = (
-            'id', 'name', 'users', 'user_count', 'address', 'metadata',
+            'id', 'name', 'users', 'user_count', 'address',
             'cats', 'friendly_cats', 'bad_cats'
         )
 
@@ -44,7 +44,6 @@ class LocationSerializer(DynamicModelSerializer):
         deferred=True)
     user_count = CountField('users', required=False, deferred=True)
     address = DynamicField(source='blob', required=False, deferred=True)
-    metadata = DynamicField(deferred=True, required=False)
     cats = DynamicRelationField(
         'CatSerializer', source='cat_set', many=True, deferred=True)
     friendly_cats = DynamicRelationField(

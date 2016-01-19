@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q, Prefetch
+from django.utils import six
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.filters import BaseFilterBackend, OrderingFilter
@@ -160,7 +161,7 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         out = TreeMap()
 
-        for spec, value in filters_map.iteritems():
+        for spec, value in six.iteritems(filters_map):
 
             # Inclusion or exclusion?
             if spec[0] == '-':
@@ -192,7 +193,10 @@ class DynamicFilterBackend(BaseFilterBackend):
                 pass
             elif operator in self.VALID_FILTER_OPERATORS:
                 value = value[0]
-                if operator == 'isnull' and isinstance(value, (str, unicode)):
+                if (
+                    operator == 'isnull' and
+                    isinstance(value, six.string_types)
+                ):
                     value = value.lower() not in self.FALSEY_STRINGS
                 elif operator == 'eq':
                     operator = None
@@ -229,7 +233,7 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         def rewrite_filters(filters, serializer):
             out = {}
-            for k, node in filters.iteritems():
+            for k, node in six.iteritems(filters):
                 filter_key = node.generate_query_key(serializer)
                 out[filter_key] = node.value
 
@@ -245,7 +249,7 @@ class DynamicFilterBackend(BaseFilterBackend):
             q &= Q(**includes)
         if excludes:
             excludes = rewrite_filters(excludes, serializer)
-            for k, v in excludes.iteritems():
+            for k, v in six.iteritems(excludes):
                 q &= ~Q(**{k: v})
         return q
 
@@ -313,7 +317,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         fields,
         filters
     ):
-        for name, field in fields.iteritems():
+        for name, field in six.iteritems(fields):
             original_field = field
             if isinstance(field, DynamicRelationField):
                 field = field.serializer
@@ -362,7 +366,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         requirements
     ):
         """Extract requirements from serializer fields."""
-        for name, field in fields.iteritems():
+        for name, field in six.iteritems(fields):
             source = field.source
             # Requires may be manually set on the field -- if not,
             # assume the field requires only its source.

@@ -1,13 +1,17 @@
-# -*- coding: utf-8 -*-
 import json
 
 from django.conf import settings
 from django.db import connection
+from django.utils import six
 from rest_framework.test import APITestCase
 
 from tests.models import Cat, Group, Location, Profile, User
 from tests.serializers import NestedEphemeralSerializer
 from tests.setup import create_fixture
+
+UNICODE_STRING = six.unichr(9629)  # unicode heart
+# UNICODE_URL_STRING = urllib.quote(UNICODE_STRING.encode('utf-8'))
+UNICODE_URL_STRING = '%E2%96%9D'
 
 
 class TestUsersAPI(APITestCase):
@@ -21,104 +25,104 @@ class TestUsersAPI(APITestCase):
         response = self.client.options('/users/')
         self.assertEquals(200, response.status_code)
         self.assertEquals({
-            u'description': u'',
-            u'features': [u'include[]', u'exclude[]', u'filter{}', u'sort[]'],
-            u'name': u'User List',
-            u'parses': [
-                u'application/json',
-                u'application/x-www-form-urlencoded',
-                u'multipart/form-data'
+            'description': '',
+            'features': ['include[]', 'exclude[]', 'filter{}', 'sort[]'],
+            'name': 'User List',
+            'parses': [
+                'application/json',
+                'application/x-www-form-urlencoded',
+                'multipart/form-data'
             ],
-            u'properties': {
-                u'display_name': {
-                    u'default': None,
-                    u'label': u'Display name',
-                    u'nullable': False,
-                    u'read_only': True,
-                    u'required': False,
-                    u'type': u'field'
+            'properties': {
+                'display_name': {
+                    'default': None,
+                    'label': 'Display name',
+                    'nullable': False,
+                    'read_only': True,
+                    'required': False,
+                    'type': 'field'
                 },
-                u'groups': {
-                    u'default': None,
-                    u'label': u'Groups',
-                    u'nullable': False,
-                    u'read_only': False,
-                    u'related_to': u'groups',
-                    u'required': False,
-                    u'type': u'many'
+                'groups': {
+                    'default': None,
+                    'label': 'Groups',
+                    'nullable': False,
+                    'read_only': False,
+                    'related_to': 'groups',
+                    'required': False,
+                    'type': 'many'
                 },
-                u'id': {
-                    u'default': None,
-                    u'label': u'ID',
-                    u'nullable': False,
-                    u'read_only': True,
-                    u'required': False,
-                    u'type': u'integer'
+                'id': {
+                    'default': None,
+                    'label': 'ID',
+                    'nullable': False,
+                    'read_only': True,
+                    'required': False,
+                    'type': 'integer'
                 },
-                u'last_name': {
-                    u'default': None,
-                    u'label': u'Last name',
-                    u'nullable': False,
-                    u'read_only': False,
-                    u'required': True,
-                    u'type': u'string'
+                'last_name': {
+                    'default': None,
+                    'label': 'Last name',
+                    'nullable': False,
+                    'read_only': False,
+                    'required': True,
+                    'type': 'string'
                 },
-                u'location': {
-                    u'default': None,
-                    u'label': u'Location',
-                    u'nullable': True,
-                    u'read_only': False,
-                    u'related_to': u'locations',
-                    u'required': False,
-                    u'type': u'one'
+                'location': {
+                    'default': None,
+                    'label': 'Location',
+                    'nullable': True,
+                    'read_only': False,
+                    'related_to': 'locations',
+                    'required': False,
+                    'type': 'one'
                 },
-                u'name': {
-                    u'default': None,
-                    u'label': u'Name',
-                    u'nullable': False,
-                    u'read_only': False,
-                    u'required': True,
-                    u'type': u'string'
+                'name': {
+                    'default': None,
+                    'label': 'Name',
+                    'nullable': False,
+                    'read_only': False,
+                    'required': True,
+                    'type': 'string'
                 },
-                u'number_of_cats': {
-                    u'default': None,
-                    u'label': u'Number of cats',
-                    u'nullable': False,
-                    u'read_only': True,
-                    u'required': False,
-                    u'type': u'field'
+                'number_of_cats': {
+                    'default': None,
+                    'label': 'Number of cats',
+                    'nullable': False,
+                    'read_only': True,
+                    'required': False,
+                    'type': 'field'
                 },
-                u'permissions': {
-                    u'default': None,
-                    u'label': u'Permissions',
-                    u'nullable': False,
-                    u'read_only': False,
-                    u'related_to': u'permissions',
-                    u'required': False,
-                    u'type': u'many'
+                'permissions': {
+                    'default': None,
+                    'label': 'Permissions',
+                    'nullable': False,
+                    'read_only': False,
+                    'related_to': 'permissions',
+                    'required': False,
+                    'type': 'many'
                 },
-                u'profile': {
-                    u'default': None,
-                    u'label': u'Profile',
-                    u'nullable': False,
-                    u'read_only': False,
-                    u'related_to': u'profiles',
-                    u'required': False,
-                    u'type': u'one'
+                'profile': {
+                    'default': None,
+                    'label': 'Profile',
+                    'nullable': False,
+                    'read_only': False,
+                    'related_to': 'profiles',
+                    'required': False,
+                    'type': 'one'
                 },
-                u'thumbnail_url': {
-                    u'default': None,
-                    u'label': u'Thumbnail url',
-                    u'nullable': False,
-                    u'read_only': True,
-                    u'required': False,
-                    u'type': u'field'
+                'thumbnail_url': {
+                    'default': None,
+                    'label': 'Thumbnail url',
+                    'nullable': False,
+                    'read_only': True,
+                    'required': False,
+                    'type': 'field'
                 }
             },
-            u'renders': [u'application/json', u'text/html'],
-            u'resource_name': u'user',
-            u'resource_name_plural': u'users'
-        }, json.loads(response.content))
+            'renders': ['application/json', 'text/html'],
+            'resource_name': 'user',
+            'resource_name_plural': 'users'
+        }, json.loads(response.content.decode('utf-8')))
 
     def test_get(self):
         with self.assertNumQueries(1):
@@ -143,7 +147,7 @@ class TestUsersAPI(APITestCase):
                 'location': 3,
                 'name': '3'
             }]
-        }, json.loads(response.content))
+        }, json.loads(response.content.decode('utf-8')))
 
     def test_get_with_trailing_slash_does_not_redirect(self):
         response = self.client.get('/users/1')
@@ -176,7 +180,7 @@ class TestUsersAPI(APITestCase):
                 'location': 3,
                 'name': '3'
             }]
-        }, json.loads(response.content))
+        }, json.loads(response.content.decode('utf-8')))
 
         with self.assertNumQueries(2):
             # 2 queries: 1 for User, 1 for Group
@@ -193,7 +197,7 @@ class TestUsersAPI(APITestCase):
                 'name':
                 '1'
             }]
-        }, json.loads(response.content))
+        }, json.loads(response.content.decode('utf-8')))
 
     def test_get_with_exclude(self):
         with self.assertNumQueries(1):
@@ -217,7 +221,7 @@ class TestUsersAPI(APITestCase):
                 'id': 4,
                 'location': 3
             }]
-        }, json.loads(response.content))
+        }, json.loads(response.content.decode('utf-8')))
 
     def test_get_with_nested_has_one(self):
         with self.assertNumQueries(2):
@@ -251,7 +255,7 @@ class TestUsersAPI(APITestCase):
                 'location': 3,
                 'name': '3'
             }]
-        }, json.loads(response.content))
+        }, json.loads(response.content.decode('utf-8')))
 
     def test_get_with_nested_has_many(self):
         with self.assertNumQueries(2):
@@ -269,7 +273,7 @@ class TestUsersAPI(APITestCase):
              }, {
                  'groups': [1, 2], 'id': 4, 'location': 3, 'name': '3'
              }]},
-            json.loads(response.content))
+            json.loads(response.content.decode('utf-8')))
 
     def test_get_with_nested_include(self):
         with self.assertNumQueries(3):
@@ -289,7 +293,7 @@ class TestUsersAPI(APITestCase):
                  'groups': [1, 2], 'id': 4, 'location': 3, 'name': '3'
              }
             ]},
-            json.loads(response.content))
+            json.loads(response.content.decode('utf-8')))
 
     def test_get_with_nested_exclude(self):
         with self.assertNumQueries(2):
@@ -307,14 +311,17 @@ class TestUsersAPI(APITestCase):
              }, {
                  'groups': [1, 2], 'id': 4, 'location': 3, 'name': '3'
              }]},
-            json.loads(response.content))
+            json.loads(response.content.decode('utf-8')))
 
     def test_get_with_nested_exclude_all(self):
         with self.assertNumQueries(2):
             # 2 queries: 1 for User, 1 for Group
             url = '/users/?exclude[]=groups.*&include[]=groups.name'
             response = self.client.get(url)
-        self.assertEquals(200, response.status_code, response.content)
+        self.assertEquals(
+            200,
+            response.status_code,
+            response.content.decode('utf-8'))
         self.assertEquals(
             {
                 'groups': [{'name': '0'}, {'name': '1'}],
@@ -328,14 +335,17 @@ class TestUsersAPI(APITestCase):
                     'groups': [1, 2], 'id': 4, 'location': 3, 'name': '3'
                 }]
             },
-            json.loads(response.content))
+            json.loads(response.content.decode('utf-8')))
 
     def test_get_with_exclude_all_and_include_field(self):
         with self.assertNumQueries(1):
             url = '/users/?exclude[]=*&include[]=id'
             response = self.client.get(url)
-        self.assertEquals(200, response.status_code, response.content)
-        data = json.loads(response.content)
+        self.assertEquals(
+            200,
+            response.status_code,
+            response.content.decode('utf-8'))
+        data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(
             set(['id']),
             set(data['users'][0].keys())
@@ -345,8 +355,11 @@ class TestUsersAPI(APITestCase):
         with self.assertNumQueries(2):
             url = '/users/?exclude[]=*&include[]=groups.'
             response = self.client.get(url)
-        self.assertEquals(200, response.status_code, response.content)
-        data = json.loads(response.content)
+        self.assertEquals(
+            200,
+            response.status_code,
+            response.content.decode('utf-8'))
+        data = json.loads(response.content.decode('utf-8'))
         self.assertEquals(
             set(['groups']),
             set(data['users'][0].keys())
@@ -358,7 +371,7 @@ class TestUsersAPI(APITestCase):
             # 2 queries: 1 for User, 1 for Group
             response = self.client.get('/users/1/?include[]=groups.')
         self.assertEquals(200, response.status_code)
-        data = json.loads(response.content)
+        data = json.loads(response.content.decode('utf-8'))
         self.assertEquals(len(data['groups']), 2)
 
     def test_get_with_filter(self):
@@ -372,34 +385,65 @@ class TestUsersAPI(APITestCase):
                     {'id': 2, 'location': 1, 'name': '1'},
                 ]
             },
-            json.loads(response.content))
+            json.loads(response.content.decode('utf-8')))
 
     def test_get_with_filter_no_match(self):
         with self.assertNumQueries(1):
             response = self.client.get('/users/?filter{name}[]=foo')
         self.assertEquals(200, response.status_code)
-        self.assertEquals({'users': []}, json.loads(response.content))
+        self.assertEquals(
+            {'users': []},
+            json.loads(response.content.decode('utf-8')))
 
     def test_get_with_filter_unicode_no_match(self):
         with self.assertNumQueries(1):
-            response = self.client.get(u'/users/?filter{name}[]=%E2%98%82')
+            response = self.client.get(
+                '/users/?filter{name}[]=%s' % UNICODE_URL_STRING
+            )
         self.assertEquals(200, response.status_code)
-        self.assertEquals({'users': []}, json.loads(response.content))
+        self.assertEquals(
+            {'users': []},
+            json.loads(response.content.decode('utf-8')))
         with self.assertNumQueries(1):
-            response = self.client.get(u'/users/?filter{name}[]=☂')
+            response = self.client.get(
+                six.u('/users/?filter{name}[]=%s') % UNICODE_STRING
+            )
         self.assertEquals(200, response.status_code)
-        self.assertEquals({'users': []}, json.loads(response.content))
+        self.assertEquals(
+            {'users': []},
+            json.loads(response.content.decode('utf-8')))
 
     def test_get_with_filter_unicode(self):
-        User.objects.create(name=u'☂', last_name='Undermy')
+        User.objects.create(
+            name=UNICODE_STRING,
+            last_name='Unicode'
+        )
         with self.assertNumQueries(1):
-            response = self.client.get(u'/users/?filter{name}[]=%E2%98%82')
+            response = self.client.get(
+                '/users/?filter{name}[]=%s' % UNICODE_URL_STRING
+            )
         self.assertEquals(200, response.status_code)
-        self.assertEquals(1, len(json.loads(response.content)['users']))
+        self.assertEquals(
+            1,
+            len(
+                json.loads(
+                    response.content.decode('utf-8')
+                )['users']
+            )
+        )
         with self.assertNumQueries(1):
-            response = self.client.get(u'/users/?filter{name}[]=☂')
+            response = self.client.get(
+                six.u('/users/?filter{name}[]=%s') % UNICODE_STRING
+            )
         self.assertEquals(200, response.status_code)
-        self.assertEquals(1, len(json.loads(response.content)['users']))
+        self.assertEquals(
+            1,
+            len(
+                json.loads(
+                    response.content.decode('utf-8')
+                )['users']
+            )
+        )
 
     def test_get_with_filter_in(self):
         url = '/users/?filter{name.in}=1&filter{name.in}=2'
@@ -413,7 +457,7 @@ class TestUsersAPI(APITestCase):
                     {'id': 3, 'location': 2, 'name': '2'},
                 ]
             },
-            json.loads(response.content))
+            json.loads(response.content.decode('utf-8')))
 
     def test_get_with_filter_exclude(self):
         url = '/users/?filter{-name}=1'
@@ -428,7 +472,7 @@ class TestUsersAPI(APITestCase):
                     {'id': 4, 'location': 3, 'name': '3'},
                 ]
             },
-            json.loads(response.content))
+            json.loads(response.content.decode('utf-8')))
 
     def test_get_with_filter_relation_field(self):
         url = '/users/?filter{location.name}=1'
@@ -441,7 +485,7 @@ class TestUsersAPI(APITestCase):
                     {'id': 3, 'location': 2, 'name': '2'},
                 ]
             },
-            json.loads(response.content))
+            json.loads(response.content.decode('utf-8')))
 
     def test_get_with_filter_and_include_relationship(self):
         url = '/users/?include[]=groups.&filter{groups|name}=1'
@@ -459,7 +503,7 @@ class TestUsersAPI(APITestCase):
                     {'groups': [2], 'id': 4, 'location': 3, 'name': '3'}
                 ]
             },
-            json.loads(response.content))
+            json.loads(response.content.decode('utf-8')))
 
     def test_get_with_filter_and_source_rewrite(self):
         """ Test filtering on fields where source is different """
@@ -467,7 +511,7 @@ class TestUsersAPI(APITestCase):
         with self.assertNumQueries(1):
             response = self.client.get(url)
         self.assertEquals(200, response.status_code)
-        data = json.loads(response.content)
+        data = json.loads(response.content.decode('utf-8'))
         self.assertEquals(len(data['locations']), 1)
 
     def test_get_with_filter_and_query_injection(self):
@@ -476,7 +520,7 @@ class TestUsersAPI(APITestCase):
         with self.assertNumQueries(1):
             response = self.client.get(url)
         self.assertEquals(200, response.status_code)
-        data = json.loads(response.content)
+        data = json.loads(response.content.decode('utf-8'))
         self.assertEquals(len(data['users']), 1)
         self.assertEquals(data['users'][0]['name'], '1')
 
@@ -487,7 +531,7 @@ class TestUsersAPI(APITestCase):
             # 2 queries: 1 for locations, 1 for location-users
             response = self.client.get(url)
         self.assertEquals(200, response.status_code)
-        data = json.loads(response.content)
+        data = json.loads(response.content.decode('utf-8'))
         self.assertEquals(len(data['locations']), 1)
         self.assertEquals(len(data['locations'][0]['users']), 2)
 
@@ -497,7 +541,7 @@ class TestUsersAPI(APITestCase):
             # 2 queries: 1 for locations, 1 for location-users
             response = self.client.get(url)
         self.assertEquals(200, response.status_code)
-        data = json.loads(response.content)
+        data = json.loads(response.content.decode('utf-8'))
         self.assertEquals(len(data['locations']), 1)
         self.assertEquals(len(data['locations'][0]['users']), 2)
         self.assertEquals(data['locations'][0]['user_count'], 2)
@@ -507,7 +551,7 @@ class TestUsersAPI(APITestCase):
         with self.assertNumQueries(1):
             response = self.client.get(url)
         self.assertEquals(200, response.status_code)
-        data = json.loads(response.content)
+        data = json.loads(response.content.decode('utf-8'))
         self.assertEquals(len(data['users']), 2)
 
     def test_get_with_include_invalid(self):
@@ -526,7 +570,7 @@ class TestUsersAPI(APITestCase):
             '/users/', json.dumps(data), content_type='application/json')
         self.assertEquals(201, response.status_code)
         self.assertEquals(
-            json.loads(response.content),
+            json.loads(response.content.decode('utf-8')),
             {
                 "user": {
                     "id": 5,
@@ -558,14 +602,14 @@ class TestUsersAPI(APITestCase):
     def test_get_with_default_queryset(self):
         url = '/groups/?filter{id}=1&include[]=loc1users'
         response = self.client.get(url)
-        content = json.loads(response.content)
+        content = json.loads(response.content.decode('utf-8'))
         self.assertEqual(200, response.status_code)
         self.assertEqual(sorted([1, 2]), content['groups'][0]['loc1users'])
 
     def test_get_with_default_lambda_queryset(self):
         url = '/groups/?filter{id}=1&include[]=loc1usersLambda'
         response = self.client.get(url)
-        content = json.loads(response.content)
+        content = json.loads(response.content.decode('utf-8'))
         self.assertEqual(200, response.status_code)
         self.assertEqual(
             sorted([1, 2]),
@@ -583,7 +627,7 @@ class TestUsersAPI(APITestCase):
             '&filter{loc1users|id.in}=1'
         )
         response = self.client.get(url)
-        content = json.loads(response.content)
+        content = json.loads(response.content.decode('utf-8'))
         self.assertEqual(200, response.status_code)
         self.assertEqual([1], content['groups'][0]['loc1users'])
 
@@ -597,7 +641,7 @@ class TestUsersAPI(APITestCase):
 
         url = '/groups/?filter{members.id}=%s&include[]=members' % user.pk
         response = self.client.get(url)
-        content = json.loads(response.content)
+        content = json.loads(response.content.decode('utf-8'))
         self.assertEqual(200, response.status_code)
         self.assertEqual(1, len(content['groups']))
         self.assertEqual(group.pk, content['groups'][0]['id'])
@@ -608,7 +652,7 @@ class TestUsersAPI(APITestCase):
         )
         response = self.client.get(url)
         self.assertEqual(200, response.status_code)
-        content = json.loads(response.content)
+        content = json.loads(response.content.decode('utf-8'))
         self.assertEqual(1, len(content['users']))
 
     def test_get_with_filter_invalid(self):
@@ -626,7 +670,7 @@ class TestUsersAPI(APITestCase):
         url = '/users/?filter{groups.id}=%s' % grp.pk
         response = self.client.get(url)
         self.assertEqual(200, response.status_code)
-        content = json.loads(response.content)
+        content = json.loads(response.content.decode('utf-8'))
         self.assertEqual(1, len(content['users']))
         self.assertEqual(user.pk, content['users'][0]['id'])
 
@@ -643,25 +687,25 @@ class TestUsersAPI(APITestCase):
 
         url = '/users/?filter{location.isnull}=0'
         response = self.client.get(url)
-        content = json.loads(response.content)
+        content = json.loads(response.content.decode('utf-8'))
         self.assertEqual(200, response.status_code)
         self.assertEqual(expected, len(content['users']))
 
         url = '/users/?filter{location.isnull}=False'
         response = self.client.get(url)
-        content = json.loads(response.content)
+        content = json.loads(response.content.decode('utf-8'))
         self.assertEqual(200, response.status_code)
         self.assertEqual(expected, len(content['users']))
 
         url = '/users/?filter{location.isnull}=1'
         response = self.client.get(url)
-        content = json.loads(response.content)
+        content = json.loads(response.content.decode('utf-8'))
         self.assertEqual(200, response.status_code)
         self.assertEqual(1, len(content['users']))
 
         url = '/users/?filter{-location.isnull}=True'
         response = self.client.get(url)
-        content = json.loads(response.content)
+        content = json.loads(response.content.decode('utf-8'))
         self.assertEqual(200, response.status_code)
         self.assertEqual(expected, len(content['users']))
 
@@ -677,7 +721,7 @@ class TestUsersAPI(APITestCase):
             '&include[]=thumbnail_url' % u1.pk
         )
         response = self.client.get(url)
-        content = json.loads(response.content)
+        content = json.loads(response.content.decode('utf-8'))
         self.assertEqual(200, response.status_code)
         self.assertIsNotNone(content['users'][0]['display_name'])
         self.assertIsNotNone(content['users'][0]['thumbnail_url'])
@@ -704,7 +748,7 @@ class TestUsersAPI(APITestCase):
         with self.assertNumQueries(3):
             response = self.client.get(url)
             self.assertEqual(200, response.status_code)
-            content = json.loads(response.content)
+            content = json.loads(response.content.decode('utf-8'))
             self.assertIsNotNone(content['profiles'][0]['user_location_name'])
 
     def test_get_with_dynamic_method_field(self):
@@ -734,7 +778,7 @@ class TestUsersAPI(APITestCase):
                     'name': '3',
                     'number_of_cats': 0,
                 }]
-            }, json.loads(response.content))
+            }, json.loads(response.content.decode('utf-8')))
 
     def test_get_with_request_filters_and_requires(self):
         """
@@ -803,7 +847,7 @@ class TestUsersAPI(APITestCase):
                     'name': '3',
                     'number_of_cats': 0,
                 }]
-            }, json.loads(response.content))
+            }, json.loads(response.content.decode('utf-8')))
 
 
 class TestLocationsAPI(APITestCase):
@@ -811,31 +855,11 @@ class TestLocationsAPI(APITestCase):
     def setUp(self):
         self.fixture = create_fixture()
 
-    def test_post_with_metadata(self):
-        """Test create -- mostly a test for 'metadata' JSON field"""
-        data = {
-            'name': 'test location',
-            'metadata': {
-                'foo': 'bar',
-                'baz': 'booz'
-            }
-        }
-        url = '/locations/'
-        response = self.client.post(
-            url,
-            data=json.dumps(data),
-            content_type='application/json'
-        )
-
-        self.assertEqual(201, response.status_code)
-        content = json.loads(response.content)
-        self.assertEqual(content['location']['metadata'], data['metadata'])
-
     def test_get_with_filter_by_user(self):
         url = '/locations/?filter{users}=1'
         response = self.client.get(url)
         self.assertEqual(200, response.status_code)
-        content = json.loads(response.content)
+        content = json.loads(response.content.decode('utf-8'))
         self.assertEqual(1, len(content['locations']))
 
     def test_get_with_filter_rewrites(self):
@@ -874,11 +898,11 @@ class TestRelationsAPI(APITestCase):
     def test_location_users_relations_identical_to_sideload(self):
         r1 = self.client.get('/locations/1/?include[]=users.')
         self.assertEqual(200, r1.status_code)
-        r1_data = json.loads(r1.content)
+        r1_data = json.loads(r1.content.decode('utf-8'))
 
         r2 = self.client.get('/locations/1/users/')
         self.assertEqual(200, r2.status_code)
-        r2_data = json.loads(r2.content)
+        r2_data = json.loads(r2.content.decode('utf-8'))
 
         self.assertEqual(r2_data['users'], r1_data['users'])
 
@@ -886,13 +910,13 @@ class TestRelationsAPI(APITestCase):
         r = self.client.get('/locations/1/users/?include[]=location.')
         self.assertEqual(200, r.status_code)
 
-        content = json.loads(r.content)
+        content = json.loads(r.content.decode('utf-8'))
         self.assertTrue('locations' in content)
 
     def test_relation_excludes(self):
         r = self.client.get('/locations/1/users/?exclude[]=location')
         self.assertEqual(200, r.status_code)
-        content = json.loads(r.content)
+        content = json.loads(r.content.decode('utf-8'))
 
         self.assertFalse('location' in content['users'][0])
 
@@ -916,7 +940,7 @@ class TestUserLocationsAPI(APITestCase):
             response = self.client.get(url)
 
         self.assertEqual(200, response.status_code)
-        content = json.loads(response.content)
+        content = json.loads(response.content.decode('utf-8'))
         groups = content['user_location']['groups']
         location = content['user_location']['location']
         self.assertEqual(content['user_location']['location']['name'], '0')
@@ -933,7 +957,7 @@ class TestLinks(APITestCase):
     def test_deferred_relations_have_links(self):
         r = self.client.get('/v2/cats/1/')
         self.assertEqual(200, r.status_code)
-        content = json.loads(r.content)
+        content = json.loads(r.content.decode('utf-8'))
 
         cat = content['cat']
         self.assertTrue('links' in cat)
@@ -955,7 +979,7 @@ class TestLinks(APITestCase):
     def test_including_empty_relation_hides_link(self):
         r = self.client.get('/v2/cats/1/?include[]=foobar')
         self.assertEqual(200, r.status_code)
-        content = json.loads(r.content)
+        content = json.loads(r.content.decode('utf-8'))
 
         # 'foobar' is included but empty, so don't return a link
         cat = content['cat']
@@ -966,7 +990,7 @@ class TestLinks(APITestCase):
         url = '/v2/cats/1/?include=backup_home'
         r = self.client.get(url)
         self.assertEqual(200, r.status_code)
-        content = json.loads(r.content)
+        content = json.loads(r.content.decode('utf-8'))
 
         cat = content['cat']
         self.assertTrue('backup_home' in cat['links'])
@@ -976,20 +1000,12 @@ class TestLinks(APITestCase):
         url = '/v2/cats/1/?include[]=backup_home.'
         r = self.client.get(url)
         self.assertEqual(200, r.status_code)
-        content = json.loads(r.content)
+        content = json.loads(r.content.decode('utf-8'))
 
         cat = content['cat']
         self.assertTrue('backup_home' in cat)
         self.assertTrue('locations' in content)  # check for sideload
         self.assertFalse('backup_home' in cat['links'])  # no link
-
-    def test_unicode_values(self):
-        url = u'/v2/cats/?foo=☂'
-        r = self.client.get(
-            url,
-            content_type='application/json'
-        )
-        self.assertEqual(200, r.status_code)
 
     def test_one_to_one_dne(self):
         user = User.objects.create(name='foo', last_name='bar')
@@ -998,7 +1014,7 @@ class TestLinks(APITestCase):
         r = self.client.get(url)
         self.assertEqual(200, r.status_code)
         # Check error message to differentiate from a routing error 404
-        content = json.loads(r.content)
+        content = json.loads(r.content.decode('utf-8'))
         self.assertEqual({}, content)
 
     def test_ephemeral_object_link(self):
@@ -1056,7 +1072,8 @@ class TestDogsAPI(APITestCase):
             'origin': 'Tom and Jerry',
             'fur': 'light-brown'
         }]
-        actual_response = json.loads(response.content).get('dogs')
+        actual_response = json.loads(
+            response.content.decode('utf-8')).get('dogs')
         self.assertEquals(expected_response, actual_response)
 
     def test_sort_reverse(self):
@@ -1091,7 +1108,8 @@ class TestDogsAPI(APITestCase):
             'origin': 'Air Bud 4: Seventh Inning Fetch',
             'fur': 'gold'
         }]
-        actual_response = json.loads(response.content).get('dogs')
+        actual_response = json.loads(
+            response.content.decode('utf-8')).get('dogs')
         self.assertEquals(expected_response, actual_response)
 
     def test_sort_multiple(self):
@@ -1126,7 +1144,8 @@ class TestDogsAPI(APITestCase):
             'origin': 'Air Bud 4: Seventh Inning Fetch',
             'fur': 'gold'
         }]
-        actual_response = json.loads(response.content).get('dogs')
+        actual_response = json.loads(
+            response.content.decode('utf-8')).get('dogs')
         self.assertEquals(expected_response, actual_response)
 
     def test_sort_rewrite(self):
@@ -1161,7 +1180,8 @@ class TestDogsAPI(APITestCase):
             'origin': 'Clifford the big red dog',
             'fur': 'red'
         }]
-        actual_response = json.loads(response.content).get('dogs')
+        actual_response = json.loads(
+            response.content.decode('utf-8')).get('dogs')
         self.assertEquals(expected_response, actual_response)
 
     def test_sort_invalid(self):
@@ -1202,7 +1222,7 @@ class TestHorsesAPI(APITestCase):
                 'origin': 'LA'
             }]
         }
-        actual_response = json.loads(response.content)
+        actual_response = json.loads(response.content.decode('utf-8'))
         self.assertEquals(expected_response, actual_response)
 
     def test_sort_with_field_not_allowed(self):
@@ -1244,7 +1264,7 @@ class TestZebrasAPI(APITestCase):
                 'origin': 'new york'
             }]
         }
-        actual_response = json.loads(response.content)
+        actual_response = json.loads(response.content.decode('utf-8'))
         self.assertEquals(expected_response, actual_response)
 
 
@@ -1256,7 +1276,7 @@ class TestBrowsableAPI(APITestCase):
 
     def test_get_root(self):
         response = self.client.get('/?format=api')
-        content = response.content
+        content = response.content.decode('utf-8')
         self.assertIn('side-panel', content)
         self.assertIn('/horses', content)
         self.assertIn('/zebras', content)
@@ -1264,7 +1284,7 @@ class TestBrowsableAPI(APITestCase):
 
     def test_get_list(self):
         response = self.client.get('/users/?format=api')
-        content = response.content
+        content = response.content.decode('utf-8')
         self.assertIn('side-panel', content)
         self.assertIn('/horses', content)
         self.assertIn('/zebras', content)

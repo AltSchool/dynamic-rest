@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import QueryDict
-from django.utils.datastructures import MergeDict
+from django.utils import six
 from rest_framework import exceptions, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
@@ -28,7 +28,10 @@ class QueryParams(QueryDict):
         if hasattr(query_params, 'urlencode'):
             query_string = query_params.urlencode()
         else:
-            assert isinstance(query_params, str)
+            assert isinstance(
+                query_params,
+                (six.string_types, six.binary_type)
+            )
             query_string = query_params
         kwargs['mutable'] = True
         super(QueryParams, self).__init__(query_string, *args, **kwargs)
@@ -50,6 +53,7 @@ class QueryParams(QueryDict):
 
 
 class WithDynamicViewSetMixin(object):
+
     """A viewset that can support dynamic API features.
 
     Attributes:
@@ -77,7 +81,7 @@ class WithDynamicViewSetMixin(object):
     def initialize_request(self, request, *args, **kargs):
         """
         Override DRF initialize_request() method to swap request.GET
-        (which is aliased by request.QUERY_PARAMS) with a mutable instance
+        (which is aliased by request.query_params) with a mutable instance
         of QueryParams, and to convert request MergeDict to a subclass of dict
         for consistency (MergeDict is not a subclass of dict)
         """
@@ -95,15 +99,21 @@ class WithDynamicViewSetMixin(object):
             request, *args, **kargs
         )
 
-        # MergeDict doesn't have the same API as dict.
-        # Django has deprecated MergeDict and DRF is moving away from
-        # using it - thus, were comfortable replacing it with a QueryDict
-        # This will allow the data property to have normal dict methods.
-        if isinstance(request._full_data, MergeDict):
-            data_as_dict = request.data.dicts[0]
-            for d in request.data.dicts[1:]:
-                data_as_dict.update(d)
-            request._full_data = data_as_dict
+        try:
+            # Django<1.9, DRF<3.2
+
+            # MergeDict doesn't have the same API as dict.
+            # Django has deprecated MergeDict and DRF is moving away from
+            # using it - thus, were comfortable replacing it with a QueryDict
+            # This will allow the data property to have normal dict methods.
+            from django.utils.datastructures import MergeDict
+            if isinstance(request._full_data, MergeDict):
+                data_as_dict = request.data.dicts[0]
+                for d in request.data.dicts[1:]:
+                    data_as_dict.update(d)
+                request._full_data = data_as_dict
+        except:
+            pass
 
         return request
 
@@ -128,7 +138,7 @@ class WithDynamicViewSetMixin(object):
         """
         if '[]' in name:
             # array-type
-            return self.request.QUERY_PARAMS.getlist(
+            return self.request.query_params.getlist(
                 name) if name in self.features else None
         elif '{}' in name:
             # object-type (keys are not consistent)
@@ -136,7 +146,7 @@ class WithDynamicViewSetMixin(object):
                 name) if name in self.features else {}
         else:
             # single-type
-            return self.request.QUERY_PARAMS.get(
+            return self.request.query_params.get(
                 name) if name in self.features else None
 
     def _extract_object_params(self, name):
@@ -245,9 +255,9 @@ class WithDynamicViewSetMixin(object):
         if self.PAGE in self.features:
             # make sure pagination is enabled
             if self.PER_PAGE not in self.features and \
-                    self.PER_PAGE in self.request.QUERY_PARAMS:
+                    self.PER_PAGE in self.request.query_params:
                 # remove per_page if it is disabled
-                self.request.QUERY_PARAMS[self.PER_PAGE] = None
+                self.request.query_params[self.PER_PAGE] = None
             return super(
                 WithDynamicViewSetMixin, self).paginate_queryset(
                 *args, **kwargs)

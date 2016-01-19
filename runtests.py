@@ -1,4 +1,6 @@
 #! /usr/bin/env python
+# Adopted from Django REST Framework:
+# https://github.com/tomchristie/django-rest-framework/blob/master/runtests.py
 from __future__ import print_function
 
 import os

@@ -2,6 +2,7 @@ from collections import OrderedDict
 
 from django.conf import settings
 from django.test import TestCase
+from django.utils import six
 
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.serializers import DynamicListSerializer, EphemeralObject
@@ -33,13 +34,13 @@ class TestDynamicSerializer(TestCase):
         self.assertEqual(serializer.data, {
             'users': [
                 OrderedDict(
-                    [('id', 1), ('name', u'0'), ('location', 1)]),
+                    [('id', 1), ('name', '0'), ('location', 1)]),
                 OrderedDict(
-                    [('id', 2), ('name', u'1'), ('location', 1)]),
+                    [('id', 2), ('name', '1'), ('location', 1)]),
                 OrderedDict(
-                    [('id', 3), ('name', u'2'), ('location', 2)]),
+                    [('id', 3), ('name', '2'), ('location', 2)]),
                 OrderedDict(
-                    [('id', 4), ('name', u'3'), ('location', 3)])
+                    [('id', 4), ('name', '3'), ('location', 3)])
             ]
         })
 
@@ -55,17 +56,17 @@ class TestDynamicSerializer(TestCase):
         self.assertEqual(serializer.data, {
             'users': [
                 OrderedDict(
-                    [('id', 1), ('name', u'0'),
-                     ('location', 1), ('last_name', u'0')]),
+                    [('id', 1), ('name', '0'),
+                     ('location', 1), ('last_name', '0')]),
                 OrderedDict(
-                    [('id', 2), ('name', u'1'),
-                     ('location', 1), ('last_name', u'1')]),
+                    [('id', 2), ('name', '1'),
+                     ('location', 1), ('last_name', '1')]),
                 OrderedDict(
-                    [('id', 3), ('name', u'2'),
-                     ('location', 2), ('last_name', u'2')]),
+                    [('id', 3), ('name', '2'),
+                     ('location', 2), ('last_name', '2')]),
                 OrderedDict(
-                    [('id', 4), ('name', u'3'),
-                     ('location', 3), ('last_name', u'3')])
+                    [('id', 4), ('name', '3'),
+                     ('location', 3), ('last_name', '3')])
             ]
         })
 
@@ -81,13 +82,13 @@ class TestDynamicSerializer(TestCase):
         self.assertEqual(serializer.data, {
             'users': [
                 OrderedDict(
-                    [('id', 1), ('name', u'0')]),
+                    [('id', 1), ('name', '0')]),
                 OrderedDict(
-                    [('id', 2), ('name', u'1')]),
+                    [('id', 2), ('name', '1')]),
                 OrderedDict(
-                    [('id', 3), ('name', u'2')]),
+                    [('id', 3), ('name', '2')]),
                 OrderedDict(
-                    [('id', 4), ('name', u'3')])
+                    [('id', 4), ('name', '3')])
             ]
         })
 
@@ -103,30 +104,30 @@ class TestDynamicSerializer(TestCase):
         self.assertEqual(serializer.data, {
             'locations': [{
                 'id': 1,
-                'name': u'0'
+                'name': '0'
             }, {
                 'id': 2,
-                'name': u'1'
+                'name': '1'
             }, {
                 'id': 3,
-                'name': u'2'
+                'name': '2'
             }],
             'users': [{
                 'location': 1,
                 'id': 1,
-                'name': u'0'
+                'name': '0'
             }, {
                 'location': 1,
                 'id': 2,
-                'name': u'1'
+                'name': '1'
             }, {
                 'location': 2,
                 'id': 3,
-                'name': u'2'
+                'name': '2'
             }, {
                 'location': 3,
                 'id': 4,
-                'name': u'3'
+                'name': '3'
             }]
         })
 
@@ -137,12 +138,12 @@ class TestDynamicSerializer(TestCase):
         self.assertEqual(serializer.data, {
             'locations': [{
                 'id': 1,
-                'name': u'0'
+                'name': '0'
             }],
             'user': {
                 'location': 1,
                 'id': 1,
-                'name': u'0'
+                'name': '0'
             }
         })
 
@@ -151,52 +152,52 @@ class TestDynamicSerializer(TestCase):
             'groups': {}
         }
         expected = {
-            "users": [
+            'users': [
                 {
-                    "id": 1,
-                    "name": "0",
-                    "groups": [
+                    'id': 1,
+                    'name': '0',
+                    'groups': [
                         1,
                         2
                     ],
-                    "location": 1
+                    'location': 1
                 },
                 {
-                    "id": 2,
-                    "name": "1",
-                    "groups": [
+                    'id': 2,
+                    'name': '1',
+                    'groups': [
                         1,
                         2
                     ],
-                    "location": 1
+                    'location': 1
                 },
                 {
-                    "id": 3,
-                    "name": "2",
-                    "groups": [
+                    'id': 3,
+                    'name': '2',
+                    'groups': [
                         1,
                         2
                     ],
-                    "location": 2
+                    'location': 2
                 },
                 {
-                    "id": 4,
-                    "name": "3",
-                    "groups": [
+                    'id': 4,
+                    'name': '3',
+                    'groups': [
                         1,
                         2
                     ],
-                    "location": 3
+                    'location': 3
                 }
             ],
-            "groups": [
+            'groups': [
                 {
-                    "id": 1,
-                    "name": "0"
+                    'id': 1,
+                    'name': '0'
                 },
                 {
-                    "id": 2,
-                    "name": "1"
+                    'id': 2,
+                    'name': '1'
                 }
             ]
         }
@@ -212,33 +213,33 @@ class TestDynamicSerializer(TestCase):
         }
 
         expected = {
-            "users": [
+            'users': [
                 {
-                    "id": 1,
-                    "name": "0",
-                    "location": 1
+                    'id': 1,
+                    'name': '0',
+                    'location': 1
                 },
                 {
-                    "id": 2,
-                    "name": "1",
-                    "location": 1
+                    'id': 2,
+                    'name': '1',
+                    'location': 1
                 },
                 {
-                    "id": 3,
-                    "name": "2",
-                    "location": 2
+                    'id': 3,
+                    'name': '2',
+                    'location': 2
                 },
                 {
-                    "id": 4,
-                    "name": "3",
-                    "location": 3
+                    'id': 4,
+                    'name': '3',
+                    'location': 3
                 }
             ],
-            "groups": [
+            'groups': [
                 {
-                    "id": 1,
-                    "name": "0",
-                    "members": [
+                    'id': 1,
+                    'name': '0',
+                    'members': [
                         1,
                         2,
                         3,
@@ -246,9 +247,9 @@ class TestDynamicSerializer(TestCase):
                     ]
                 },
                 {
-                    "id": 2,
-                    "name": "1",
-                    "members": [
+                    'id': 2,
+                    'name': '1',
+                    'members': [
                         1,
                         2,
                         3,
@@ -277,56 +278,56 @@ class TestDynamicSerializer(TestCase):
             request_fields=request_fields,
             sideload=True)
         expected = {
-            "users": [
+            'users': [
                 {
-                    "id": 1,
-                    "name": "0",
-                    "groups": [
+                    'id': 1,
+                    'name': '0',
+                    'groups': [
                         1,
                         2
                     ],
-                    "location": 1
+                    'location': 1
                 },
                 {
-                    "id": 2,
-                    "name": "1",
-                    "groups": [
+                    'id': 2,
+                    'name': '1',
+                    'groups': [
                         1,
                         2
                     ],
-                    "location": 1
+                    'location': 1
                 },
                 {
-                    "id": 3,
-                    "name": "2",
-                    "groups": [
+                    'id': 3,
+                    'name': '2',
+                    'groups': [
                         1,
                         2
                     ],
-                    "location": 2
+                    'location': 2
                 },
                 {
-                    "id": 4,
-                    "name": "3",
-                    "groups": [
+                    'id': 4,
+                    'name': '3',
+                    'groups': [
                         1,
                         2
                     ],
-                    "location": 3
+                    'location': 3
                 }
             ],
-            "groups": [
+            'groups': [
                 {
-                    "id": 1,
-                    "name": "0",
-                    "permissions": [
+                    'id': 1,
+                    'name': '0',
+                    'permissions': [
                         1
                     ]
                 },
                 {
-                    "id": 2,
-                    "name": "1",
-                    "permissions": [
+                    'id': 2,
+                    'name': '1',
+                    'permissions': [
                         2
                     ]
                 }
@@ -355,38 +356,38 @@ class TestDynamicSerializer(TestCase):
                 'location': 1,
                 'id': 1,
                 'groups': [1, 2],
-                'name': u'0'
+                'name': '0'
             }, {
                 'location': 1,
                 'id': 2,
                 'groups': [1, 2],
-                'name': u'1'
+                'name': '1'
             }, {
                 'location': 2,
                 'id': 3,
                 'groups': [1, 2],
-                'name': u'2'
+                'name': '2'
             }, {
                 'location': 3,
                 'id': 4,
                 'groups': [1, 2],
-                'name': u'3'
+                'name': '3'
             }]
         })
 
     def test_get_all_fields(self):
         s = GroupSerializer()
-        all_keys1 = s.get_all_fields().keys()
+        all_keys1 = six.iterkeys(s.get_all_fields())
         f2 = s.fields
-        all_keys2 = s.get_all_fields().keys()
+        all_keys2 = six.iterkeys(s.get_all_fields())
         expected = ['id', 'name']
-        self.assertEqual(f2.keys(), expected)
-        self.assertEqual(all_keys1, all_keys2)
+        self.assertEqual(list(six.iterkeys(f2)), expected)
+        self.assertEqual(list(all_keys1), list(all_keys2))
 
     def test_get_fields_with_only_fields(self):
         expected = ['id', 'last_name']
         serializer = UserSerializer(only_fields=expected)
-        self.assertEqual(serializer.fields.keys(), expected)
+        self.assertEqual(list(six.iterkeys(serializer.fields)), expected)
 
     def test_get_fields_with_only_fields_and_request_fields(self):
         expected = ['id', 'permissions']
@@ -396,7 +397,7 @@ class TestDynamicSerializer(TestCase):
                 'permissions': {}
             }
         )
-        self.assertEqual(serializer.fields.keys(), expected)
+        self.assertEqual(list(six.iterkeys(serializer.fields)), expected)
         self.assertEqual(serializer.request_fields['permissions'], {})
 
     def test_get_fields_with_only_fields_and_include_fields(self):
@@ -405,50 +406,56 @@ class TestDynamicSerializer(TestCase):
             only_fields=expected,
             include_fields=['permissions']
         )
-        self.assertEqual(serializer.fields.keys(), expected)
+        self.assertEqual(list(six.iterkeys(serializer.fields)), expected)
 
     def test_get_fields_with_include_all(self):
-        expected = UserSerializer().get_all_fields().keys()
+        expected = six.iterkeys(UserSerializer().get_all_fields())
         serializer = UserSerializer(
             include_fields='*'
         )
-        self.assertEqual(serializer.fields.keys(), expected)
+        self.assertEqual(list(six.iterkeys(serializer.fields)), list(expected))
 
     def test_get_fields_with_include_all_and_exclude(self):
-        expected = UserSerializer().get_all_fields().keys()
+        expected = six.iterkeys(UserSerializer().get_all_fields())
         serializer = UserSerializer(
             include_fields='*',
             exclude_fields=['id']
         )
-        self.assertEqual(serializer.fields.keys(), expected)
+        self.assertEqual(list(six.iterkeys(serializer.fields)), list(expected))
 
     def test_get_fields_with_include_fields(self):
         include = ['permissions']
-        expected = set(UserSerializer().get_fields().keys()) | set(include)
+        expected = set(
+            six.iterkeys(UserSerializer().get_fields())
+        ) | set(include)
         serializer = UserSerializer(
             include_fields=include
         )
-        self.assertEqual(set(serializer.fields.keys()), expected)
+        self.assertEqual(set(six.iterkeys(serializer.fields)), expected)
 
     def test_get_fields_with_include_fields_and_request_fields(self):
         include = ['permissions']
-        expected = set(UserSerializer().get_fields().keys()) | set(include)
+        expected = set(
+            six.iterkeys(UserSerializer().get_fields())
+        ) | set(include)
         serializer = UserSerializer(
             include_fields=include,
             request_fields={
                 'permissions': {}
             }
         )
-        self.assertEqual(set(serializer.fields.keys()), expected)
+        self.assertEqual(set(six.iterkeys(serializer.fields)), expected)
         self.assertEqual(serializer.request_fields['permissions'], {})
 
     def test_get_fields_with_exclude_fields(self):
         exclude = ['id']
-        expected = set(UserSerializer().get_fields().keys()) - set(exclude)
+        expected = set(
+            six.iterkeys(UserSerializer().get_fields())
+        ) - set(exclude)
         serializer = UserSerializer(
             exclude_fields=exclude,
         )
-        self.assertEqual(set(serializer.fields.keys()), expected)
+        self.assertEqual(set(six.iterkeys(serializer.fields)), expected)
 
     def test_serializer_propagation_consistency(self):
         s = CatSerializer(
@@ -508,7 +515,7 @@ class TestEphemeralSerializer(TestCase):
             CountsSerializer(eo).data
 
     def test_to_representation_if_id_only(self):
-        """ Test EphemeralSerializer.to_representation() in id_only mode """
+        ''' Test EphemeralSerializer.to_representation() in id_only mode '''
         eo = EphemeralObject({'pk': 1, 'values': None})
         data = CountsSerializer(request_fields=True).to_representation(eo)
 
@@ -537,7 +544,7 @@ class TestUserLocationSerializer(TestCase):
             self.fixture.users[0], sideload=True).data
         self.assertEqual(data['user_location']['location']['name'], '0')
         self.assertEqual(
-            ["0", "1"],
+            ['0', '1'],
             sorted([g['name'] for g in data['user_location']['groups']])
         )
 
@@ -585,13 +592,13 @@ class TestSerializerCaching(TestCase):
         self.assertNotEqual(
             home_field_1,
             home_field_2,
-            "Expected different field instances, got same."
+            'Expected different field instances, got same.'
         )
 
         self.assertEqual(
             home_field_1.serializer,
             home_field_2.serializer,
-            "Expected same serializer instance, got different."
+            'Expected same serializer instance, got different.'
         )
 
     def test_serializer_args_busts_cache(self):
@@ -601,8 +608,8 @@ class TestSerializerCaching(TestCase):
             home_field.get_serializer(),
             home_field.get_serializer('foo'),
             (
-                "Passing arg to get_serializer should construct new"
-                " serializer. Instead got same one."
+                'Passing arg to get_serializer should construct new'
+                ' serializer. Instead got same one.'
             )
         )
 
@@ -616,8 +623,8 @@ class TestSerializerCaching(TestCase):
             home_field.serializer,
             backup_home_field.serializer,
             (
-                "Different fields that use same serializer should get",
-                " separate serializer instances."
+                'Different fields that use same serializer should get',
+                ' separate serializer instances.'
             )
         )
 
@@ -632,7 +639,7 @@ class TestSerializerCaching(TestCase):
         self.assertIsNot(
             home1.serializer,
             home2.serializer,
-            "Different root serializers should yield different instances."
+            'Different root serializers should yield different instances.'
         )
 
     def test_root_serializer_cycle_busting(self):

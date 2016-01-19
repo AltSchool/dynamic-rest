@@ -1,5 +1,6 @@
 from collections import OrderedDict
 
+from django.utils import six
 from rest_framework import views
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -26,12 +27,12 @@ def get_directory(request):
     # structure, for now it is capped at a single level
     # for UX reasons
     for group_name, endpoints in sorted(
-        directory.iteritems(),
+        six.iteritems(directory),
         key=sort_key
     ):
         endpoints_list = []
         for endpoint_name, endpoint in sorted(
-            endpoints.iteritems(),
+            six.iteritems(endpoints),
             key=sort_key
         ):
             if endpoint_name == '_url':
@@ -164,7 +165,7 @@ class DynamicRouter(DefaultRouter):
 
         route_name = '{basename}-{methodnamehyphen}'
 
-        for field_name, field in fields.iteritems():
+        for field_name, field in six.iteritems(fields):
             # Only apply to DynamicRelationFields
             # TODO(ryo): Maybe also apply in cases where fields are mapped
             #            directly to serializers?

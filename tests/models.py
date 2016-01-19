@@ -1,4 +1,3 @@
-from annoying.fields import JSONField
 from django.db import models
 
 
@@ -62,7 +61,6 @@ class Permission(models.Model):
 class Location(models.Model):
     name = models.TextField()
     blob = models.TextField()
-    metadata = JSONField(null=True, blank=True)
 
 
 class Event(models.Model):

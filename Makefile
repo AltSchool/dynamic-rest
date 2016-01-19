@@ -40,7 +40,8 @@ clean_working_directory:
 
 # Full clean
 clean: clean_working_directory
-	rm -rf $(INSTALL_DIR)
+	$(call header,"Cleaning all build files")
+	@rm -rf $(INSTALL_DIR)
 
 # Run tests
 test: lint install

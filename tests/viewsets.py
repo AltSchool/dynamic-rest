@@ -1,4 +1,3 @@
-from django.utils.datastructures import MergeDict
 from rest_framework import exceptions
 
 from dynamic_rest.viewsets import DynamicModelViewSet
@@ -19,14 +18,14 @@ class UserViewSet(DynamicModelViewSet):
     queryset = User.objects.all()
 
     def get_queryset(self):
-        location = self.request.QUERY_PARAMS.get('location')
+        location = self.request.query_params.get('location')
         qs = self.queryset
         if location:
             qs = qs.filter(location=location)
         return qs
 
     def list(self, request, *args, **kwargs):
-        query_params = self.request.QUERY_PARAMS
+        query_params = self.request.query_params
         # for testing query param injection
         if query_params.get('name'):
             query_params.add('filter{name}', query_params.get('name'))
@@ -40,10 +39,21 @@ class GroupNoMergeDictViewSet(DynamicModelViewSet):
 
     def create(self, request, *args, **kwargs):
         if hasattr(request, 'data'):
+            try:
+                # Django<1.9, DRF<3.2
+                from django.utils.datastructures import MergeDict
+            except:
+                return super(GroupNoMergeDictViewSet, self).create(
+                    request,
+                    *args,
+                    **kwargs
+                )
+
             if isinstance(request.data, MergeDict):
                 raise exceptions.ValidationError("request.data is MergeDict")
             elif not isinstance(request.data, dict):
                 raise exceptions.ValidationError("request.data is not a dict")
+
         return super(GroupNoMergeDictViewSet, self).create(
             request,
             *args,

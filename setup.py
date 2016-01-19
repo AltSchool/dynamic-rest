@@ -1,7 +1,14 @@
 from setuptools import find_packages, setup
 
-from constants import (APP_NAME, AUTHOR, AUTHOR_EMAIL, DESCRIPTION, ORG_NAME,
-                       REPO_NAME, VERSION)
+from constants import (
+    APP_NAME,
+    AUTHOR,
+    AUTHOR_EMAIL,
+    DESCRIPTION,
+    ORG_NAME,
+    REPO_NAME,
+    VERSION
+)
 
 EXCLUDE_FROM_PACKAGES = []
 
@@ -16,7 +23,6 @@ setup(
     name=APP_NAME,
     packages=find_packages(exclude=EXCLUDE_FROM_PACKAGES),
     scripts=['manage.py'],
-    test_suite='runtests.runtests',
     url='http://github.com/%s/%s' % (ORG_NAME, REPO_NAME),
     version=VERSION,
 )
