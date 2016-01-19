@@ -15,7 +15,7 @@ from tests.serializers import (
     LocationSerializer,
     NestedEphemeralSerializer,
     UserLocationSerializer,
-    UserSerializer,
+    UserSerializer
 )
 from tests.setup import create_fixture
 

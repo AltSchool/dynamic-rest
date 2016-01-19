@@ -23,6 +23,9 @@ MIDDLEWARE_CLASSES = ()
 INSTALLED_APPS = (
     'rest_framework',
     'django.contrib.staticfiles',
+    'django.contrib.contenttypes',
+    'django.contrib.auth',
+    'django.contrib.sites',
     'tests',
 )
 

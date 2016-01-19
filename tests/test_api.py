@@ -5,13 +5,7 @@ from django.db import connection
 from django.utils import six
 from rest_framework.test import APITestCase
 
-from tests.models import (
-    Cat,
-    Group,
-    Location,
-    Profile,
-    User,
-)
+from tests.models import Cat, Group, Location, Profile, User
 from tests.serializers import NestedEphemeralSerializer
 from tests.setup import create_fixture
 
@@ -30,7 +24,8 @@ class TestUsersAPI(APITestCase):
     def test_options(self):
         response = self.client.options('/users/')
         self.assertEquals(200, response.status_code)
-        self.assertEquals({
+        actual = json.loads(response.content.decode('utf-8'))
+        expected = {
             'description': '',
             'features': ['include[]', 'exclude[]', 'filter{}', 'sort[]'],
             'name': 'User List',
@@ -110,7 +105,7 @@ class TestUsersAPI(APITestCase):
                 'profile': {
                     'default': None,
                     'label': 'Profile',
-                    'nullable': False,
+                    'nullable': True,
                     'read_only': False,
                     'related_to': 'profiles',
                     'required': False,
@@ -128,7 +123,11 @@ class TestUsersAPI(APITestCase):
             'renders': ['application/json', 'text/html'],
             'resource_name': 'user',
             'resource_name_plural': 'users'
-        }, json.loads(response.content.decode('utf-8')))
+        }
+        self.assertEquals(
+            json.loads(json.dumps(expected)),
+            json.loads(json.dumps(actual))
+        )
 
     def test_get(self):
         with self.assertNumQueries(1):

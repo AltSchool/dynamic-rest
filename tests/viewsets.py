@@ -1,11 +1,27 @@
 from rest_framework import exceptions
 
 from dynamic_rest.viewsets import DynamicModelViewSet
-from tests.models import Cat, Dog, Group, Horse, Location, Profile, User, Zebra
-from tests.serializers import (CatSerializer, DogSerializer, GroupSerializer,
-                               HorseSerializer, LocationSerializer,
-                               ProfileSerializer, UserLocationSerializer,
-                               UserSerializer, ZebraSerializer)
+from tests.models import (
+    Cat,
+    Dog,
+    Group,
+    Horse,
+    Location,
+    Profile,
+    User,
+    Zebra,
+)
+from tests.serializers import (
+    CatSerializer,
+    DogSerializer,
+    GroupSerializer,
+    HorseSerializer,
+    LocationSerializer,
+    ProfileSerializer,
+    UserLocationSerializer,
+    UserSerializer,
+    ZebraSerializer,
+)
 
 
 class UserViewSet(DynamicModelViewSet):

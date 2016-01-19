@@ -1,11 +1,26 @@
 from rest_framework.serializers import CharField
 
-from dynamic_rest.fields import (CountField, DynamicField, DynamicMethodField,
-                                 DynamicRelationField)
-from dynamic_rest.serializers import (DynamicEphemeralSerializer,
-                                      DynamicModelSerializer)
-from tests.models import (Cat, Dog, Group, Horse, Location, Permission,
-                          Profile, User, Zebra)
+from dynamic_rest.fields import (
+    CountField,
+    DynamicField,
+    DynamicMethodField,
+    DynamicRelationField
+)
+from dynamic_rest.serializers import (
+    DynamicEphemeralSerializer,
+    DynamicModelSerializer
+)
+from tests.models import (
+    Cat,
+    Dog,
+    Group,
+    Horse,
+    Location,
+    Permission,
+    Profile,
+    User,
+    Zebra
+)
 
 
 def backup_home_link(name, field, data, obj):
@@ -139,7 +154,8 @@ class UserSerializer(DynamicModelSerializer):
     permissions = DynamicRelationField(
         'PermissionSerializer',
         many=True,
-        deferred=True)
+        deferred=True
+    )
     groups = DynamicRelationField('GroupSerializer', many=True, deferred=True)
     display_name = DynamicField(source='profile.display_name', read_only=True)
     thumbnail_url = DynamicField(

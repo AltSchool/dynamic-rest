@@ -8,7 +8,7 @@ from tests.models import (
     Location,
     Permission,
     User,
-    Zebra,
+    Zebra
 )
 
 
