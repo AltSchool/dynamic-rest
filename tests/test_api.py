@@ -842,7 +842,7 @@ class TestLinks(APITestCase):
 
         # test for default link (auto-generated relation endpoint)
         # Note that the pluralized name is used rather than the full prefix.
-        self.assertEqual(cat['links']['foobar'], '/cats/1/foobar/')
+        self.assertEqual(cat['links']['foobar'], 'foobar/')
 
         # test for dynamically generated link URL
         cat1 = Cat.objects.get(pk=1)
