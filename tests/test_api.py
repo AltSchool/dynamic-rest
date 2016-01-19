@@ -1,17 +1,13 @@
 # -*- coding: utf-8 -*-
 import json
-from django.db import connection
+
 from django.conf import settings
+from django.db import connection
 from rest_framework.test import APITestCase
-from tests.setup import create_fixture
-from tests.models import (
-    Cat,
-    Location,
-    Group,
-    Profile,
-    User
-)
+
+from tests.models import Cat, Group, Location, Profile, User
 from tests.serializers import NestedEphemeralSerializer
+from tests.setup import create_fixture
 
 
 class TestUsersAPI(APITestCase):
@@ -21,7 +17,110 @@ class TestUsersAPI(APITestCase):
         self.maxDiff = None
         settings.DYNAMIC_REST['ENABLE_LINKS'] = False
 
-    def testDefault(self):
+    def test_options(self):
+        response = self.client.options('/users/')
+        self.assertEquals(200, response.status_code)
+        self.assertEquals({
+            u'description': u'',
+            u'features': [u'include[]', u'exclude[]', u'filter{}', u'sort[]'],
+            u'name': u'User List',
+            u'parses': [
+                u'application/json',
+                u'application/x-www-form-urlencoded',
+                u'multipart/form-data'
+            ],
+            u'properties': {
+                u'display_name': {
+                    u'default': None,
+                    u'label': u'Display name',
+                    u'nullable': False,
+                    u'read_only': True,
+                    u'required': False,
+                    u'type': u'field'
+                },
+                u'groups': {
+                    u'default': None,
+                    u'label': u'Groups',
+                    u'nullable': False,
+                    u'read_only': False,
+                    u'related_to': u'groups',
+                    u'required': False,
+                    u'type': u'many'
+                },
+                u'id': {
+                    u'default': None,
+                    u'label': u'ID',
+                    u'nullable': False,
+                    u'read_only': True,
+                    u'required': False,
+                    u'type': u'integer'
+                },
+                u'last_name': {
+                    u'default': None,
+                    u'label': u'Last name',
+                    u'nullable': False,
+                    u'read_only': False,
+                    u'required': True,
+                    u'type': u'string'
+                },
+                u'location': {
+                    u'default': None,
+                    u'label': u'Location',
+                    u'nullable': True,
+                    u'read_only': False,
+                    u'related_to': u'locations',
+                    u'required': False,
+                    u'type': u'one'
+                },
+                u'name': {
+                    u'default': None,
+                    u'label': u'Name',
+                    u'nullable': False,
+                    u'read_only': False,
+                    u'required': True,
+                    u'type': u'string'
+                },
+                u'number_of_cats': {
+                    u'default': None,
+                    u'label': u'Number of cats',
+                    u'nullable': False,
+                    u'read_only': True,
+                    u'required': False,
+                    u'type': u'field'
+                },
+                u'permissions': {
+                    u'default': None,
+                    u'label': u'Permissions',
+                    u'nullable': False,
+                    u'read_only': False,
+                    u'related_to': u'permissions',
+                    u'required': False,
+                    u'type': u'many'
+                },
+                u'profile': {
+                    u'default': None,
+                    u'label': u'Profile',
+                    u'nullable': False,
+                    u'read_only': False,
+                    u'related_to': u'profiles',
+                    u'required': False,
+                    u'type': u'one'
+                },
+                u'thumbnail_url': {
+                    u'default': None,
+                    u'label': u'Thumbnail url',
+                    u'nullable': False,
+                    u'read_only': True,
+                    u'required': False,
+                    u'type': u'field'
+                }
+            },
+            u'renders': [u'application/json', u'text/html'],
+            u'resource_name': u'user',
+            u'resource_name_plural': u'users'
+        }, json.loads(response.content))
+
+    def test_get(self):
         with self.assertNumQueries(1):
             # 1 for User, 0 for Location
             response = self.client.get('/users/')
@@ -46,11 +145,11 @@ class TestUsersAPI(APITestCase):
             }]
         }, json.loads(response.content))
 
-    def test_optional_trailing_slash(self):
+    def test_get_with_trailing_slash_does_not_redirect(self):
         response = self.client.get('/users/1')
         self.assertEquals(200, response.status_code)
 
-    def testInclude(self):
+    def test_get_with_include(self):
         with self.assertNumQueries(2):
             # 2 queries: 1 for User, 1 for Group, 0 for Location
             response = self.client.get('/users/?include[]=groups')
@@ -96,7 +195,7 @@ class TestUsersAPI(APITestCase):
             }]
         }, json.loads(response.content))
 
-    def testExclude(self):
+    def test_get_with_exclude(self):
         with self.assertNumQueries(1):
             response = self.client.get('/users/?exclude[]=name')
         query = connection.queries[-1]['sql']
@@ -120,7 +219,7 @@ class TestUsersAPI(APITestCase):
             }]
         }, json.loads(response.content))
 
-    def testNestedHasOne(self):
+    def test_get_with_nested_has_one(self):
         with self.assertNumQueries(2):
             response = self.client.get('/users/?include[]=location.')
         self.assertEquals(200, response.status_code)
@@ -154,7 +253,7 @@ class TestUsersAPI(APITestCase):
             }]
         }, json.loads(response.content))
 
-    def testNestedHasMany(self):
+    def test_get_with_nested_has_many(self):
         with self.assertNumQueries(2):
             # 2 queries: 1 for User, 1 for Group
             response = self.client.get('/users/?include[]=groups.')
@@ -172,7 +271,7 @@ class TestUsersAPI(APITestCase):
              }]},
             json.loads(response.content))
 
-    def testNestedInclude(self):
+    def test_get_with_nested_include(self):
         with self.assertNumQueries(3):
             # 3 queries: 1 for User, 1 for Group, 1 for Permissions
             response = self.client.get('/users/?include[]=groups.permissions')
@@ -192,7 +291,7 @@ class TestUsersAPI(APITestCase):
             ]},
             json.loads(response.content))
 
-    def testNestedExclude(self):
+    def test_get_with_nested_exclude(self):
         with self.assertNumQueries(2):
             # 2 queries: 1 for User, 1 for Group
             response = self.client.get('/users/?exclude[]=groups.name')
@@ -210,7 +309,7 @@ class TestUsersAPI(APITestCase):
              }]},
             json.loads(response.content))
 
-    def testNestedExcludeAll(self):
+    def test_get_with_nested_exclude_all(self):
         with self.assertNumQueries(2):
             # 2 queries: 1 for User, 1 for Group
             url = '/users/?exclude[]=groups.*&include[]=groups.name'
@@ -231,7 +330,7 @@ class TestUsersAPI(APITestCase):
             },
             json.loads(response.content))
 
-    def testExcludeAll(self):
+    def test_get_with_exclude_all_and_include_field(self):
         with self.assertNumQueries(1):
             url = '/users/?exclude[]=*&include[]=id'
             response = self.client.get(url)
@@ -242,7 +341,7 @@ class TestUsersAPI(APITestCase):
             set(data['users'][0].keys())
         )
 
-    def testExcludeAllIncludeSideload(self):
+    def test_get_with_exclude_all_and_include_relationship(self):
         with self.assertNumQueries(2):
             url = '/users/?exclude[]=*&include[]=groups.'
             response = self.client.get(url)
@@ -254,7 +353,7 @@ class TestUsersAPI(APITestCase):
         )
         self.assertTrue('groups' in data)
 
-    def testSingleResourceSideload(self):
+    def test_get_one_with_include(self):
         with self.assertNumQueries(2):
             # 2 queries: 1 for User, 1 for Group
             response = self.client.get('/users/1/?include[]=groups.')
@@ -262,7 +361,7 @@ class TestUsersAPI(APITestCase):
         data = json.loads(response.content)
         self.assertEquals(len(data['groups']), 2)
 
-    def testFilterBasic(self):
+    def test_get_with_filter(self):
         with self.assertNumQueries(1):
             # verify that extra [] are stripped out of the key
             response = self.client.get('/users/?filter{name}[]=1')
@@ -275,13 +374,13 @@ class TestUsersAPI(APITestCase):
             },
             json.loads(response.content))
 
-    def testFilterForNonexistingMatch(self):
+    def test_get_with_filter_no_match(self):
         with self.assertNumQueries(1):
             response = self.client.get('/users/?filter{name}[]=foo')
         self.assertEquals(200, response.status_code)
         self.assertEquals({'users': []}, json.loads(response.content))
 
-    def testFilterWithUnicodeNonexistingMatch(self):
+    def test_get_with_filter_unicode_no_match(self):
         with self.assertNumQueries(1):
             response = self.client.get(u'/users/?filter{name}[]=%E2%98%82')
         self.assertEquals(200, response.status_code)
@@ -291,7 +390,7 @@ class TestUsersAPI(APITestCase):
         self.assertEquals(200, response.status_code)
         self.assertEquals({'users': []}, json.loads(response.content))
 
-    def testUnicodeFilter(self):
+    def test_get_with_filter_unicode(self):
         User.objects.create(name=u'☂', last_name='Undermy')
         with self.assertNumQueries(1):
             response = self.client.get(u'/users/?filter{name}[]=%E2%98%82')
@@ -302,7 +401,7 @@ class TestUsersAPI(APITestCase):
         self.assertEquals(200, response.status_code)
         self.assertEquals(1, len(json.loads(response.content)['users']))
 
-    def testFilterIn(self):
+    def test_get_with_filter_in(self):
         url = '/users/?filter{name.in}=1&filter{name.in}=2'
         with self.assertNumQueries(1):
             response = self.client.get(url)
@@ -316,7 +415,7 @@ class TestUsersAPI(APITestCase):
             },
             json.loads(response.content))
 
-    def testFilterExclude(self):
+    def test_get_with_filter_exclude(self):
         url = '/users/?filter{-name}=1'
         with self.assertNumQueries(1):
             response = self.client.get(url)
@@ -331,7 +430,7 @@ class TestUsersAPI(APITestCase):
             },
             json.loads(response.content))
 
-    def testFilterRelation(self):
+    def test_get_with_filter_relation_field(self):
         url = '/users/?filter{location.name}=1'
         with self.assertNumQueries(1):
             response = self.client.get(url)
@@ -344,7 +443,7 @@ class TestUsersAPI(APITestCase):
             },
             json.loads(response.content))
 
-    def testFilterSideload(self):
+    def test_get_with_filter_and_include_relationship(self):
         url = '/users/?include[]=groups.&filter{groups|name}=1'
         with self.assertNumQueries(2):
             # 2 queries: 1 for User, 1 for Group
@@ -362,7 +461,7 @@ class TestUsersAPI(APITestCase):
             },
             json.loads(response.content))
 
-    def testFilterSourceRewrite(self):
+    def test_get_with_filter_and_source_rewrite(self):
         """ Test filtering on fields where source is different """
         url = '/locations/?filter{address}=here&include[]=address'
         with self.assertNumQueries(1):
@@ -371,7 +470,7 @@ class TestUsersAPI(APITestCase):
         data = json.loads(response.content)
         self.assertEquals(len(data['locations']), 1)
 
-    def testFilterQueryInjection(self):
+    def test_get_with_filter_and_query_injection(self):
         """ Test viewset with query injection """
         url = '/users/?name=1'
         with self.assertNumQueries(1):
@@ -381,7 +480,7 @@ class TestUsersAPI(APITestCase):
         self.assertEquals(len(data['users']), 1)
         self.assertEquals(data['users'][0]['name'], '1')
 
-    def testIncludeO2M(self):
+    def test_get_with_include_one_to_many(self):
         """ Test o2m without related_name set. """
         url = '/locations/?filter{id}=1&include[]=users'
         with self.assertNumQueries(2):
@@ -392,7 +491,7 @@ class TestUsersAPI(APITestCase):
         self.assertEquals(len(data['locations']), 1)
         self.assertEquals(len(data['locations'][0]['users']), 2)
 
-    def testCountField(self):
+    def test_get_with_count_field(self):
         url = '/locations/?filter{id}=1&include[]=users&include[]=user_count'
         with self.assertNumQueries(2):
             # 2 queries: 1 for locations, 1 for location-users
@@ -403,7 +502,7 @@ class TestUsersAPI(APITestCase):
         self.assertEquals(len(data['locations'][0]['users']), 2)
         self.assertEquals(data['locations'][0]['user_count'], 2)
 
-    def testQuerysetInjection(self):
+    def test_get_with_queryset_injection(self):
         url = '/users/?location=1'
         with self.assertNumQueries(1):
             response = self.client.get(url)
@@ -411,12 +510,12 @@ class TestUsersAPI(APITestCase):
         data = json.loads(response.content)
         self.assertEquals(len(data['users']), 2)
 
-    def testInvalid(self):
+    def test_get_with_include_invalid(self):
         for bad_data in ('name..', 'groups..name', 'foo', 'groups.foo'):
             response = self.client.get('/users/?include[]=%s' % bad_data)
             self.assertEquals(400, response.status_code)
 
-    def testPostResponse(self):
+    def test_post(self):
         data = {
             'name': 'test',
             'last_name': 'last',
@@ -443,7 +542,7 @@ class TestUsersAPI(APITestCase):
                 }
             })
 
-    def testUpdate(self):
+    def test_put(self):
         group = Group.objects.create(name='test group')
         data = {
             'name': 'updated'
@@ -456,14 +555,14 @@ class TestUsersAPI(APITestCase):
         updated_group = Group.objects.get(pk=group.pk)
         self.assertEquals(updated_group.name, data['name'])
 
-    def testDefaultQueryset(self):
+    def test_get_with_default_queryset(self):
         url = '/groups/?filter{id}=1&include[]=loc1users'
         response = self.client.get(url)
         content = json.loads(response.content)
         self.assertEqual(200, response.status_code)
         self.assertEqual(sorted([1, 2]), content['groups'][0]['loc1users'])
 
-    def testDefaultLambdaQueryset(self):
+    def test_get_with_default_lambda_queryset(self):
         url = '/groups/?filter{id}=1&include[]=loc1usersLambda'
         response = self.client.get(url)
         content = json.loads(response.content)
@@ -473,7 +572,7 @@ class TestUsersAPI(APITestCase):
             content['groups'][0]['loc1usersLambda']
         )
 
-    def testDefaultQuerysetWithFilter(self):
+    def test_get_with_default_queryset_filtered(self):
         """
         Make sure filter can be added to relational fields with default
         filters.
@@ -488,7 +587,7 @@ class TestUsersAPI(APITestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual([1], content['groups'][0]['loc1users'])
 
-    def testFilterWithNestedRewrite(self):
+    def test_get_wiht_filter_nested_rewrites(self):
         """
         Test filter for members.id which needs to be rewritten as users.id
         """
@@ -512,13 +611,13 @@ class TestUsersAPI(APITestCase):
         content = json.loads(response.content)
         self.assertEqual(1, len(content['users']))
 
-    def testBadFilter(self):
+    def test_get_with_filter_invalid(self):
         # Filtering on non-existent field should return 400
         url = '/users/?filter{foobar}=1'
         response = self.client.get(url)
         self.assertEqual(400, response.status_code)
 
-    def testDeferredFilter(self):
+    def test_get_with_filter_deferred(self):
         # Filtering deferred field should work
         grp = Group.objects.create(name='test group')
         user = self.fixture.users[0]
@@ -531,7 +630,7 @@ class TestUsersAPI(APITestCase):
         self.assertEqual(1, len(content['users']))
         self.assertEqual(user.pk, content['users'][0]['id'])
 
-    def testIsNull(self):
+    def test_get_with_filter_isnull(self):
         """
         Test for .isnull filters
         """
@@ -566,7 +665,7 @@ class TestUsersAPI(APITestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual(expected, len(content['users']))
 
-    def testNestedSourceFields(self):
+    def test_get_with_nested_source_fields(self):
         u1 = User.objects.create(name='test1', last_name='user')
         Profile.objects.create(
             user=u1,
@@ -583,7 +682,7 @@ class TestUsersAPI(APITestCase):
         self.assertIsNotNone(content['users'][0]['display_name'])
         self.assertIsNotNone(content['users'][0]['thumbnail_url'])
 
-    def testNestedSourceFieldsQueryCount(self):
+    def test_get_with_nested_source_fields_count(self):
         loc = Location.objects.create(name='test location')
         u1 = User.objects.create(name='test1', last_name='user', location=loc)
         Profile.objects.create(user=u1, display_name='foo')
@@ -608,7 +707,7 @@ class TestUsersAPI(APITestCase):
             content = json.loads(response.content)
             self.assertIsNotNone(content['profiles'][0]['user_location_name'])
 
-    def testDynamicMethodField(self):
+    def test_get_with_dynamic_method_field(self):
         url = '/users/?include[]=number_of_cats'
         with self.assertNumQueries(3):
             response = self.client.get(url)
@@ -637,7 +736,7 @@ class TestUsersAPI(APITestCase):
                 }]
             }, json.loads(response.content))
 
-    def testDynamicMethodFieldRespectsSeparateFilter(self):
+    def test_get_with_request_filters_and_requires(self):
         """
         This tests conflicting external and internal prefetch requirements.
 
@@ -712,7 +811,7 @@ class TestLocationsAPI(APITestCase):
     def setUp(self):
         self.fixture = create_fixture()
 
-    def testCreate(self):
+    def test_post_with_metadata(self):
         """Test create -- mostly a test for 'metadata' JSON field"""
         data = {
             'name': 'test location',
@@ -732,14 +831,14 @@ class TestLocationsAPI(APITestCase):
         content = json.loads(response.content)
         self.assertEqual(content['location']['metadata'], data['metadata'])
 
-    def testFilterByUser(self):
+    def test_get_with_filter_by_user(self):
         url = '/locations/?filter{users}=1'
         response = self.client.get(url)
         self.assertEqual(200, response.status_code)
         content = json.loads(response.content)
         self.assertEqual(1, len(content['locations']))
 
-    def testCatFilters(self):
+    def test_get_with_filter_rewrites(self):
         """Tests various filter rewrite scenarios"""
         urls = [
             '/locations/?filter{cats}=1',
@@ -752,6 +851,7 @@ class TestLocationsAPI(APITestCase):
 
 
 class TestRelationsAPI(APITestCase):
+
     """Test auto-generated relation endpoints."""
 
     def setUp(self):
@@ -802,6 +902,7 @@ class TestRelationsAPI(APITestCase):
 
 
 class TestUserLocationsAPI(APITestCase):
+
     """
     Test API on serializer with embedded fields.
     """
@@ -809,7 +910,7 @@ class TestUserLocationsAPI(APITestCase):
     def setUp(self):
         self.fixture = create_fixture()
 
-    def testGetEmbedded(self):
+    def test_get_embedded(self):
         with self.assertNumQueries(3):
             url = '/v1/user_locations/1/'
             response = self.client.get(url)
@@ -915,6 +1016,7 @@ class TestLinks(APITestCase):
 
 
 class TestDogsAPI(APITestCase):
+
     """
     Tests for sorting
     """
@@ -922,7 +1024,7 @@ class TestDogsAPI(APITestCase):
     def setUp(self):
         self.fixture = create_fixture()
 
-    def testSortingBasic(self):
+    def test_sort(self):
         url = '/dogs/?sort[]=name'
         # 2 queries - one for getting dogs, one for the meta (count)
         with self.assertNumQueries(2):
@@ -957,7 +1059,7 @@ class TestDogsAPI(APITestCase):
         actual_response = json.loads(response.content).get('dogs')
         self.assertEquals(expected_response, actual_response)
 
-    def testSortingReverse(self):
+    def test_sort_reverse(self):
         url = '/dogs/?sort[]=-name'
         # 2 queries - one for getting dogs, one for the meta (count)
         with self.assertNumQueries(2):
@@ -992,7 +1094,7 @@ class TestDogsAPI(APITestCase):
         actual_response = json.loads(response.content).get('dogs')
         self.assertEquals(expected_response, actual_response)
 
-    def testSortingMultipleCriteria(self):
+    def test_sort_multiple(self):
         url = '/dogs/?sort[]=-name&sort[]=-origin'
         # 2 queries - one for getting dogs, one for the meta (count)
         with self.assertNumQueries(2):
@@ -1027,7 +1129,7 @@ class TestDogsAPI(APITestCase):
         actual_response = json.loads(response.content).get('dogs')
         self.assertEquals(expected_response, actual_response)
 
-    def testSortingUsingSerializedField(self):
+    def test_sort_rewrite(self):
         url = '/dogs/?sort[]=fur'
         # 2 queries - one for getting dogs, one for the meta (count)
         with self.assertNumQueries(2):
@@ -1062,7 +1164,7 @@ class TestDogsAPI(APITestCase):
         actual_response = json.loads(response.content).get('dogs')
         self.assertEquals(expected_response, actual_response)
 
-    def testInvalidSortField(self):
+    def test_sort_invalid(self):
         url = '/horses?sort[]=borigin'
         response = self.client.get(url)
 
@@ -1072,6 +1174,7 @@ class TestDogsAPI(APITestCase):
 
 
 class TestHorsesAPI(APITestCase):
+
     """
     Tests for sorting on default fields and limit sorting fields
     """
@@ -1079,7 +1182,7 @@ class TestHorsesAPI(APITestCase):
     def setUp(self):
         self.fixture = create_fixture()
 
-    def testSortingDefault(self):
+    def test_sort(self):
         url = '/horses'
         # 1 query - one for getting horses
         # (the viewset as features specified, so no meta is returned)
@@ -1102,7 +1205,7 @@ class TestHorsesAPI(APITestCase):
         actual_response = json.loads(response.content)
         self.assertEquals(expected_response, actual_response)
 
-    def testSortingNotSpecifiedOrdering(self):
+    def test_sort_with_field_not_allowed(self):
         url = '/horses?sort[]=origin'
         response = self.client.get(url)
 
@@ -1113,6 +1216,7 @@ class TestHorsesAPI(APITestCase):
 
 
 class TestZebrasAPI(APITestCase):
+
     """
     Tests for sorting on when ordering_fields is __all__
     """
@@ -1120,7 +1224,7 @@ class TestZebrasAPI(APITestCase):
     def setUp(self):
         self.fixture = create_fixture()
 
-    def testSortingDefault(self):
+    def test_sort(self):
         url = '/zebras?sort[]=-name'
         # 1 query - one for getting zebras
         # (the viewset as features specified, so no meta is returned)
@@ -1142,3 +1246,26 @@ class TestZebrasAPI(APITestCase):
         }
         actual_response = json.loads(response.content)
         self.assertEquals(expected_response, actual_response)
+
+
+class TestBrowsableAPI(APITestCase):
+
+    """
+    Tests for Browsable API directory
+    """
+
+    def test_get_root(self):
+        response = self.client.get('/?format=api')
+        content = response.content
+        self.assertIn('side-panel', content)
+        self.assertIn('/horses', content)
+        self.assertIn('/zebras', content)
+        self.assertIn('/users', content)
+
+    def test_get_list(self):
+        response = self.client.get('/users/?format=api')
+        content = response.content
+        self.assertIn('side-panel', content)
+        self.assertIn('/horses', content)
+        self.assertIn('/zebras', content)
+        self.assertIn('/users', content)

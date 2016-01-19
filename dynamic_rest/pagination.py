@@ -1,6 +1,6 @@
+from django.conf import settings
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
-from django.conf import settings
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 drf_settings = getattr(settings, 'REST_FRAMEWORK', {})

@@ -1,18 +1,17 @@
 import importlib
-from itertools import chain
 import os
 import pickle
+from itertools import chain
 
-from rest_framework import fields
-from rest_framework.exceptions import ParseError, NotFound
-from rest_framework.serializers import SerializerMethodField
 from django.conf import settings
-from django.db.models.related import RelatedObject
 from django.db.models import ManyToManyField
+from django.db.models.related import RelatedObject
 from django.utils.functional import cached_property
+from rest_framework import fields
+from rest_framework.exceptions import NotFound, ParseError
+from rest_framework.serializers import SerializerMethodField
 
 from dynamic_rest.bases import DynamicSerializerBase
-
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 

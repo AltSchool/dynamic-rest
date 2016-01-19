@@ -1,4 +1,5 @@
 import os
+
 SECRET_KEY = 'test'
 INSTALL_DIR = '/usr/local/dynamic-rest/'
 STATIC_URL = '/static/'

@@ -1,4 +1,5 @@
-from django.conf.urls import patterns, include, url
+from django.conf.urls import include, patterns, url
+
 from dynamic_rest.routers import DynamicRouter
 from tests import viewsets
 

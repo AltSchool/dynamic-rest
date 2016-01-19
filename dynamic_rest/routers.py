@@ -1,9 +1,11 @@
-from rest_framework.routers import DefaultRouter, Route, replace_methodname
-from rest_framework.reverse import reverse
+from collections import OrderedDict
+
 from rest_framework import views
 from rest_framework.response import Response
+from rest_framework.reverse import reverse
+from rest_framework.routers import DefaultRouter, Route, replace_methodname
+
 from dynamic_rest.fields import DynamicRelationField
-from collections import OrderedDict
 
 directory = {}
 

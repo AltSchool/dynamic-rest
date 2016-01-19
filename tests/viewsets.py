@@ -1,29 +1,12 @@
 from django.utils.datastructures import MergeDict
-
 from rest_framework import exceptions
 
 from dynamic_rest.viewsets import DynamicModelViewSet
-from tests.serializers import (
-    CatSerializer,
-    DogSerializer,
-    LocationSerializer,
-    GroupSerializer,
-    HorseSerializer,
-    ProfileSerializer,
-    UserSerializer,
-    UserLocationSerializer,
-    ZebraSerializer
-)
-from tests.models import (
-    Cat,
-    Dog,
-    Group,
-    Horse,
-    Location,
-    Profile,
-    User,
-    Zebra
-)
+from tests.models import Cat, Dog, Group, Horse, Location, Profile, User, Zebra
+from tests.serializers import (CatSerializer, DogSerializer, GroupSerializer,
+                               HorseSerializer, LocationSerializer,
+                               ProfileSerializer, UserLocationSerializer,
+                               UserSerializer, ZebraSerializer)
 
 
 class UserViewSet(DynamicModelViewSet):

@@ -1,18 +1,17 @@
 import copy
+
 from django.conf import settings
 from django.db import models
 from django.utils.functional import cached_property
+from rest_framework import exceptions, fields, serializers
+from rest_framework.fields import SkipField
+from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.fields import DynamicRelationField
+from dynamic_rest.links import merge_link_object
 from dynamic_rest.processors import SideloadingProcessor
-from dynamic_rest.serializer_helpers import merge_link_object
-from dynamic_rest.wrappers import tag_dict
-
-from rest_framework.fields import SkipField
-from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
-from rest_framework import serializers, fields, exceptions
-
+from dynamic_rest.tagged import tag_dict
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 

@@ -1,7 +1,7 @@
 from collections import namedtuple
-from tests.models import (
-    User, Group, Location, Permission, Cat, Dog, Horse, Zebra
-)
+
+from tests.models import (Cat, Dog, Group, Horse, Location, Permission, User,
+                          Zebra)
 
 
 def create_fixture():
@@ -15,7 +15,7 @@ def create_fixture():
     types = [
         'users', 'groups', 'locations', 'permissions',
         'cats', 'dogs', 'horses', 'zebras'
-        ]
+    ]
     Fixture = namedtuple('Fixture', types)
 
     fixture = Fixture(

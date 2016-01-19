@@ -1,27 +1,17 @@
-from dynamic_rest.patches import patch_prefetch_one_level
-patch_prefetch_one_level()
-
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
-from django.db.models import (
-    Prefetch,
-    Q
-)
-
+from django.db.models import Q, Prefetch
 from django.db.models.related import RelatedObject
-from rest_framework.exceptions import ValidationError
 from rest_framework import serializers
-from rest_framework.filters import BaseFilterBackend
-from rest_framework.filters import OrderingFilter
-
+from rest_framework.exceptions import ValidationError
+from rest_framework.filters import BaseFilterBackend, OrderingFilter
 
 from dynamic_rest.datastructures import TreeMap
-from dynamic_rest.fields import (
-    DynamicRelationField,
-    is_field_remote,
-    get_model_field,
-    is_model_field
-)
+from dynamic_rest.fields import (DynamicRelationField, get_model_field,
+                                 is_field_remote, is_model_field)
+from dynamic_rest.patches import patch_prefetch_one_level
+
+patch_prefetch_one_level()
 
 
 class FilterNode(object):
@@ -478,6 +468,7 @@ class DynamicFilterBackend(BaseFilterBackend):
 
 
 class DynamicSortingFilter(OrderingFilter):
+
     def filter_queryset(self, request, queryset, view):
         """"
         Overwrite this method to set the 'ordering_param' on this class.

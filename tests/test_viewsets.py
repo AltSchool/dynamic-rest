@@ -1,15 +1,12 @@
 from django.test import TestCase
 from django.test.client import RequestFactory
-
 from rest_framework import exceptions
 from rest_framework.request import Request
+
 from dynamic_rest.filters import DynamicFilterBackend, FilterNode
-from tests.setup import create_fixture
-from tests.viewsets import (
-    GroupNoMergeDictViewSet,
-    UserViewSet
-)
 from tests.serializers import GroupSerializer
+from tests.setup import create_fixture
+from tests.viewsets import GroupNoMergeDictViewSet, UserViewSet
 
 
 class TestUserViewSet(TestCase):

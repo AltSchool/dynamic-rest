@@ -1,5 +1,5 @@
-from django.db import models
 from annoying.fields import JSONField
+from django.db import models
 
 
 class User(models.Model):

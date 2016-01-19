@@ -1,19 +1,11 @@
-from tests.models import (
-    Cat,
-    Dog,
-    Group,
-    Horse,
-    Location,
-    Permission,
-    Profile,
-    User,
-    Zebra
-)
-from dynamic_rest.serializers import DynamicModelSerializer
-from dynamic_rest.serializers import DynamicEphemeralSerializer
-from dynamic_rest.fields import (
-    DynamicMethodField, DynamicRelationField, CountField, DynamicField)
 from rest_framework.serializers import CharField
+
+from dynamic_rest.fields import (CountField, DynamicField, DynamicMethodField,
+                                 DynamicRelationField)
+from dynamic_rest.serializers import (DynamicEphemeralSerializer,
+                                      DynamicModelSerializer)
+from tests.models import (Cat, Dog, Group, Horse, Location, Permission,
+                          Profile, User, Zebra)
 
 
 def backup_home_link(name, field, data, obj):

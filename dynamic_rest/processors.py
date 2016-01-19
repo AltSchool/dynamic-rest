@@ -1,7 +1,9 @@
 from collections import defaultdict
+
 from rest_framework.serializers import ListSerializer
 from rest_framework.utils.serializer_helpers import ReturnDict
-from dynamic_rest.wrappers import TaggedDict
+
+from dynamic_rest.tagged import TaggedDict
 
 
 class SideloadingProcessor(object):

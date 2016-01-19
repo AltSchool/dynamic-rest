@@ -2,18 +2,15 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import QueryDict
 from django.utils.datastructures import MergeDict
-
-from rest_framework import viewsets, exceptions
+from rest_framework import exceptions, viewsets
 from rest_framework.exceptions import ValidationError
-from rest_framework.renderers import JSONRenderer
-from dynamic_rest.renderers import DynamicBrowsableAPIRenderer
+from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 from rest_framework.response import Response
-from rest_framework.renderers import BrowsableAPIRenderer
 
-from dynamic_rest.pagination import DynamicPageNumberPagination
-from dynamic_rest.metadata import DynamicMetadata
 from dynamic_rest.filters import DynamicFilterBackend, DynamicSortingFilter
-
+from dynamic_rest.metadata import DynamicMetadata
+from dynamic_rest.pagination import DynamicPageNumberPagination
+from dynamic_rest.renderers import DynamicBrowsableAPIRenderer
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
