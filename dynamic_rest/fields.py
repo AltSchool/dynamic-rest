@@ -10,8 +10,8 @@ from rest_framework import fields
 from rest_framework.exceptions import NotFound, ParseError
 from rest_framework.serializers import SerializerMethodField
 
-from dynamic_rest.meta import is_field_remote
 from dynamic_rest.bases import DynamicSerializerBase
+from dynamic_rest.meta import is_field_remote
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 

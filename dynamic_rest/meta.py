@@ -1,5 +1,6 @@
 """Module containing Django meta helpers."""
 from itertools import chain
+
 from django.db.models import ManyToManyField
 
 from dynamic_rest.related import RelatedObject
