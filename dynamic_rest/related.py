@@ -1,3 +1,4 @@
+"""This module provides backwards compatibility for RelatedObject."""
 # flake8: noqa
 
 try:

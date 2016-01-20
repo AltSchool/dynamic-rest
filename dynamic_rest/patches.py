@@ -1,3 +1,9 @@
+"""This module contains patches for Django issues.
+
+These patches are meant to be short-lived and are
+extracted from Django code changes.
+"""
+
 
 def patch_prefetch_one_level():
     """

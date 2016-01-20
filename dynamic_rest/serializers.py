@@ -1,3 +1,4 @@
+"""This module contains custom serializer classes."""
 import copy
 
 from django.conf import settings

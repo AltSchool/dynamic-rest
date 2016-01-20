@@ -1,3 +1,5 @@
+"""This module contains custom DRF filter backends."""
+
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q, Prefetch
@@ -7,8 +9,8 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.filters import BaseFilterBackend, OrderingFilter
 
 from dynamic_rest.datastructures import TreeMap
-from dynamic_rest.fields import (
-    DynamicRelationField,
+from dynamic_rest.fields import DynamicRelationField
+from dynamic_rest.meta import (
     get_model_field,
     is_field_remote,
     is_model_field
@@ -22,13 +24,16 @@ patch_prefetch_one_level()
 class FilterNode(object):
 
     def __init__(self, field, operator, value):
-        """
-        Create an object representing filter, to be stored in TreeMap.
+        """Create an object representing a filter, to be stored in a TreeMap.
 
         Arguments:
             field: List of field parts
-                   i.e. 'filter{users.events}' -> ['users', 'events']
-            opreator: Valid operator (e.g. 'lt', 'in', etc). None == equals.
+                For example: ['users', 'events'] for the query:
+                    'filter{users.events}'
+            opreator: A valid filter operator or None
+                For example: 'lt', 'in', ...
+                Per Django convention, None is interpretted as equality.
+            value: The value to filter on
         """
         self.field = field
         self.operator = operator
@@ -42,10 +47,19 @@ class FilterNode(object):
         )
 
     def generate_query_key(self, serializer):
-        """
-        Return filter key that can be passed to Django's filter() method.
-        Translates serializer field names to model field names by inspecting
-        serializer.
+        """Return the key that can be passed to Django's filter method.
+
+        To account for serialier field name rewrites, this method
+        translates serializer field names to model field names
+        by inspecting `serializer`
+
+        Arguments:
+            serializer: a DRF serializer
+
+        Returns:
+            A filter key.
+            For example: users__events for the query:
+                'filter{users.events}' (assuming no rewrites)
         """
         rewritten = []
         last = len(self.field) - 1
@@ -101,6 +115,16 @@ class FilterNode(object):
 
 
 class DynamicFilterBackend(BaseFilterBackend):
+    """A DRF filter backend that construct DREST querysets.
+
+    This backend is responsible for interpretting and applying
+    filters, includes, and excludes to the base queryset of a view.
+
+    Attributes:
+        VALID_FILTER_OPERATORS: A list of filter operators.
+        FALSEY_STRINGS: A list of strings that are interpretted as
+            False by the isnull operator.
+    """
     VALID_FILTER_OPERATORS = (
         'in',
         'any',
@@ -133,8 +157,9 @@ class DynamicFilterBackend(BaseFilterBackend):
     )
 
     def filter_queryset(self, request, queryset, view):
-        """
-        Filter queryset. This is the main/single entry-point to this class, and
+        """Filter the queryset.
+
+        This is the main entry-point to this class, and
         is called by DRF's list handler.
         """
         self.request = request
@@ -265,6 +290,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         filters,
         requirements
     ):
+        """Applies prefetches to a queryset."""
         related_queryset = getattr(original_field, 'queryset', None)
 
         if callable(related_queryset):
@@ -300,7 +326,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         prefetches,
         requirements
     ):
-        """Add remaining prefetches as implicit prefetches."""
+        """Add internal (required) prefetches to a prefetch dictionary."""
         paths = requirements.get_paths()
         for path in paths:
             # Remove last segment, which indicates a field name or wildcard.
@@ -321,6 +347,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         fields,
         filters
     ):
+        """Add external (requested) prefetches to a prefetch dictionary."""
         for name, field in six.iteritems(fields):
             original_field = field
             if isinstance(field, DynamicRelationField):
@@ -369,7 +396,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         fields,
         requirements
     ):
-        """Extract requirements from serializer fields."""
+        """Extract internal prefetch requirements from serializer fields."""
         for name, field in six.iteritems(fields):
             source = field.source
             # Requires may be manually set on the field -- if not,
@@ -394,18 +421,18 @@ class DynamicFilterBackend(BaseFilterBackend):
         queryset=None,
         requirements=None
     ):
-        """
-        Recursive queryset builder.
+        """Recursive queryset builder.
+
         Handles nested prefetching of related data and deferring fields
         at the queryset level.
 
         Arguments:
-          serializer: An optional serializer to use a base for the queryset.
-            If no serializer is passed, the `get_serializer` method will
-            be used to initialize the base serializer for the viewset.
-          filters: Optional nested filter map (TreeMap)
-          queryset: Optional queryset.
-          requirements: Optional nested requirements (TreeMap)
+            serializer: An optional serializer to use a base for the queryset.
+                If no serializer is passed, the `get_serializer` method will
+                be used to initialize the base serializer for the viewset.
+            filters: An optional TreeMap of nested filters.
+            queryset: An optional base queryset.
+            requirements: An optional TreeMap of nested requirements.
         """
 
         if serializer:
@@ -476,12 +503,17 @@ class DynamicFilterBackend(BaseFilterBackend):
 
 
 class DynamicSortingFilter(OrderingFilter):
+    """Subclass of DRF's OrderingFilter.
+
+    This class adds support for multi-field ordering and rewritten fields.
+    """
 
     def filter_queryset(self, request, queryset, view):
-        """"
-        Overwrite this method to set the 'ordering_param' on this class.
-        Under DRF, the ordering_param is 'ordering', but we are changing it
-        to what we specified on the SORT property in our viewset.
+        """"Filter the queryset, applying the ordering.
+
+        The `ordering_param` can be overwritten here.
+        In DRF, the ordering_param is 'ordering', but we support changing it
+        to allow the viewset to control the parameter.
         """
         self.ordering_param = view.SORT
 
@@ -492,12 +524,9 @@ class DynamicSortingFilter(OrderingFilter):
         return queryset
 
     def get_ordering(self, request, queryset, view):
-        """
-        Ordering is set by a ?sort[]=... query parameter.
-        The `sort[]` query parameter is set by the `ordering_param` above.
-        The default for django-rest-framework is `ordering`.
+        """Return an ordering for a given request.
 
-        DRF expects a comma separated list, while drest expects an array.
+        DRF expects a comma separated list, while DREST expects an array.
         This method overwrites the DRF default so it can parse the array.
         """
         params = view.get_request_feature(view.SORT)
@@ -520,9 +549,10 @@ class DynamicSortingFilter(OrderingFilter):
         return self.get_default_ordering(view)
 
     def remove_invalid_fields(self, queryset, fields, view):
-        """
-        Overwrite the DRF default remove_invalid_fields method to return
-        both valid orderings and any invalid orderings
+        """Remove invalid fields from an ordering.
+
+        Overwrites the DRF default remove_invalid_fields method to return
+        both the valid orderings and any invalid orderings.
         """
         # get valid field names for sorting
         valid_fields_map = {
@@ -548,8 +578,9 @@ class DynamicSortingFilter(OrderingFilter):
         return valid_orderings, invalid_orderings
 
     def get_valid_fields(self, queryset, view):
-        """
-        Overwrite get_valid_fields method so that valid_fields returns only
+        """Return valid fields for ordering.
+
+        Overwrites DRF's get_valid_fields method so that valid_fields returns
         serializer fields, not model fields.
         """
         valid_fields = getattr(view, 'ordering_fields', self.ordering_fields)
@@ -558,8 +589,10 @@ class DynamicSortingFilter(OrderingFilter):
             # Default to allowing filtering on serializer fields
             serializer_class = getattr(view, 'serializer_class')
             if serializer_class is None:
-                msg = ("Cannot use %s on a view which does not have either a "
-                       "'serializer_class' or 'ordering_fields' attribute.")
+                msg = (
+                    "Cannot use %s on a view which does not have either a "
+                    "'serializer_class' or 'ordering_fields' attribute."
+                )
                 raise ImproperlyConfigured(msg % self.__class__.__name__)
             valid_fields = [
                 (field_name, field.label, field.source or field_name)

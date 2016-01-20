@@ -1,3 +1,4 @@
+"""This module contains custom DRF metadata classes."""
 from collections import OrderedDict
 
 from django.utils.encoding import force_text
@@ -9,15 +10,17 @@ from dynamic_rest.fields import DynamicRelationField
 
 
 class DynamicMetadata(SimpleMetadata):
+    """A subclass of SimpleMetadata.
+
+    Adds `properties` and `features` to the metdata.
+    """
 
     def determine_actions(self, request, view):
-        """Prevents displaying action-specific details.
-        """
+        """Prevent displaying action-specific details."""
         return None
 
     def determine_metadata(self, request, view):
-        """Adds `properties` and `features` to the metadata response.
-        """
+        """Adds `properties` and `features` to the metadata response."""
         metadata = super(
             DynamicMetadata,
             self).determine_metadata(
@@ -34,8 +37,7 @@ class DynamicMetadata(SimpleMetadata):
         return metadata
 
     def get_field_info(self, field):
-        """Adds `related_to` and `nullable` to the metadata response.
-        """
+        """Adds `related_to` and `nullable` to the metadata response."""
         field_info = OrderedDict()
         for attr in ('required', 'read_only', 'default', 'label'):
             field_info[attr] = getattr(field, attr)

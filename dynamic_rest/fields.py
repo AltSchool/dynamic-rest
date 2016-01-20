@@ -1,67 +1,19 @@
+"""This module contains custom DRF field classes."""
 import importlib
 import os
 import pickle
-from itertools import chain
 
 from django.conf import settings
-from django.db.models import ManyToManyField
 from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import fields
 from rest_framework.exceptions import NotFound, ParseError
 from rest_framework.serializers import SerializerMethodField
 
+from dynamic_rest.meta import is_field_remote
 from dynamic_rest.bases import DynamicSerializerBase
-from dynamic_rest.related import RelatedObject
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
-
-
-def is_model_field(model, field_name):
-    """
-    Helper function to get model field.
-    """
-    try:
-        get_model_field(model, field_name)
-        return True
-    except AttributeError:
-        return False
-
-
-def get_model_field(model, field_name):
-    """
-    Helper function to get model field, including related fields.
-    """
-    meta = model._meta
-    try:
-        return meta.get_field_by_name(field_name)[0]
-    except:
-        related_objects = {
-            o.get_accessor_name(): o
-            for o in chain(
-                meta.get_all_related_objects(),
-                meta.get_all_related_many_to_many_objects()
-            )
-        }
-        if field_name in related_objects:
-            return related_objects[field_name]
-        else:
-            raise AttributeError(
-                '%s is not a valid field for %s' % (field_name, model)
-            )
-
-
-def is_field_remote(model, field_name):
-    """
-    Helper function to determine whether model field is remote or not.
-    Remote fields are many-to-many or many-to-one.
-    """
-    if not hasattr(model, '_meta'):
-        # ephemeral model with no metaclass
-        return False
-
-    model_field = get_model_field(model, field_name)
-    return isinstance(model_field, (ManyToManyField, RelatedObject))
 
 
 class DynamicField(fields.Field):

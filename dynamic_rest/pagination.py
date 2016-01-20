@@ -1,3 +1,4 @@
+"""This module contains custom pagination classes."""
 from django.conf import settings
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
@@ -7,9 +8,15 @@ drf_settings = getattr(settings, 'REST_FRAMEWORK', {})
 
 
 class DynamicPageNumberPagination(PageNumberPagination):
+    """A subclass of PageNumberPagination.
+
+    Adds support for pagination metadata and overrides for
+    pagination query parameters.
+    """
     page_size_query_param = dynamic_settings.get(
         'PAGE_SIZE_QUERY_PARAM',
-        'per_page')
+        'per_page'
+    )
     page_query_param = dynamic_settings.get('PAGE_QUERY_PARAM', 'page')
     max_page_size = dynamic_settings.get('MAX_PAGE_SIZE', None)
     page_size = dynamic_settings.get(
