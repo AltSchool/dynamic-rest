@@ -1,0 +1,273 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>dynamic_rest.routers &mdash; Dynamic REST 1.3.9 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.3.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="Dynamic REST 1.3.9 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for dynamic_rest.routers</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;This module contains custom router classes.&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+
+<span class="kn">from</span> <span class="nn">django.utils</span> <span class="kn">import</span> <span class="n">six</span>
+<span class="kn">from</span> <span class="nn">rest_framework</span> <span class="kn">import</span> <span class="n">views</span>
+<span class="kn">from</span> <span class="nn">rest_framework.response</span> <span class="kn">import</span> <span class="n">Response</span>
+<span class="kn">from</span> <span class="nn">rest_framework.reverse</span> <span class="kn">import</span> <span class="n">reverse</span>
+<span class="kn">from</span> <span class="nn">rest_framework.routers</span> <span class="kn">import</span> <span class="n">DefaultRouter</span><span class="p">,</span> <span class="n">Route</span><span class="p">,</span> <span class="n">replace_methodname</span>
+
+<span class="kn">from</span> <span class="nn">dynamic_rest.fields</span> <span class="kn">import</span> <span class="n">DynamicRelationField</span>
+
+<span class="n">directory</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+<div class="viewcode-block" id="get_directory"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.routers.get_directory">[docs]</a><span class="k">def</span> <span class="nf">get_directory</span><span class="p">(</span><span class="n">request</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Get API directory as a nested list of lists.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">get_url</span><span class="p">(</span><span class="n">url</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">reverse</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">request</span><span class="o">=</span><span class="n">request</span><span class="p">)</span> <span class="k">if</span> <span class="n">url</span> <span class="k">else</span> <span class="n">url</span>
+
+    <span class="k">def</span> <span class="nf">is_active_url</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">url</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">path</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">url</span><span class="p">)</span> <span class="k">if</span> <span class="n">url</span> <span class="ow">and</span> <span class="n">path</span> <span class="k">else</span> <span class="bp">False</span>
+
+    <span class="n">path</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">path</span>
+    <span class="n">directory_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">sort_key</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">r</span><span class="p">:</span> <span class="n">r</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="c1"># TODO(ant): support arbitrarily nested</span>
+    <span class="c1"># structure, for now it is capped at a single level</span>
+    <span class="c1"># for UX reasons</span>
+    <span class="k">for</span> <span class="n">group_name</span><span class="p">,</span> <span class="n">endpoints</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span>
+        <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">directory</span><span class="p">),</span>
+        <span class="n">key</span><span class="o">=</span><span class="n">sort_key</span>
+    <span class="p">):</span>
+        <span class="n">endpoints_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">endpoint_name</span><span class="p">,</span> <span class="n">endpoint</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span>
+            <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">endpoints</span><span class="p">),</span>
+            <span class="n">key</span><span class="o">=</span><span class="n">sort_key</span>
+        <span class="p">):</span>
+            <span class="k">if</span> <span class="n">endpoint_name</span> <span class="o">==</span> <span class="s1">&#39;_url&#39;</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">endpoint_url</span> <span class="o">=</span> <span class="n">get_url</span><span class="p">(</span><span class="n">endpoint</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;_url&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">))</span>
+            <span class="n">active</span> <span class="o">=</span> <span class="n">is_active_url</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">endpoint_url</span><span class="p">)</span>
+            <span class="n">endpoints_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">endpoint_name</span><span class="p">,</span> <span class="n">endpoint_url</span><span class="p">,</span> <span class="p">[],</span> <span class="n">active</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="n">url</span> <span class="o">=</span> <span class="n">get_url</span><span class="p">(</span><span class="n">endpoints</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;_url&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">))</span>
+        <span class="n">active</span> <span class="o">=</span> <span class="n">is_active_url</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+        <span class="n">directory_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">group_name</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">endpoints_list</span><span class="p">,</span> <span class="n">active</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="n">directory_list</span></div>
+
+
+<div class="viewcode-block" id="DynamicRouter"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.routers.DynamicRouter">[docs]</a><span class="k">class</span> <span class="nc">DynamicRouter</span><span class="p">(</span><span class="n">DefaultRouter</span><span class="p">):</span></div>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">optional_trailing_slash</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;optional_trailing_slash&#39;</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DynamicRouter</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">optional_trailing_slash</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trailing_slash</span> <span class="o">=</span> <span class="s1">&#39;/?&#39;</span>
+
+    <span class="k">def</span> <span class="nf">get_api_root_view</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return API root view, using the global directory.&quot;&quot;&quot;</span>
+        <span class="k">class</span> <span class="nc">API</span><span class="p">(</span><span class="n">views</span><span class="o">.</span><span class="n">APIView</span><span class="p">):</span>
+            <span class="n">_ignore_model_permissions</span> <span class="o">=</span> <span class="bp">True</span>
+
+            <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                <span class="n">directory_list</span> <span class="o">=</span> <span class="n">get_directory</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+                <span class="k">for</span> <span class="n">group_name</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">endpoints</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">directory_list</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">url</span><span class="p">:</span>
+                        <span class="n">result</span><span class="p">[</span><span class="n">group_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">url</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">group</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">()</span>
+                        <span class="k">for</span> <span class="n">endpoint_name</span><span class="p">,</span> <span class="n">url</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">endpoints</span><span class="p">:</span>
+                            <span class="n">group</span><span class="p">[</span><span class="n">endpoint_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">url</span>
+                        <span class="n">result</span><span class="p">[</span><span class="n">group_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">group</span>
+                <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">API</span><span class="o">.</span><span class="n">as_view</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">register</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">,</span> <span class="n">viewset</span><span class="p">,</span> <span class="n">base_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add any registered route into a global API directory.</span>
+
+<span class="sd">        If the prefix includes a path separator,</span>
+<span class="sd">        store the URL in the directory under the first path segment.</span>
+<span class="sd">        Otherwise, store it as-is.</span>
+
+<span class="sd">        For example, if there are two registered prefixes,</span>
+<span class="sd">        &#39;v1/users&#39; and &#39;groups&#39;, `directory` will look liks:</span>
+
+<span class="sd">        {</span>
+<span class="sd">            &#39;v1&#39;: {</span>
+<span class="sd">                &#39;users&#39;: {</span>
+<span class="sd">                    &#39;_url&#39;: &#39;users-list&#39;</span>
+<span class="sd">                },</span>
+<span class="sd">            }</span>
+<span class="sd">            &#39;groups&#39;: {</span>
+<span class="sd">               &#39;_url&#39;: &#39;groups-list&#39;</span>
+<span class="sd">            }</span>
+<span class="sd">        }</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">base_name</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">base_name</span> <span class="o">=</span> <span class="n">prefix</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">DynamicRouter</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">viewset</span><span class="p">,</span> <span class="n">base_name</span><span class="p">)</span>
+
+        <span class="n">prefix_parts</span> <span class="o">=</span> <span class="n">prefix</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">prefix_parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">prefix</span> <span class="o">=</span> <span class="n">prefix_parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">endpoint</span> <span class="o">=</span> <span class="s1">&#39;/&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">prefix_parts</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">endpoint</span> <span class="o">=</span> <span class="n">prefix</span>
+            <span class="n">prefix</span> <span class="o">=</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="n">prefix</span> <span class="ow">and</span> <span class="n">prefix</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">directory</span><span class="p">:</span>
+            <span class="n">current</span> <span class="o">=</span> <span class="n">directory</span><span class="p">[</span><span class="n">prefix</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">current</span> <span class="o">=</span> <span class="n">directory</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">prefix</span><span class="p">,</span> <span class="n">directory</span><span class="p">)</span>
+
+        <span class="n">list_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">routes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">name</span>
+        <span class="n">url_name</span> <span class="o">=</span> <span class="n">list_name</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">basename</span><span class="o">=</span><span class="n">base_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">endpoint</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">current</span><span class="p">:</span>
+            <span class="n">current</span><span class="p">[</span><span class="n">endpoint</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">current</span><span class="p">[</span><span class="n">endpoint</span><span class="p">][</span><span class="s1">&#39;_url&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">url_name</span>
+
+    <span class="k">def</span> <span class="nf">get_routes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">viewset</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        DREST routes injection, overrides DRF&#39;s get_routes() method, which</span>
+<span class="sd">        gets called for each registered viewset.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">routes</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">DynamicRouter</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_routes</span><span class="p">(</span><span class="n">viewset</span><span class="p">)</span>
+        <span class="n">routes</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_relation_routes</span><span class="p">(</span><span class="n">viewset</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">routes</span>
+
+    <span class="k">def</span> <span class="nf">get_relation_routes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">viewset</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generate routes to serve relational objects. This method will add</span>
+<span class="sd">        a sub-URL for each relational field.</span>
+
+<span class="sd">        e.g.</span>
+<span class="sd">        A viewset for the following serializer:</span>
+
+<span class="sd">          class UserSerializer(..):</span>
+<span class="sd">              events = DynamicRelationField(EventSerializer, many=True)</span>
+<span class="sd">              groups = DynamicRelationField(GroupSerializer, many=True)</span>
+<span class="sd">              location = DynamicRelationField(LocationSerializer)</span>
+
+<span class="sd">        will have the following URLs added:</span>
+
+<span class="sd">          /users/&lt;pk&gt;/events/</span>
+<span class="sd">          /users/&lt;pk&gt;/groups/</span>
+<span class="sd">          /users/&lt;pk&gt;/location/</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">routes</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">viewset</span><span class="p">,</span> <span class="s1">&#39;serializer_class&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">routes</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">viewset</span><span class="p">,</span> <span class="s1">&#39;list_related&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">routes</span>
+
+        <span class="n">serializer</span> <span class="o">=</span> <span class="n">viewset</span><span class="o">.</span><span class="n">serializer_class</span><span class="p">()</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">serializer</span><span class="p">,</span> <span class="s1">&#39;get_all_fields&#39;</span><span class="p">,</span> <span class="n">serializer</span><span class="o">.</span><span class="n">get_fields</span><span class="p">)()</span>
+
+        <span class="n">route_name</span> <span class="o">=</span> <span class="s1">&#39;{basename}-{methodnamehyphen}&#39;</span>
+
+        <span class="k">for</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">fields</span><span class="p">):</span>
+            <span class="c1"># Only apply to DynamicRelationFields</span>
+            <span class="c1"># TODO(ryo): Maybe also apply in cases where fields are mapped</span>
+            <span class="c1">#            directly to serializers?</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">DynamicRelationField</span><span class="p">):</span>
+                <span class="k">continue</span>
+
+            <span class="n">methodname</span> <span class="o">=</span> <span class="s1">&#39;list_related&#39;</span>
+            <span class="n">url</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s1">r&#39;^{prefix}/{lookup}/(?P&lt;field_name&gt;</span><span class="si">%s</span><span class="s1">)&#39;</span>
+                <span class="s1">&#39;{trailing_slash}$&#39;</span> <span class="o">%</span> <span class="n">field_name</span>
+            <span class="p">)</span>
+            <span class="n">routes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Route</span><span class="p">(</span>
+                <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span>
+                <span class="n">mapping</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;get&#39;</span><span class="p">:</span> <span class="n">methodname</span><span class="p">},</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">replace_methodname</span><span class="p">(</span><span class="n">route_name</span><span class="p">,</span> <span class="n">field_name</span><span class="p">),</span>
+                <span class="n">initkwargs</span><span class="o">=</span><span class="p">{}</span>
+            <span class="p">))</span>
+        <span class="k">return</span> <span class="n">routes</span>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, ant@altschool.com, ryo@altschool.com.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

@@ -5,6 +5,9 @@ EXTRACT_REGEX := 's~^$(WHITESPACE)$(WORD)$(WHITESPACE)=$(WHITESPACE)$(QUOTE)(.*)
 ORG_NAME := $(shell grep ORG_NAME constants.py | sed -E $(EXTRACT_REGEX))
 REPO_NAME := $(shell grep REPO_NAME constants.py | sed -E $(EXTRACT_REGEX))
 APP_NAME := $(shell grep APP_NAME constants.py | sed -E $(EXTRACT_REGEX))
+PROJECT_NAME := $(shell grep PROJECT_NAME constants.py | sed -E $(EXTRACT_REGEX))
+AUTHOR_EMAIL := $(shell grep AUTHOR_EMAIL constants.py | sed -E $(EXTRACT_REGEX))
+VERSION := $(shell grep VERSION constants.py | sed -E $(EXTRACT_REGEX))
 
 INSTALL_PREFIX := /usr/local
 INSTALL_DIR  := $(INSTALL_PREFIX)/$(ORG_NAME)/$(REPO_NAME)
@@ -15,6 +18,17 @@ define header
 	@echo "* $1"
 	@tput sgr0
 endef
+
+.PHONY: docs
+
+docs: install
+	$(call header,"Building docs")
+	@rm -rf ./docs
+	@$(INSTALL_DIR)/bin/sphinx-apidoc -F -o ./docs $(APP_NAME) -H "$(PROJECT_NAME)" -A "$(AUTHOR_EMAIL)" -V $(VERSION) -R $(VERSION)
+	@sed -i -E "s/sphinx.ext.autodoc'/sphinx.ext.autodoc', 'sphinx.ext.napoleon'/" ./docs/conf.py
+	@DJANGO_SETTINGS_MODULE='tests.settings' $(INSTALL_DIR)/bin/sphinx-build -b html ./docs ./_docs
+	@cp -r ./_docs/* ./docs
+	@rm -rf ./_docs
 
 # Build/install the app
 # Runs on every command
