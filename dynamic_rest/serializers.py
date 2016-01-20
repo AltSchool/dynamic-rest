@@ -19,7 +19,11 @@ dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 
 
 class DynamicListSerializer(serializers.ListSerializer):
+    """Custom ListSerializer.
 
+    This implementation delegates DREST methods to the child serializer
+    and performs post-processing before returning the data.
+    """
     def __init__(self, *args, **kwargs):
         super(DynamicListSerializer, self).__init__(*args, **kwargs)
         self.child.parent = self
@@ -48,15 +52,20 @@ class DynamicListSerializer(serializers.ListSerializer):
                 self._sideloaded_data = ReturnDict(
                     SideloadingProcessor(
                         self,
-                        data).data,
-                    serializer=self)
+                        data
+                    ).data,
+                    serializer=self
+                )
             else:
                 self._sideloaded_data = ReturnList(data, serializer=self)
         return self._sideloaded_data
 
 
 class WithDynamicSerializerMixin(DynamicSerializerBase):
+    """Base class for DREST serializers.
 
+    This class provides support for dynamic field inclusions/exclusions.
+    """
     def __new__(cls, *args, **kwargs):
         """
         Custom constructor that sets the ListSerializer to
@@ -75,24 +84,34 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
             cls, *args, **kwargs)
 
     def __init__(
-            self, instance=None, data=fields.empty, only_fields=None,
-            include_fields=None, exclude_fields=None, request_fields=None,
-            sideload=False, dynamic=True, embed=False, **kwargs):
+            self,
+            instance=None,
+            data=fields.empty,
+            only_fields=None,
+            include_fields=None,
+            exclude_fields=None,
+            request_fields=None,
+            sideload=False,
+            dynamic=True,
+            embed=False,
+            **kwargs
+    ):
         """
         Custom initializer that builds `request_fields` and
         sets a `ListSerializer` that doesn't re-evaluate querysets.
 
         Arguments:
-          instance: Instance for the serializer base.
-          only_fields: List of field names to render.
-          include_fields: List of field names to include.
-          exclude_fields: List of field names to exclude.
-          request_fields: map of field names that supports
-            inclusions, exclusions, and nested sideloads.
-          sideload: If False, do not perform sideloading on `.data`.
-            (default: False)
-          dynamic: If False, ignore deferred rules and
-            revert to standard DRF `.fields` behavior. (default: True)
+            instance: Instance for the serializer base.
+            only_fields: List of field names to render.
+            include_fields: List of field names to include.
+            exclude_fields: List of field names to exclude.
+            request_fields: map of field names that supports
+                inclusions, exclusions, and nested sideloads.
+            sideload: If False, do not perform sideloading on `.data`.
+                (default: False)
+            dynamic: If False, ignore deferred rules and
+                revert to standard DRF `.fields` behavior.
+                (default: True)
         """
         name = self.get_name()
         if data is not fields.empty and name in data and len(data) == 1:
@@ -200,7 +219,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         If the plural name is not defined,
         the pluralized name will be returned.
         """
-        return getattr(self.Meta, 'plural_name', self.get_name() + 's')
+        return getattr(self.Meta, 'plural_name', '%ss' % self.get_name())
 
     def get_all_fields(self):
         """Returns the entire serializer field set.
@@ -285,15 +304,17 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         ]
 
     def _faster_to_representation(self, instance):
-        """
-        Object instance -> Dict of primitive datatypes.
+        """Modified to_representation with optimizations.
 
-        Copy of DRF's default to_representation with a couple of changes:
+        1) Returns a plain old dict as opposed to OrderedDict.
+            (Constructing ordered dict is ~100x slower than `{}`.)
+        2) Ensure we use a cached list of fields
+            (this optimization exists in DRF 3.2 but not 3.1)
 
-        1) Returns a plain old dict as opposed to OrderedDict. (Constructing
-           ordered dict is ~100x slower than `{}`.)
-        2) Ensure we use a cached list of fields (this is in DRF 3.2 but not
-           3.1)
+        Arguments:
+            instance: a model instance or data object
+        Returns:
+            Dict of primitive datatypes.
         """
 
         ret = {}
@@ -315,6 +336,14 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         return ret
 
     def to_representation(self, instance):
+        """Modified to_representation method.
+
+        Arguments:
+            instance: A model instance or data object.
+        Returns:
+            Instance ID if the serializer is meant to represent its ID.
+            Otherwise, a tagged data dict representation.
+        """
         if self.id_only():
             return instance.pk
         else:
@@ -330,7 +359,8 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
                 # TODO: Make this function configurable to support other
                 #       formats like JSON API link objects.
                 representation = merge_link_object(
-                    self, representation, instance)
+                    self, representation, instance
+                )
 
         # tag the representation with the serializer and instance
         return tag_dict(
@@ -341,24 +371,27 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         )
 
     def save(self, *args, **kwargs):
+        """Serializer save that address prefetch issues."""
         update = getattr(self, 'instance', None) is not None
         instance = super(
             WithDynamicSerializerMixin,
-            self).save(
+            self
+        ).save(
             *args,
-            **kwargs)
+            **kwargs
+        )
         view = self._context.get('view')
         if update and view:
-            # reload the object on update
-            # to get around prefetched manager issues
+            # Reload the object on update
+            # to get around prefetch cache issues
             instance = self.instance = view.get_object()
         return instance
 
     def id_only(self):
-        """Whether or not the serializer should return an ID instead of an object.
+        """Check whether the serializer should return an ID instead of an object.
 
         Returns:
-          True iff `request_fields` is True
+            True if and only if `request_fields` is True.
         """
         return self.dynamic and self.request_fields is True
 
@@ -369,16 +402,16 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
             self._sideloaded_data = ReturnDict(
                 SideloadingProcessor(
                     self,
-                    data).data if self.sideload else data,
-                serializer=self)
+                    data
+                ).data if self.sideload else data,
+                serializer=self
+            )
         return self._sideloaded_data
 
 
 class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
 
-    """
-    Dynamic serializer methods specific to model-based serializers.
-    """
+    """Adds DREST serializer methods specific to model-based serializers."""
 
     def get_model(self):
         return self.Meta.model
@@ -411,17 +444,19 @@ class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
 
 
 class DynamicModelSerializer(
-        WithDynamicModelSerializerMixin, serializers.ModelSerializer):
+    WithDynamicModelSerializerMixin,
+    serializers.ModelSerializer
+):
 
     """
-    DRESt-compatible model-based serializer.
+    DREST-compatible model-based serializer.
     """
     pass
 
 
 class EphemeralObject(object):
 
-    """ Object that initializes attributes from a dict """
+    """Object that initializes attributes from a dict."""
 
     def __init__(self, values_dict):
         if 'pk' not in values_dict:
@@ -430,11 +465,11 @@ class EphemeralObject(object):
 
 
 class DynamicEphemeralSerializer(
-        WithDynamicSerializerMixin, serializers.Serializer):
+    WithDynamicSerializerMixin,
+    serializers.Serializer
+):
 
-    """
-    DREST-compatible baseclass for serializers that aren't model-based.
-    """
+    """DREST-compatible baseclass for non-model serializers."""
 
     def to_representation(self, instance):
         """
