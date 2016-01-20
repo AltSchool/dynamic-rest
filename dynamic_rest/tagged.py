@@ -1,3 +1,4 @@
+"""This module contains tagging utilities for DREST data structures."""
 from collections import OrderedDict
 
 from django.conf import settings

@@ -1,7 +1,7 @@
 import json
 
-from django.conf import settings
 from django.db import connection
+from django.test import override_settings
 from django.utils import six
 from rest_framework.test import APITestCase
 
@@ -14,12 +14,16 @@ UNICODE_STRING = six.unichr(9629)  # unicode heart
 UNICODE_URL_STRING = '%E2%96%9D'
 
 
+@override_settings(
+    DYNAMIC_REST={
+        'ENABLE_LINKS': False
+    }
+)
 class TestUsersAPI(APITestCase):
 
     def setUp(self):
         self.fixture = create_fixture()
         self.maxDiff = None
-        settings.DYNAMIC_REST['ENABLE_LINKS'] = False
 
     def test_get(self):
         with self.assertNumQueries(1):
@@ -747,6 +751,11 @@ class TestUsersAPI(APITestCase):
             }, json.loads(response.content.decode('utf-8')))
 
 
+@override_settings(
+    DYNAMIC_REST={
+        'ENABLE_LINKS': False
+    }
+)
 class TestLocationsAPI(APITestCase):
 
     def setUp(self):
@@ -947,7 +956,6 @@ class TestLinks(APITestCase):
 
     def setUp(self):
         self.fixture = create_fixture()
-        settings.DYNAMIC_REST['ENABLE_LINKS'] = True
 
     def test_deferred_relations_have_links(self):
         r = self.client.get('/v2/cats/1/')

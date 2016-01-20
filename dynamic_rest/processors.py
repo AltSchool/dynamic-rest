@@ -1,3 +1,4 @@
+"""This module contains response processors."""
 from collections import defaultdict
 
 from django.utils import six
@@ -8,8 +9,21 @@ from dynamic_rest.tagged import TaggedDict
 
 
 class SideloadingProcessor(object):
+    """A processor that sideloads serializer data.
+
+    Sideloaded records are returned under top-level
+    response keys and produces responses that are
+    typically smaller than their nested equivalent.
+    """
 
     def __init__(self, serializer, data):
+        """Initializes and runs the processor.
+
+        Arguments:
+            serializer: a DREST serializer
+            data: the serializer's representation
+        """
+
         if isinstance(serializer, ListSerializer):
             serializer = serializer.child
         self.data = {}
@@ -23,15 +37,22 @@ class SideloadingProcessor(object):
         # add the primary resource data into the response data
         resource_name = self.name if isinstance(
             data,
-            dict) else self.plural_name
+            dict
+        ) else self.plural_name
         self.data[resource_name] = data
 
     def is_dynamic(self, data):
+        """Check whether the given data dictionary is a DREST structure.
+
+        Arguments:
+            data: A dictionary representation of a DRF serializer.
+        """
         return isinstance(data, TaggedDict)
 
     def process(self, obj, parent=None, parent_key=None, depth=0):
-        """
-        Recursively traverse the response data to sideload.
+        """Recursively process the data for sideloading.
+
+        Converts the nested representation into a sideloaded representation.
         """
         if isinstance(obj, list):
             for key, o in enumerate(obj):
@@ -50,7 +71,8 @@ class SideloadingProcessor(object):
                             parent=obj,
                             parent_key=key,
                             depth=depth +
-                            1)
+                            1
+                        )
 
                 if not dynamic or getattr(obj, 'embed', False):
                     return

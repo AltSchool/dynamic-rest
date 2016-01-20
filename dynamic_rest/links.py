@@ -1,3 +1,4 @@
+"""This module contains utilities to support API links."""
 from django.utils import six
 
 

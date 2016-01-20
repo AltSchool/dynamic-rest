@@ -1,7 +1,6 @@
 from collections import OrderedDict
 
-from django.conf import settings
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.utils import six
 
 from dynamic_rest.fields import DynamicRelationField
@@ -24,13 +23,16 @@ from tests.setup import create_fixture
 # into an integration test case and test serializer
 # methods in a more generic way
 
-
+@override_settings(
+    DYNAMIC_REST={
+        'ENABLE_LINKS': False
+    }
+)
 class TestDynamicSerializer(TestCase):
 
     def setUp(self):
         self.fixture = create_fixture()
         self.maxDiff = None
-        settings.DYNAMIC_REST['ENABLE_LINKS'] = False
 
     def test_data(self):
         serializer = UserSerializer(
@@ -485,6 +487,11 @@ class TestListSerializer(TestCase):
         self.assertEqual(serializer.get_plural_name(), 'users')
 
 
+@override_settings(
+    DYNAMIC_REST={
+        'ENABLE_LINKS': False
+    }
+)
 class TestEphemeralSerializer(TestCase):
 
     def setUp(self):
@@ -499,7 +506,8 @@ class TestEphemeralSerializer(TestCase):
         instance = EphemeralObject(data)
         data = LocationGroupSerializer(instance).data
         self.assertEqual(
-            data, {'id': 1, 'groups': [1, 2], 'location': 1})
+            data, {'id': 1, 'groups': [1, 2], 'location': 1}
+        )
 
     def test_data_count_field(self):
         eo = EphemeralObject({'pk': 1, 'values': [1, 1, 2]})
@@ -580,13 +588,17 @@ class TestUserLocationSerializer(TestCase):
         self.assertEqual(data['location']['name'], '0')
 
 
+@override_settings(
+    DYNAMIC_REST={
+        'ENABLE_SERIALIZER_CACHE': True
+    }
+)
 class TestSerializerCaching(TestCase):
 
     def setUp(self):
         self.serializer = CatSerializer(
             request_fields={'home': {}, 'backup_home': True}
         )
-        settings.DYNAMIC_REST['ENABLE_SERIALIZER_CACHE'] = True
 
     def test_get_all_fields(self):
         all_fields = self.serializer.get_all_fields()

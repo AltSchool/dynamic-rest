@@ -4,13 +4,20 @@ BASE_DIR = os.path.dirname(__file__)
 
 SECRET_KEY = 'test'
 INSTALL_DIR = '/usr/local/altschool/dynamic-rest/'
+
 STATIC_URL = '/static/'
-STATIC_ROOT = INSTALL_DIR + 'www/static'
+STATIC_ROOT = os.environ.get('STATIC_ROOT', INSTALL_DIR + 'www/static')
 
 DEBUG = True
 
-DATABASES = {
-    'default': {
+DATABASES = {}
+if os.environ.get('DATABASE_URL'):
+    # remote database
+    import dj_database_url
+    DATABASES['default'] = dj_database_url.config()
+else:
+    # local sqlite database file
+    DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.abspath(os.path.join(BASE_DIR, '../db.sqlite3')),
         'USER': '',
@@ -18,7 +25,6 @@ DATABASES = {
         'HOST': '',
         'PORT': ''
     }
-}
 
 MIDDLEWARE_CLASSES = ()
 

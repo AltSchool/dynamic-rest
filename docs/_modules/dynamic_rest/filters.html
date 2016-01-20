@@ -1,0 +1,703 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>dynamic_rest.filters &mdash; Dynamic REST 1.3.9 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.3.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="Dynamic REST 1.3.9 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for dynamic_rest.filters</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;This module contains custom filter backends.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">django.core.exceptions</span> <span class="kn">import</span> <span class="n">ImproperlyConfigured</span>
+<span class="kn">from</span> <span class="nn">django.db.models</span> <span class="kn">import</span> <span class="n">Q</span><span class="p">,</span> <span class="n">Prefetch</span>
+<span class="kn">from</span> <span class="nn">django.utils</span> <span class="kn">import</span> <span class="n">six</span>
+<span class="kn">from</span> <span class="nn">rest_framework</span> <span class="kn">import</span> <span class="n">serializers</span>
+<span class="kn">from</span> <span class="nn">rest_framework.exceptions</span> <span class="kn">import</span> <span class="n">ValidationError</span>
+<span class="kn">from</span> <span class="nn">rest_framework.filters</span> <span class="kn">import</span> <span class="n">BaseFilterBackend</span><span class="p">,</span> <span class="n">OrderingFilter</span>
+
+<span class="kn">from</span> <span class="nn">dynamic_rest.conf</span> <span class="kn">import</span> <span class="n">settings</span>
+<span class="kn">from</span> <span class="nn">dynamic_rest.datastructures</span> <span class="kn">import</span> <span class="n">TreeMap</span>
+<span class="kn">from</span> <span class="nn">dynamic_rest.fields</span> <span class="kn">import</span> <span class="n">DynamicRelationField</span>
+<span class="kn">from</span> <span class="nn">dynamic_rest.meta</span> <span class="kn">import</span> <span class="n">get_model_field</span><span class="p">,</span> <span class="n">is_field_remote</span><span class="p">,</span> <span class="n">is_model_field</span>
+<span class="kn">from</span> <span class="nn">dynamic_rest.patches</span> <span class="kn">import</span> <span class="n">patch_prefetch_one_level</span>
+<span class="kn">from</span> <span class="nn">dynamic_rest.related</span> <span class="kn">import</span> <span class="n">RelatedObject</span>
+
+<span class="n">patch_prefetch_one_level</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="FilterNode"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.filters.FilterNode">[docs]</a><span class="k">class</span> <span class="nc">FilterNode</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span></div>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="p">,</span> <span class="n">operator</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create an object representing a filter, to be stored in a TreeMap.</span>
+
+<span class="sd">        For example, a filter query like `filter{users.events.capacity.lte}=1`</span>
+<span class="sd">        would be passed into a `FilterNode` as follows:</span>
+
+<span class="sd">        ```</span>
+<span class="sd">            field = [&#39;users&#39;, &#39;events&#39;, &#39;capacity&#39;]</span>
+<span class="sd">            operator = &#39;lte&#39;</span>
+<span class="sd">            value = 1</span>
+<span class="sd">            node = FilterNode(field, operator, value)</span>
+<span class="sd">        ```</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            field: A list of field parts.</span>
+<span class="sd">            operator: A valid filter operator, or None.</span>
+<span class="sd">                Per Django convention, `None` means the equality operator.</span>
+<span class="sd">            value: The value to filter on.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">field</span> <span class="o">=</span> <span class="n">field</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">operator</span> <span class="o">=</span> <span class="n">operator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">value</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">key</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">%s%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="s1">&#39;__&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="p">),</span>
+            <span class="s1">&#39;__&#39;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">operator</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">operator</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">generate_query_key</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serializer</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the key that can be passed to Django&#39;s filter method.</span>
+
+<span class="sd">        To account for serialier field name rewrites, this method</span>
+<span class="sd">        translates serializer field names to model field names</span>
+<span class="sd">        by inspecting `serializer`.</span>
+
+<span class="sd">        For example, a query like `filter{users.events}` would be</span>
+<span class="sd">        returned as `users__events`.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            serializer: A DRF serializer</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A filter key.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rewritten</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">last</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">serializer</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">field</span><span class="p">):</span>
+            <span class="c1"># Note: .fields can be empty for related serializers that aren&#39;t</span>
+            <span class="c1"># sideloaded. Fields that are deferred also won&#39;t be present.</span>
+            <span class="c1"># If field name isn&#39;t in serializer.fields, get full list from</span>
+            <span class="c1"># get_all_fields() method. This is somewhat expensive, so only do</span>
+            <span class="c1"># this if we have to.</span>
+            <span class="n">fields</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">fields</span>
+            <span class="k">if</span> <span class="n">field_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+                <span class="n">fields</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="s1">&#39;get_all_fields&#39;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="p">{})()</span>
+
+            <span class="k">if</span> <span class="n">field_name</span> <span class="o">==</span> <span class="s1">&#39;pk&#39;</span><span class="p">:</span>
+                <span class="n">rewritten</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;pk&#39;</span><span class="p">)</span>
+                <span class="k">continue</span>
+
+            <span class="k">if</span> <span class="n">field_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
+                    <span class="s2">&quot;Invalid filter field: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">field_name</span>
+                <span class="p">)</span>
+
+            <span class="n">field</span> <span class="o">=</span> <span class="n">fields</span><span class="p">[</span><span class="n">field_name</span><span class="p">]</span>
+
+            <span class="c1"># For remote fields, strip off &#39;_set&#39; for filtering. This is a</span>
+            <span class="c1"># weird Django inconsistency.</span>
+            <span class="n">model_field_name</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">source</span> <span class="ow">or</span> <span class="n">field_name</span>
+            <span class="n">model_field</span> <span class="o">=</span> <span class="n">get_model_field</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">get_model</span><span class="p">(),</span> <span class="n">model_field_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_field</span><span class="p">,</span> <span class="n">RelatedObject</span><span class="p">):</span>
+                <span class="n">model_field_name</span> <span class="o">=</span> <span class="n">model_field</span><span class="o">.</span><span class="n">field</span><span class="o">.</span><span class="n">related_query_name</span><span class="p">()</span>
+
+            <span class="c1"># If get_all_fields() was used above, field could be unbound,</span>
+            <span class="c1"># and field.source would be None</span>
+            <span class="n">rewritten</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">model_field_name</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">last</span><span class="p">:</span>
+                <span class="k">break</span>
+
+            <span class="c1"># Recurse into nested field</span>
+            <span class="n">s</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s1">&#39;serializer&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">serializers</span><span class="o">.</span><span class="n">ListSerializer</span><span class="p">):</span>
+                <span class="n">s</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">child</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">s</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
+                    <span class="s2">&quot;Invalid nested filter field: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">field_name</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">operator</span><span class="p">:</span>
+            <span class="n">rewritten</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">operator</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="s1">&#39;__&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">rewritten</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="DynamicFilterBackend"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.filters.DynamicFilterBackend">[docs]</a><span class="k">class</span> <span class="nc">DynamicFilterBackend</span><span class="p">(</span><span class="n">BaseFilterBackend</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A DRF filter backend that construct DREST querysets.</span>
+
+<span class="sd">    This backend is responsible for interpretting and applying</span>
+<span class="sd">    filters, includes, and excludes to the base queryset of a view.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        VALID_FILTER_OPERATORS: A list of filter operators.</span>
+<span class="sd">        FALSEY_STRINGS: A list of strings that are interpretted as</span>
+<span class="sd">            False by the isnull operator.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">VALID_FILTER_OPERATORS</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s1">&#39;in&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;any&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;all&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;icontains&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;contains&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;startswith&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;istartswith&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;endswith&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;iendswith&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;year&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;month&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;day&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;week_day&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;regex&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;range&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;gt&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;lt&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;gte&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;lte&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;isnull&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;eq&#39;</span><span class="p">,</span>
+        <span class="bp">None</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">FALSEY_STRINGS</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s1">&#39;0&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;false&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;&#39;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+<div class="viewcode-block" id="DynamicFilterBackend.filter_queryset"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.filters.DynamicFilterBackend.filter_queryset">[docs]</a>    <span class="k">def</span> <span class="nf">filter_queryset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">queryset</span><span class="p">,</span> <span class="n">view</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Filter the queryset.</span>
+
+<span class="sd">        This is the main entry-point to this class, and</span>
+<span class="sd">        is called by DRF&#39;s list handler.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">request</span> <span class="o">=</span> <span class="n">request</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">view</span> <span class="o">=</span> <span class="n">view</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">DEBUG</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">DEBUG</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span>
+            <span class="c1"># in DEBUG mode, save a representation of the prefetch tree</span>
+            <span class="c1"># on the viewset</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">_prefetches</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefetches</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filter_queryset</span><span class="p">(</span><span class="n">queryset</span><span class="o">=</span><span class="n">queryset</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_extract_filters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Convert &#39;filters&#39; query params into a dict that can be passed</span>
+<span class="sd">        to Q. Returns a dict with two fields, &#39;include&#39; and &#39;exclude&#39;,</span>
+<span class="sd">        which can be used like:</span>
+
+<span class="sd">          result = self._extract_filters()</span>
+<span class="sd">          q = Q(**result[&#39;include&#39;] &amp; ~Q(**result[&#39;exclude&#39;])</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">filters_map</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;filters_map&#39;</span><span class="p">)</span> <span class="ow">or</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">get_request_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">FILTER</span><span class="p">)</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="n">TreeMap</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">spec</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">filters_map</span><span class="p">):</span>
+
+            <span class="c1"># Inclusion or exclusion?</span>
+            <span class="k">if</span> <span class="n">spec</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;-&#39;</span><span class="p">:</span>
+                <span class="n">spec</span> <span class="o">=</span> <span class="n">spec</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+                <span class="n">inex</span> <span class="o">=</span> <span class="s1">&#39;_exclude&#39;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">inex</span> <span class="o">=</span> <span class="s1">&#39;_include&#39;</span>
+
+            <span class="c1"># for relational filters, separate out relation path part</span>
+            <span class="k">if</span> <span class="s1">&#39;|&#39;</span> <span class="ow">in</span> <span class="n">spec</span><span class="p">:</span>
+                <span class="n">rel</span><span class="p">,</span> <span class="n">spec</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;|&#39;</span><span class="p">)</span>
+                <span class="n">rel</span> <span class="o">=</span> <span class="n">rel</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rel</span> <span class="o">=</span> <span class="bp">None</span>
+
+            <span class="n">parts</span> <span class="o">=</span> <span class="n">spec</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+
+            <span class="c1"># Last part could be operator, e.g. &quot;events.capacity.gte&quot;</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">parts</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">VALID_FILTER_OPERATORS</span><span class="p">:</span>
+                <span class="n">operator</span> <span class="o">=</span> <span class="n">parts</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">operator</span> <span class="o">=</span> <span class="bp">None</span>
+
+            <span class="c1"># All operators except &#39;range&#39; and &#39;in&#39; should have one value</span>
+            <span class="k">if</span> <span class="n">operator</span> <span class="o">==</span> <span class="s1">&#39;range&#39;</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
+            <span class="k">elif</span> <span class="n">operator</span> <span class="o">==</span> <span class="s1">&#39;in&#39;</span><span class="p">:</span>
+                <span class="c1"># no-op: i.e. accept `value` as an arbitrarily long list</span>
+                <span class="k">pass</span>
+            <span class="k">elif</span> <span class="n">operator</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">VALID_FILTER_OPERATORS</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">if</span> <span class="p">(</span>
+                    <span class="n">operator</span> <span class="o">==</span> <span class="s1">&#39;isnull&#39;</span> <span class="ow">and</span>
+                    <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">string_types</span><span class="p">)</span>
+                <span class="p">):</span>
+                    <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">FALSEY_STRINGS</span>
+                <span class="k">elif</span> <span class="n">operator</span> <span class="o">==</span> <span class="s1">&#39;eq&#39;</span><span class="p">:</span>
+                    <span class="n">operator</span> <span class="o">=</span> <span class="bp">None</span>
+
+            <span class="n">node</span> <span class="o">=</span> <span class="n">FilterNode</span><span class="p">(</span><span class="n">parts</span><span class="p">,</span> <span class="n">operator</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+            <span class="c1"># insert into output tree</span>
+            <span class="n">path</span> <span class="o">=</span> <span class="n">rel</span> <span class="k">if</span> <span class="n">rel</span> <span class="k">else</span> <span class="p">[]</span>
+            <span class="n">path</span> <span class="o">+=</span> <span class="p">[</span><span class="n">inex</span><span class="p">,</span> <span class="n">node</span><span class="o">.</span><span class="n">key</span><span class="p">]</span>
+            <span class="n">out</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">node</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">out</span>
+
+    <span class="k">def</span> <span class="nf">_filters_to_query</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">includes</span><span class="p">,</span> <span class="n">excludes</span><span class="p">,</span> <span class="n">serializer</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Construct Django Query object from request.</span>
+<span class="sd">        Arguments are dictionaries, which will be passed to Q() as kwargs.</span>
+
+<span class="sd">        e.g.</span>
+<span class="sd">            includes = { &#39;foo&#39; : &#39;bar&#39;, &#39;baz__in&#39; : [1, 2] }</span>
+<span class="sd">          produces:</span>
+<span class="sd">            Q(foo=&#39;bar&#39;, baz__in=[1, 2])</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">          includes: TreeMap representing inclusion filters.</span>
+<span class="sd">          excludes: TreeMap representing exclusion filters.</span>
+<span class="sd">          serializer: serializer instance of top-level object</span>
+<span class="sd">          q: Q() object (optional)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">          Q() instance or None if no inclusion or exclusion filters</span>
+<span class="sd">          were specified.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">rewrite_filters</span><span class="p">(</span><span class="n">filters</span><span class="p">,</span> <span class="n">serializer</span><span class="p">):</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">filters</span><span class="p">):</span>
+                <span class="n">filter_key</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">generate_query_key</span><span class="p">(</span><span class="n">serializer</span><span class="p">)</span>
+                <span class="n">out</span><span class="p">[</span><span class="n">filter_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">value</span>
+
+            <span class="k">return</span> <span class="n">out</span>
+
+        <span class="n">q</span> <span class="o">=</span> <span class="n">q</span> <span class="ow">or</span> <span class="n">Q</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">includes</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">excludes</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+
+        <span class="k">if</span> <span class="n">includes</span><span class="p">:</span>
+            <span class="n">includes</span> <span class="o">=</span> <span class="n">rewrite_filters</span><span class="p">(</span><span class="n">includes</span><span class="p">,</span> <span class="n">serializer</span><span class="p">)</span>
+            <span class="n">q</span> <span class="o">&amp;=</span> <span class="n">Q</span><span class="p">(</span><span class="o">**</span><span class="n">includes</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">excludes</span><span class="p">:</span>
+            <span class="n">excludes</span> <span class="o">=</span> <span class="n">rewrite_filters</span><span class="p">(</span><span class="n">excludes</span><span class="p">,</span> <span class="n">serializer</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">excludes</span><span class="p">):</span>
+                <span class="n">q</span> <span class="o">&amp;=</span> <span class="o">~</span><span class="n">Q</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="p">})</span>
+        <span class="k">return</span> <span class="n">q</span>
+
+    <span class="k">def</span> <span class="nf">_build_prefetch_queryset</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">,</span>
+        <span class="n">original_field</span><span class="p">,</span>
+        <span class="n">field</span><span class="p">,</span>
+        <span class="n">filters</span><span class="p">,</span>
+        <span class="n">requirements</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Applies prefetches to a queryset.&quot;&quot;&quot;</span>
+        <span class="n">related_queryset</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">original_field</span><span class="p">,</span> <span class="s1">&#39;queryset&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">related_queryset</span><span class="p">):</span>
+            <span class="n">related_queryset</span> <span class="o">=</span> <span class="n">related_queryset</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
+
+        <span class="n">source</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">source</span> <span class="ow">or</span> <span class="n">name</span>
+        <span class="c1"># Popping the source here (during explicit prefetch construction)</span>
+        <span class="c1"># guarantees that implicitly required prefetches that follow will</span>
+        <span class="c1"># not conflict.</span>
+        <span class="n">required</span> <span class="o">=</span> <span class="n">requirements</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span>
+            <span class="c1"># push prefetches</span>
+            <span class="n">prefetches</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefetches</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_prefetches</span><span class="p">[</span><span class="n">source</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_prefetches</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prefetches</span><span class="p">[</span><span class="n">source</span><span class="p">]</span>
+
+        <span class="n">queryset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filter_queryset</span><span class="p">(</span>
+            <span class="n">serializer</span><span class="o">=</span><span class="n">field</span><span class="p">,</span>
+            <span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="p">{}),</span>
+            <span class="n">queryset</span><span class="o">=</span><span class="n">related_queryset</span><span class="p">,</span>
+            <span class="n">requirements</span><span class="o">=</span><span class="n">required</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span>
+            <span class="c1"># pop back</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_prefetches</span> <span class="o">=</span> <span class="n">prefetches</span>
+
+        <span class="k">return</span> <span class="n">queryset</span>
+
+    <span class="k">def</span> <span class="nf">_add_internal_prefetches</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">prefetches</span><span class="p">,</span>
+        <span class="n">requirements</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add internal (required) prefetches to a prefetch dictionary.&quot;&quot;&quot;</span>
+        <span class="n">paths</span> <span class="o">=</span> <span class="n">requirements</span><span class="o">.</span><span class="n">get_paths</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">paths</span><span class="p">:</span>
+            <span class="c1"># Remove last segment, which indicates a field name or wildcard.</span>
+            <span class="c1"># For example, {model_a : {model_b : {field_c}}</span>
+            <span class="c1"># should be prefetched as a__b</span>
+            <span class="n">prefetch_path</span> <span class="o">=</span> <span class="n">path</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="s1">&#39;__&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">prefetch_path</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">key</span><span class="p">:</span>
+                <span class="n">prefetches</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">key</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_prefetches</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+    <span class="k">def</span> <span class="nf">_add_request_prefetches</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">prefetches</span><span class="p">,</span>
+        <span class="n">requirements</span><span class="p">,</span>
+        <span class="n">model</span><span class="p">,</span>
+        <span class="n">fields</span><span class="p">,</span>
+        <span class="n">filters</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add external (requested) prefetches to a prefetch dictionary.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">fields</span><span class="p">):</span>
+            <span class="n">original_field</span> <span class="o">=</span> <span class="n">field</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">DynamicRelationField</span><span class="p">):</span>
+                <span class="n">field</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">serializer</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">serializers</span><span class="o">.</span><span class="n">ListSerializer</span><span class="p">):</span>
+                <span class="n">field</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">child</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">serializers</span><span class="o">.</span><span class="n">ModelSerializer</span><span class="p">):</span>
+                <span class="k">continue</span>
+
+            <span class="n">source</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">source</span> <span class="ow">or</span> <span class="n">name</span>
+            <span class="k">if</span> <span class="s1">&#39;.&#39;</span> <span class="ow">in</span> <span class="n">source</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
+                    <span class="s1">&#39;nested relationship values &#39;</span>
+                    <span class="s1">&#39;are not supported&#39;</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">prefetches</span><span class="p">:</span>
+                <span class="c1"># ignore duplicated sources</span>
+                <span class="k">continue</span>
+
+            <span class="n">is_remote</span> <span class="o">=</span> <span class="n">is_field_remote</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">source</span><span class="p">)</span>
+            <span class="n">is_id_only</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s1">&#39;id_only&#39;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="bp">False</span><span class="p">)()</span>
+            <span class="k">if</span> <span class="n">is_id_only</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_remote</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="n">prefetch_queryset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_prefetch_queryset</span><span class="p">(</span>
+                <span class="n">name</span><span class="p">,</span>
+                <span class="n">original_field</span><span class="p">,</span>
+                <span class="n">field</span><span class="p">,</span>
+                <span class="n">filters</span><span class="p">,</span>
+                <span class="n">requirements</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Note: There can only be one prefetch per source, even</span>
+            <span class="c1">#       though there can be multiple fields pointing to</span>
+            <span class="c1">#       the same source. This could break in some cases,</span>
+            <span class="c1">#       but is mostly an issue on writes when we use all</span>
+            <span class="c1">#       fields by default.</span>
+            <span class="n">prefetches</span><span class="p">[</span><span class="n">source</span><span class="p">]</span> <span class="o">=</span> <span class="n">Prefetch</span><span class="p">(</span>
+                <span class="n">source</span><span class="p">,</span>
+                <span class="n">queryset</span><span class="o">=</span><span class="n">prefetch_queryset</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_extract_requirements</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">fields</span><span class="p">,</span>
+        <span class="n">requirements</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Extract internal prefetch requirements from serializer fields.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">fields</span><span class="p">):</span>
+            <span class="n">source</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">source</span>
+            <span class="c1"># Requires may be manually set on the field -- if not,</span>
+            <span class="c1"># assume the field requires only its source.</span>
+            <span class="n">requires</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s1">&#39;requires&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">or</span> <span class="p">[</span><span class="n">source</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">require</span> <span class="ow">in</span> <span class="n">requires</span><span class="p">:</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">require</span><span class="p">:</span>
+                    <span class="c1"># ignore fields with empty source</span>
+                    <span class="k">continue</span>
+
+                <span class="n">requirement</span> <span class="o">=</span> <span class="n">require</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">requirement</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;&#39;</span><span class="p">:</span>
+                    <span class="c1"># Change &#39;a.b.&#39; -&gt; &#39;a.b.*&#39;,</span>
+                    <span class="c1"># supporting &#39;a.b.&#39; for backwards compatibility.</span>
+                    <span class="n">requirement</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;*&#39;</span>
+                <span class="n">requirements</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">requirement</span><span class="p">,</span> <span class="n">TreeMap</span><span class="p">(),</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_filter_queryset</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">serializer</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">filters</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">queryset</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span>
+        <span class="n">requirements</span><span class="o">=</span><span class="bp">None</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Recursive queryset builder.</span>
+
+<span class="sd">        Handles nested prefetching of related data and deferring fields</span>
+<span class="sd">        at the queryset level.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            serializer: An optional serializer to use a base for the queryset.</span>
+<span class="sd">                If no serializer is passed, the `get_serializer` method will</span>
+<span class="sd">                be used to initialize the base serializer for the viewset.</span>
+<span class="sd">            filters: An optional TreeMap of nested filters.</span>
+<span class="sd">            queryset: An optional base queryset.</span>
+<span class="sd">            requirements: An optional TreeMap of nested requirements.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">serializer</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">queryset</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">queryset</span> <span class="o">=</span> <span class="n">serializer</span><span class="o">.</span><span class="n">Meta</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">objects</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">serializer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">get_serializer</span><span class="p">()</span>
+
+        <span class="n">model</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">serializer</span><span class="o">.</span><span class="n">Meta</span><span class="p">,</span> <span class="s1">&#39;model&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">model</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">queryset</span>
+
+        <span class="n">prefetches</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="n">serializer</span><span class="o">.</span><span class="n">fields</span>
+
+        <span class="k">if</span> <span class="n">requirements</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">requirements</span> <span class="o">=</span> <span class="n">TreeMap</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_extract_requirements</span><span class="p">(</span>
+            <span class="n">fields</span><span class="p">,</span>
+            <span class="n">requirements</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">filters</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="n">filters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_filters</span><span class="p">()</span>
+
+        <span class="c1"># build nested Prefetch queryset</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_request_prefetches</span><span class="p">(</span>
+            <span class="n">prefetches</span><span class="p">,</span>
+            <span class="n">requirements</span><span class="p">,</span>
+            <span class="n">model</span><span class="p">,</span>
+            <span class="n">fields</span><span class="p">,</span>
+            <span class="n">filters</span>
+        <span class="p">)</span>
+
+        <span class="c1"># add any remaining requirements as prefetches</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_add_internal_prefetches</span><span class="p">(</span>
+            <span class="n">prefetches</span><span class="p">,</span>
+            <span class="n">requirements</span>
+        <span class="p">)</span>
+
+        <span class="c1"># use requirements at this level to limit fields selected</span>
+        <span class="c1"># only do this for GET requests where we are not requesting the</span>
+        <span class="c1"># entire fieldset</span>
+        <span class="k">if</span> <span class="s1">&#39;*&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">requirements</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="o">.</span><span class="n">is_update</span><span class="p">():</span>
+            <span class="n">id_fields</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">serializer</span><span class="p">,</span> <span class="s1">&#39;get_id_fields&#39;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="p">[])()</span>
+            <span class="c1"># only include local model fields</span>
+            <span class="n">only</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">field</span> <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">id_fields</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">requirements</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
+                <span class="k">if</span> <span class="n">is_model_field</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_field_remote</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">field</span><span class="p">)</span>
+            <span class="p">]</span>
+            <span class="n">queryset</span> <span class="o">=</span> <span class="n">queryset</span><span class="o">.</span><span class="n">only</span><span class="p">(</span><span class="o">*</span><span class="n">only</span><span class="p">)</span>
+
+        <span class="c1"># add filters</span>
+        <span class="n">query</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_filters_to_query</span><span class="p">(</span>
+            <span class="n">includes</span><span class="o">=</span><span class="n">filters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;_include&#39;</span><span class="p">),</span>
+            <span class="n">excludes</span><span class="o">=</span><span class="n">filters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;_exclude&#39;</span><span class="p">),</span>
+            <span class="n">serializer</span><span class="o">=</span><span class="n">serializer</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">query</span><span class="p">:</span>
+            <span class="n">queryset</span> <span class="o">=</span> <span class="n">queryset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">query</span><span class="p">)</span>
+
+        <span class="n">prefetch</span> <span class="o">=</span> <span class="n">prefetches</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">queryset</span><span class="o">.</span><span class="n">prefetch_related</span><span class="p">(</span><span class="o">*</span><span class="n">prefetch</span><span class="p">)</span><span class="o">.</span><span class="n">distinct</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="DynamicSortingFilter"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.filters.DynamicSortingFilter">[docs]</a><span class="k">class</span> <span class="nc">DynamicSortingFilter</span><span class="p">(</span><span class="n">OrderingFilter</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Subclass of DRF&#39;s OrderingFilter.</span>
+
+<span class="sd">    This class adds support for multi-field ordering and rewritten fields.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="DynamicSortingFilter.filter_queryset"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.filters.DynamicSortingFilter.filter_queryset">[docs]</a>    <span class="k">def</span> <span class="nf">filter_queryset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">queryset</span><span class="p">,</span> <span class="n">view</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;&quot;Filter the queryset, applying the ordering.</span>
+
+<span class="sd">        The `ordering_param` can be overwritten here.</span>
+<span class="sd">        In DRF, the ordering_param is &#39;ordering&#39;, but we support changing it</span>
+<span class="sd">        to allow the viewset to control the parameter.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ordering_param</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">SORT</span>
+
+        <span class="n">ordering</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_ordering</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="n">queryset</span><span class="p">,</span> <span class="n">view</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ordering</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">queryset</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="o">*</span><span class="n">ordering</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">queryset</span></div>
+
+<div class="viewcode-block" id="DynamicSortingFilter.get_ordering"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.filters.DynamicSortingFilter.get_ordering">[docs]</a>    <span class="k">def</span> <span class="nf">get_ordering</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">queryset</span><span class="p">,</span> <span class="n">view</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return an ordering for a given request.</span>
+
+<span class="sd">        DRF expects a comma separated list, while DREST expects an array.</span>
+<span class="sd">        This method overwrites the DRF default so it can parse the array.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">view</span><span class="o">.</span><span class="n">get_request_feature</span><span class="p">(</span><span class="n">view</span><span class="o">.</span><span class="n">SORT</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">params</span><span class="p">:</span>
+            <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="n">param</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">params</span><span class="p">]</span>
+            <span class="n">valid_ordering</span><span class="p">,</span> <span class="n">invalid_ordering</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">remove_invalid_fields</span><span class="p">(</span>
+                <span class="n">queryset</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">view</span>
+            <span class="p">)</span>
+
+            <span class="c1"># if any of the sort fields are invalid, throw an error.</span>
+            <span class="c1"># else return the ordering</span>
+            <span class="k">if</span> <span class="n">invalid_ordering</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
+                    <span class="s2">&quot;Invalid filter field: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">invalid_ordering</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">valid_ordering</span>
+
+        <span class="c1"># No sorting was included</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_default_ordering</span><span class="p">(</span><span class="n">view</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DynamicSortingFilter.remove_invalid_fields"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.filters.DynamicSortingFilter.remove_invalid_fields">[docs]</a>    <span class="k">def</span> <span class="nf">remove_invalid_fields</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">queryset</span><span class="p">,</span> <span class="n">fields</span><span class="p">,</span> <span class="n">view</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Remove invalid fields from an ordering.</span>
+
+<span class="sd">        Overwrites the DRF default remove_invalid_fields method to return</span>
+<span class="sd">        both the valid orderings and any invalid orderings.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># get valid field names for sorting</span>
+        <span class="n">valid_fields_map</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">name</span><span class="p">:</span> <span class="n">source</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">label</span><span class="p">,</span> <span class="n">source</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_valid_fields</span><span class="p">(</span>
+                <span class="n">queryset</span><span class="p">,</span> <span class="n">view</span><span class="p">)</span>
+        <span class="p">}</span>
+
+        <span class="n">valid_orderings</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">invalid_orderings</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># for each field sent down from the query param,</span>
+        <span class="c1"># determine if its valid or invalid</span>
+        <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+            <span class="n">stripped_term</span> <span class="o">=</span> <span class="n">term</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;-&#39;</span><span class="p">)</span>
+            <span class="c1"># add back the &#39;-&#39; add the end if necessary</span>
+            <span class="n">reverse_sort_term</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">stripped_term</span><span class="p">)</span> <span class="ow">is</span> <span class="nb">len</span><span class="p">(</span><span class="n">term</span><span class="p">)</span> <span class="k">else</span> <span class="s1">&#39;-&#39;</span>
+            <span class="k">if</span> <span class="n">stripped_term</span> <span class="ow">in</span> <span class="n">valid_fields_map</span><span class="p">:</span>
+                <span class="n">name</span> <span class="o">=</span> <span class="n">reverse_sort_term</span> <span class="o">+</span> <span class="n">valid_fields_map</span><span class="p">[</span><span class="n">stripped_term</span><span class="p">]</span>
+                <span class="n">valid_orderings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">invalid_orderings</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">term</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">valid_orderings</span><span class="p">,</span> <span class="n">invalid_orderings</span></div>
+
+<div class="viewcode-block" id="DynamicSortingFilter.get_valid_fields"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.filters.DynamicSortingFilter.get_valid_fields">[docs]</a>    <span class="k">def</span> <span class="nf">get_valid_fields</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">queryset</span><span class="p">,</span> <span class="n">view</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return valid fields for ordering.</span>
+
+<span class="sd">        Overwrites DRF&#39;s get_valid_fields method so that valid_fields returns</span>
+<span class="sd">        serializer fields, not model fields.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">valid_fields</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="s1">&#39;ordering_fields&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ordering_fields</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">valid_fields</span> <span class="ow">is</span> <span class="bp">None</span> <span class="ow">or</span> <span class="n">valid_fields</span> <span class="o">==</span> <span class="s1">&#39;__all__&#39;</span><span class="p">:</span>
+            <span class="c1"># Default to allowing filtering on serializer fields</span>
+            <span class="n">serializer_class</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="s1">&#39;serializer_class&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">serializer_class</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="s2">&quot;Cannot use </span><span class="si">%s</span><span class="s2"> on a view which does not have either a &quot;</span>
+                    <span class="s2">&quot;&#39;serializer_class&#39; or &#39;ordering_fields&#39; attribute.&quot;</span>
+                <span class="p">)</span>
+                <span class="k">raise</span> <span class="n">ImproperlyConfigured</span><span class="p">(</span><span class="n">msg</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">__class__</span><span class="o">.</span><span class="n">__name__</span><span class="p">)</span>
+            <span class="n">valid_fields</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">field_name</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">source</span> <span class="ow">or</span> <span class="n">field_name</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">serializer_class</span><span class="p">()</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">getattr</span><span class="p">(</span>
+                    <span class="n">field</span><span class="p">,</span> <span class="s1">&#39;write_only&#39;</span><span class="p">,</span> <span class="bp">False</span>
+                <span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">field</span><span class="o">.</span><span class="n">source</span> <span class="o">==</span> <span class="s1">&#39;*&#39;</span>
+            <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">serializer_class</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">view</span><span class="p">,</span> <span class="s1">&#39;serializer_class&#39;</span><span class="p">)</span>
+            <span class="n">valid_fields</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">field_name</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">label</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">source</span> <span class="ow">or</span> <span class="n">field_name</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">field_name</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">serializer_class</span><span class="p">()</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s1">&#39;write_only&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+                <span class="ow">and</span> <span class="ow">not</span> <span class="n">field</span><span class="o">.</span><span class="n">source</span> <span class="o">==</span> <span class="s1">&#39;*&#39;</span> <span class="ow">and</span> <span class="n">field_name</span> <span class="ow">in</span> <span class="n">valid_fields</span>
+            <span class="p">]</span>
+        <span class="k">return</span> <span class="n">valid_fields</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, ant@altschool.com, ryo@altschool.com.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
