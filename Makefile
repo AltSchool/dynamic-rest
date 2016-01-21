@@ -78,9 +78,11 @@ run: install
 	$(INSTALL_DIR)/bin/python manage.py $(CMD) --settings=tests.settings
 
 # Start the development server
+serve: server
 server: start
 start: install
 	$(call header,"Starting development server")
+	$(INSTALL_DIR)/bin/python manage.py migrate --settings=tests.settings
 	$(INSTALL_DIR)/bin/python manage.py runserver $(PORT) --settings=tests.settings
 
 # Lint the project
