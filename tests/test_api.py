@@ -1282,7 +1282,7 @@ class TestBrowsableAPI(APITestCase):
     def test_get_root(self):
         response = self.client.get('/?format=api')
         content = response.content.decode('utf-8')
-        self.assertIn('side-panel', content)
+        self.assertIn('directory', content)
         self.assertIn('/horses', content)
         self.assertIn('/zebras', content)
         self.assertIn('/users', content)
@@ -1290,7 +1290,7 @@ class TestBrowsableAPI(APITestCase):
     def test_get_list(self):
         response = self.client.get('/users/?format=api')
         content = response.content.decode('utf-8')
-        self.assertIn('side-panel', content)
+        self.assertIn('directory', content)
         self.assertIn('/horses', content)
         self.assertIn('/zebras', content)
         self.assertIn('/users', content)
