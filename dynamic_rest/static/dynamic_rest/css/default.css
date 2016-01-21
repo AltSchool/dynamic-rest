@@ -2,6 +2,12 @@
     margin-top: 0px;
 }
 
+@media screen and (max-width: 1800px) {
+    .directory {
+        display: none;
+    }
+}
+
 .directory {
     font-family: 'Open Sans', 'Helvetica Neue', Helvetica, sans-serif;
     position: fixed;
