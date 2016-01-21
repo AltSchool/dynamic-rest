@@ -56,3 +56,8 @@ docs/_build/
 # PyBuilder
 target/
 
+# test database
+db.sqlite3
+
+# pyenv
+.python-version
