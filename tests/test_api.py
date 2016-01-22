@@ -21,114 +21,6 @@ class TestUsersAPI(APITestCase):
         self.maxDiff = None
         settings.DYNAMIC_REST['ENABLE_LINKS'] = False
 
-    def test_options(self):
-        response = self.client.options('/users/')
-        self.assertEquals(200, response.status_code)
-        actual = json.loads(response.content.decode('utf-8'))
-        expected = {
-            'description': '',
-            'features': ['include[]', 'exclude[]', 'filter{}', 'sort[]'],
-            'name': 'User List',
-            'parses': [
-                'application/json',
-                'application/x-www-form-urlencoded',
-                'multipart/form-data'
-            ],
-            'properties': {
-                'display_name': {
-                    'default': None,
-                    'label': 'Display name',
-                    'nullable': False,
-                    'read_only': True,
-                    'required': False,
-                    'type': 'field'
-                },
-                'groups': {
-                    'default': None,
-                    'label': 'Groups',
-                    'nullable': False,
-                    'read_only': False,
-                    'related_to': 'groups',
-                    'required': False,
-                    'type': 'many'
-                },
-                'id': {
-                    'default': None,
-                    'label': 'ID',
-                    'nullable': False,
-                    'read_only': True,
-                    'required': False,
-                    'type': 'integer'
-                },
-                'last_name': {
-                    'default': None,
-                    'label': 'Last name',
-                    'nullable': False,
-                    'read_only': False,
-                    'required': True,
-                    'type': 'string'
-                },
-                'location': {
-                    'default': None,
-                    'label': 'Location',
-                    'nullable': True,
-                    'read_only': False,
-                    'related_to': 'locations',
-                    'required': False,
-                    'type': 'one'
-                },
-                'name': {
-                    'default': None,
-                    'label': 'Name',
-                    'nullable': False,
-                    'read_only': False,
-                    'required': True,
-                    'type': 'string'
-                },
-                'number_of_cats': {
-                    'default': None,
-                    'label': 'Number of cats',
-                    'nullable': False,
-                    'read_only': True,
-                    'required': False,
-                    'type': 'field'
-                },
-                'permissions': {
-                    'default': None,
-                    'label': 'Permissions',
-                    'nullable': False,
-                    'read_only': False,
-                    'related_to': 'permissions',
-                    'required': False,
-                    'type': 'many'
-                },
-                'profile': {
-                    'default': None,
-                    'label': 'Profile',
-                    'nullable': False,
-                    'read_only': False,
-                    'related_to': 'profiles',
-                    'required': False,
-                    'type': 'one'
-                },
-                'thumbnail_url': {
-                    'default': None,
-                    'label': 'Thumbnail url',
-                    'nullable': False,
-                    'read_only': True,
-                    'required': False,
-                    'type': 'field'
-                }
-            },
-            'renders': ['application/json', 'text/html'],
-            'resource_name': 'user',
-            'resource_name_plural': 'users'
-        }
-        self.assertEquals(
-            json.loads(json.dumps(expected)),
-            json.loads(json.dumps(actual))
-        )
-
     def test_get(self):
         with self.assertNumQueries(1):
             # 1 for User, 0 for Location
@@ -859,6 +751,99 @@ class TestLocationsAPI(APITestCase):
 
     def setUp(self):
         self.fixture = create_fixture()
+        self.maxDiff = None
+
+    def test_options(self):
+        response = self.client.options('/locations/')
+        self.assertEquals(200, response.status_code)
+        actual = json.loads(response.content.decode('utf-8'))
+        expected = {
+            'description': '',
+            'features': ['include[]', 'exclude[]', 'filter{}', 'sort[]'],
+            'name': 'Location List',
+            'parses': [
+                'application/json',
+                'application/x-www-form-urlencoded',
+                'multipart/form-data'
+            ],
+            'properties': {
+                'name': {
+                    'default': None,
+                    'label': 'Name',
+                    'nullable': False,
+                    'read_only': False,
+                    'required': True,
+                    'type': 'string'
+                },
+                'address': {
+                    'default': None,
+                    'label': 'Address',
+                    'nullable': False,
+                    'read_only': False,
+                    'required': False,
+                    'type': 'field'
+                },
+                'id': {
+                    'default': None,
+                    'label': 'ID',
+                    'nullable': False,
+                    'read_only': True,
+                    'required': False,
+                    'type': 'integer'
+                },
+                'user_count': {
+                    'default': None,
+                    'label': 'User count',
+                    'nullable': False,
+                    'read_only': False,
+                    'required': False,
+                    'type': 'field'
+                },
+                'users': {
+                    'default': None,
+                    'label': 'Users',
+                    'nullable': False,
+                    'read_only': False,
+                    'related_to': 'users',
+                    'required': False,
+                    'type': 'many'
+                },
+                'cats': {
+                    'default': None,
+                    'label': 'Cats',
+                    'nullable': False,
+                    'read_only': False,
+                    'related_to': 'cats',
+                    'required': False,
+                    'type': 'many'
+                },
+                'bad_cats': {
+                    'default': None,
+                    'label': 'Bad cats',
+                    'nullable': False,
+                    'read_only': False,
+                    'related_to': 'cats',
+                    'required': False,
+                    'type': 'many'
+                },
+                'friendly_cats': {
+                    'default': None,
+                    'label': 'Friendly cats',
+                    'nullable': True,
+                    'read_only': False,
+                    'related_to': 'cats',
+                    'required': False,
+                    'type': 'many'
+                }
+            },
+            'renders': ['application/json', 'text/html'],
+            'resource_name': 'location',
+            'resource_name_plural': 'locations'
+        }
+        self.assertEquals(
+            json.loads(json.dumps(expected)),
+            json.loads(json.dumps(actual))
+        )
 
     def test_get_with_filter_by_user(self):
         url = '/locations/?filter{users}=1'
