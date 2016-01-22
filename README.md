@@ -600,12 +600,25 @@ DREST is configurable, and all settings are nested under a single block in your 
 ```python
 
 DYNAMIC_REST = {
-    'DEBUG': False, # enable/disable internal debugging,
-    'ENABLE_BROWSABLE_API': True, # enable/disable the browsable API. it can be useful to disable in production
-    'ENABLE_LINKS': True, # enable/disable relationship links
-    'ENABLE_SERIALIZER_CACHE: True, # enable/disable caching of related serializers
-    'MAX_PAGE_SIZE': None, # global setting for max page size, can be overridden at the viewset level
-    'PAGE_QUERY_PARAM': 'page', # global setting for the pagination query parameter, can be overridden at the viewset level
-    'PAGE_SIZE_QUERY_PARAM': 'per_page', # global setting for the page size query parameter, can be overriden at the global level
+    # DEBUG: enable/disable internal debugging
+    'DEBUG': False, 
+
+    # ENABLE_BROWSABLE_API: enable/disable the browsable API. it can be useful to disable in production
+    'ENABLE_BROWSABLE_API': True, 
+
+    # ENABLE_LINKS: enable/disable relationship links
+    'ENABLE_LINKS': True, 
+
+    # ENABLE_SERIALIZER_CACHE: enable/disable caching of related serializers
+    'ENABLE_SERIALIZER_CACHE: True, 
+
+    # MAX_PAGE_SIZE: global setting for max page size, can be overridden at the viewset level
+    'MAX_PAGE_SIZE': None, 
+
+    # PAGE_QUERY_PARAM: global setting for the pagination query parameter, can be overridden at the viewset level
+    'PAGE_QUERY_PARAM': 'page', 
+
+    # PAGE_SIZE_QUERY_PARAM: global setting for the page size query parameter, can be overriden at the viewset level
+    'PAGE_SIZE_QUERY_PARAM': 'per_page', 
 }
 ```
