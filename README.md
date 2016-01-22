@@ -4,14 +4,20 @@
 
 **Dynamic API extensions for Django REST Framework**
 
+
+## Maintainers
+
+* [Anthony Leontiev](mailto:ant@altschool.com)
+* [Ryo Chijiiwa](mailto:ryo@altschool.com)
+
 See http://dynamic-rest.readthedocs.org for full documentation.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 # Table of Contents
 
-- [Maintainers](#maintainers)
 - [Overview](#overview)
+- [Maintainers](#maintainers)
 - [Requirements](#requirements)
 - [Compatability Table](#compatability-table)
 - [Installation](#installation)
@@ -29,11 +35,6 @@ See http://dynamic-rest.readthedocs.org for full documentation.
 - [Settings](#settings)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
-# Maintainers
-
-* [Anthony Leontiev](mailto:ant@altschool.com)
-* [Ryo Chijiiwa](mailto:ryo@altschool.com)
 
 # Overview
 
