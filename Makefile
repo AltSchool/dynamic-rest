@@ -60,7 +60,7 @@ clean: clean_working_directory
 # Run tests
 test: lint install
 	$(call header,"Running unit tests")
-	@$(INSTALL_DIR)/bin/py.test --cov=$(APP_NAME) --tb=short -rw tests/$(TEST)
+	@$(INSTALL_DIR)/bin/py.test --cov=$(APP_NAME) --tb=short -q -s -rw tests/$(TEST)
 
 # Run all tests (tox)
 tox: lint install
@@ -78,9 +78,11 @@ run: install
 	$(INSTALL_DIR)/bin/python manage.py $(CMD) --settings=tests.settings
 
 # Start the development server
+serve: server
 server: start
 start: install
 	$(call header,"Starting development server")
+	$(INSTALL_DIR)/bin/python manage.py migrate --settings=tests.settings
 	$(INSTALL_DIR)/bin/python manage.py runserver $(PORT) --settings=tests.settings
 
 # Lint the project

@@ -1,7 +1,9 @@
 import os
 
+BASE_DIR = os.path.dirname(__file__)
+
 SECRET_KEY = 'test'
-INSTALL_DIR = '/usr/local/dynamic-rest/'
+INSTALL_DIR = '/usr/local/altschool/dynamic-rest/'
 STATIC_URL = '/static/'
 STATIC_ROOT = INSTALL_DIR + 'www/static'
 
@@ -10,7 +12,7 @@ DEBUG = True
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': INSTALL_DIR + 'db.sqlite3',
+        'NAME': os.path.abspath(os.path.join(BASE_DIR, '../db.sqlite3')),
         'USER': '',
         'PASSWORD': '',
         'HOST': '',
@@ -38,7 +40,6 @@ REST_FRAMEWORK = {
 }
 ROOT_URLCONF = 'tests.urls'
 
-BASE_DIR = os.path.dirname(__file__)
 
 TEMPLATE_DIRS = (
     os.path.join(BASE_DIR, '../dynamic_rest/templates'),

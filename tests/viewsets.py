@@ -45,27 +45,27 @@ class GroupNoMergeDictViewSet(DynamicModelViewSet):
     queryset = Group.objects.all()
 
     def create(self, request, *args, **kwargs):
-        if hasattr(request, 'data'):
-            try:
-                # Django<1.9, DRF<3.2
-                from django.utils.datastructures import MergeDict
-            except:
-                return super(GroupNoMergeDictViewSet, self).create(
-                    request,
-                    *args,
-                    **kwargs
-                )
-
-            if isinstance(request.data, MergeDict):
-                raise exceptions.ValidationError("request.data is MergeDict")
-            elif not isinstance(request.data, dict):
-                raise exceptions.ValidationError("request.data is not a dict")
-
-        return super(GroupNoMergeDictViewSet, self).create(
+        response = super(GroupNoMergeDictViewSet, self).create(
             request,
             *args,
             **kwargs
         )
+        if hasattr(request, 'data'):
+            try:
+                # Django<1.9, DRF<3.2
+                from django.utils.datastructures import MergeDict
+                if isinstance(request.data, MergeDict):
+                    raise exceptions.ValidationError(
+                        "request.data is MergeDict"
+                    )
+                elif not isinstance(request.data, dict):
+                    raise exceptions.ValidationError(
+                        "request.data is not a dict"
+                    )
+            except:
+                pass
+
+        return response
 
 
 class GroupViewSet(DynamicModelViewSet):
