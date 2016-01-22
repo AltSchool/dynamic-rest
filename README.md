@@ -1,4 +1,4 @@
-# [Dynamic REST]
+# Dynamic REST
 
 [![Circle CI](https://circleci.com/gh/AltSchool/dynamic-rest.svg?style=svg)](https://circleci.com/gh/AltSchool/dynamic-rest)
 
@@ -8,7 +8,7 @@ See http://dynamic-rest.readthedocs.org for full documentation.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**
+# Table of Contents
 
 - [Maintainers](#maintainers)
 - [Overview](#overview)
