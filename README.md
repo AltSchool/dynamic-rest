@@ -16,7 +16,7 @@ See http://dynamic-rest.readthedocs.org for full documentation.
 Dynamic REST (or DREST) extends the popular [Django REST Framework](https://django-rest-framework.org) (or DRF) with API features that
 empower your simple RESTful APIs with the flexibility of a graph query language.
 
-DREST can be used as a swap-in replacement for DRF, and offers the following features on top of the standard DRF kit:
+DREST classes can be used as a drop-in replacement for DRF classes, which offer the following features on top of the standard DRF kit:
 
 * Linked relationships
 * Sideloaded relationships
@@ -33,9 +33,56 @@ but it can be used to provide fast and flexible CRUD operations to any consumer 
 
 # Requirements
 
-* Python (2.7, 3.2, 3.3, 3.4)
+* Python (2.7, 3.3, 3.4, 3.5)
 * Django (1.7, 1.8, 1.9)
 * Django REST Framework (3.1, 3.2, 3.3)
+
+# Compatability Table
+
+Not all versions of Python, Django, and DRF are compatible. Here are the combinations you can use reliably with DREST (all tested by our tox configuration):
+
+| Python | Django | DRF | OK  |
+| ------ | ------ | --- | --- |
+| 2.7    | 1.7    | 3.1 | YES |
+| 2.7    | 1.7    | 3.2 | YES |
+| 2.7    | 1.7    | 3.3 | YES |
+| 2.7    | 1.8    | 3.1 | YES |
+| 2.7    | 1.8    | 3.2 | YES |
+| 2.7    | 1.8    | 3.3 | YES |
+| 2.7    | 1.9    | 3.1 | NO^1 |
+| 2.7    | 1.9    | 3.2 | YES |
+| 2.7    | 1.9    | 3.3 | YES |
+| 3.3    | 1.7    | 3.1 | YES |
+| 3.3    | 1.7    | 3.2 | YES |
+| 3.3    | 1.7    | 3.3 | YES |
+| 3.3    | 1.8    | 3.1 | YES |
+| 3.3    | 1.8    | 3.2 | YES |
+| 3.3    | 1.8    | 3.3 | YES |
+| 3.3    | 1.9    | 3.1 | NO^1,2 |
+| 3.3    | 1.9    | 3.2 | NO^2 |
+| 3.3    | 1.9    | 3.3 | NO^2 |
+| 3.4    | 1.7    | 3.1 | YES |
+| 3.4    | 1.7    | 3.2 | YES |
+| 3.4    | 1.7    | 3.3 | YES |
+| 3.4    | 1.8    | 3.1 | YES |
+| 3.4    | 1.8    | 3.2 | YES |
+| 3.4    | 1.8    | 3.3 | YES |
+| 3.4    | 1.9    | 3.1 | NO^1 |
+| 3.4    | 1.9    | 3.2 | YES |
+| 3.4    | 1.9    | 3.3 | YES |
+| 3.5    | 1.7    | 3.1 | NO^3 |
+| 3.5    | 1.7    | 3.2 | NO^3 |
+| 3.5    | 1.7    | 3.3 | NO^3 |
+| 3.5    | 1.8    | 3.1 | YES |
+| 3.5    | 1.8    | 3.2 | YES |
+| 3.5    | 1.8    | 3.3 | YES |
+| 3.5    | 1.9    | 3.1 | NO^1 |
+| 3.5    | 1.9    | 3.2 | YES |
+| 3.5    | 1.9    | 3.3 | YES |
+
+* 1: Django 1.9 is not compatible with DRF 3.1
+* 2: Django 1.9 is not compatible with Python 3.3
+* 3: Django 1.7 is not compatible with Python 3.5
 
 # Installation
 
@@ -160,7 +207,7 @@ the relationship endpoints for you -- no additional code is required:
 
 Using linked relationships provides your API consumers with a "lazy-loading" mechanism for traversing through a graph of data: the consumer can first load the primary resource, like the user, and then load related resources later, if necessary.
 
-In some situations, it can be more efficient to load relationships eagerly, such that a user's groups are available immediately as soon as the user is loaded. In Django, this can be accomplished by using [prefetch_related](TODO: LINK) or [select_related](TODO: LINK).
+In some situations, it can be more efficient to load relationships eagerly, such that a user's groups are available immediately as soon as the user is loaded. In Django, this can be accomplished by using [prefetch_related](https://docs.djangoproject.com/en/1.9/ref/models/querysets/#django.db.models.query.QuerySet.prefetch_related) or [select_related](https://docs.djangoproject.com/en/1.9/ref/models/querysets/#select-related).
 
 In DREST, the requirement to eagerly load (or "sideload") relationships can be expressed with the `include[]` query parameter. If a consumer wants to fetch a user and sideload their groups, for example, they would make a request like this:
 
@@ -489,7 +536,9 @@ The sky is the limit! DREST supports just about every basic filtering scenario a
 * range
 * lt
 * gt
-... (see the [full list here](TODO: LINK))
+...
+
+See the [full list here](https://github.com/AltSchool/dynamic-rest/blob/master/dynamic_rest/filters.py#L104).
 
 ## Field-based ordering
 
@@ -505,7 +554,7 @@ You can use the `sort[]` feature to order your response by one or more fields. D
 
 ## Directory panel for your Browsable API
 
-We love the DRF browsable API, but wish that it included a directory so that consumers can see your entire list of endpoints at a glance from any page.
+We love the DRF browsable API, but wish that it included a directory that would let you see your entire list of endpoints at a glance from any page.
 DREST adds that in:
 
 [TODO: SCREENSHOT OF DIRECTORY]
@@ -513,14 +562,26 @@ DREST adds that in:
 ## Optimizations at the query and serializer layers
 
 Supporting nested sideloading and filtering is expensive and can lead to very poor query performance if done naively.
-DREST uses Django 1.7s [Prefetch](TODO: LINK) object to prevent N+1 query situations and guarantee that your API is performant. 
+DREST uses Django's [Prefetch](https://docs.djangoproject.com/en/1.9/ref/models/querysets/#django.db.models.Prefetch) object to prevent N+1 query situations and guarantee that your API is performant. 
 We also optimize the serializer layer to ensure that the conversion of model data into JSON is as fast as possible.
 
 How fast is it? Here are some benchmarks that compare DREST response time to DRF response time:
 
 [TODO: BENCHMARKS]
 
-# Contributing
+# Settings
 
-[TODO: CONTRIBUTING]
+DREST is configurable, and all settings are nested under a single block in your `settings.py` file. Here it is with default values:
 
+```python
+
+DYNAMIC_REST = {
+    'DEBUG': False, # enable/disable internal debugging,
+    'ENABLE_BROWSABLE_API': True, # enable/disable the browsable API. it can be useful to disable in production
+    'ENABLE_LINKS': True, # enable/disable relationship links
+    'ENABLE_SERIALIZER_CACHE: True, # enable/disable caching of related serializers
+    'MAX_PAGE_SIZE': None, # global setting for max page size, can be overridden at the viewset level
+    'PAGE_QUERY_PARAM': 'page', # global setting for the pagination query parameter, can be overridden at the viewset level
+    'PAGE_SIZE_QUERY_PARAM': 'per_page', # global setting for the page size query parameter, can be overriden at the global level
+}
+```
