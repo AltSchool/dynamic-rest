@@ -1,8 +1,15 @@
+# [Dynamic REST]
+
+[![Circle CI](https://circleci.com/gh/AltSchool/dynamic-rest.svg?style=svg)](https://circleci.com/gh/AltSchool/dynamic-rest)
+
+**Dynamic API extensions for Django REST Framework**
+
+See http://dynamic-rest.readthedocs.org for full documentation.
+
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+**Table of Contents**
 
-- [[Dynamic REST]](#dynamic-rest)
 - [Maintainers](#maintainers)
 - [Overview](#overview)
 - [Requirements](#requirements)
@@ -22,14 +29,6 @@
 - [Settings](#settings)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
-# [Dynamic REST]
-
-[![Circle CI](https://circleci.com/gh/AltSchool/dynamic-rest.svg?style=svg)](https://circleci.com/gh/AltSchool/dynamic-rest)
-
-**Dynamic API extensions for Django REST Framework**
-
-See http://dynamic-rest.readthedocs.org for full documentation.
 
 # Maintainers
 
