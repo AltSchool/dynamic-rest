@@ -1,15 +1,19 @@
+from django.utils import six
+
+
 class TreeMap(dict):
 
     """
     Basic nested-dict tree structure.
     """
+
     def get_paths(self):
         """Get all paths down from the root.
 
         Returns [['a', 'b', 'c']] for {'a':{'b':{'c':None}}}
         """
         paths = []
-        for key, child in self.iteritems():
+        for key, child in six.iteritems(self):
             if isinstance(child, TreeMap) and child:
                 # current child is an intermediate node
                 for path in child.get_paths():

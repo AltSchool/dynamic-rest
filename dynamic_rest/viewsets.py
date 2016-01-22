@@ -1,19 +1,16 @@
 from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import QueryDict
-from django.utils.datastructures import MergeDict
-
-from rest_framework import viewsets, exceptions
+from django.utils import six
+from rest_framework import exceptions, viewsets
 from rest_framework.exceptions import ValidationError
-from rest_framework.renderers import JSONRenderer
-from dynamic_rest.renderers import DynamicBrowsableAPIRenderer
+from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 from rest_framework.response import Response
-from rest_framework.renderers import BrowsableAPIRenderer
 
-from dynamic_rest.pagination import DynamicPageNumberPagination
-from dynamic_rest.metadata import DynamicMetadata
 from dynamic_rest.filters import DynamicFilterBackend, DynamicSortingFilter
-
+from dynamic_rest.metadata import DynamicMetadata
+from dynamic_rest.pagination import DynamicPageNumberPagination
+from dynamic_rest.renderers import DynamicBrowsableAPIRenderer
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
@@ -31,7 +28,10 @@ class QueryParams(QueryDict):
         if hasattr(query_params, 'urlencode'):
             query_string = query_params.urlencode()
         else:
-            assert isinstance(query_params, str)
+            assert isinstance(
+                query_params,
+                (six.string_types, six.binary_type)
+            )
             query_string = query_params
         kwargs['mutable'] = True
         super(QueryParams, self).__init__(query_string, *args, **kwargs)
@@ -53,6 +53,7 @@ class QueryParams(QueryDict):
 
 
 class WithDynamicViewSetMixin(object):
+
     """A viewset that can support dynamic API features.
 
     Attributes:
@@ -80,7 +81,7 @@ class WithDynamicViewSetMixin(object):
     def initialize_request(self, request, *args, **kargs):
         """
         Override DRF initialize_request() method to swap request.GET
-        (which is aliased by request.QUERY_PARAMS) with a mutable instance
+        (which is aliased by request.query_params) with a mutable instance
         of QueryParams, and to convert request MergeDict to a subclass of dict
         for consistency (MergeDict is not a subclass of dict)
         """
@@ -98,15 +99,21 @@ class WithDynamicViewSetMixin(object):
             request, *args, **kargs
         )
 
-        # MergeDict doesn't have the same API as dict.
-        # Django has deprecated MergeDict and DRF is moving away from
-        # using it - thus, were comfortable replacing it with a QueryDict
-        # This will allow the data property to have normal dict methods.
-        if isinstance(request._full_data, MergeDict):
-            data_as_dict = request.data.dicts[0]
-            for d in request.data.dicts[1:]:
-                data_as_dict.update(d)
-            request._full_data = data_as_dict
+        try:
+            # Django<1.9, DRF<3.2
+
+            # MergeDict doesn't have the same API as dict.
+            # Django has deprecated MergeDict and DRF is moving away from
+            # using it - thus, were comfortable replacing it with a QueryDict
+            # This will allow the data property to have normal dict methods.
+            from django.utils.datastructures import MergeDict
+            if isinstance(request._full_data, MergeDict):
+                data_as_dict = request.data.dicts[0]
+                for d in request.data.dicts[1:]:
+                    data_as_dict.update(d)
+                request._full_data = data_as_dict
+        except:
+            pass
 
         return request
 

@@ -1,7 +1,10 @@
 from collections import defaultdict
+
+from django.utils import six
 from rest_framework.serializers import ListSerializer
 from rest_framework.utils.serializer_helpers import ReturnDict
-from dynamic_rest.wrappers import TaggedDict
+
+from dynamic_rest.tagged import TaggedDict
 
 
 class SideloadingProcessor(object):
@@ -39,7 +42,7 @@ class SideloadingProcessor(object):
             returned = isinstance(obj, ReturnDict)
             if dynamic or returned:
                 # recursively check all fields
-                for key, o in obj.iteritems():
+                for key, o in six.iteritems(obj):
                     if isinstance(o, list) or isinstance(o, dict):
                         # lists or dicts indicate a relation
                         self.process(

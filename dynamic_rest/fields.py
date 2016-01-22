@@ -1,18 +1,18 @@
 import importlib
-from itertools import chain
 import os
 import pickle
+from itertools import chain
 
-from rest_framework import fields
-from rest_framework.exceptions import ParseError, NotFound
-from rest_framework.serializers import SerializerMethodField
 from django.conf import settings
 from django.db.models import ManyToManyField
+from django.utils import six
 from django.utils.functional import cached_property
+from rest_framework import fields
+from rest_framework.exceptions import NotFound, ParseError
+from rest_framework.serializers import SerializerMethodField
 
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.related import RelatedObject
-
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 
@@ -214,8 +214,8 @@ class DynamicRelationField(DynamicField):
         key_dict = {
             'parent': self.parent.__class__.__name__,
             'field': self.field_name,
-            'args': frozenset(args),
-            'init_args': init_args.items()
+            'args': args,
+            'init_args': init_args
         }
         cache_key = hash(pickle.dumps(key_dict))
 
@@ -268,7 +268,7 @@ class DynamicRelationField(DynamicField):
 
     def get_serializer(self, *args, **kwargs):
         init_args = {
-            k: v for k, v in self.kwargs.iteritems()
+            k: v for k, v in six.iteritems(self.kwargs)
             if k in self.SERIALIZER_KWARGS
         }
 
@@ -360,7 +360,7 @@ class DynamicRelationField(DynamicField):
     @property
     def serializer_class(self):
         serializer_class = self._serializer_class
-        if not isinstance(serializer_class, basestring):
+        if not isinstance(serializer_class, six.string_types):
             return serializer_class
 
         parts = serializer_class.split('.')

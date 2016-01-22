@@ -1,3 +1,15 @@
+from rest_framework.serializers import CharField
+
+from dynamic_rest.fields import (
+    CountField,
+    DynamicField,
+    DynamicMethodField,
+    DynamicRelationField
+)
+from dynamic_rest.serializers import (
+    DynamicEphemeralSerializer,
+    DynamicModelSerializer
+)
 from tests.models import (
     Cat,
     Dog,
@@ -9,11 +21,6 @@ from tests.models import (
     User,
     Zebra
 )
-from dynamic_rest.serializers import DynamicModelSerializer
-from dynamic_rest.serializers import DynamicEphemeralSerializer
-from dynamic_rest.fields import (
-    DynamicMethodField, DynamicRelationField, CountField, DynamicField)
-from rest_framework.serializers import CharField
 
 
 def backup_home_link(name, field, data, obj):
@@ -41,7 +48,7 @@ class LocationSerializer(DynamicModelSerializer):
         model = Location
         name = 'location'
         fields = (
-            'id', 'name', 'users', 'user_count', 'address', 'metadata',
+            'id', 'name', 'users', 'user_count', 'address',
             'cats', 'friendly_cats', 'bad_cats'
         )
 
@@ -52,7 +59,6 @@ class LocationSerializer(DynamicModelSerializer):
         deferred=True)
     user_count = CountField('users', required=False, deferred=True)
     address = DynamicField(source='blob', required=False, deferred=True)
-    metadata = DynamicField(deferred=True, required=False)
     cats = DynamicRelationField(
         'CatSerializer', source='cat_set', many=True, deferred=True)
     friendly_cats = DynamicRelationField(
@@ -148,7 +154,8 @@ class UserSerializer(DynamicModelSerializer):
     permissions = DynamicRelationField(
         'PermissionSerializer',
         many=True,
-        deferred=True)
+        deferred=True
+    )
     groups = DynamicRelationField('GroupSerializer', many=True, deferred=True)
     display_name = DynamicField(source='profile.display_name', read_only=True)
     thumbnail_url = DynamicField(

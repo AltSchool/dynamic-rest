@@ -21,6 +21,7 @@ parts/
 sdist/
 var/
 *.egg-info/
+*.eggs/
 .installed.cfg
 *.egg
 
@@ -54,3 +55,9 @@ docs/_build/
 
 # PyBuilder
 target/
+
+# test database
+db.sqlite3
+
+# pyenv
+.python-version

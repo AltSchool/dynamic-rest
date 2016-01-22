@@ -1,6 +1,6 @@
 from collections import OrderedDict
-from django.conf import settings
 
+from django.conf import settings
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 

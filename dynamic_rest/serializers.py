@@ -1,18 +1,18 @@
 import copy
+
 from django.conf import settings
 from django.db import models
+from django.utils import six
 from django.utils.functional import cached_property
+from rest_framework import exceptions, fields, serializers
+from rest_framework.fields import SkipField
+from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.fields import DynamicRelationField
+from dynamic_rest.links import merge_link_object
 from dynamic_rest.processors import SideloadingProcessor
-from dynamic_rest.serializer_helpers import merge_link_object
-from dynamic_rest.wrappers import tag_dict
-
-from rest_framework.fields import SkipField
-from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
-from rest_framework import serializers, fields, exceptions
-
+from dynamic_rest.tagged import tag_dict
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 
@@ -103,9 +103,11 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
             # passes null as a value, remove the field from the data
             # this addresses the frontends that send
             # undefined resource fields as null on POST/PUT
-            for field_name, field in self.get_all_fields().iteritems():
-                if field.allow_null is False and field.required is False \
-                        and field_name in data and data[field_name] is None:
+            for field_name, field in six.iteritems(self.get_all_fields()):
+                if (
+                    field.allow_null is False and field.required is False and
+                    field_name in data and data[field_name] is None
+                ):
                     data.pop(field_name)
 
         kwargs['instance'] = instance
@@ -160,7 +162,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
             # First exclude all, then add back in explicitly included fields.
             include_fields = set(
                 list(include_fields) + [
-                    field for field, val in self.request_fields.iteritems()
+                    field for field, val in six.iteritems(self.request_fields)
                     if val or val == {}
                 ]
             )
@@ -208,7 +210,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
             self._all_fields = super(
                 WithDynamicSerializerMixin,
                 self).get_fields()
-            for k, field in self._all_fields.iteritems():
+            for k, field in six.iteritems(self._all_fields):
                 field.field_name = k
                 field.parent = self
         return self._all_fields
@@ -217,7 +219,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         """Return set of deferred field names."""
         meta_deferred = set(getattr(self.Meta, 'deferred_fields', []))
         return {
-            name for name, field in serializer_fields.iteritems()
+            name for name, field in six.iteritems(serializer_fields)
             if getattr(field, 'deferred', None) is True or name in
             meta_deferred
         }
@@ -241,7 +243,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
 
         # apply request overrides
         if request_fields:
-            for name, include in request_fields.iteritems():
+            for name, include in six.iteritems(request_fields):
                 if name not in serializer_fields:
                     raise exceptions.ParseError(
                         "'%s' is not a valid field name for '%s'" %
@@ -261,7 +263,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         if not hasattr(self, '_link_fields'):
             all_fields = self.get_all_fields()
             self._link_fields = {
-                name: field for name, field in all_fields.iteritems()
+                name: field for name, field in six.iteritems(all_fields)
                 if isinstance(field, DynamicRelationField)
                 and getattr(field, 'link', True)
                 and not (

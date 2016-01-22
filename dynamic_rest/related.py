@@ -6,5 +6,6 @@ try:
 except:
     # Django >= 1.8
     # See: https://code.djangoproject.com/ticket/21414
-    from django.db.models.fields.related import ForeignObjectRel \
-        as RelatedObject
+    from django.db.models.fields.related import (
+        ForeignObjectRel as RelatedObject
+    )
