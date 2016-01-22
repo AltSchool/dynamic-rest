@@ -229,7 +229,7 @@ the relationship endpoints for you -- no additional code is required:
 
 ## Sideloaded relationships
 
-Using linked relationships provides your API consumers with a "lazy-loading" mechanism for traversing through a graph of data: the consumer can first load the primary resource, like the user, and then load related resources later, if necessary.
+Using linked relationships provides your API consumers with a "lazy-loading" mechanism for traversing through a graph of data. The consumer can first load the primary resource and then load related resources later, if necessary.
 
 In some situations, it can be more efficient to load relationships eagerly, such that a user's groups are available immediately as soon as the user is loaded. In Django, this can be accomplished by using [prefetch_related](https://docs.djangoproject.com/en/1.9/ref/models/querysets/#django.db.models.query.QuerySet.prefetch_related) or [select_related](https://docs.djangoproject.com/en/1.9/ref/models/querysets/#select-related).
 
