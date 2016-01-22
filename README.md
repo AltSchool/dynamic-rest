@@ -1,3 +1,28 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [[Dynamic REST]](#dynamic-rest)
+- [Maintainers](#maintainers)
+- [Overview](#overview)
+- [Requirements](#requirements)
+- [Compatability Table](#compatability-table)
+- [Installation](#installation)
+- [Demo](#demo)
+- [Features](#features)
+  - [Linked relationships](#linked-relationships)
+  - [Sideloaded relationships](#sideloaded-relationships)
+  - [Embedded relationships](#embedded-relationships)
+  - [Field inclusions](#field-inclusions)
+  - [Field exclusions](#field-exclusions)
+  - [Field-based filtering](#field-based-filtering)
+  - [Field-based ordering](#field-based-ordering)
+  - [Directory panel for your Browsable API](#directory-panel-for-your-browsable-api)
+  - [Optimizations at the query and serializer layers](#optimizations-at-the-query-and-serializer-layers)
+- [Settings](#settings)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # [Dynamic REST]
 
 [![Circle CI](https://circleci.com/gh/AltSchool/dynamic-rest.svg?style=svg)](https://circleci.com/gh/AltSchool/dynamic-rest)
