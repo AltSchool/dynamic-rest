@@ -26,6 +26,7 @@ docs: install
 	@rm -rf ./docs
 	@$(INSTALL_DIR)/bin/sphinx-apidoc -F -o ./docs $(APP_NAME) -H "$(PROJECT_NAME)" -A "$(AUTHOR_EMAIL)" -V $(VERSION) -R $(VERSION)
 	@sed -i -E "s/sphinx.ext.autodoc'/sphinx.ext.autodoc', 'sphinx.ext.napoleon'/" ./docs/conf.py
+	@rm -rf ./docs/conf.py-E
 	@DJANGO_SETTINGS_MODULE='tests.settings' $(INSTALL_DIR)/bin/sphinx-build -b html ./docs ./_docs
 	@cp -r ./_docs/* ./docs
 	@rm -rf ./_docs
