@@ -23,11 +23,13 @@ class UserSerializer(serializers.DynamicModelSerializer):
 
     permissions = fields.DynamicRelationField(
         'PermissionSerializer',
+        embed=True,
         many=True,
         deferred=True
     )
     groups = fields.DynamicRelationField(
         'GroupSerializer',
+        embed=True,
         many=True,
         deferred=True
     )
@@ -41,6 +43,7 @@ class GroupSerializer(serializers.DynamicModelSerializer):
 
     permissions = fields.DynamicRelationField(
         'PermissionSerializer',
+        embed=True,
         many=True,
         deferred=True
     )

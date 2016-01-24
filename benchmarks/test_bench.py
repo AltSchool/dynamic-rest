@@ -9,15 +9,15 @@ from .models import (
 
 MULT_SIMPLE_SIZE = 1
 MIN_SIMPLE_SIZE = 10
-MAX_SIMPLE_SIZE = 100
+MAX_SIMPLE_SIZE = 20
 
 MULT_NESTED_SIZE = 1
 MIN_NESTED_SIZE = 10
-MAX_NESTED_SIZE = 100
+MAX_NESTED_SIZE = 20
 
 MULT_DEEP_SIZE = 1
 MIN_DEEP_SIZE = 10
-MAX_DEEP_SIZE = 100
+MAX_DEEP_SIZE = 20
 
 
 class BenchmarkTest(APITestCase):
@@ -30,7 +30,7 @@ class BenchmarkTest(APITestCase):
         end = datetime.now()
         diff = end - start
 
-        print("%s@%d: %d" % (key, size, diff.total_seconds() * 1000))
+        print("%s@%d: %d ms" % (key, size, diff.total_seconds() * 1000))
 
     def generate_simple(self, size):
         for i in xrange(size):
@@ -75,15 +75,15 @@ class BenchmarkTest(APITestCase):
         for size in range(MIN_SIMPLE_SIZE, MAX_SIMPLE_SIZE):
             size *= MULT_SIMPLE_SIZE
             self.generate_simple(size)
-            self.time('drest/simple', '/drest/users', size)
-            self.time('drf/simple', '/drf/users', size)
+            self.time('drest/simple', '/drest/users/', size)
+            self.time('drf/simple', '/drf/users/', size)
 
     def test_nested(self):
         for size in range(MIN_NESTED_SIZE, MAX_NESTED_SIZE):
             size *= MULT_NESTED_SIZE
             self.generate_nested(size)
-            self.time('drest/nested', '/drest/users?include[]=groups.', size)
-            self.time('drf/nested', '/drf/users_with_groups', size)
+            self.time('drest/nested', '/drest/users/?include[]=groups.', size)
+            self.time('drf/nested', '/drf/users_with_groups/', size)
 
     def test_deep(self):
         for size in range(MIN_DEEP_SIZE, MAX_DEEP_SIZE):
@@ -91,11 +91,11 @@ class BenchmarkTest(APITestCase):
             self.generate_deep(size)
             self.time(
                 'drest/deep',
-                '/drest/users?include[]=groups.permissions.&include[]=groups.users',  # noqa
+                '/drest/users/?include[]=groups.permissions.&include[]=permissions.',  # noqa
                 size
             )
             self.time(
                 'drf/deep',
-                '/drf/users_with_all',
+                '/drf/users_with_all/',
                 size
             )
