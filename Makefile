@@ -93,4 +93,4 @@ lint: clean_working_directory
 # Auto-format the project
 format: clean_working_directory
 	$(call header,"Auto-formatting code")
-	@find . -type f -name '*.py' | xargs flake8 | sed -E 's/^([^:]*\.py).*/\1/g' | uniq | xargs autopep8 --experimental -a --in-place
+	@find $(APP_NAME) -type f -name '*.py' | xargs flake8 | sed -E 's/^([^:]*\.py).*/\1/g' | uniq | xargs autopep8 --experimental -a --in-place
