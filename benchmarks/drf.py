@@ -18,24 +18,28 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
+        fields = ('id', 'name')
 
 
 class GroupSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Group
+        fields = ('id', 'name')
 
 
 class PermissionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Permission
+        fields = ('id', 'name')
 
 
 class UserWithGroupsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
+        fields = ('id', 'name', 'groups')
     groups = GroupSerializer(many=True)
 
 
@@ -43,6 +47,7 @@ class GroupWithPermissionsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Group
+        fields = ('id', 'name', 'permissions')
     permissions = PermissionSerializer(many=True)
 
 
@@ -50,6 +55,7 @@ class UserWithAllSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
+        fields = ('id', 'name', 'permissions', 'groups')
 
     groups = GroupWithPermissionsSerializer(many=True)
     permissions = PermissionSerializer(many=True)

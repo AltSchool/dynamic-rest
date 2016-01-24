@@ -7,11 +7,11 @@ from .models import (
     Permission
 )
 
-MULT_SIMPLE_SIZE = 1
+MULT_SIMPLE_SIZE = 10
 MIN_SIMPLE_SIZE = 10
 MAX_SIMPLE_SIZE = 20
 
-MULT_NESTED_SIZE = 1
+MULT_NESTED_SIZE = 10
 MIN_NESTED_SIZE = 10
 MAX_NESTED_SIZE = 20
 
@@ -30,7 +30,7 @@ class BenchmarkTest(APITestCase):
         end = datetime.now()
         diff = end - start
 
-        print("%s@%d: %d ms" % (key, size, diff.total_seconds() * 1000))
+        print("%s@%d: %d ms" % (key, size, diff.total_seconds() * 1000))  # noqa
 
     def generate_simple(self, size):
         for i in xrange(size):
@@ -63,7 +63,7 @@ class BenchmarkTest(APITestCase):
                 permission = Permission.objects.create(
                     name='%d-%d' % (i, j),
                 )
-                group.permissions.add(permission)
+                user.permissions.add(permission)
                 user.groups.add(group)
                 for k in xrange(size):
                     permission = Permission.objects.create(

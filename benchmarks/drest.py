@@ -20,6 +20,7 @@ class UserSerializer(serializers.DynamicModelSerializer):
     class Meta:
         model = User
         name = 'user'
+        fields = ('id', 'name', 'permissions', 'groups')
 
     permissions = fields.DynamicRelationField(
         'PermissionSerializer',
@@ -40,6 +41,7 @@ class GroupSerializer(serializers.DynamicModelSerializer):
     class Meta:
         model = Group
         name = 'group'
+        fields = ('id', 'name', 'permissions')
 
     permissions = fields.DynamicRelationField(
         'PermissionSerializer',
@@ -54,6 +56,7 @@ class PermissionSerializer(serializers.DynamicModelSerializer):
     class Meta:
         model = Permission
         name = 'permission'
+        fields = ('id', 'name', )
 
 # DREST views
 
