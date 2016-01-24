@@ -68,6 +68,11 @@ tox: lint install
 	$(call header,"Running multi-version tests")
 	@$(INSTALL_DIR)/bin/tox
 
+# Benchmarks
+bench: install
+	$(call header,"Running benchmarks")
+	@$(INSTALL_DIR)/bin/python runtests.py --benchmarks
+
 # Start the Django shell
 shell: install
 	$(call header,"Starting shell")
