@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+from collections import defaultdict
 from rest_framework.test import APITestCase
 from datetime import datetime
 from .models import (
@@ -22,7 +23,10 @@ MAX_DEEP_SIZE = 20
 
 class BenchmarkTest(APITestCase):
 
-    def time(self, key, url, size):
+    def setUp(self):
+        self._results = defaultdict(lambda: defaultdict(dict))
+
+    def bench(self, implementation_name, benchmark_name, url, size):
         start = datetime.now()
 
         r = self.client.get(url)
@@ -30,7 +34,22 @@ class BenchmarkTest(APITestCase):
         end = datetime.now()
         diff = end - start
 
-        print("%s@%d: %d ms" % (key, size, diff.total_seconds() * 1000))  # noqa
+        self._results[implementation_name][benchmark_name][size] = (
+            diff.total_seconds()
+        )
+
+    def tearDown(self):
+        for implementation_name, benchmarks in self._results.items():
+            for benchmark_name, benchmark in benchmarks.items():
+                for size, value in benchmark.items():
+                    print(
+                        '%s,%s,%s,%s' % (
+                            implementation_name,
+                            benchmark_name,
+                            str(size),
+                            str(value)
+                        )
+                    )
 
     def generate_simple(self, size):
         for i in xrange(size):
@@ -75,27 +94,35 @@ class BenchmarkTest(APITestCase):
         for size in range(MIN_SIMPLE_SIZE, MAX_SIMPLE_SIZE):
             size *= MULT_SIMPLE_SIZE
             self.generate_simple(size)
-            self.time('drest/simple', '/drest/users/', size)
-            self.time('drf/simple', '/drf/users/', size)
+            self.bench('drest', 'simple', '/drest/users/', size)
+            self.bench('drf', 'simple', '/drf/users/', size)
 
     def test_nested(self):
         for size in range(MIN_NESTED_SIZE, MAX_NESTED_SIZE):
             size *= MULT_NESTED_SIZE
             self.generate_nested(size)
-            self.time('drest/nested', '/drest/users/?include[]=groups.', size)
-            self.time('drf/nested', '/drf/users_with_groups/', size)
+            self.bench(
+                'drest',
+                'nested',
+                '/drest/users/?include[]=groups.',
+                size
+            )
+            self.bench('drf', 'nested', '/drf/users_with_groups/', size)
 
     def test_deep(self):
         for size in range(MIN_DEEP_SIZE, MAX_DEEP_SIZE):
             size *= MULT_DEEP_SIZE
             self.generate_deep(size)
-            self.time(
-                'drest/deep',
-                '/drest/users/?include[]=groups.permissions.&include[]=permissions.',  # noqa
+            self.bench(
+                'drest',
+                'deep',
+                '/drest/users/'
+                '?include[]=groups.permissions.&include[]=permissions.',
                 size
             )
-            self.time(
-                'drf/deep',
+            self.bench(
+                'drf',
+                'deep',
                 '/drf/users_with_all/',
                 size
             )
