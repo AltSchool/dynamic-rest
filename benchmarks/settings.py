@@ -35,5 +35,5 @@ INSTALLED_APPS = (
 ROOT_URLCONF = 'benchmarks.urls'
 
 DYNAMIC_REST = {
-    'ENABLE_SERIALIZER_LINKS': False
+    'ENABLE_LINKS': False
 }

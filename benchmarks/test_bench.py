@@ -10,46 +10,56 @@ from .models import (
 
 MULT_SIMPLE_SIZE = 10
 MIN_SIMPLE_SIZE = 1
-MAX_SIMPLE_SIZE = 100
+MAX_SIMPLE_SIZE = 10
 
 MULT_NESTED_SIZE = 10
 MIN_NESTED_SIZE = 1
-MAX_NESTED_SIZE = 100
+MAX_NESTED_SIZE = 10
 
-MULT_DEEP_SIZE = 1
-MIN_DEEP_SIZE = 1
+MULT_DEEP_SIZE = 10
+MIN_DEEP_SIZE = 10
 MAX_DEEP_SIZE = 20
+
+MULT_RUN = 1
 
 
 class BenchmarkTest(APITestCase):
 
     def setUp(self):
-        self._results = defaultdict(lambda: defaultdict(dict))
-
-    def bench(self, implementation_name, benchmark_name, url, size):
-        start = datetime.now()
-
-        r = self.client.get(url)
-        self.assertEqual(r.status_code, 200)
-        end = datetime.now()
-        diff = end - start
-
-        self._results[implementation_name][benchmark_name][size] = (
-            diff.total_seconds()
+        self._results = defaultdict(
+            lambda: defaultdict(
+                lambda: defaultdict(
+                    list
+                )
+            )
         )
 
     def tearDown(self):
         for implementation_name, benchmarks in self._results.items():
-            for benchmark_name, benchmark in benchmarks.items():
-                for size, value in benchmark.items():
+            for benchmark_name, benchmark in sorted(benchmarks.items()):
+                for size, value in sorted(benchmark.items()):
+                    value = ','.join([str(v) for v in value])
                     print(
                         '%s,%s,%s,%s' % (
                             implementation_name,
                             benchmark_name,
                             str(size),
-                            str(value)
+                            value
                         )
                     )
+
+    def bench(self, implementation_name, benchmark_name, url, size):
+        for _ in xrange(MULT_RUN):
+
+            start = datetime.now()
+            r = self.client.get(url)
+            self.assertEqual(r.status_code, 200)
+            end = datetime.now()
+            diff = end - start
+
+            self._results[implementation_name][benchmark_name][size].append(
+                diff.total_seconds()
+            )
 
     def generate_simple(self, size):
         for i in xrange(size):
@@ -91,14 +101,14 @@ class BenchmarkTest(APITestCase):
                     group.permissions.add(permission)
 
     def test_simple(self):
-        for size in range(MIN_SIMPLE_SIZE, MAX_SIMPLE_SIZE):
+        for size in range(MIN_SIMPLE_SIZE, MAX_SIMPLE_SIZE+1):
             size *= MULT_SIMPLE_SIZE
             self.generate_simple(size)
             self.bench('drest', 'simple', '/drest/users/', size)
             self.bench('drf', 'simple', '/drf/users/', size)
 
     def test_nested(self):
-        for size in range(MIN_NESTED_SIZE, MAX_NESTED_SIZE):
+        for size in range(MIN_NESTED_SIZE, MAX_NESTED_SIZE+1):
             size *= MULT_NESTED_SIZE
             self.generate_nested(size)
             self.bench(
@@ -107,10 +117,15 @@ class BenchmarkTest(APITestCase):
                 '/drest/users/?include[]=groups.',
                 size
             )
-            self.bench('drf', 'nested', '/drf/users_with_groups/', size)
+            self.bench(
+                'drf',
+                'nested',
+                '/drf/users_with_groups/',
+                size
+            )
 
     def test_deep(self):
-        for size in range(MIN_DEEP_SIZE, MAX_DEEP_SIZE):
+        for size in range(MIN_DEEP_SIZE, MAX_DEEP_SIZE+1):
             size *= MULT_DEEP_SIZE
             self.generate_deep(size)
             self.bench(
