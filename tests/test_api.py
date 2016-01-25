@@ -949,6 +949,15 @@ class TestLinks(APITestCase):
         self.fixture = create_fixture()
         settings.DYNAMIC_REST['ENABLE_LINKS'] = True
 
+        home = Location.objects.create()
+        hunting_ground = Location.objects.create()
+        self.cat = Cat.objects.create(
+            name='foo',
+            home=home,
+            backup_home=hunting_ground
+        )
+        self.cat.hunting_grounds.add(hunting_ground)
+
     def test_deferred_relations_have_links(self):
         r = self.client.get('/v2/cats/1/')
         self.assertEqual(200, r.status_code)
@@ -981,26 +990,34 @@ class TestLinks(APITestCase):
         self.assertFalse(cat['foobar'])
         self.assertFalse('foobar' in cat['links'])
 
-    def test_including_relation_returns_link(self):
-        url = '/v2/cats/1/?include=backup_home'
+    def test_including_non_empty_many_relation_has_link(self):
+        r = self.client.get('/v2/cats/%s/?include[]=foobar' % self.cat.pk)
+        self.assertEqual(200, r.status_code)
+        content = json.loads(r.content.decode('utf-8'))
+        cat = content['cat']
+        self.assertTrue('foobar' in cat)
+        self.assertTrue('foobar' in cat['links'])
+
+    def test_no_links_for_included_single_relations(self):
+        url = '/v2/cats/%s/?include[]=home' % self.cat.pk
         r = self.client.get(url)
         self.assertEqual(200, r.status_code)
         content = json.loads(r.content.decode('utf-8'))
 
         cat = content['cat']
-        self.assertTrue('backup_home' in cat['links'])
-        self.assertTrue(cat['links']['backup_home'])
+        self.assertTrue('home' in cat)
+        self.assertFalse('home' in cat['links'])
 
     def test_sideloading_relation_hides_link(self):
-        url = '/v2/cats/1/?include[]=backup_home.'
+        url = '/v2/cats/%s/?include[]=foobar.' % self.cat.pk
         r = self.client.get(url)
         self.assertEqual(200, r.status_code)
         content = json.loads(r.content.decode('utf-8'))
 
         cat = content['cat']
-        self.assertTrue('backup_home' in cat)
+        self.assertTrue('foobar' in cat)
         self.assertTrue('locations' in content)  # check for sideload
-        self.assertFalse('backup_home' in cat['links'])  # no link
+        self.assertFalse('foobar' in cat['links'])  # no link
 
     def test_one_to_one_dne(self):
         user = User.objects.create(name='foo', last_name='bar')
