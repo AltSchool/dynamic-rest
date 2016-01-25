@@ -274,7 +274,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
                     # Skip included single relations
                     # TODO: Use links, when we can generate canonical URLs
                     name in self.fields
-                    and not field.serializer.many
+                    and not getattr(field.serializer, 'many', False)
                 )
             }
 

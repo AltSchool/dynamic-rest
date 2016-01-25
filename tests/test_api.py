@@ -994,7 +994,6 @@ class TestLinks(APITestCase):
         r = self.client.get('/v2/cats/%s/?include[]=foobar' % self.cat.pk)
         self.assertEqual(200, r.status_code)
         content = json.loads(r.content.decode('utf-8'))
-        print json.dumps(content, indent=2)
         cat = content['cat']
         self.assertTrue('foobar' in cat)
         self.assertTrue('foobar' in cat['links'])
