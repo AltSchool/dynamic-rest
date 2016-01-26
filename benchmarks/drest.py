@@ -20,7 +20,7 @@ class UserSerializer(serializers.DynamicModelSerializer):
     class Meta:
         model = User
         name = 'user'
-        fields = ('id', 'name', 'permissions', 'groups')
+        fields = ('id', 'name', 'created', 'permissions', 'groups')
 
     permissions = fields.DynamicRelationField(
         'PermissionSerializer',
