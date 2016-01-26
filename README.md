@@ -13,7 +13,6 @@ See http://dynamic-rest.readthedocs.org for full documentation.
 - [Overview](#overview)
 - [Maintainers](#maintainers)
 - [Requirements](#requirements)
-- [Compatability Table](#compatability-table)
 - [Installation](#installation)
 - [Demo](#demo)
 - [Features](#features)
@@ -27,6 +26,7 @@ See http://dynamic-rest.readthedocs.org for full documentation.
   - [Directory panel for your Browsable API](#directory-panel-for-your-browsable-api)
   - [Optimizations at the query and serializer layers](#optimizations-at-the-query-and-serializer-layers)
 - [Settings](#settings)
+- [Compatability Table](#compatability-table)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -60,53 +60,6 @@ but it can be used to provide fast and flexible CRUD operations to any consumer 
 * Python (2.7, 3.3, 3.4, 3.5)
 * Django (1.7, 1.8, 1.9)
 * Django REST Framework (3.1, 3.2, 3.3)
-
-# Compatability Table
-
-Not all versions of Python, Django, and DRF are compatible. Here are the combinations you can use reliably with DREST (all tested by our tox configuration):
-
-| Python | Django | DRF | OK  |
-| ------ | ------ | --- | --- |
-| 2.7    | 1.7    | 3.1 | YES |
-| 2.7    | 1.7    | 3.2 | YES |
-| 2.7    | 1.7    | 3.3 | YES |
-| 2.7    | 1.8    | 3.1 | YES |
-| 2.7    | 1.8    | 3.2 | YES |
-| 2.7    | 1.8    | 3.3 | YES |
-| 2.7    | 1.9    | 3.1 | NO<sup>1</sup> |
-| 2.7    | 1.9    | 3.2 | YES |
-| 2.7    | 1.9    | 3.3 | YES |
-| 3.3    | 1.7    | 3.1 | YES |
-| 3.3    | 1.7    | 3.2 | YES |
-| 3.3    | 1.7    | 3.3 | YES |
-| 3.3    | 1.8    | 3.1 | YES |
-| 3.3    | 1.8    | 3.2 | YES |
-| 3.3    | 1.8    | 3.3 | YES |
-| 3.3    | 1.9    | 3.1 | NO<sup>1,2</sup> |
-| 3.3    | 1.9    | 3.2 | NO<sup>2</sup> |
-| 3.3    | 1.9    | 3.3 | NO<sup>2</sup> |
-| 3.4    | 1.7    | 3.1 | YES |
-| 3.4    | 1.7    | 3.2 | YES |
-| 3.4    | 1.7    | 3.3 | YES |
-| 3.4    | 1.8    | 3.1 | YES |
-| 3.4    | 1.8    | 3.2 | YES |
-| 3.4    | 1.8    | 3.3 | YES |
-| 3.4    | 1.9    | 3.1 | NO<sup>1</sup> |
-| 3.4    | 1.9    | 3.2 | YES |
-| 3.4    | 1.9    | 3.3 | YES |
-| 3.5    | 1.7    | 3.1 | NO<sup>3</sup> |
-| 3.5    | 1.7    | 3.2 | NO<sup>3</sup> |
-| 3.5    | 1.7    | 3.3 | NO<sup>3</sup> |
-| 3.5    | 1.8    | 3.1 | YES |
-| 3.5    | 1.8    | 3.2 | YES |
-| 3.5    | 1.8    | 3.3 | YES |
-| 3.5    | 1.9    | 3.1 | NO<sup>1</sup> |
-| 3.5    | 1.9    | 3.2 | YES |
-| 3.5    | 1.9    | 3.3 | YES |
-
-* 1: Django 1.9 is not compatible with DRF 3.1
-* 2: Django 1.9 is not compatible with Python 3.3
-* 3: Django 1.7 is not compatible with Python 3.5
 
 # Installation
 
@@ -622,3 +575,51 @@ DYNAMIC_REST = {
     'PAGE_SIZE_QUERY_PARAM': 'per_page', 
 }
 ```
+
+# Compatability Table
+
+Not all versions of Python, Django, and DRF are compatible. Here are the combinations you can use reliably with DREST (all tested by our tox configuration):
+
+| Python | Django | DRF | OK  |
+| ------ | ------ | --- | --- |
+| 2.7    | 1.7    | 3.1 | YES |
+| 2.7    | 1.7    | 3.2 | YES |
+| 2.7    | 1.7    | 3.3 | YES |
+| 2.7    | 1.8    | 3.1 | YES |
+| 2.7    | 1.8    | 3.2 | YES |
+| 2.7    | 1.8    | 3.3 | YES |
+| 2.7    | 1.9    | 3.1 | NO<sup>1</sup> |
+| 2.7    | 1.9    | 3.2 | YES |
+| 2.7    | 1.9    | 3.3 | YES |
+| 3.3    | 1.7    | 3.1 | YES |
+| 3.3    | 1.7    | 3.2 | YES |
+| 3.3    | 1.7    | 3.3 | YES |
+| 3.3    | 1.8    | 3.1 | YES |
+| 3.3    | 1.8    | 3.2 | YES |
+| 3.3    | 1.8    | 3.3 | YES |
+| 3.3    | 1.9    | 3.1 | NO<sup>1,2</sup> |
+| 3.3    | 1.9    | 3.2 | NO<sup>2</sup> |
+| 3.3    | 1.9    | 3.3 | NO<sup>2</sup> |
+| 3.4    | 1.7    | 3.1 | YES |
+| 3.4    | 1.7    | 3.2 | YES |
+| 3.4    | 1.7    | 3.3 | YES |
+| 3.4    | 1.8    | 3.1 | YES |
+| 3.4    | 1.8    | 3.2 | YES |
+| 3.4    | 1.8    | 3.3 | YES |
+| 3.4    | 1.9    | 3.1 | NO<sup>1</sup> |
+| 3.4    | 1.9    | 3.2 | YES |
+| 3.4    | 1.9    | 3.3 | YES |
+| 3.5    | 1.7    | 3.1 | NO<sup>3</sup> |
+| 3.5    | 1.7    | 3.2 | NO<sup>3</sup> |
+| 3.5    | 1.7    | 3.3 | NO<sup>3</sup> |
+| 3.5    | 1.8    | 3.1 | YES |
+| 3.5    | 1.8    | 3.2 | YES |
+| 3.5    | 1.8    | 3.3 | YES |
+| 3.5    | 1.9    | 3.1 | NO<sup>1</sup> |
+| 3.5    | 1.9    | 3.2 | YES |
+| 3.5    | 1.9    | 3.3 | YES |
+
+* 1: Django 1.9 is not compatible with DRF 3.1
+* 2: Django 1.9 is not compatible with Python 3.3
+* 3: Django 1.7 is not compatible with Python 3.5
+
