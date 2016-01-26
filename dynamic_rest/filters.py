@@ -471,6 +471,9 @@ class DynamicFilterBackend(BaseFilterBackend):
         if query:
             queryset = queryset.filter(query)
 
+        if hasattr(serializer, 'filter_queryset'):
+            queryset = serializer.filter_queryset(queryset)
+
         prefetch = prefetches.values()
         return queryset.prefetch_related(*prefetch).distinct()
 
