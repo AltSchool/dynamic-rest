@@ -14,10 +14,10 @@ TESTS = 'tests'
 BENCHMARKS = 'benchmarks'
 PYTEST_ARGS = {
     'default': [
-        TESTS, '--tb=short', '-s', '-rw', '--ds=%s.settings' % TESTS
+        TESTS, '--tb=short', '-s', '-rw'
     ],
     'fast': [
-        TESTS, '--tb=short', '-q', '-s', '-rw', '--ds=%s.settings' % TESTS
+        TESTS, '--tb=short', '-q', '-s', '-rw'
     ],
 }
 
@@ -135,7 +135,7 @@ if __name__ == "__main__":
 
     if run_benchmarks:
         pytest_args[0] = BENCHMARKS
-        pytest_args[-1] = '--ds=%s.settings' % BENCHMARKS
+        pytest_args.append('--ds=%s.settings' % BENCHMARKS)
 
     if run_tests:
         exit_on_failure(pytest.main(pytest_args))

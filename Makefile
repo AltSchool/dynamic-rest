@@ -71,7 +71,7 @@ tox: lint install
 # Benchmarks
 bench: install
 	$(call header,"Running benchmarks")
-	@$(INSTALL_DIR)/bin/python runtests.py --benchmarks
+	@$(INSTALL_DIR)/bin/python runtests.py --benchmarks --fast
 
 # Start the Django shell
 shell: install
