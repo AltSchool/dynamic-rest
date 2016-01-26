@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import json
 from collections import defaultdict
 from rest_framework.test import APITestCase
 from datetime import datetime
@@ -10,56 +11,112 @@ from .models import (
 
 MULT_SIMPLE_SIZE = 10
 MIN_SIMPLE_SIZE = 1
-MAX_SIMPLE_SIZE = 10
+MAX_SIMPLE_SIZE = 20
 
 MULT_NESTED_SIZE = 10
 MIN_NESTED_SIZE = 1
-MAX_NESTED_SIZE = 10
+MAX_NESTED_SIZE = 20
 
 MULT_DEEP_SIZE = 1
 MIN_DEEP_SIZE = 10
-MAX_DEEP_SIZE = 20
+MAX_DEEP_SIZE = 30
 
-MULT_RUN = 1
+MULT_RUN = 3
+
+CHART_HEAD = """
+<head>
+    <script src="https://code.jquery.com/jquery-1.12.0.min.js"></script>
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+</head>
+"""
+
+CHART_TEMPLATE = """
+<script>
+    $(function () {{
+        var {benchmark_name}_chart = new Highcharts.Chart({{
+            chart: {{
+                renderTo: '{benchmark_name}',
+                type: 'line',
+            }},
+            title: {{
+                text: '{benchmark_name}',
+                x: -20 //center
+            }},
+            xAxis: {{
+                title: {{
+                    text: '# of records'
+                }}
+            }},
+            yAxis: {{
+                title: {{
+                    text: 'Response time (seconds)'
+                }},
+                plotLines: [{{
+                    value: 0,
+                    width: 1,
+                    color: '#808080'
+                }}]
+            }},
+            legend: {{
+                layout: 'vertical',
+                align: 'right',
+                verticalAlign: 'middle',
+                borderWidth: 0
+            }},
+            series: {data}
+        }});
+    }});
+</script>
+<div id="{benchmark_name}" style="width:100%"></div>
+<br/>
+"""
 
 
 class BenchmarkTest(APITestCase):
 
-    def setUp(self):
-        self._results = defaultdict(
-            lambda: defaultdict(
-                lambda: defaultdict(
-                    list
-                )
-            )
-        )
+    @classmethod
+    def setUpClass(cls):
+        # initialize results: a 3x nested dictionary
+        cls._results = defaultdict(lambda: defaultdict(dict))
 
-    def tearDown(self):
-        for implementation_name, benchmarks in self._results.items():
-            for benchmark_name, benchmark in sorted(benchmarks.items()):
-                for size, value in sorted(benchmark.items()):
-                    value = ','.join([str(v) for v in value])
-                    print(
-                        '%s,%s,%s,%s' % (
-                            implementation_name,
-                            benchmark_name,
-                            str(size),
-                            value
-                        )
+    @classmethod
+    def tearDownClass(cls):
+        # save results to an HTML file
+        with open('benchmarks.html', 'w') as file:
+            file.write(CHART_HEAD)
+            for benchmark_name, implementations in sorted(
+                cls._results.items()
+            ):
+                data = []
+                for implementation_name, implementation_data in sorted(
+                    implementations.items()
+                ):
+                    data.append({
+                        'name': implementation_name,
+                        'data': sorted(implementation_data.items())
+                    })
+
+                file.write(
+                    CHART_TEMPLATE.format(
+                        benchmark_name=benchmark_name,
+                        data=json.dumps(data)
                     )
+                )
 
     def bench(self, implementation_name, benchmark_name, url, size):
+        data = []
         for _ in xrange(MULT_RUN):
-
+            # take the average over MULT_RUN runs
             start = datetime.now()
             r = self.client.get(url)
             self.assertEqual(r.status_code, 200)
             end = datetime.now()
             diff = end - start
+            data.append(diff.total_seconds())
 
-            self._results[implementation_name][benchmark_name][size].append(
-                diff.total_seconds()
-            )
+        self._results[benchmark_name][implementation_name][size] = (
+            sum(data) / MULT_RUN
+        )
 
     def generate_simple(self, size):
         for i in xrange(size):
@@ -101,43 +158,43 @@ class BenchmarkTest(APITestCase):
                     group.permissions.add(permission)
 
     def test_simple(self):
-        for size in range(MIN_SIMPLE_SIZE, MAX_SIMPLE_SIZE+1):
+        for size in range(MIN_SIMPLE_SIZE, MAX_SIMPLE_SIZE + 1):
             size *= MULT_SIMPLE_SIZE
             self.generate_simple(size)
-            self.bench('drest', 'simple', '/drest/users/', size)
-            self.bench('drf', 'simple', '/drf/users/', size)
+            self.bench('DREST', 'Simple', '/drest/users/', size)
+            self.bench('DRF', 'Simple', '/drf/users/', size)
 
     def test_nested(self):
-        for size in range(MIN_NESTED_SIZE, MAX_NESTED_SIZE+1):
+        for size in range(MIN_NESTED_SIZE, MAX_NESTED_SIZE + 1):
             size *= MULT_NESTED_SIZE
             self.generate_nested(size)
             self.bench(
-                'drest',
-                'nested',
+                'DREST',
+                'Nested',
                 '/drest/users/?include[]=groups.',
                 size
             )
             self.bench(
-                'drf',
-                'nested',
+                'DRF',
+                'Nested',
                 '/drf/users_with_groups/',
                 size
             )
 
     def test_deep(self):
-        for size in range(MIN_DEEP_SIZE, MAX_DEEP_SIZE+1):
+        for size in range(MIN_DEEP_SIZE, MAX_DEEP_SIZE + 1):
             size *= MULT_DEEP_SIZE
             self.generate_deep(size)
             self.bench(
-                'drest',
-                'deep',
+                'DREST',
+                'Deep',
                 '/drest/users/'
                 '?include[]=groups.permissions.&include[]=permissions.',
                 size
             )
             self.bench(
-                'drf',
-                'deep',
+                'DRF',
+                'Deep',
                 '/drf/users_with_all/',
                 size
             )

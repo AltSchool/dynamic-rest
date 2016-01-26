@@ -69,7 +69,7 @@ tox: lint install
 	@$(INSTALL_DIR)/bin/tox
 
 # Benchmarks
-bench: install
+benchmark: install
 	$(call header,"Running benchmarks")
 	@$(INSTALL_DIR)/bin/python runtests.py --benchmarks --fast
 
