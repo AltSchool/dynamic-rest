@@ -1,5 +1,0 @@
-recursive-include dynamic_rest/templates *
-recursive-include dynamic_rest/static *
-include *.txt
-include *.md
-include *.ini
