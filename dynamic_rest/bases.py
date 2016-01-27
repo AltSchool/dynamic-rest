@@ -1,4 +1,4 @@
-"""This module contains base-classes for DREST."""
+"""This module contains base classes for DREST."""
 
 
 class DynamicSerializerBase(object):

@@ -1,7 +1,6 @@
 """This module contains custom serializer classes."""
 import copy
 
-from django.conf import settings
 from django.db import models
 from django.utils import six
 from django.utils.functional import cached_property
@@ -13,16 +12,16 @@ from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.links import merge_link_object
 from dynamic_rest.processors import SideloadingProcessor
+from dynamic_rest.conf import settings
 from dynamic_rest.tagged import tag_dict
-
-dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 
 
 class DynamicListSerializer(serializers.ListSerializer):
-    """Custom ListSerializer.
+    """Custom ListSerializer class.
 
-    This implementation delegates DREST methods to the child serializer
-    and performs post-processing before returning the data.
+    This implementation delegates DREST-specific methods to
+    the child serializer and performs post-processing before
+    returning the data.
     """
     def __init__(self, *args, **kwargs):
         super(DynamicListSerializer, self).__init__(*args, **kwargs)
@@ -33,19 +32,24 @@ class DynamicListSerializer(serializers.ListSerializer):
         return [self.child.to_representation(item) for item in iterable]
 
     def get_model(self):
+        """Get the child's model."""
         return self.child.get_model()
 
     def get_name(self):
+        """Get the child's name."""
         return self.child.get_name()
 
     def get_plural_name(self):
+        """Get the child's plural name."""
         return self.child.get_plural_name()
 
     def id_only(self):
+        """Get the child's rendering mode."""
         return self.child.id_only()
 
     @property
     def data(self):
+        """Get the data, after performing post-processing if necessary."""
         if not hasattr(self, '_sideloaded_data'):
             data = super(DynamicListSerializer, self).data
             if self.child.sideload:
@@ -72,7 +76,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         DynamicListSerializer to avoid re-evaluating querysets.
 
         Addresses DRF 3.1.0 bug:
-        https://github.com/tomchristie/django-rest-framework/issues/2704)
+        https://github.com/tomchristie/django-rest-framework/issues/2704
         """
         meta = getattr(cls, 'Meta', None)
         if not meta:
@@ -80,8 +84,10 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
             cls.Meta = meta
         meta.list_serializer_class = DynamicListSerializer
         return super(
-            WithDynamicSerializerMixin, cls).__new__(
-            cls, *args, **kwargs)
+            WithDynamicSerializerMixin, cls
+        ).__new__(
+            cls, *args, **kwargs
+        )
 
     def __init__(
             self,
@@ -97,21 +103,19 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
             **kwargs
     ):
         """
-        Custom initializer that builds `request_fields` and
-        sets a `ListSerializer` that doesn't re-evaluate querysets.
+        Custom initializer that builds `request_fields`.
 
         Arguments:
-            instance: Instance for the serializer base.
+            instance: Instance to be managed by the serializer.
             only_fields: List of field names to render.
             include_fields: List of field names to include.
             exclude_fields: List of field names to exclude.
             request_fields: map of field names that supports
                 inclusions, exclusions, and nested sideloads.
-            sideload: If False, do not perform sideloading on `.data`.
-                (default: False)
+            sideload: If False, do not perform any sideloading at this level.
+            embed: If True, force the current representation to be embedded.
             dynamic: If False, ignore deferred rules and
                 revert to standard DRF `.fields` behavior.
-                (default: True)
         """
         name = self.get_name()
         if data is not fields.empty and name in data and len(data) == 1:
@@ -140,10 +144,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         self.embed = embed
 
         self._dynamic_init(only_fields, include_fields, exclude_fields)
-        self.enable_optimization = dynamic_settings.get(
-            'ENABLE_SERIALIZER_OPTIMIZATIONS',
-            True
-        )
+        self.enable_optimization = settings.ENABLE_SERIALIZER_OPTIMIZATIONS
 
     def _dynamic_init(self, only_fields, include_fields, exclude_fields):
         """
@@ -206,18 +207,18 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         return None
 
     def get_name(self):
-        """Returns the serializer name.
+        """Get the serializer name.
 
         The name must be defined on the Meta class.
         """
         return self.Meta.name
 
     def get_plural_name(self):
-        """Returns the serializer's plural name.
+        """Get the serializer's plural name.
 
         The plural name may be defined on the Meta class.
         If the plural name is not defined,
-        the pluralized name will be returned.
+        the pluralized form of the name will be returned.
         """
         return getattr(self.Meta, 'plural_name', '%ss' % self.get_name())
 
@@ -229,7 +230,8 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         if not hasattr(self, '_all_fields'):
             self._all_fields = super(
                 WithDynamicSerializerMixin,
-                self).get_fields()
+                self
+            ).get_fields()
             for k, field in six.iteritems(self._all_fields):
                 field.field_name = k
                 field.parent = self
@@ -355,7 +357,7 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
                     self
                 ).to_representation(instance)
 
-            if getattr(settings, 'DYNAMIC_REST', {}).get('ENABLE_LINKS', True):
+            if settings.ENABLE_LINKS:
                 # TODO: Make this function configurable to support other
                 #       formats like JSON API link objects.
                 representation = merge_link_object(
@@ -448,9 +450,7 @@ class DynamicModelSerializer(
     serializers.ModelSerializer
 ):
 
-    """
-    DREST-compatible model-based serializer.
-    """
+    """DREST-compatible model-based serializer."""
     pass
 
 
@@ -486,7 +486,8 @@ class DynamicEphemeralSerializer(
         if not isinstance(instance, dict):
             data = super(
                 DynamicEphemeralSerializer,
-                self).to_representation(instance)
+                self
+            ).to_representation(instance)
         else:
             data = instance
             instance = EphemeralObject(data)

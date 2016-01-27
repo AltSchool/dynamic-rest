@@ -62,8 +62,5 @@ db.sqlite3
 # pyenv
 .python-version
 
-# auto-generated documentation
-docs/
-
 # benchmarks
 benchmarks.html

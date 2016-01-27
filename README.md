@@ -24,16 +24,18 @@ See http://dynamic-rest.readthedocs.org for full documentation.
   - [Field-based filtering](#field-based-filtering)
   - [Field-based ordering](#field-based-ordering)
   - [Directory panel for your Browsable API](#directory-panel-for-your-browsable-api)
-  - [Optimizations at the query and serializer layers](#optimizations-at-the-query-and-serializer-layers)
+  - [Optimizations](#optimizations)
 - [Settings](#settings)
 - [Compatability Table](#compatability-table)
+- [Contributing](#contributing)
+- [License](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 # Overview
 
 Dynamic REST (or DREST) extends the popular [Django REST Framework](https://django-rest-framework.org) (or DRF) with API features that
-empower your simple RESTful APIs with the flexibility of a graph query language.
+empower simple RESTful APIs with the flexibility of a graph query language.
 
 DREST classes can be used as a drop-in replacement for DRF classes, which offer the following features on top of the standard DRF kit:
 
@@ -48,7 +50,7 @@ DREST classes can be used as a drop-in replacement for DRF classes, which offer 
 * Optimizations at the query and serializer layers
 
 DREST was initially written to complement [Ember Data](https://github.com/emberjs/data),
-but it can be used to provide fast and flexible CRUD operations to any consumer that supports JSON and HTTP.
+but it can be used to provide fast and flexible CRUD operations to any consumer that supports JSON over HTTP.
 
 ## Maintainers
 
@@ -69,9 +71,9 @@ but it can be used to provide fast and flexible CRUD operations to any consumer 
     pip install dynamic-rest
 ```
 
-(or add `dynamic-rest` to your `requirements.txt` file or `setup.py` file)
+(or add `dynamic-rest` to `requirements.txt` or `setup.py`)
 
-2) Add `rest_framework` and `dynamic_rest` to your `INSTALLED_APPS`:
+2) Add `rest_framework` and `dynamic_rest` to `INSTALLED_APPS` in `settings.py`:
 
 ```python
     INSTALLED_APPS = (
@@ -85,7 +87,7 @@ but it can be used to provide fast and flexible CRUD operations to any consumer 
 # Demo
 
 This repository comes with a `tests` package that also serves as a demo application.
-This application is hosted at `dynamic-rest.herokuapp.com` but can also be run locally:
+This application is hosted at https://dynamic-rest.herokuapp.com but can also be run locally:
 
 1) Clone this repository:
 
@@ -104,7 +106,7 @@ This application is hosted at `dynamic-rest.herokuapp.com` but can also be run l
 
 # Features
 
-To understand the DREST API features, lets consider a demo model with a corresponding viewset, serializer, and route.
+To understand the DREST API features, let us consider a demo model with a corresponding viewset, serializer, and route.
 This will look very familiar to anybody who has worked with DRF:
 
 ```python
@@ -140,8 +142,8 @@ router.register('/users', UserViewSet)
 
 One of the key features of the DREST serializer layer is the ability to represent relationships in different ways, depending on the request context (external requirements) and the code context (internal requirements).
 
-By default, a "has-one" (or "belongs-to") relationship like a user's "location" will be represented as the value of the related location object's ID.
-A "has-many" relationship like a user's "groups" will be represented as a list of all related group object IDs.
+By default, a "has-one" (or "belongs-to") relationship will be represented as the value of the related object's ID.
+A "has-many" relationship will be represented as a list of all related object IDs.
 
 When a relationship is represented in this way, DREST automatically includes relationship links in the API response representing the object:
 
@@ -165,7 +167,7 @@ When a relationship is represented in this way, DREST automatically includes rel
 ```
 
 An API consumer can navigate to these relationship endpoints in order to obtain information about the related records. DREST will automatically create
-the relationship endpoints for you -- no additional code is required:
+the relationship endpoints -- no additional code is required:
 
 ```
 -->
@@ -182,11 +184,13 @@ the relationship endpoints for you -- no additional code is required:
 
 ## Sideloaded relationships
 
-Using linked relationships provides your API consumers with a "lazy-loading" mechanism for traversing through a graph of data. The consumer can first load the primary resource and then load related resources later, if necessary.
+Using linked relationships provides your API consumers with a "lazy-loading" mechanism for traversing through a graph of data. The consumer can first load the primary resource and then load related resources later.
 
-In some situations, it can be more efficient to load relationships eagerly, such that a user's groups are available immediately as soon as the user is loaded. In Django, this can be accomplished by using [prefetch_related](https://docs.djangoproject.com/en/1.9/ref/models/querysets/#django.db.models.query.QuerySet.prefetch_related) or [select_related](https://docs.djangoproject.com/en/1.9/ref/models/querysets/#select-related).
+In some situations, it can be more efficient to load relationships eagerly, in such a way that both the primary records and their related data are loaded simultaneously. In Django, this can be accomplished by using [prefetch_related](https://docs.djangoproject.com/en/1.9/ref/models/querysets/#django.db.models.query.QuerySet.prefetch_related) or [select_related](https://docs.djangoproject.com/en/1.9/ref/models/querysets/#select-related).
 
-In DREST, the requirement to eagerly load (or "sideload") relationships can be expressed with the `include[]` query parameter. If a consumer wants to fetch a user and sideload their groups, for example, they would make a request like this:
+In DREST, the requirement to eagerly load (or "sideload") relationships can be expressed with the `include[]` query parameter.
+
+For example, in order to fetch a user and sideload their groups:
 
 ```
 --> 
@@ -221,11 +225,13 @@ In DREST, the requirement to eagerly load (or "sideload") relationships can be e
     }
 ```
 
-The "user" portion of the request looks nearly identical to the linked relationship response: the groups are still represented by their IDs. However, instead of including a link to the groups endpoint, the group data is present within the respones itself, under a top-level "groups" key.
+The "user" portion of the response looks nearly identical to the first example; the user is returned top-level, and the groups are represented by their IDs. However, instead of including a link to the groups endpoint, the group data is present within the respones itself, under a top-level "groups" key.
 
-Note that each group itself contains relationships to "location", which are linked in this case. Can we sideload those locations as well? 
+Note that each group itself contains relationships to "location", which are linked in this case.
 
-Yes! With DREST, it is possible to sideload as many relationships as you'd like, as deep as you'd like. For example, in this request, we obtain the user with his groups, his locations, and his groups' locations all sideloaded in the same response:
+With DREST, it is possible to sideload as many relationships as you'd like, as deep as you'd like.
+
+For example, to obtain the user with groups, locations, and groups' locations all sideloaded in the same response:
 
 ```
 --> 
@@ -263,7 +269,7 @@ Yes! With DREST, it is possible to sideload as many relationships as you'd like,
 
 ## Embedded relationships
 
-If you want your relationships loaded in the same request but don't want them sideloaded in the top-level, you can instruct your serializer to embed relationships instead. 
+If you want your relationships loaded eagerly but don't want them sideloaded in the top-level, you can instruct your serializer to embed relationships instead. 
 
 In that case, the demo serializer above would look like this:
 
@@ -317,13 +323,13 @@ class UserSerializer(DynamicModelSerializer):
 
 In DREST, sideloading is the default because it can produce much smaller payloads in circumstances where related objects are referenced more than once in the response.
 
-For example, if you requested a list of 10 users along with their groups, and those users all happened to be in the same groups, the embedded variant would represent each group 10 times. The sideloaded variant will only represent a particular group once, regardless of the number of times that group is referenced.
+For example, if you requested a list of 10 users along with their groups, and those users all happened to be in the same groups, the embedded variant would represent each group 10 times. The sideloaded variant would only represent a particular group once, regardless of the number of times that group is referenced.
 
 ## Field inclusions 
 
 You can use the `include[]` feature not only to sideload relationships, but also to load basic fields that are marked "deferred".
 
-In DREST, any field or relationship can be marked deferred, which will indicate to the framework that the field should only be returned when requested by `include[]`. This could be a good option for fields with large values that are not always relevant in a general context.
+In DREST, any field or relationship can be marked deferred, which indicates to the framework that the field should only be returned when requested by `include[]`. This could be a good option for fields with large values that are not always relevant in a general context.
 
 For example, a user might have a "personal_statement" field that we would want to defer. At the serializer layer, that would look like this:
 
@@ -515,7 +521,7 @@ The sky is the limit! DREST supports just about every basic filtering scenario a
 * gt
 ...
 
-See the [full list here](https://github.com/AltSchool/dynamic-rest/blob/master/dynamic_rest/filters.py#L104).
+See the [full list here](dynamic_rest/filters.py#L104).
 
 ## Field-based ordering
 
@@ -529,50 +535,61 @@ You can use the `sort[]` feature to order your response by one or more fields. D
     ...
 ```
 
-## Directory panel for your Browsable API
+## Directory panel for the Browsable API
 
 We love the DRF browsable API, but wish that it included a directory that would let you see your entire list of endpoints at a glance from any page.
 DREST adds that in:
 
-[TODO: SCREENSHOT OF DIRECTORY]
+![Directory panel][directory]
 
-## Optimizations at the query and serializer layers
+## Optimizations
 
-Supporting nested sideloading and filtering is expensive and can lead to very poor query performance if done naively.
+Supporting nested sideloading and filtering is expensive and can lead to very poor query performance if implemented naively.
 DREST uses Django's [Prefetch](https://docs.djangoproject.com/en/1.9/ref/models/querysets/#django.db.models.Prefetch) object to prevent N+1 query situations and guarantee that your API is performant. 
-We also optimize the serializer layer to ensure that the conversion of model data into JSON is as fast as possible.
+We also optimize the serializer layer to ensure that the conversion of model objects into JSON is as fast as possible.
 
 How fast is it? Here are some benchmarks that compare DREST response time to DRF response time:
 
-[TODO: BENCHMARKS]
+![Benchmarks][benchmarks]
 
 # Settings
 
-DREST is configurable, and all settings are nested under a single block in your `settings.py` file. Here it is with default values:
+DREST is configurable, and all settings should be nested under a single block in your `settings.py` file.
+Here are our [defaults][dynamic_rest/conf.py]:
 
 ```python
-
 DYNAMIC_REST = {
     # DEBUG: enable/disable internal debugging
-    'DEBUG': False, 
+    'DEBUG': False,
 
-    # ENABLE_BROWSABLE_API: enable/disable the browsable API. it can be useful to disable in production
-    'ENABLE_BROWSABLE_API': True, 
+    # ENABLE_BROWSABLE_API: enable/disable the browsable API.
+    # It can be useful to disable it in production.
+    'ENABLE_BROWSABLE_API': True,
 
     # ENABLE_LINKS: enable/disable relationship links
-    'ENABLE_LINKS': True, 
+    'ENABLE_LINKS': True,
 
     # ENABLE_SERIALIZER_CACHE: enable/disable caching of related serializers
-    'ENABLE_SERIALIZER_CACHE: True, 
+    'ENABLE_SERIALIZER_CACHE': True,
 
-    # MAX_PAGE_SIZE: global setting for max page size, can be overridden at the viewset level
-    'MAX_PAGE_SIZE': None, 
+    # ENABLE_SERIALIZER_OPTIMIZATIONS: enable/disable representation speedups
+    'ENABLE_SERIALIZER_OPTIMIZATIONS': True,
 
-    # PAGE_QUERY_PARAM: global setting for the pagination query parameter, can be overridden at the viewset level
-    'PAGE_QUERY_PARAM': 'page', 
+    # MAX_PAGE_SIZE: global setting for max page size.
+    # Can be overriden at the viewset level.
+    'MAX_PAGE_SIZE': None,
 
-    # PAGE_SIZE_QUERY_PARAM: global setting for the page size query parameter, can be overriden at the viewset level
-    'PAGE_SIZE_QUERY_PARAM': 'per_page', 
+    # PAGE_QUERY_PARAM: global setting for the pagination query parameter.
+    # Can be overriden at the viewset level.
+    'PAGE_QUERY_PARAM': 'page',
+
+    # PAGE_SIZE: global setting for page size.
+    # Can be overriden at the viewset level.
+    'PAGE_SIZE': None,
+
+    # PAGE_SIZE_QUERY_PARAM: global setting for the page size query parameter.
+    # Can be overriden at the viewset level.
+    'PAGE_SIZE_QUERY_PARAM': 'per_page'
 }
 ```
 
@@ -623,3 +640,13 @@ Not all versions of Python, Django, and DRF are compatible. Here are the combina
 * 2: Django 1.9 is not compatible with Python 3.3
 * 3: Django 1.7 is not compatible with Python 3.5
 
+# Contributing
+
+See [Contributing.md](CONTRIBUTING.md).
+
+# License
+
+See [License.md](LICENSE.md).
+
+[directory]: https://raw.githubusercontent.com/AltSchool/dynamic-rest/screenshots/directory.jpg
+[benchmarks]: https://raw.githubusercontent.com/AltSchool/dynamic-rest/screenshots/benchmarks.jpg

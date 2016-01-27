@@ -64,9 +64,9 @@ test: lint install
 	@$(INSTALL_DIR)/bin/py.test --cov=$(APP_NAME) --tb=short -q -s -rw tests/$(TEST)
 
 # Run all tests (tox)
-tox: lint install
+tox: install
 	$(call header,"Running multi-version tests")
-	@$(INSTALL_DIR)/bin/tox
+	@$(INSTALL_DIR)/bin/tox $(CMD)
 
 # Benchmarks
 benchmark: install
@@ -94,7 +94,7 @@ start: install
 # Lint the project
 lint: clean_working_directory
 	$(call header,"Linting code")
-	@find . -type f -name '*.py' | xargs flake8
+	@find . -type f -name '*.py' -not -path './docs/*' -not -path './build/*' | xargs flake8
 
 # Auto-format the project
 format: clean_working_directory

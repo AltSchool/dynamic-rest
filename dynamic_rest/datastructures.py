@@ -1,5 +1,4 @@
-"""This module contains data structures for DREST."""
-
+"""This module contains custom data-structures."""
 from django.utils import six
 
 
@@ -9,9 +8,11 @@ class TreeMap(dict):
     def get_paths(self):
         """Get all paths from the root to the leaves.
 
+        For example, given a chain like `{'a':{'b':{'c':None}}}`,
+        this method would return `[['a', 'b', 'c']]`.
+
         Returns:
             A list of lists of paths.
-            E.g. [['a', 'b', 'c']] for {'a':{'b':{'c':None}}}
         """
         paths = []
         for key, child in six.iteritems(self):
@@ -31,14 +32,17 @@ class TreeMap(dict):
         The list will be converted into a TreeMap (chain) and then
         merged with the current TreeMap.
 
-        For example, this would insert ['a','b','c'] as {'a':{'b':{'c':{}}}}
-        into an empty TreeMap.
+        For example, this method would insert `['a','b','c']` as
+        `{'a':{'b':{'c':{}}}}`.
 
         Arguments:
-            parts: list of nodes representing a chain
-            leaf_value: value to insert into the leaf of the chain
-            update: whether or not to update the leaf with the given value or
-                to replace the value. Default: False (replace)
+            parts: List of nodes representing a chain.
+            leaf_value: Value to insert into the leaf of the chain.
+            update: Whether or not to update the leaf with the given value or
+                to replace the value.
+
+        Returns:
+            self
         """
         tree = self
         if not parts:

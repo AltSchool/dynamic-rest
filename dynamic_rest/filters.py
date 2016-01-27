@@ -1,6 +1,5 @@
-"""This module contains custom DRF filter backends."""
+"""This module contains custom filter backends."""
 
-from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q, Prefetch
 from django.utils import six
@@ -8,6 +7,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.filters import BaseFilterBackend, OrderingFilter
 
+from dynamic_rest.conf import settings
 from dynamic_rest.datastructures import TreeMap
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.meta import get_model_field, is_field_remote, is_model_field
@@ -22,14 +22,21 @@ class FilterNode(object):
     def __init__(self, field, operator, value):
         """Create an object representing a filter, to be stored in a TreeMap.
 
+        For example, a filter query like `filter{users.events.capacity.lte}=1`
+        would be passed into a `FilterNode` as follows:
+
+        ```
+            field = ['users', 'events', 'capacity']
+            operator = 'lte'
+            value = 1
+            node = FilterNode(field, operator, value)
+        ```
+
         Arguments:
-            field: List of field parts
-                For example: ['users', 'events'] for the query:
-                    'filter{users.events}'
-            opreator: A valid filter operator or None
-                For example: 'lt', 'in', ...
-                Per Django convention, None is interpretted as equality.
-            value: The value to filter on
+            field: A list of field parts.
+            operator: A valid filter operator, or None.
+                Per Django convention, `None` means the equality operator.
+            value: The value to filter on.
         """
         self.field = field
         self.operator = operator
@@ -43,19 +50,20 @@ class FilterNode(object):
         )
 
     def generate_query_key(self, serializer):
-        """Return the key that can be passed to Django's filter method.
+        """Get the key that can be passed to Django's filter method.
 
         To account for serialier field name rewrites, this method
         translates serializer field names to model field names
-        by inspecting `serializer`
+        by inspecting `serializer`.
+
+        For example, a query like `filter{users.events}` would be
+        returned as `users__events`.
 
         Arguments:
-            serializer: a DRF serializer
+            serializer: A DRF serializer
 
         Returns:
             A filter key.
-            For example: users__events for the query:
-                'filter{users.events}' (assuming no rewrites)
         """
         rewritten = []
         last = len(self.field) - 1
@@ -121,6 +129,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         FALSEY_STRINGS: A list of strings that are interpretted as
             False by the isnull operator.
     """
+
     VALID_FILTER_OPERATORS = (
         'in',
         'any',
@@ -161,7 +170,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         self.request = request
         self.view = view
 
-        self.DEBUG = getattr(settings, 'DYNAMIC_REST', {}).get('DEBUG', False)
+        self.DEBUG = settings.DEBUG
 
         if self.DEBUG:
             # in DEBUG mode, save a representation of the prefetch tree

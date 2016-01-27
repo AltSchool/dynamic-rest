@@ -1,0 +1,146 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>dynamic_rest.datastructures &mdash; Dynamic REST 1.3.9 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.3.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="Dynamic REST 1.3.9 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for dynamic_rest.datastructures</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;This module contains data structures for DREST.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">django.utils</span> <span class="kn">import</span> <span class="n">six</span>
+
+
+<div class="viewcode-block" id="TreeMap"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.datastructures.TreeMap">[docs]</a><span class="k">class</span> <span class="nc">TreeMap</span><span class="p">(</span><span class="nb">dict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Tree structure implemented with nested dictionaries.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="TreeMap.get_paths"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.datastructures.TreeMap.get_paths">[docs]</a>    <span class="k">def</span> <span class="nf">get_paths</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get all paths from the root to the leaves.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A list of lists of paths.</span>
+<span class="sd">            E.g. [[&#39;a&#39;, &#39;b&#39;, &#39;c&#39;]] for {&#39;a&#39;:{&#39;b&#39;:{&#39;c&#39;:None}}}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">paths</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">child</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">child</span><span class="p">,</span> <span class="n">TreeMap</span><span class="p">)</span> <span class="ow">and</span> <span class="n">child</span><span class="p">:</span>
+                <span class="c1"># current child is an intermediate node</span>
+                <span class="k">for</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">child</span><span class="o">.</span><span class="n">get_paths</span><span class="p">():</span>
+                    <span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>
+                    <span class="n">paths</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># current child is an endpoint</span>
+                <span class="n">paths</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">key</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">paths</span></div>
+
+<div class="viewcode-block" id="TreeMap.insert"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.datastructures.TreeMap.insert">[docs]</a>    <span class="k">def</span> <span class="nf">insert</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parts</span><span class="p">,</span> <span class="n">leaf_value</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add a list of nodes into the tree.</span>
+
+<span class="sd">        The list will be converted into a TreeMap (chain) and then</span>
+<span class="sd">        merged with the current TreeMap.</span>
+
+<span class="sd">        For example, this would insert [&#39;a&#39;,&#39;b&#39;,&#39;c&#39;] as {&#39;a&#39;:{&#39;b&#39;:{&#39;c&#39;:{}}}}</span>
+<span class="sd">        into an empty TreeMap.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            parts: list of nodes representing a chain</span>
+<span class="sd">            leaf_value: value to insert into the leaf of the chain</span>
+<span class="sd">            update: whether or not to update the leaf with the given value or</span>
+<span class="sd">                to replace the value. Default: False (replace)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">tree</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">parts</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">tree</span>
+
+        <span class="n">cur</span> <span class="o">=</span> <span class="n">tree</span>
+        <span class="n">last</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">part</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">parts</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">part</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">cur</span><span class="p">:</span>
+                <span class="n">cur</span><span class="p">[</span><span class="n">part</span><span class="p">]</span> <span class="o">=</span> <span class="n">TreeMap</span><span class="p">()</span> <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">last</span> <span class="k">else</span> <span class="n">leaf_value</span>
+            <span class="k">elif</span> <span class="n">i</span> <span class="o">==</span> <span class="n">last</span><span class="p">:</span>  <span class="c1"># found leaf</span>
+                <span class="k">if</span> <span class="n">update</span><span class="p">:</span>
+                    <span class="n">cur</span><span class="p">[</span><span class="n">part</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">leaf_value</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">cur</span><span class="p">[</span><span class="n">part</span><span class="p">]</span> <span class="o">=</span> <span class="n">leaf_value</span>
+
+            <span class="n">cur</span> <span class="o">=</span> <span class="n">cur</span><span class="p">[</span><span class="n">part</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, ant@altschool.com, ryo@altschool.com.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

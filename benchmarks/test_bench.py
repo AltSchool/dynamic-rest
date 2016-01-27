@@ -3,25 +3,53 @@ import json
 from collections import defaultdict
 from rest_framework.test import APITestCase
 from datetime import datetime
+
 from .models import (
     User,
     Group,
     Permission
 )
 
-MULT_SIMPLE_SIZE = 10
-MIN_SIMPLE_SIZE = 1
-MAX_SIMPLE_SIZE = 20
-
-MULT_NESTED_SIZE = 10
-MIN_NESTED_SIZE = 1
-MAX_NESTED_SIZE = 20
-
-MULT_DEEP_SIZE = 1
-MIN_DEEP_SIZE = 10
-MAX_DEEP_SIZE = 30
-
-MULT_RUN = 3
+# BENCHMARKS: configuration for benchmarks
+BENCHMARKS = [
+    {
+        # name: benchmark name
+        'name': 'simple',
+        # drest: DREST endpoint
+        'drest': '/drest/users/',
+        # drf: DRF endpoint
+        'drf': '/drf/users/',
+        # min_size: minimum sample size
+        'min_size': 1,
+        # max_size: maximum sample size
+        'max_size': 20,
+        # multiplier: number of records in one sample
+        'multiplier': 20,
+        # samples: number of samples to take
+        'samples': 1
+    },
+    {
+        'name': 'nested',
+        'drest': '/drest/users?include[]=groups.',
+        'drf': '/drf/users_with_groups/',
+        'min_size': 1,
+        'max_size': 20,
+        'multiplier': 20,
+        'samples': 1
+    },
+    {
+        'name': 'deep',
+        'drest': (
+            '/drest/users/'
+            '?include[]=groups.permissions.&include[]=permissions.'
+        ),
+        'drf': '/drf/users_with_all/',
+        'min_size': 1,
+        'max_size': 10,
+        'multiplier': 1,
+        'samples': 1
+    }
+]
 
 CHART_HEAD = """
 <head>
@@ -36,7 +64,7 @@ CHART_TEMPLATE = """
         var {benchmark_name}_chart = new Highcharts.Chart({{
             chart: {{
                 renderTo: '{benchmark_name}',
-                type: 'line',
+                type: 'bar',
             }},
             title: {{
                 text: '{benchmark_name}',
@@ -44,7 +72,7 @@ CHART_TEMPLATE = """
             }},
             xAxis: {{
                 title: {{
-                    text: '# of records'
+                    text: '# of primary records'
                 }}
             }},
             yAxis: {{
@@ -103,9 +131,16 @@ class BenchmarkTest(APITestCase):
                     )
                 )
 
-    def bench(self, implementation_name, benchmark_name, url, size):
+    def bench(
+        self,
+        implementation_name,
+        benchmark_name,
+        url,
+        size,
+        samples
+    ):
         data = []
-        for _ in xrange(MULT_RUN):
+        for _ in xrange(samples):
             # take the average over MULT_RUN runs
             start = datetime.now()
             r = self.client.get(url)
@@ -115,7 +150,7 @@ class BenchmarkTest(APITestCase):
             data.append(diff.total_seconds())
 
         self._results[benchmark_name][implementation_name][size] = (
-            sum(data) / MULT_RUN
+            sum(data) / samples
         )
 
     def generate_simple(self, size):
@@ -157,44 +192,27 @@ class BenchmarkTest(APITestCase):
                     )
                     group.permissions.add(permission)
 
-    def test_simple(self):
-        for size in range(MIN_SIMPLE_SIZE, MAX_SIMPLE_SIZE + 1):
-            size *= MULT_SIMPLE_SIZE
-            self.generate_simple(size)
-            self.bench('DREST', 'Simple', '/drest/users/', size)
-            self.bench('DRF', 'Simple', '/drf/users/', size)
 
-    def test_nested(self):
-        for size in range(MIN_NESTED_SIZE, MAX_NESTED_SIZE + 1):
-            size *= MULT_NESTED_SIZE
-            self.generate_nested(size)
-            self.bench(
-                'DREST',
-                'Nested',
-                '/drest/users/?include[]=groups.',
-                size
-            )
-            self.bench(
-                'DRF',
-                'Nested',
-                '/drf/users_with_groups/',
-                size
-            )
+def generate_test(name, title, drest, drf, size, samples):
+    def test(self):
+        getattr(self, 'generate_%s' % name)(size)
+        self.bench('DREST', title, drest, size, samples)
+        self.bench('DRF', title, drf, size, samples)
+    return test
 
-    def test_deep(self):
-        for size in range(MIN_DEEP_SIZE, MAX_DEEP_SIZE + 1):
-            size *= MULT_DEEP_SIZE
-            self.generate_deep(size)
-            self.bench(
-                'DREST',
-                'Deep',
-                '/drest/users/'
-                '?include[]=groups.permissions.&include[]=permissions.',
-                size
-            )
-            self.bench(
-                'DRF',
-                'Deep',
-                '/drf/users_with_all/',
-                size
-            )
+# generate test methods
+for benchmark in BENCHMARKS:
+    name = benchmark['name']
+    title = name.title()
+    min_size = benchmark['min_size']
+    max_size = benchmark['max_size']
+    drf = benchmark['drf']
+    drest = benchmark['drest']
+    multiplier = benchmark['multiplier']
+    samples = benchmark['samples']
+
+    for size in range(min_size, max_size + 1):
+        size *= multiplier
+        test_name = 'test_%s_%d' % (name, size)
+        test = generate_test(name, title, drest, drf, size, samples)
+        setattr(BenchmarkTest, test_name, test)

@@ -1,9 +1,8 @@
-"""This module contains custom DRF field classes."""
+"""This module contains custom field classes."""
+
 import importlib
-import os
 import pickle
 
-from django.conf import settings
 from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import fields
@@ -11,15 +10,14 @@ from rest_framework.exceptions import NotFound, ParseError
 from rest_framework.serializers import SerializerMethodField
 
 from dynamic_rest.bases import DynamicSerializerBase
+from dynamic_rest.conf import settings
 from dynamic_rest.meta import is_field_remote
-
-dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 
 
 class DynamicField(fields.Field):
 
     """
-    Generic field to capture additional custom field attributes
+    Generic field base to capture additional custom field attributes.
     """
 
     def __init__(
@@ -31,8 +29,9 @@ class DynamicField(fields.Field):
     ):
         """
         Arguments:
-            deferred: Whether or not this field is deferred,
-                (not included in the response unless specifically requested).
+            deferred: Whether or not this field is deferred.
+                Deferred fields are not included in the response,
+                unless explicitly requested.
             field_type: Field data type, if not inferrable from model.
             requires: List of fields that this field depends on.
                 Processed by the view layer during queryset build time.
@@ -59,10 +58,16 @@ class DynamicMethodField(SerializerMethodField, DynamicField):
 
 class DynamicRelationField(DynamicField):
 
-    """Proxy for a sub-serializer.
+    """Field proxy for a nested serializer.
 
-    Supports passing in the target serializer as a class or string,
-    resolves after binding to the parent serializer.
+    Supports passing in the child serializer as a class or string,
+    and resolves to the class after binding to the parent serializer.
+
+    Will proxy certain arguments to the child serializer.
+
+    Attributes:
+        SERIALIZER_KWARGS: list of arguments that are passed
+            to the child serializer.
     """
 
     SERIALIZER_KWARGS = set(('many', 'source'))
@@ -77,13 +82,13 @@ class DynamicRelationField(DynamicField):
     ):
         """
         Arguments:
-          serializer_class: Serializer class (or string representation)
-            to proxy.
-          many: Boolean, if relation is to-many.
-          queryset: Default queryset to apply when filtering for related
-            objects.
-          embed: Always embed related object(s). Will not sideload, and
-            will always include full object unless specifically excluded.
+            serializer_class: Serializer class (or string representation)
+                to proxy.
+            many: Boolean, if relation is to-many.
+            queryset: Default queryset to apply when filtering for related
+                objects.
+            embed: If True, always embed related object(s). Will not sideload,
+                and will include the full object unless specifically excluded.
         """
         self.kwargs = kwargs
         self._serializer_class = serializer_class
@@ -98,9 +103,11 @@ class DynamicRelationField(DynamicField):
         self.kwargs['many'] = many
 
     def get_model(self):
+        """Get the child serializer's model."""
         return getattr(self.serializer_class.Meta, 'model', None)
 
     def bind(self, *args, **kwargs):
+        """Bind to the parent serializer."""
         if self.bound:  # Prevent double-binding
             return
         super(DynamicRelationField, self).bind(*args, **kwargs)
@@ -116,17 +123,23 @@ class DynamicRelationField(DynamicField):
             model_field = None
 
         if 'required' not in self.kwargs and (
-                remote or (model_field and
-                           (model_field.has_default() or model_field.null))):
+                remote or (
+                    model_field and (
+                        model_field.has_default() or model_field.null
+                    )
+                )
+        ):
             self.required = False
         if 'allow_null' not in self.kwargs and getattr(
-                model_field, 'null', False):
+                model_field, 'null', False
+        ):
             self.allow_null = True
 
         self.model_field = model_field
 
     @property
     def root_serializer(self):
+        """Return the root serializer (serializer for the primary resource)."""
         if hasattr(self, '_root_serializer'):
             return self._root_serializer
 
@@ -149,7 +162,7 @@ class DynamicRelationField(DynamicField):
         return self._root_serializer
 
     def _get_cached_serializer(self, args, init_args):
-        enabled = dynamic_settings.get('ENABLE_SERIALIZER_CACHE', True)
+        enabled = settings.ENABLE_SERIALIZER_CACHE
 
         root = self.root_serializer
         if not root or not self.field_name or not enabled:
@@ -181,6 +194,7 @@ class DynamicRelationField(DynamicField):
         return root._descendant_serializer_cache[cache_key]
 
     def _get_request_fields_from_parent(self):
+        """Get request fields from the parent serializer."""
         if not self.parent:
             return None
 
@@ -219,6 +233,7 @@ class DynamicRelationField(DynamicField):
         return kwargs
 
     def get_serializer(self, *args, **kwargs):
+        """Get an instance of the child serializer."""
         init_args = {
             k: v for k, v in six.iteritems(self.kwargs)
             if k in self.SERIALIZER_KWARGS
@@ -244,6 +259,7 @@ class DynamicRelationField(DynamicField):
 
     @cached_property
     def _is_dynamic(self):
+        """Return True if the child serializer is dynamic."""
         return issubclass(
             self.serializer_class,
             DynamicSerializerBase
@@ -253,6 +269,7 @@ class DynamicRelationField(DynamicField):
         return instance
 
     def to_representation(self, instance):
+        """Represent the relationship, either as an ID or object."""
         serializer = self.serializer
         model = serializer.get_model()
         source = self.source
@@ -277,18 +294,21 @@ class DynamicRelationField(DynamicField):
             return serializer.to_representation(related)
         except Exception as e:
             # Provide more context to help debug these cases
-            if getattr(settings, 'DEBUG', False) or os.environ.get(
-                    'DREST_DEBUG', False):
+            if settings.DEBUG:
                 import traceback
                 traceback.print_exc()
             raise Exception(
                 "Failed to serialize %s.%s: %s\nObj: %s" %
-                (self.parent.__class__.__name__,
-                 self.source,
-                 str(e),
-                    repr(related)))
+                (
+                    self.parent.__class__.__name__,
+                    self.source,
+                    str(e),
+                    repr(related)
+                )
+            )
 
     def to_internal_value_single(self, data, serializer):
+        """Return the underlying object, given the serialized form."""
         related_model = serializer.Meta.model
         if isinstance(data, related_model):
             return data
@@ -297,20 +317,30 @@ class DynamicRelationField(DynamicField):
         except related_model.DoesNotExist:
             raise NotFound(
                 "'%s object with ID=%s not found" %
-                (related_model.__name__, data))
+                (related_model.__name__, data)
+            )
         return instance
 
     def to_internal_value(self, data):
+        """Return the underlying object(s), given the serialized form."""
         if self.kwargs['many']:
             serializer = self.serializer.child
             if not isinstance(data, list):
                 raise ParseError("'%s' value must be a list" % self.field_name)
-            return [self.to_internal_value_single(
-                instance, serializer) for instance in data]
+            return [
+                self.to_internal_value_single(
+                    instance,
+                    serializer
+                ) for instance in data
+            ]
         return self.to_internal_value_single(data, self.serializer)
 
     @property
     def serializer_class(self):
+        """Get the class of the child serializer.
+
+        Resolves string imports.
+        """
         serializer_class = self._serializer_class
         if not isinstance(serializer_class, six.string_types):
             return serializer_class
@@ -336,10 +366,15 @@ class DynamicRelationField(DynamicField):
 class CountField(DynamicComputedField):
 
     """
-    Field that counts number of elements in another specified field.
+    Computed field that counts the number of elements in another field.
     """
 
     def __init__(self, serializer_source, *args, **kwargs):
+        """
+        Arguments:
+            serializer_source: A serializer field.
+            unique: Whether or not to perform a count of distinct elements.
+        """
         self.field_type = int
         # Use `serializer_source`, which indicates a field at the API level,
         # instead of `source`, which indicates a field at the model level.
