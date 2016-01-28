@@ -19,6 +19,11 @@ from dynamic_rest.related import RelatedObject
 patch_prefetch_one_level()
 
 
+def duplicate_results_possible(queryset):
+    """Return True iff. a queryset can generate duplicate rows."""
+    return 'OUTER JOIN' in str(queryset.query).upper()
+
+
 class FilterNode(object):
 
     def __init__(self, field, operator, value):
@@ -472,7 +477,11 @@ class DynamicFilterBackend(BaseFilterBackend):
             queryset = queryset.filter(query)
 
         prefetch = prefetches.values()
-        return queryset.prefetch_related(*prefetch).distinct()
+        queryset = queryset.prefetch_related(*prefetch)
+        if duplicate_results_possible(queryset):
+            queryset = queryset.distinct()
+
+        return queryset
 
 
 class DynamicSortingFilter(OrderingFilter):
