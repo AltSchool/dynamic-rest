@@ -1,8 +1,8 @@
 import importlib
+from itertools import chain
 import os
 import pickle
 import pylru
-from itertools import chain
 
 from django.conf import settings
 from django.db.models import ManyToManyField
