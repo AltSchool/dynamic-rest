@@ -19,8 +19,8 @@ from dynamic_rest.related import RelatedObject
 patch_prefetch_one_level()
 
 
-def has_outer_joins(queryset):
-    """Return True iff. a queryset uses outer joins.
+def has_joins(queryset):
+    """Return True iff. a queryset includes joins.
 
     If this is the case, it is possible for the queryset
     to return duplicate results.
@@ -487,7 +487,7 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         prefetch = prefetches.values()
         queryset = queryset.prefetch_related(*prefetch)
-        if has_outer_joins(queryset):
+        if has_joins(queryset):
             queryset = queryset.distinct()
 
         return queryset
