@@ -1,6 +1,7 @@
 import importlib
 import os
 import pickle
+import pylru
 from itertools import chain
 
 from django.conf import settings
@@ -14,7 +15,11 @@ from rest_framework.serializers import SerializerMethodField
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.related import RelatedObject
 
+
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
+serializer_cache = pylru.lrucache(
+    int(dynamic_settings.get('SERIALIZER_CACHE_MAX_COUNT', 1000))
+)
 
 
 def is_model_field(model, field_name):
@@ -199,17 +204,9 @@ class DynamicRelationField(DynamicField):
     def _get_cached_serializer(self, args, init_args):
         enabled = dynamic_settings.get('ENABLE_SERIALIZER_CACHE', True)
 
-        root = self.root_serializer
-        if not root or not self.field_name or not enabled:
+        if not self.parent or not self.field_name or not enabled:
             # Not enough info to use cache.
             return self.serializer_class(*args, **init_args)
-
-        if not hasattr(root, '_descendant_serializer_cache'):
-            # Initialize dict to use as cache on root serializer.
-            # Arguably this is a Serializer concern, but we'll do it
-            # here so it's agnostic to the exact type of the root
-            # serializer (i.e. it could be a DRF serializer).
-            root._descendant_serializer_cache = {}
 
         key_dict = {
             'parent': self.parent.__class__.__name__,
@@ -219,14 +216,14 @@ class DynamicRelationField(DynamicField):
         }
         cache_key = hash(pickle.dumps(key_dict))
 
-        if cache_key not in root._descendant_serializer_cache:
+        if cache_key not in serializer_cache:
             szr = self.serializer_class(
                 *args,
                 **init_args
             )
-            root._descendant_serializer_cache[cache_key] = szr
+            serializer_cache[cache_key] = szr
 
-        return root._descendant_serializer_cache[cache_key]
+        return serializer_cache[cache_key]
 
     def _get_request_fields_from_parent(self):
         if not self.parent:

@@ -635,7 +635,7 @@ class TestSerializerCaching(TestCase):
             )
         )
 
-    def test_different_roots(self):
+    def test_different_roots_share_cache(self):
         serializer2 = CatSerializer(
             request_fields={'home': {}, 'backup_home': {}}
         )
@@ -643,10 +643,10 @@ class TestSerializerCaching(TestCase):
         home1 = self.serializer.fields['home']
         home2 = serializer2.fields['home']
 
-        self.assertIsNot(
+        self.assertIs(
             home1.serializer,
             home2.serializer,
-            'Different root serializers should yield different instances.'
+            'Different root serializers should share instances.'
         )
 
     def test_root_serializer_cycle_busting(self):
