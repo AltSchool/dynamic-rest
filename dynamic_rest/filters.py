@@ -19,9 +19,17 @@ from dynamic_rest.related import RelatedObject
 patch_prefetch_one_level()
 
 
-def duplicate_results_possible(queryset):
-    """Return True iff. a queryset can generate duplicate rows."""
-    return 'OUTER JOIN' in str(queryset.query).upper()
+def has_outer_joins(queryset):
+    """Return True iff. a queryset uses outer joins.
+
+    If this is the case, it is possible for the queryset
+    to return duplicate results.
+    """
+    LOUTER = queryset.query.LOUTER
+    for join in six.itervalues(queryset.query.alias_map):
+        if join.join_type == LOUTER:
+            return True
+    return False
 
 
 class FilterNode(object):
@@ -165,8 +173,10 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         """
 
-        filters_map = kwargs.get('filters_map') or \
+        filters_map = (
+            kwargs.get('filters_map') or
             self.view.get_request_feature(self.view.FILTER)
+        )
 
         out = TreeMap()
 
@@ -478,7 +488,7 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         prefetch = prefetches.values()
         queryset = queryset.prefetch_related(*prefetch)
-        if duplicate_results_possible(queryset):
+        if has_outer_joins(queryset):
             queryset = queryset.distinct()
 
         return queryset
