@@ -571,6 +571,21 @@ class TestUsersAPI(APITestCase):
         self.assertEqual(1, len(content['users']))
         self.assertEqual(user.pk, content['users'][0]['id'])
 
+    def test_get_with_filter_outer_joins(self):
+        """
+        Test that the API does not return duplicate results
+        when the underlying SQL query would return dupes.
+        """
+        user = User.objects.create(name='test')
+        group_a = Group.objects.create(name='A')
+        group_b = Group.objects.create(name='B')
+        user.groups = [group_a, group_b]
+        response = self.client.get(
+            '/users/?filter{groups.name.in}=A&filter{groups.name.in}=B'
+        )
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(1, len(content['users']), content)
+
     def test_get_with_filter_isnull(self):
         """
         Test for .isnull filters

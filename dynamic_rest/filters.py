@@ -25,9 +25,8 @@ def has_outer_joins(queryset):
     If this is the case, it is possible for the queryset
     to return duplicate results.
     """
-    LOUTER = queryset.query.LOUTER
     for join in six.itervalues(queryset.query.alias_map):
-        if join.join_type == LOUTER:
+        if join.join_type:
             return True
     return False
 
