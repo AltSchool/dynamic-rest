@@ -471,6 +471,12 @@ class DynamicFilterBackend(BaseFilterBackend):
         if query:
             queryset = queryset.filter(query)
 
+        # A serializer can have this optional function
+        # to dynamically apply additional filters on
+        # any queries that will use that serializer
+        # You could use this to have (for example) different
+        # serializers for different subsets of a model or to
+        # implement permissions which work even in sideloads
         if hasattr(serializer, 'filter_queryset'):
             queryset = serializer.filter_queryset(queryset)
 
