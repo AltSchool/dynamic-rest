@@ -19,6 +19,18 @@ from dynamic_rest.related import RelatedObject
 patch_prefetch_one_level()
 
 
+def has_joins(queryset):
+    """Return True iff. a queryset includes joins.
+
+    If this is the case, it is possible for the queryset
+    to return duplicate results.
+    """
+    for join in six.itervalues(queryset.query.alias_map):
+        if join.join_type:
+            return True
+    return False
+
+
 class FilterNode(object):
 
     def __init__(self, field, operator, value):
@@ -160,8 +172,10 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         """
 
-        filters_map = kwargs.get('filters_map') or \
+        filters_map = (
+            kwargs.get('filters_map') or
             self.view.get_request_feature(self.view.FILTER)
+        )
 
         out = TreeMap()
 
@@ -481,7 +495,11 @@ class DynamicFilterBackend(BaseFilterBackend):
             queryset = serializer.filter_queryset(queryset)
 
         prefetch = prefetches.values()
-        return queryset.prefetch_related(*prefetch).distinct()
+        queryset = queryset.prefetch_related(*prefetch)
+        if has_joins(queryset):
+            queryset = queryset.distinct()
+
+        return queryset
 
 
 class DynamicSortingFilter(OrderingFilter):
