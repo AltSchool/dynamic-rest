@@ -5,6 +5,9 @@ EXTRACT_REGEX := 's~^$(WHITESPACE)$(WORD)$(WHITESPACE)=$(WHITESPACE)$(QUOTE)(.*)
 ORG_NAME := $(shell grep ORG_NAME constants.py | sed -E $(EXTRACT_REGEX))
 REPO_NAME := $(shell grep REPO_NAME constants.py | sed -E $(EXTRACT_REGEX))
 APP_NAME := $(shell grep APP_NAME constants.py | sed -E $(EXTRACT_REGEX))
+PROJECT_NAME := $(shell grep PROJECT_NAME constants.py | sed -E $(EXTRACT_REGEX))
+AUTHOR_EMAIL := $(shell grep AUTHOR_EMAIL constants.py | sed -E $(EXTRACT_REGEX))
+VERSION := $(shell grep VERSION constants.py | sed -E $(EXTRACT_REGEX))
 
 INSTALL_PREFIX := /usr/local
 INSTALL_DIR  := $(INSTALL_PREFIX)/$(ORG_NAME)/$(REPO_NAME)
@@ -15,6 +18,18 @@ define header
 	@echo "* $1"
 	@tput sgr0
 endef
+
+.PHONY: docs
+
+docs: install
+	$(call header,"Building docs")
+	@rm -rf ./docs
+	@$(INSTALL_DIR)/bin/sphinx-apidoc -F -o ./docs $(APP_NAME) -H "$(PROJECT_NAME)" -A "$(AUTHOR_EMAIL)" -V $(VERSION) -R $(VERSION)
+	@sed -i -E "s/sphinx.ext.autodoc'/sphinx.ext.autodoc', 'sphinx.ext.napoleon'/" ./docs/conf.py
+	@rm -rf ./docs/conf.py-E
+	@DJANGO_SETTINGS_MODULE='tests.settings' $(INSTALL_DIR)/bin/sphinx-build -b html ./docs ./_docs
+	@cp -r ./_docs/* ./docs
+	@rm -rf ./_docs
 
 # Build/install the app
 # Runs on every command
@@ -49,9 +64,20 @@ test: lint install
 	@$(INSTALL_DIR)/bin/py.test --cov=$(APP_NAME) --tb=short -q -s -rw tests/$(TEST)
 
 # Run all tests (tox)
-tox: lint install
+tox: install
 	$(call header,"Running multi-version tests")
-	@$(INSTALL_DIR)/bin/tox
+	@$(INSTALL_DIR)/bin/tox $(CMD)
+
+# Benchmarks
+benchmarks: benchmark
+benchmark: install
+	$(call header,"Running benchmarks")
+	@$(INSTALL_DIR)/bin/python runtests.py --benchmarks --fast
+
+# Create test app migrations
+migrations: install
+	$(call header,"Creating test app migrations")
+	$(INSTALL_DIR)/bin/python manage.py makemigrations --settings=tests.settings
 
 # Start the Django shell
 shell: install
@@ -74,9 +100,9 @@ start: install
 # Lint the project
 lint: clean_working_directory
 	$(call header,"Linting code")
-	@find . -type f -name '*.py' | xargs flake8
+	@find . -type f -name '*.py' -not -path './docs/*' -not -path './build/*' | xargs flake8
 
 # Auto-format the project
 format: clean_working_directory
 	$(call header,"Auto-formatting code")
-	@find . -type f -name '*.py' | xargs flake8 | sed -E 's/^([^:]*\.py).*/\1/g' | uniq | xargs autopep8 --experimental -a --in-place
+	@find $(APP_NAME) -type f -name '*.py' | xargs flake8 | sed -E 's/^([^:]*\.py).*/\1/g' | uniq | xargs autopep8 --experimental -a --in-place

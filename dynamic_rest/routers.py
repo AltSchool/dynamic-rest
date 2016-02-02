@@ -1,3 +1,4 @@
+"""This module contains custom router classes."""
 from collections import OrderedDict
 
 from django.utils import six

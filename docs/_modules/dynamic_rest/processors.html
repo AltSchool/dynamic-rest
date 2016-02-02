@@ -1,0 +1,199 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>dynamic_rest.processors &mdash; Dynamic REST 1.3.9 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '1.3.9',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="Dynamic REST 1.3.9 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head>
+  <body role="document">  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for dynamic_rest.processors</h1><div class="highlight"><pre>
+<span class="sd">&quot;&quot;&quot;This module contains response processors.&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+
+<span class="kn">from</span> <span class="nn">django.utils</span> <span class="kn">import</span> <span class="n">six</span>
+<span class="kn">from</span> <span class="nn">rest_framework.serializers</span> <span class="kn">import</span> <span class="n">ListSerializer</span>
+<span class="kn">from</span> <span class="nn">rest_framework.utils.serializer_helpers</span> <span class="kn">import</span> <span class="n">ReturnDict</span>
+
+<span class="kn">from</span> <span class="nn">dynamic_rest.tagged</span> <span class="kn">import</span> <span class="n">TaggedDict</span>
+
+
+<div class="viewcode-block" id="SideloadingProcessor"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.processors.SideloadingProcessor">[docs]</a><span class="k">class</span> <span class="nc">SideloadingProcessor</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A processor that sideloads serializer data.</span>
+
+<span class="sd">    Sideloaded records are returned under top-level</span>
+<span class="sd">    response keys and produces responses that are</span>
+<span class="sd">    typically smaller than their nested equivalent.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">serializer</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initializes and runs the processor.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            serializer: a DREST serializer</span>
+<span class="sd">            data: the serializer&#39;s representation</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">serializer</span><span class="p">,</span> <span class="n">ListSerializer</span><span class="p">):</span>
+            <span class="n">serializer</span> <span class="o">=</span> <span class="n">serializer</span><span class="o">.</span><span class="n">child</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seen</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">plural_name</span> <span class="o">=</span> <span class="n">serializer</span><span class="o">.</span><span class="n">get_plural_name</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">serializer</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span>
+
+        <span class="c1"># process the data, optionally sideloading</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+        <span class="c1"># add the primary resource data into the response data</span>
+        <span class="n">resource_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span>
+            <span class="n">data</span><span class="p">,</span>
+            <span class="nb">dict</span>
+        <span class="p">)</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">plural_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">resource_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+
+<div class="viewcode-block" id="SideloadingProcessor.is_dynamic"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.processors.SideloadingProcessor.is_dynamic">[docs]</a>    <span class="k">def</span> <span class="nf">is_dynamic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check whether the given data dictionary is a DREST structure.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            data: A dictionary representation of a DRF serializer.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">TaggedDict</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SideloadingProcessor.process"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.processors.SideloadingProcessor.process">[docs]</a>    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">parent_key</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Recursively process the data for sideloading.</span>
+
+<span class="sd">        Converts the nested representation into a sideloaded representation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">o</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+                <span class="c1"># traverse into lists of objects</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">obj</span><span class="p">,</span> <span class="n">parent_key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span> <span class="n">depth</span><span class="o">=</span><span class="n">depth</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">dynamic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_dynamic</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+            <span class="n">returned</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">ReturnDict</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">dynamic</span> <span class="ow">or</span> <span class="n">returned</span><span class="p">:</span>
+                <span class="c1"># recursively check all fields</span>
+                <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">o</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="nb">list</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">o</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+                        <span class="c1"># lists or dicts indicate a relation</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">process</span><span class="p">(</span>
+                            <span class="n">o</span><span class="p">,</span>
+                            <span class="n">parent</span><span class="o">=</span><span class="n">obj</span><span class="p">,</span>
+                            <span class="n">parent_key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
+                            <span class="n">depth</span><span class="o">=</span><span class="n">depth</span> <span class="o">+</span>
+                            <span class="mi">1</span>
+                        <span class="p">)</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">dynamic</span> <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="s1">&#39;embed&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">):</span>
+                    <span class="k">return</span>
+
+                <span class="n">name</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">serializer</span><span class="o">.</span><span class="n">get_plural_name</span><span class="p">()</span>
+                <span class="n">pk</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="n">instance</span><span class="o">.</span><span class="n">pk</span>
+
+                <span class="c1"># sideloading</span>
+                <span class="n">seen</span> <span class="o">=</span> <span class="bp">True</span>
+                <span class="c1"># if this object has not yet been seen</span>
+                <span class="k">if</span> <span class="n">pk</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">seen</span><span class="p">[</span><span class="n">name</span><span class="p">]:</span>
+                    <span class="n">seen</span> <span class="o">=</span> <span class="bp">False</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">seen</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">pk</span><span class="p">)</span>
+
+                <span class="c1"># prevent sideloading the primary objects</span>
+                <span class="k">if</span> <span class="n">depth</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">return</span>
+
+                <span class="c1"># TODO: spec out the exact behavior for secondary instances of</span>
+                <span class="c1"># the primary resource</span>
+
+                <span class="c1"># if the primary resource is embedded, add it to a prefixed key</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">plural_name</span><span class="p">:</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;+</span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="n">name</span>
+
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">seen</span><span class="p">:</span>
+                    <span class="c1"># allocate a top-level key in the data for this resource</span>
+                    <span class="c1"># type</span>
+                    <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+                    <span class="c1"># move the object into a new top-level bucket</span>
+                    <span class="c1"># and mark it as seen</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span>
+
+                <span class="c1"># replace the object with a reference</span>
+                <span class="k">if</span> <span class="n">parent</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span> <span class="ow">and</span> <span class="n">parent_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                    <span class="n">parent</span><span class="p">[</span><span class="n">parent_key</span><span class="p">]</span> <span class="o">=</span> <span class="n">pk</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper"><div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../index.html">Documentation overview</a><ul>
+  <li><a href="../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2016, ant@altschool.com, ryo@altschool.com.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3.4</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.7</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
