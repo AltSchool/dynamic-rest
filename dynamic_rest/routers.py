@@ -124,6 +124,7 @@ class DynamicRouter(DefaultRouter):
         if endpoint not in current:
             current[endpoint] = {}
         current[endpoint]['_url'] = url_name
+        current[endpoint]['_viewset'] = viewset
 
     def get_routes(self, viewset):
         """
