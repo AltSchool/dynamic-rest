@@ -36,7 +36,7 @@ def get_directory(request):
             six.iteritems(endpoints),
             key=sort_key
         ):
-            if endpoint_name == '_url':
+            if endpoint_name[:1] == '_':
                 continue
             endpoint_url = get_url(endpoint.get('_url', None))
             active = is_active_url(path, endpoint_url)
@@ -94,10 +94,12 @@ class DynamicRouter(DefaultRouter):
             'v1': {
                 'users': {
                     '_url': 'users-list'
+                    '_viewset': <class 'UserViewSet'>
                 },
             }
             'groups': {
                '_url': 'groups-list'
+               '_viewset': <class 'GroupViewSet'>
             }
         }
         """
