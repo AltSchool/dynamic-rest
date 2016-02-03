@@ -3,11 +3,11 @@ import os
 import pickle
 from itertools import chain
 
-import pylru
 from django.conf import settings
 from django.db.models import ManyToManyField
 from django.utils import six
 from django.utils.functional import cached_property
+from pylru import lrucache
 from rest_framework import fields
 from rest_framework.exceptions import NotFound, ParseError
 from rest_framework.serializers import SerializerMethodField
@@ -16,7 +16,7 @@ from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.related import RelatedObject
 
 dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
-serializer_cache = pylru.lrucache(
+serializer_cache = lrucache(
     int(dynamic_settings.get('SERIALIZER_CACHE_MAX_COUNT', 1000))
 )
 
