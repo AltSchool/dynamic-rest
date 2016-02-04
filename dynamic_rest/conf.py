@@ -32,7 +32,11 @@ DYNAMIC_REST = {
 
     # PAGE_SIZE_QUERY_PARAM: global setting for the page size query parameter.
     # Can be overriden at the viewset level.
-    'PAGE_SIZE_QUERY_PARAM': 'per_page'
+    'PAGE_SIZE_QUERY_PARAM': 'per_page',
+
+    # SERIALIZER_CACHE_MAX_COUNT: maximum number of serializers to cache
+    'SERIALIZER_CACHE_MAX_COUNT': 1000,
+
 }
 
 
