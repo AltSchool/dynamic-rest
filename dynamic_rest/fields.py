@@ -3,17 +3,16 @@
 import importlib
 import pickle
 
+import pylru
 from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import fields
 from rest_framework.exceptions import NotFound, ParseError
 from rest_framework.serializers import SerializerMethodField
-import pylru
 
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
 from dynamic_rest.meta import is_field_remote
-
 
 serializer_cache = pylru.lrucache(
     settings.SERIALIZER_CACHE_MAX_COUNT
