@@ -1,7 +1,6 @@
 from setuptools import find_packages, setup
 
 from constants import (
-    APP_NAME,
     AUTHOR,
     AUTHOR_EMAIL,
     DESCRIPTION,
@@ -20,7 +19,7 @@ setup(
     dependency_links=open('dependency_links.txt').readlines(),
     install_requires=open('install_requires.txt').readlines(),
     long_description=open('README.md').read(),
-    name=APP_NAME,
+    name=REPO_NAME,
     packages=find_packages(exclude=EXCLUDE_FROM_PACKAGES),
     scripts=['manage.py'],
     url='http://github.com/%s/%s' % (ORG_NAME, REPO_NAME),
