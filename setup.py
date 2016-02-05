@@ -1,6 +1,6 @@
 from setuptools import find_packages, setup
 
-from constants import (
+from dynamic_rest.constants import (
     AUTHOR,
     AUTHOR_EMAIL,
     DESCRIPTION,
