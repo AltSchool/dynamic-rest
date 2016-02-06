@@ -2,12 +2,12 @@ QUOTE := [\"]
 WORD := [A-Z_]+
 WHITESPACE := [ ]*
 EXTRACT_REGEX := 's~^$(WHITESPACE)$(WORD)$(WHITESPACE)=$(WHITESPACE)$(QUOTE)(.*)$(QUOTE)$$~\1~'
-ORG_NAME := $(shell grep ORG_NAME constants.py | sed -E $(EXTRACT_REGEX))
-REPO_NAME := $(shell grep REPO_NAME constants.py | sed -E $(EXTRACT_REGEX))
-APP_NAME := $(shell grep APP_NAME constants.py | sed -E $(EXTRACT_REGEX))
-PROJECT_NAME := $(shell grep PROJECT_NAME constants.py | sed -E $(EXTRACT_REGEX))
-AUTHOR_EMAIL := $(shell grep AUTHOR_EMAIL constants.py | sed -E $(EXTRACT_REGEX))
-VERSION := $(shell grep VERSION constants.py | sed -E $(EXTRACT_REGEX))
+ORG_NAME := $(shell grep ORG_NAME dynamic_rest/constants.py | sed -E $(EXTRACT_REGEX))
+REPO_NAME := $(shell grep REPO_NAME dynamic_rest/constants.py | sed -E $(EXTRACT_REGEX))
+APP_NAME := $(shell grep APP_NAME dynamic_rest/constants.py | sed -E $(EXTRACT_REGEX))
+PROJECT_NAME := $(shell grep PROJECT_NAME dynamic_rest/constants.py | sed -E $(EXTRACT_REGEX))
+AUTHOR_EMAIL := $(shell grep AUTHOR_EMAIL dynamic_rest/constants.py | sed -E $(EXTRACT_REGEX))
+VERSION := $(shell grep VERSION dynamic_rest/constants.py | sed -E $(EXTRACT_REGEX))
 
 INSTALL_PREFIX := /usr/local
 INSTALL_DIR  := $(INSTALL_PREFIX)/$(ORG_NAME)/$(REPO_NAME)
@@ -20,6 +20,22 @@ define header
 endef
 
 .PHONY: docs
+
+pypi_register_test: install
+	$(call header,"Registering with PyPi - test")
+	@. $(INSTALL_DIR)/bin/activate; python setup.py register -r pypitest
+
+pypi_register: install
+	$(call header,"Registering with PyPi")
+	@. $(INSTALL_DIR)/bin/activate; python setup.py register -r pypi
+
+pypi_upload_test: install
+	$(call header,"Uploading new version to PyPi - test")
+	@. $(INSTALL_DIR)/bin/activate; python setup.py sdist upload -r pypitest
+
+pypi_upload: install
+	$(call header,"Uploading new version to PyPi")
+	@. $(INSTALL_DIR)/bin/activate; python setup.py sdist upload -r pypi
 
 docs: install
 	$(call header,"Building docs")

@@ -1,6 +1,7 @@
 # Dynamic REST
 
 [![Circle CI](https://circleci.com/gh/AltSchool/dynamic-rest.svg?style=svg)](https://circleci.com/gh/AltSchool/dynamic-rest)
+[![PyPi](https://img.shields.io/pypi/v/dynamic-rest.svg)](https://pypi.python.org/pypi/dynamic-rest)
 
 **Dynamic API extensions for Django REST Framework**
 
