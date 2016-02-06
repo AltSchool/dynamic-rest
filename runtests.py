@@ -8,7 +8,7 @@ import subprocess
 import sys
 
 import pytest
-from constants import APP_NAME
+from dynamic_rest.constants import APP_NAME
 
 TESTS = 'tests'
 BENCHMARKS = 'benchmarks'
