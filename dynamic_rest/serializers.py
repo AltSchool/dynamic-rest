@@ -1,5 +1,6 @@
 """This module contains custom serializer classes."""
 import copy
+import inflection
 
 from django.db import models
 from django.utils import six
@@ -220,7 +221,11 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         If the plural name is not defined,
         the pluralized form of the name will be returned.
         """
-        return getattr(self.Meta, 'plural_name', '%ss' % self.get_name())
+        return getattr(
+            self.Meta,
+            'plural_name',
+            inflection.pluralize(self.get_name())
+        )
 
     def get_all_fields(self):
         """Returns the entire serializer field set.
