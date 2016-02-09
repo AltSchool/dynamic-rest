@@ -67,7 +67,7 @@ $(INSTALL_DIR)/bin/activate: requirements.txt install_requires.txt dependency_li
 clean_working_directory:
 	$(call header,"Cleaning working directory")
 	@rm -rf ./.tox ./build ./dist ./$(APP_NAME).egg-info;
-	@find . -name '*.pyc' -type f | xargs rm
+	@find . -name '*.pyc' -type f -exec rm -rf {} \;
 
 # Full clean
 clean: clean_working_directory
