@@ -77,7 +77,7 @@ clean: clean_working_directory
 # Run tests
 test: lint install
 	$(call header,"Running unit tests")
-	@$(INSTALL_DIR)/bin/py.test --cov=$(APP_NAME) --tb=short -q -s -rw tests/$(TEST)
+	@$(INSTALL_DIR)/bin/py.test --cov=$(APP_NAME) tests/$(TEST)
 
 # Run all tests (tox)
 tox: install
@@ -116,7 +116,7 @@ start: install
 # Lint the project
 lint: clean_working_directory
 	$(call header,"Linting code")
-	@find . -type f -name '*.py' -not -path './docs/*' -not -path './build/*' | xargs flake8
+	@find . -type f -name '*.py' -not -path '$(INSTALL_DIR)/*' -not -path './docs/*' -not -path './build/*' | xargs flake8
 
 # Auto-format the project
 format: clean_working_directory
