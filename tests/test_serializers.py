@@ -9,6 +9,7 @@ from tests.models import User
 from tests.serializers import (
     CatSerializer,
     CountsSerializer,
+    DogSerializer,
     GroupSerializer,
     LocationGroupSerializer,
     LocationSerializer,
@@ -699,3 +700,16 @@ class TestSerializerCaching(TestCase):
         # l3 and l4 should be same cached instance because both have
         # request_fields=True (l3 by inheritence, l4 by default)
         self.assertIs(l3, l4)
+
+
+class TestMeta(TestCase):
+
+    def test_default_name(self):
+        serializer = DogSerializer()
+        self.assertFalse(hasattr(serializer.Meta, 'name'))
+        self.assertEqual('dog', serializer.get_name())
+
+    def test_default_plural_name(self):
+        serializer = DogSerializer()
+        self.assertFalse(hasattr(serializer.Meta, 'plural_name'))
+        self.assertEqual('dogs', serializer.get_plural_name())

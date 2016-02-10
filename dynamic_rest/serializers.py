@@ -210,9 +210,15 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
     def get_name(self):
         """Get the serializer name.
 
-        The name must be defined on the Meta class.
+        The name can be defined on the Meta class or will be generated
+        automatically from the model name.
         """
-        return self.Meta.name
+        class_name = getattr(self.get_model(), '__name__', None)
+        return getattr(
+            self.Meta,
+            'name',
+            inflection.underscore(class_name) if class_name else None
+        )
 
     def get_plural_name(self):
         """Get the serializer's plural name.
