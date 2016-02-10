@@ -3,7 +3,7 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import QueryDict
 from django.utils import six
-from rest_framework import exceptions, viewsets
+from rest_framework import exceptions, status, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 from rest_framework.response import Response
@@ -334,6 +334,22 @@ class WithDynamicViewSetMixin(object):
             return Response({}, status=200)
 
         return Response(serializer.data)
+
+
+class BulkCreationMixin(object):
+    """
+    Either create a single or many model instances in bulk by using the
+    Serializer's many=True ability from Django REST >= 2.2.5.
+    """
+    def create(self, request, *args, **kwargs):
+        if not isinstance(request.data, list):
+            return super(BulkCreationMixin, self).create(
+                request, *args, **kwargs)
+        else:
+            serializer = self.get_serializer(data=request.data, many=True)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
