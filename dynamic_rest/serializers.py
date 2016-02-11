@@ -84,16 +84,6 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
             meta = type('Meta', (), {})
             cls.Meta = meta
         meta.list_serializer_class = DynamicListSerializer
-
-        # Check for bulk resource creation with help of resource plural name.
-        # This should happen before actual constructor because class needs to
-        # be changed on DynamicListSerializer.
-        plural_name = cls.get_plural_name()
-        data = kwargs.get('data', fields.empty)
-        if data is not fields.empty and plural_name in data and len(data) == 1:
-            kwargs['data'] = data[plural_name]
-            kwargs['many'] = True
-
         return super(
             WithDynamicSerializerMixin, cls
         ).__new__(

@@ -338,18 +338,22 @@ class WithDynamicViewSetMixin(object):
 
 class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
 
-    ENABLE_BULK_CREATION = dynamic_settings.get('ENABLE_BULK_CREATION', True)
+    def _create_many(self, data):
+        serializer = self.get_serializer(data=data, many=True)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     """
-    Either create a single or many model instances in bulk if
-    ENABLE_BULK_CREATION is enabled by using the
-    Serializer's many=True ability from Django REST >= 2.2.5.
+    Either create a single or many model instances in bulk
+    using the Serializer's many=True ability from Django REST >= 2.2.5.
     """
     def create(self, request, *args, **kwargs):
-        if self.ENABLE_BULK_CREATION and isinstance(request.data, list):
-            serializer = self.get_serializer(data=request.data, many=True)
-            serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        # Check for bulk resource creation with help of resource plural name.
+        plural_name = self.get_serializer_class().get_plural_name()
+        if isinstance(request.data, list):
+            return self._create_many(request.data)
+        elif plural_name in request.data and len(request.data) == 1:
+            return self._create_many(request.data[plural_name])
         return super(DynamicModelViewSet, self).create(
             request, *args, **kwargs)
