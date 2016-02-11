@@ -18,6 +18,9 @@ DYNAMIC_REST = {
     # ENABLE_SERIALIZER_OPTIMIZATIONS: enable/disable representation speedups
     'ENABLE_SERIALIZER_OPTIMIZATIONS': True,
 
+    # ENABLE_BULK_CREATION: enable/disable bulk creation
+    'ENABLE_BULK_CREATION': True,
+
     # MAX_PAGE_SIZE: global setting for max page size.
     # Can be overriden at the viewset level.
     'MAX_PAGE_SIZE': None,

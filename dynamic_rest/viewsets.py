@@ -336,22 +336,20 @@ class WithDynamicViewSetMixin(object):
         return Response(serializer.data)
 
 
-class BulkCreationMixin(object):
+class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
+
+    ENABLE_BULK_CREATION = dynamic_settings.get('ENABLE_BULK_CREATION', True)
+
     """
-    Either create a single or many model instances in bulk by using the
+    Either create a single or many model instances in bulk if
+    ENABLE_BULK_CREATION is enabled by using the
     Serializer's many=True ability from Django REST >= 2.2.5.
     """
     def create(self, request, *args, **kwargs):
-        if not isinstance(request.data, list):
-            return super(BulkCreationMixin, self).create(
-                request, *args, **kwargs)
-        else:
+        if self.ENABLE_BULK_CREATION and isinstance(request.data, list):
             serializer = self.get_serializer(data=request.data, many=True)
-            print type(serializer)
             serializer.is_valid(raise_exception=True)
             self.perform_create(serializer)
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-
-class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
-    pass
+        return super(DynamicModelViewSet, self).create(
+            request, *args, **kwargs)

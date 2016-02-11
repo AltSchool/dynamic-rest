@@ -1,6 +1,6 @@
 from rest_framework import exceptions
 
-from dynamic_rest.viewsets import BulkCreationMixin, DynamicModelViewSet
+from dynamic_rest.viewsets import DynamicModelViewSet
 from tests.models import Cat, Dog, Group, Horse, Location, Profile, User, Zebra
 from tests.serializers import (
     CatSerializer,
@@ -68,7 +68,7 @@ class GroupNoMergeDictViewSet(DynamicModelViewSet):
         return response
 
 
-class GroupViewSet(BulkCreationMixin, DynamicModelViewSet):
+class GroupViewSet(DynamicModelViewSet):
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
         DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT
