@@ -454,11 +454,13 @@ class DynamicFilterBackend(BaseFilterBackend):
             requirements: An optional TreeMap of nested requirements.
         """
 
+        is_root_level = False
         if serializer:
             if queryset is None:
                 queryset = serializer.Meta.model.objects
         else:
             serializer = self.view.get_serializer()
+            is_root_level = True
 
         model = getattr(serializer.Meta, 'model', None)
 
@@ -528,7 +530,7 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         prefetch = prefetches.values()
         queryset = queryset.prefetch_related(*prefetch)
-        if has_joins(queryset):
+        if has_joins(queryset) or not is_root_level:
             queryset = queryset.distinct()
 
         return queryset
