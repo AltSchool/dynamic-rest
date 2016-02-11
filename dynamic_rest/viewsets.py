@@ -344,12 +344,44 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         self.perform_create(serializer)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    """
-    Either create a single or many model instances in bulk
-    using the Serializer's many=True ability from Django REST >= 2.2.5.
-    """
     def create(self, request, *args, **kwargs):
-        # Check for bulk resource creation with help of resource plural name.
+        """
+        Either create a single or many model instances in bulk
+        using the Serializer's many=True ability from Django REST >= 2.2.5.
+
+        The data can be represented by the serializer name (single or plural
+        forms), dict or list.
+
+        Examples:
+
+        POST /dogs/
+        {
+          "name": "Fido",
+          "age": 2
+        }
+
+        POST /dogs/
+        {
+          "dog": {
+            "name": "Lucky",
+            "age": 3
+          }
+        }
+
+        POST /dogs/
+        {
+          "dogs": [
+            {"name": "Fido", "age": 2},
+            {"name": "Lucky", "age": 3}
+          ]
+        }
+
+        POST /dogs/
+        [
+            {"name": "Fido", "age": 2},
+            {"name": "Lucky", "age": 3}
+        ]
+        """
         plural_name = self.get_serializer_class().get_plural_name()
         if isinstance(request.data, list):
             return self._create_many(request.data)
