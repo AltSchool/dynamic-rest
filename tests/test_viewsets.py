@@ -167,7 +167,23 @@ class TestBulkAPI(TestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(1, Group.objects.all().count())
 
-    def test_post_bulk(self):
+    def test_post_bulk_from_resource_plural_name(self):
+        data = {
+            'groups': [
+                {'name': 'foo', 'random_input': [1, 2, 3]},
+                {'name': 'bar', 'random_input': [4, 5, 6]},
+            ]
+        }
+        request = self.rf.post(
+            '/groups/',
+            json.dumps(data),
+            content_type='application/json'
+        )
+        response = self.view(request)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(2, Group.objects.all().count())
+
+    def test_post_bulk_from_list(self):
         """
         Test that POST request with multiple resources created all posted
         resources.

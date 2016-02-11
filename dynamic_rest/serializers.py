@@ -84,6 +84,16 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
             meta = type('Meta', (), {})
             cls.Meta = meta
         meta.list_serializer_class = DynamicListSerializer
+
+        # Check for bulk resource creation with help of resource plural name.
+        # This should happen before actual constructor because class needs to
+        # be changed on DynamicListSerializer.
+        plural_name = cls.get_plural_name()
+        data = kwargs.get('data', fields.empty)
+        if data is not fields.empty and plural_name in data and len(data) == 1:
+            kwargs['data'] = data[plural_name]
+            kwargs['many'] = True
+
         return super(
             WithDynamicSerializerMixin, cls
         ).__new__(
@@ -200,27 +210,30 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
                 # not sideloading this field
                 self.request_fields[name] = True
 
-    def get_model(self):
+    @classmethod
+    def get_model(cls):
         """Get the model, if the serializer has one.
 
         Model serializers should implement this method.
         """
         return None
 
-    def get_name(self):
+    @classmethod
+    def get_name(cls):
         """Get the serializer name.
 
         The name can be defined on the Meta class or will be generated
         automatically from the model name.
         """
-        class_name = getattr(self.get_model(), '__name__', None)
+        class_name = getattr(cls.get_model(), '__name__', None)
         return getattr(
-            self.Meta,
+            cls.Meta,
             'name',
             inflection.underscore(class_name) if class_name else None
         )
 
-    def get_plural_name(self):
+    @classmethod
+    def get_plural_name(cls):
         """Get the serializer's plural name.
 
         The plural name may be defined on the Meta class.
@@ -228,9 +241,9 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         the pluralized form of the name will be returned.
         """
         return getattr(
-            self.Meta,
+            cls.Meta,
             'plural_name',
-            inflection.pluralize(self.get_name())
+            inflection.pluralize(cls.get_name())
         )
 
     def get_all_fields(self):
@@ -431,8 +444,9 @@ class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
 
     """Adds DREST serializer methods specific to model-based serializers."""
 
-    def get_model(self):
-        return self.Meta.model
+    @classmethod
+    def get_model(cls):
+        return cls.Meta.model
 
     def get_id_fields(self):
         """
