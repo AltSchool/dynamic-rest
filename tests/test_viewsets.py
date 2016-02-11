@@ -211,3 +211,15 @@ class TestBulkAPI(TestCase):
             ['foo', 'bar'],
             list(Group.objects.all().values_list('name', flat=True))
         )
+
+    def test_post_bulk_and_with_existing_items(self):
+        data = [{'name': 'foo'}, {'name': 'bar'}]
+        Group.objects.create(name='foo')
+        request = self.rf.post(
+            '/groups/',
+            json.dumps(data),
+            content_type='application/json'
+        )
+        response = self.view(request)
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(1, Group.objects.all().count())
