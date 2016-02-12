@@ -205,16 +205,13 @@
 </div>
 <div class="section" id="introduction">
 <span id="intro"></span><h2><a class="toc-backref" href="#id5">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
-<p>This document will take you through the basics (and not-so-basics) of developing Dynamic REST APIs. <a class="reference external" href="https://github.com/AltSchool/dynamic-rest">Dynamic REST</a> (or “DREST”) is an extension to <a class="reference external" href="http://www.django-rest-framework.org/">Django REST Framework</a> (“DRF”) that makes it easier to implement uniform APIs with powerful features like field inclusion/exclusion, flexible filtering, pagination, and efficient &#8220;sideloading&#8221; of related/nested data.</p>
+<p>This document will take you through the basics (and not-so-basics) of developing Dynamic REST APIs. <a class="reference external" href="https://github.com/AltSchool/dynamic-rest">Dynamic REST</a> (or &#8220;DREST&#8221;) is an extension to <a class="reference external" href="http://www.django-rest-framework.org/">Django REST Framework</a> (&#8220;DRF&#8221;) that makes it easier to implement uniform REST APIs with powerful features like field inclusion/exclusion, flexible filtering, pagination, and efficient &#8220;sideloading&#8221; of related/nested data.</p>
 <div class="section" id="setup">
 <h3><a class="toc-backref" href="#id6">Setup</a><a class="headerlink" href="#setup" title="Permalink to this headline">¶</a></h3>
 <p>Before starting the tutorial, you’ll need to set up Dynamic REST in your dev environment. Refer to the README for details, but it should look something like:</p>
 <div class="highlight-python"><div class="highlight"><pre>$ git clone git@github.com:AltSchool/dynamic-rest.git
 $ cd dynamic_rest
-$ CMD=migrate make run
-$ CMD=shell make run
-&gt;&gt;&gt; from tests.setup import create_fixture
-&gt;&gt;&gt; create_fixture()
+$ make fixtures
 $ make server
 </pre></div>
 </div>
@@ -226,7 +223,7 @@ $ make server
 <p>We’ll first implement a very basic API that exposes a minimal view of a basic model.</p>
 <div class="section" id="model">
 <h3><a class="toc-backref" href="#id8">Model</a><a class="headerlink" href="#model" title="Permalink to this headline">¶</a></h3>
-<p>We will be creating an API for the following model. The model has conveniently already been created for you, and is listed here for reference (the actual code is in tests/models.py).:</p>
+<p>We will be creating an API for the following model. The model has conveniently already been created for you, and is listed here for reference (the actual code is in tests/models.py):</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Event</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
     <span class="n">name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">TextField</span><span class="p">()</span>
     <span class="n">status</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">TextField</span><span class="p">()</span>
@@ -338,9 +335,9 @@ $ make server
 </dl>
 </li>
 <li><dl class="first docutils">
-<dt><a class="reference external" href="http://localhost:9002/events/?filter{location.name}=Location+1">http://localhost:9002/events/?filter{location.name}=Location+1</a></dt>
+<dt><a class="reference external" href="http://localhost:9002/events/?filter{location.name}=1">http://localhost:9002/events/?filter{location.name}=1</a></dt>
 <dd><ul class="first last simple">
-<li>You can filter by relations. Here, we filter for events where the location’s name is “Location 1”</li>
+<li>You can filter by relations. Here, we filter for events where the location’s name is &#8220;1&#8221;</li>
 </ul>
 </dd>
 </dl>
@@ -363,8 +360,11 @@ $ make server
 </li>
 <li><dl class="first docutils">
 <dt><a class="reference external" href="http://localhost:9002/events/?include[]=users.*&amp;filter{users|location}=1">http://localhost:9002/events/?include[]=users.*&amp;filter{users|location}=1</a></dt>
-<dd><ul class="first last">
-<li><p class="first">Now we get users, but only users whose location is 1 (the ‘|’ operator indicates we want to filter the related objects themselves (i.e. users), not the root object (events)).</p>
+<dd><ul class="first last simple">
+<li>Now we get users, but only users whose location is 1 (the ‘|’ operator indicates we want to filter the related objects themselves (i.e. users), not the root object (events)).</li>
+</ul>
+</dd>
+</dl>
 </li>
 <li><p class="first">Object creation through POST request also works. At the bottom of the page, click on the “Raw data” tab, and paste in the following JSON (or your own) and hit the POST button:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="p">{</span>
@@ -378,15 +378,19 @@ $ make server
 </pre></div>
 </div>
 </li>
-</ul>
-</dd>
-</dl>
-</li>
 <li><dl class="first docutils">
 <dt><a class="reference external" href="http://localhost:9002/events/5/?include[]=users">http://localhost:9002/events/5/?include[]=users</a></dt>
 <dd><ul class="first last simple">
 <li>Single resource GET works, as do PUT, PATCH and DELETE commands.</li>
 <li>Note that you get the same field inclusion/deferral behavior for single resource retrieval as you do in list queries.</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><a class="reference external" href="http://localhost:9002/events/5/users/">http://localhost:9002/events/5/users/</a></dt>
+<dd><ul class="first last simple">
+<li>DREST also auto-generates an endpoint to return just the related data (useful as link objects).</li>
 </ul>
 </dd>
 </dl>
@@ -453,8 +457,8 @@ $ make server
 </div>
 <div class="section" id="queryset-override">
 <h3><a class="toc-backref" href="#id18">Queryset override</a><a class="headerlink" href="#queryset-override" title="Permalink to this headline">¶</a></h3>
-<p>By default, DREST/DRF will query the model declared in the viewset’s serializer, which is to say, all objects in that model are in-scope and query-able. If you want to change that, you can override the <code class="docutils literal"><span class="pre">get_queryset()</span></code> method in your viewset. One real-life example is in the ALO Competencies API, where we switch the default queryset to an MPTT queryset constrained to the descendants of a root node.</p>
-<p>Another use-case might be to dynamically apply filters that can’t/shouldn’t be overridden by filter{} params. In a viewset, you might do something like:</p>
+<p>By default, DREST/DRF will query the model declared in the viewset’s serializer, which is to say, all objects in that model are in-scope and query-able. If you want to change that, you can override the <code class="docutils literal"><span class="pre">get_queryset()</span></code> method in your viewset.
+One use-case might be to dynamically apply filters that can&#8217;t/shouldn’t be overridden by <code class="docutils literal"><span class="pre">filter{}</span></code> params. In a viewset, you might do something like:</p>
 <div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">get_queryset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
     <span class="n">is_admin</span> <span class="o">=</span> <span class="n">user_is_admin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">user</span><span class="p">)</span>
     <span class="k">if</span> <span class="n">is_admin</span><span class="p">:</span>
@@ -554,7 +558,7 @@ $ make server
 </div>
 <div class="section" id="ephemeral-serializers">
 <h3><a class="toc-backref" href="#id24">Ephemeral Serializers</a><a class="headerlink" href="#ephemeral-serializers" title="Permalink to this headline">¶</a></h3>
-<p>Sometimes, the output objects don’t map cleanly to any existing model. Currently, we return ad hoc JSON objects that aren’t well defined, and ad hoc implementations make it difficult or cumbersome to support features like dynamic sideloading/inclusion or pagination (which in turn leads to inconsistent and unpredictable implementations). DREST attempts to address these issues by providing limited support for serializers that are not backed by models.</p>
+<p>Sometimes, the output objects don’t map cleanly to any existing model. One approach is to return adhoc JSON, but that makes it difficult or cumbersome to support features like dynamic sideloading/inclusion or pagination (which in turn leads to inconsistent and unpredictable implementations). DREST attempts to address these issues by providing limited support for serializers that are not backed by models.</p>
 <p>One use-case for ephemeral serializers is when we want to represent data that is context-sensitive. Consider the earlier query:</p>
 <p><a class="reference external" href="http://localhost:9002/events/?include[]=users.&amp;filter{users|location}=1">http://localhost:9002/events/?include[]=users.&amp;filter{users|location}=1</a></p>
 <p>Note that Event objects returned by this API call only contain users whose location is 1. However, there is nothing in the object indicating that its user set is incomplete, so if that object is cached, there’s no way to know by looking at the object whether the user-set should be considered complete or not.</p>
@@ -581,7 +585,8 @@ $ make server
         <span class="c1"># Construct EphemeralObject instance, and let DREST serialize it.</span>
         <span class="n">event_location</span> <span class="o">=</span> <span class="n">EphemeralObject</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
         <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">EventLocationSerializer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">to_representation</span><span class="p">(</span>
-<span class="n">event_location</span><span class="p">)</span>
+            <span class="n">event_location</span>
+        <span class="p">)</span>
 </pre></div>
 </div>
 <p>This serializer will take an Event object with its users set pre-filtered, and emit an object with a unique ID and context that makes it safe for caching and re-use. If hooked up correctly to a viewset, the resulting API would have support for DREST features like field inclusion/sideloading, auto-generated OPTIONS response, and pagination.</p>
@@ -598,15 +603,16 @@ $ make server
 </div>
 <div class="section" id="default-filtering-of-related-objects">
 <h3><a class="toc-backref" href="#id26">Default Filtering of Related Objects</a><a class="headerlink" href="#default-filtering-of-related-objects" title="Permalink to this headline">¶</a></h3>
-<p>DynamicRelationFields can have a default queryset/filter. While clients can apply filtering on related objects (and viewsets can do the same through query injection), sometimes a default filter needs to be applied in all cases, and you don’t want to leave it to the client to know that. An example might be a classroom.students relation, where students should always be filtered by enrollment status, and expecting a client who does include[]=teacher.classroom.students to also apply filter{teacher.classroom|student.enrolled}=1 is burdensome and error-prone.</p>
-<p>To solve this problem, a default queryset can be defined in the DynamicRelationField.:</p>
-<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">ClassroomSerializer</span><span class="p">(</span><span class="n">DynamicModelSerializer</span><span class="p">):</span>
+<p>DynamicRelationFields can have a default queryset/filter. While clients can apply filtering on related objects (and viewsets can do the same through query injection), sometimes a default filter needs to be applied in all cases, and you don’t want to leave it to the client to know that. An example might be if we wanted to supply a <code class="docutils literal"><span class="pre">Location.upcoming_events</span></code> field, where we want to filter <code class="docutils literal"><span class="pre">Location.events</span></code> for active events and spare the client of having to do <code class="docutils literal"><span class="pre">filter{events|status}=current</span></code>.</p>
+<p>To solve this problem, a default queryset can be defined in the DynamicRelationField:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">LocationSerializer</span><span class="p">(</span><span class="n">DynamicModelSerializer</span><span class="p">):</span>
     <span class="c1"># ...</span>
 
-    <span class="n">students</span> <span class="o">=</span> <span class="n">DynamicRelationField</span><span class="p">(</span>
-        <span class="n">StudentSerializer</span><span class="p">,</span>
+    <span class="n">upcoming_events</span> <span class="o">=</span> <span class="n">DynamicRelationField</span><span class="p">(</span>
+        <span class="n">EventSerializer</span><span class="p">,</span>
+        <span class="n">source</span><span class="o">=</span><span class="s1">&#39;events&#39;</span><span class="p">,</span>
         <span class="n">many</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
-        <span class="n">queryset</span><span class="o">=</span><span class="n">Student</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">enrolled</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">queryset</span><span class="o">=</span><span class="n">Event</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="s1">&#39;current&#39;</span><span class="p">)</span>  <span class="c1"># &lt;--</span>
     <span class="p">)</span>
 </pre></div>
 </div>

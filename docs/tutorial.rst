@@ -8,7 +8,7 @@ Dynamic REST Tutorial
 Introduction
 =====================
 
-This document will take you through the basics (and not-so-basics) of developing Dynamic REST APIs. `Dynamic REST <https://github.com/AltSchool/dynamic-rest>`_ (or “DREST”) is an extension to `Django REST Framework <http://www.django-rest-framework.org/>`_ (“DRF”) that makes it easier to implement uniform APIs with powerful features like field inclusion/exclusion, flexible filtering, pagination, and efficient "sideloading" of related/nested data.
+This document will take you through the basics (and not-so-basics) of developing Dynamic REST APIs. `Dynamic REST <https://github.com/AltSchool/dynamic-rest>`_ (or "DREST") is an extension to `Django REST Framework <http://www.django-rest-framework.org/>`_ ("DRF") that makes it easier to implement uniform REST APIs with powerful features like field inclusion/exclusion, flexible filtering, pagination, and efficient "sideloading" of related/nested data.
 
 Setup
 -----
@@ -31,7 +31,7 @@ We’ll first implement a very basic API that exposes a minimal view of a basic 
 
 Model
 -----
-We will be creating an API for the following model. The model has conveniently already been created for you, and is listed here for reference (the actual code is in tests/models.py).::
+We will be creating an API for the following model. The model has conveniently already been created for you, and is listed here for reference (the actual code is in tests/models.py)::
 
     class Event(models.Model):
         name = models.TextField()
@@ -129,20 +129,22 @@ Now try some queries:
     * Now we get users sideloaded
 * `http://localhost:9002/events/?include[]=users.*&filter{users|location}=1 <http://localhost:9002/events/?include[]=users.*&filter{users|location}=1>`_
     * Now we get users, but only users whose location is 1 (the ‘|’ operator indicates we want to filter the related objects themselves (i.e. users), not the root object (events)).
-    * Object creation through POST request also works. At the bottom of the page, click on the “Raw data” tab, and paste in the following JSON (or your own) and hit the POST button::
+* Object creation through POST request also works. At the bottom of the page, click on the “Raw data” tab, and paste in the following JSON (or your own) and hit the POST button::
 
-        {
-            "event": {
-                "name": "new event!",
-                "status": "current",
-                "location": 2,
-                "users": [1,2]
-            }
+    {
+        "event": {
+            "name": "new event!",
+            "status": "current",
+            "location": 2,
+            "users": [1,2]
         }
+    }
 
 * http://localhost:9002/events/5/?include[]=users
     * Single resource GET works, as do PUT, PATCH and DELETE commands.
     * Note that you get the same field inclusion/deferral behavior for single resource retrieval as you do in list queries.
+* http://localhost:9002/events/5/users/
+    * DREST also auto-generates an endpoint to return just the related data (useful as link objects).
 
 Note on optimizations
 ---------------------
@@ -203,9 +205,8 @@ http://localhost:9002/events/
 
 Queryset override
 -----------------
-By default, DREST/DRF will query the model declared in the viewset’s serializer, which is to say, all objects in that model are in-scope and query-able. If you want to change that, you can override the ``get_queryset()`` method in your viewset. One real-life example is in the ALO Competencies API, where we switch the default queryset to an MPTT queryset constrained to the descendants of a root node.
-
-Another use-case might be to dynamically apply filters that can’t/shouldn’t be overridden by filter{} params. In a viewset, you might do something like::
+By default, DREST/DRF will query the model declared in the viewset’s serializer, which is to say, all objects in that model are in-scope and query-able. If you want to change that, you can override the ``get_queryset()`` method in your viewset.
+One use-case might be to dynamically apply filters that can't/shouldn’t be overridden by ``filter{}`` params. In a viewset, you might do something like::
 
     def get_queryset(self, *args, **kwargs):
         is_admin = user_is_admin(self.user)
@@ -306,7 +307,7 @@ Historically, we’ve implemented computed fields using SerializerMethodField, w
 
 Ephemeral Serializers
 ---------------------
-Sometimes, the output objects don’t map cleanly to any existing model. Currently, we return ad hoc JSON objects that aren’t well defined, and ad hoc implementations make it difficult or cumbersome to support features like dynamic sideloading/inclusion or pagination (which in turn leads to inconsistent and unpredictable implementations). DREST attempts to address these issues by providing limited support for serializers that are not backed by models.
+Sometimes, the output objects don’t map cleanly to any existing model. One approach is to return adhoc JSON, but that makes it difficult or cumbersome to support features like dynamic sideloading/inclusion or pagination (which in turn leads to inconsistent and unpredictable implementations). DREST attempts to address these issues by providing limited support for serializers that are not backed by models.
 
 One use-case for ephemeral serializers is when we want to represent data that is context-sensitive. Consider the earlier query:
 
@@ -338,7 +339,8 @@ An alternative representation of the data might look something like this::
             # Construct EphemeralObject instance, and let DREST serialize it.
             event_location = EphemeralObject(data)
             return super(EventLocationSerializer, self).to_representation(
-    event_location)
+                event_location
+            )
 
 This serializer will take an Event object with its users set pre-filtered, and emit an object with a unique ID and context that makes it safe for caching and re-use. If hooked up correctly to a viewset, the resulting API would have support for DREST features like field inclusion/sideloading, auto-generated OPTIONS response, and pagination.
 
@@ -355,17 +357,18 @@ The DynamicRelationField’s embed option will ensure that the related objects a
 
 Default Filtering of Related Objects
 ------------------------------------
-DynamicRelationFields can have a default queryset/filter. While clients can apply filtering on related objects (and viewsets can do the same through query injection), sometimes a default filter needs to be applied in all cases, and you don’t want to leave it to the client to know that. An example might be a classroom.students relation, where students should always be filtered by enrollment status, and expecting a client who does include[]=teacher.classroom.students to also apply filter{teacher.classroom|student.enrolled}=1 is burdensome and error-prone.
+DynamicRelationFields can have a default queryset/filter. While clients can apply filtering on related objects (and viewsets can do the same through query injection), sometimes a default filter needs to be applied in all cases, and you don’t want to leave it to the client to know that. An example might be if we wanted to supply a ``Location.upcoming_events`` field, where we want to filter ``Location.events`` for active events and spare the client of having to do ``filter{events|status}=current``.
 
-To solve this problem, a default queryset can be defined in the DynamicRelationField.::
+To solve this problem, a default queryset can be defined in the DynamicRelationField::
 
-    class ClassroomSerializer(DynamicModelSerializer):
+    class LocationSerializer(DynamicModelSerializer):
         # ...
 
-        students = DynamicRelationField(
-            StudentSerializer,
+        upcoming_events = DynamicRelationField(
+            EventSerializer,
+            source='events',
             many=True,
-            queryset=Student.objects.filter(enrolled=True)
+            queryset=Event.objects.filter(status='current')  # <--
         )
 
 **Notes:**
