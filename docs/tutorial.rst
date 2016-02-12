@@ -124,8 +124,8 @@ Now try some queries:
 * http://localhost:9002/events/
     * Now you should see that location is included, though note that only the ID is returned.
     * Users still don’t show up, because we set deferred=True
-* `http://localhost:9002/events/?filter{location.name}=Location+1 <http://localhost:9002/events/?filter{location.name}=Location+1>`_
-    * You can filter by relations. Here, we filter for events where the location’s name is “Location 1”
+* `http://localhost:9002/events/?filter{location.name}=1 <http://localhost:9002/events/?filter{location.name}=1>`_
+    * You can filter by relations. Here, we filter for events where the location’s name is "1"
 * http://localhost:9002/events/?include[]=users
     * Now you get users, but, again, only IDs by default
 * http://localhost:9002/events/?include[]=users.*
