@@ -1,16 +1,16 @@
 .. Dynamic REST documentation master file, created by
-   sphinx-quickstart on Wed Jan 27 14:24:10 2016.
+   sphinx-quickstart on Thu Feb 11 15:07:20 2016.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Dynamic REST's documentation!
-========================================
-
-Contents:
+Dynamic REST Documentation
+==========================
 
 .. toctree::
    :maxdepth: 4
+   :caption: Contents
 
+   tutorial
    dynamic_rest
 
 

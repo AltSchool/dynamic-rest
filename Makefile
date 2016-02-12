@@ -11,7 +11,7 @@ VERSION := $(shell grep VERSION dynamic_rest/constants.py | sed -E $(EXTRACT_REG
 
 INSTALL_PREFIX := /usr/local
 INSTALL_DIR  := $(INSTALL_PREFIX)/$(ORG_NAME)/$(REPO_NAME)
-PORT         ?= 9001
+PORT         ?= 9002
 
 define header
 	@tput setaf 6
@@ -37,12 +37,15 @@ pypi_upload: install
 	$(call header,"Uploading new version to PyPi")
 	@. $(INSTALL_DIR)/bin/activate; python setup.py sdist upload -r pypi
 
-docs: install
-	$(call header,"Building docs")
+clean_docs: install
+	$(call header,"Cleaning docs")
 	@rm -rf ./docs
 	@$(INSTALL_DIR)/bin/sphinx-apidoc -F -o ./docs $(APP_NAME) -H "$(PROJECT_NAME)" -A "$(AUTHOR_EMAIL)" -V $(VERSION) -R $(VERSION)
 	@sed -i -E "s/sphinx.ext.autodoc'/sphinx.ext.autodoc', 'sphinx.ext.napoleon'/" ./docs/conf.py
 	@rm -rf ./docs/conf.py-E
+
+docs: install
+	$(call header,"Building docs")
 	@DJANGO_SETTINGS_MODULE='tests.settings' $(INSTALL_DIR)/bin/sphinx-build -b html ./docs ./_docs
 	@cp -r ./_docs/* ./docs
 	@rm -rf ./_docs

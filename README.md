@@ -103,7 +103,7 @@ This application is hosted at https://dynamic-rest.herokuapp.com but can also be
     make serve
 ```
 
-3) Visit `localhost:9001` in your browser.
+3) Visit `localhost:9002` in your browser.
 
 # Features
 
