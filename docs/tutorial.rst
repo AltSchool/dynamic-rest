@@ -17,10 +17,7 @@ Before starting the tutorial, you’ll need to set up Dynamic REST in your dev e
 
     $ git clone git@github.com:AltSchool/dynamic-rest.git
     $ cd dynamic_rest
-    $ CMD=migrate make run
-    $ CMD=shell make run
-    >>> from tests.setup import create_fixture
-    >>> create_fixture()
+    $ make fixtures
     $ make server
 
 This should start up Django at http://localhost:9002.

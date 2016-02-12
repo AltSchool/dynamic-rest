@@ -105,6 +105,8 @@ This application is hosted at https://dynamic-rest.herokuapp.com but can also be
 
 3) Visit `localhost:9002` in your browser.
 
+4) To load sample fixture data, run `make fixtures` and restart the server.
+
 # Features
 
 To understand the DREST API features, let us consider a demo model with a corresponding viewset, serializer, and route.
