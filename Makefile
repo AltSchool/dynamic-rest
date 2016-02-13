@@ -10,7 +10,7 @@ AUTHOR_EMAIL := $(shell grep AUTHOR_EMAIL dynamic_rest/constants.py | sed -E $(E
 VERSION := $(shell grep VERSION dynamic_rest/constants.py | sed -E $(EXTRACT_REGEX))
 
 INSTALL_PREFIX := /usr/local
-INSTALL_DIR  := $(INSTALL_PREFIX)/$(ORG_NAME)/$(REPO_NAME)
+INSTALL_DIR  ?= $(INSTALL_PREFIX)/$(ORG_NAME)/$(REPO_NAME)
 PORT         ?= 9002
 
 define header
