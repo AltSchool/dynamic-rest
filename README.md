@@ -103,7 +103,9 @@ This application is hosted at https://dynamic-rest.herokuapp.com but can also be
     make serve
 ```
 
-3) Visit `localhost:9001` in your browser.
+3) Visit `localhost:9002` in your browser.
+
+4) To load sample fixture data, run `make fixtures` and restart the server.
 
 # Features
 
