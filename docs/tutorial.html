@@ -1,0 +1,780 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Dynamic REST Tutorial &mdash; Dynamic REST 1.3.15 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Dynamic REST 1.3.15 documentation" href="index.html"/>
+        <link rel="next" title="dynamic_rest package" href="dynamic_rest.html"/>
+        <link rel="prev" title="Dynamic REST Documentation" href="index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Dynamic REST
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.3.15
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">Contents</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="">Dynamic REST Tutorial</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#introduction">Introduction</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#setup">Setup</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#minimal-api">Minimal API</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#model">Model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#minimal-serializer">Minimal serializer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#minimal-viewset">Minimal ViewSet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#map-to-url">Map to URL</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#try-it-out">Try it out</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#serializer-with-relations">Serializer with relations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#note-on-optimizations">Note on optimizations</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#advanced-topics">Advanced Topics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#serializer-field-aliasing">Serializer field aliasing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#query-parameter-injection">Query parameter injection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#queryset-override">Queryset override</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#setting-serializer-context">Setting serializer context</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#drest-ifying-existing-viewset">DREST-ifying Existing ViewSet</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#drest-ifying-existing-serializer">DREST-ifying Existing Serializer</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#customizing-serializers">Customizing Serializers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#computed-fields">Computed Fields</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ephemeral-serializers">Ephemeral Serializers</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#embedded-fields">Embedded Fields</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#default-filtering-of-related-objects">Default Filtering of Related Objects</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#fun-times-with-default-querysets">Fun Times with Default Querysets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#dynamic-default-querysets">Dynamic Default Querysets</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#dynamicmethodfield-and-prefetch-hinting">DynamicMethodField and Prefetch Hinting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dynamic_rest.html">dynamic_rest package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Dynamic REST</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Dynamic REST Tutorial</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/tutorial.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="dynamic-rest-tutorial">
+<h1><a class="toc-backref" href="#id4">Dynamic REST Tutorial</a><a class="headerlink" href="#dynamic-rest-tutorial" title="Permalink to this headline">¶</a></h1>
+<div class="contents topic" id="contents">
+<p class="topic-title first">Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#dynamic-rest-tutorial" id="id4">Dynamic REST Tutorial</a><ul>
+<li><a class="reference internal" href="#introduction" id="id5">Introduction</a><ul>
+<li><a class="reference internal" href="#setup" id="id6">Setup</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#minimal-api" id="id7">Minimal API</a><ul>
+<li><a class="reference internal" href="#model" id="id8">Model</a></li>
+<li><a class="reference internal" href="#minimal-serializer" id="id9">Minimal serializer</a></li>
+<li><a class="reference internal" href="#minimal-viewset" id="id10">Minimal ViewSet</a></li>
+<li><a class="reference internal" href="#map-to-url" id="id11">Map to URL</a></li>
+<li><a class="reference internal" href="#try-it-out" id="id12">Try it out</a></li>
+<li><a class="reference internal" href="#serializer-with-relations" id="id13">Serializer with relations</a></li>
+<li><a class="reference internal" href="#note-on-optimizations" id="id14">Note on optimizations</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#advanced-topics" id="id15">Advanced Topics</a><ul>
+<li><a class="reference internal" href="#serializer-field-aliasing" id="id16">Serializer field aliasing</a></li>
+<li><a class="reference internal" href="#query-parameter-injection" id="id17">Query parameter injection</a></li>
+<li><a class="reference internal" href="#queryset-override" id="id18">Queryset override</a></li>
+<li><a class="reference internal" href="#setting-serializer-context" id="id19">Setting serializer context</a></li>
+<li><a class="reference internal" href="#drest-ifying-existing-viewset" id="id20">DREST-ifying Existing ViewSet</a></li>
+<li><a class="reference internal" href="#drest-ifying-existing-serializer" id="id21">DREST-ifying Existing Serializer</a></li>
+<li><a class="reference internal" href="#customizing-serializers" id="id22">Customizing Serializers</a></li>
+<li><a class="reference internal" href="#computed-fields" id="id23">Computed Fields</a></li>
+<li><a class="reference internal" href="#ephemeral-serializers" id="id24">Ephemeral Serializers</a></li>
+<li><a class="reference internal" href="#embedded-fields" id="id25">Embedded Fields</a></li>
+<li><a class="reference internal" href="#default-filtering-of-related-objects" id="id26">Default Filtering of Related Objects</a></li>
+<li><a class="reference internal" href="#fun-times-with-default-querysets" id="id27">Fun Times with Default Querysets</a></li>
+<li><a class="reference internal" href="#dynamic-default-querysets" id="id28">Dynamic Default Querysets</a></li>
+<li><a class="reference internal" href="#dynamicmethodfield-and-prefetch-hinting" id="id29">DynamicMethodField and Prefetch Hinting</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="introduction">
+<span id="intro"></span><h2><a class="toc-backref" href="#id5">Introduction</a><a class="headerlink" href="#introduction" title="Permalink to this headline">¶</a></h2>
+<p>This document will take you through the basics (and not-so-basics) of developing Dynamic REST APIs. <a class="reference external" href="https://github.com/AltSchool/dynamic-rest">Dynamic REST</a> (or &#8220;DREST&#8221;) is an extension to <a class="reference external" href="http://www.django-rest-framework.org/">Django REST Framework</a> (&#8220;DRF&#8221;) that makes it easier to implement uniform REST APIs with powerful features like field inclusion/exclusion, flexible filtering, pagination, and efficient &#8220;sideloading&#8221; of related/nested data.</p>
+<div class="section" id="setup">
+<h3><a class="toc-backref" href="#id6">Setup</a><a class="headerlink" href="#setup" title="Permalink to this headline">¶</a></h3>
+<p>Before starting the tutorial, you’ll need to set up Dynamic REST in your dev environment. Refer to the README for details, but it should look something like:</p>
+<div class="highlight-python"><div class="highlight"><pre>$ git clone git@github.com:AltSchool/dynamic-rest.git
+$ cd dynamic_rest
+$ make fixtures
+$ make server
+</pre></div>
+</div>
+<p>This should start up Django at <a class="reference external" href="http://localhost:9002">http://localhost:9002</a>.</p>
+</div>
+</div>
+<div class="section" id="minimal-api">
+<span id="id1"></span><h2><a class="toc-backref" href="#id7">Minimal API</a><a class="headerlink" href="#minimal-api" title="Permalink to this headline">¶</a></h2>
+<p>We’ll first implement a very basic API that exposes a minimal view of a basic model.</p>
+<div class="section" id="model">
+<h3><a class="toc-backref" href="#id8">Model</a><a class="headerlink" href="#model" title="Permalink to this headline">¶</a></h3>
+<p>We will be creating an API for the following model. The model has conveniently already been created for you, and is listed here for reference (the actual code is in tests/models.py):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Event</span><span class="p">(</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">TextField</span><span class="p">()</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">TextField</span><span class="p">()</span>
+    <span class="n">location</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">ForeignKey</span><span class="p">(</span><span class="s1">&#39;Location&#39;</span><span class="p">,</span> <span class="n">null</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">blank</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">users</span> <span class="o">=</span> <span class="n">models</span><span class="o">.</span><span class="n">ManyToManyField</span><span class="p">(</span><span class="s1">&#39;User&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="minimal-serializer">
+<h3><a class="toc-backref" href="#id9">Minimal serializer</a><a class="headerlink" href="#minimal-serializer" title="Permalink to this headline">¶</a></h3>
+<p>All objects returned by APIs must have a serializer. The serializer is effectively your contract with the API user &#8211; it’s where you declare which fields are available, what the field data types are, which fields are deferred, and so on.</p>
+<p>Add the following to tests/serializers.py (note that Event needs to be imported at the top):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">tests.models</span> <span class="kn">import</span> <span class="n">Event</span>
+
+<span class="k">class</span> <span class="nc">EventSerializer</span><span class="p">(</span><span class="n">DynamicModelSerializer</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">Event</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;event&#39;</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;status&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The example above is a complete serializer.  In this particular example, the Meta class contains all the information the framework needs. It knows what the underlying model is, which fields to include in the output, and what to label the returned data. (If you’re wondering why we don’t have location and users, don’t worry, we’ll get to those in a bit.)</p>
+</div>
+<div class="section" id="minimal-viewset">
+<h3><a class="toc-backref" href="#id10">Minimal ViewSet</a><a class="headerlink" href="#minimal-viewset" title="Permalink to this headline">¶</a></h3>
+<p>Next we’ll add a viewset, which implements the API (in tests/viewsets.py).:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">tests.serializers</span> <span class="kn">import</span> <span class="n">EventSerializer</span>
+<span class="kn">from</span> <span class="nn">tests.models</span> <span class="kn">import</span> <span class="n">Event</span>
+
+<span class="k">class</span> <span class="nc">EventViewSet</span><span class="p">(</span><span class="n">DynamicModelViewSet</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Events API.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">queryset</span> <span class="o">=</span> <span class="n">Event</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="n">serializer_class</span> <span class="o">=</span> <span class="n">EventSerializer</span>
+</pre></div>
+</div>
+<p>This implements a simple API, which provides full CRUD capabilities, as well as list functionality with filtering, field inclusion, sideloading, and pagination.</p>
+</div>
+<div class="section" id="map-to-url">
+<h3><a class="toc-backref" href="#id11">Map to URL</a><a class="headerlink" href="#map-to-url" title="Permalink to this headline">¶</a></h3>
+<p>Update the URLs file (in tests/urls.py):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">router</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="s1">r&#39;events&#39;</span><span class="p">,</span> <span class="n">viewsets</span><span class="o">.</span><span class="n">EventViewSet</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Note that, as a convention, the URL resource name should be the pluralization of the name declared in the serializer Meta class (for irregular pluralizations, a plural_name attribute can be set in the Meta class).</p>
+</div>
+<div class="section" id="try-it-out">
+<h3><a class="toc-backref" href="#id12">Try it out</a><a class="headerlink" href="#try-it-out" title="Permalink to this headline">¶</a></h3>
+<p>Try out a few URLs (assumes you’re running locally on port 9002):</p>
+<ul>
+<li><dl class="first docutils">
+<dt><a class="reference external" href="http://localhost:9002/events/">http://localhost:9002/events/</a></dt>
+<dd><ul class="first last simple">
+<li>You should get a pretty HTML-ified view of the API. This view is generated by Django REST Framework, and is only returned if text/html is in the Accept header (i.e. in a non-XHR browser request).</li>
+<li>Click on the OPTIONS button at the top-right, to get information about the fields available in the response.</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><a class="reference external" href="http://localhost:9002/events/?page=2&amp;per_page=1">http://localhost:9002/events/?page=2&amp;per_page=1</a></dt>
+<dd><ul class="first last simple">
+<li>Pagination works out of the box.</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><a class="reference external" href="http://localhost:9002/events/?filter{name}=Event+3">http://localhost:9002/events/?filter{name}=Event+3</a></dt>
+<dd><ul class="first last simple">
+<li>Filtering works out of the box too.</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="serializer-with-relations">
+<h3><a class="toc-backref" href="#id13">Serializer with relations</a><a class="headerlink" href="#serializer-with-relations" title="Permalink to this headline">¶</a></h3>
+<p>We’ll extend the previous example by adding a couple of relational fields to the serializer:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">EventSerializer</span><span class="p">(</span><span class="n">DynamicModelSerializer</span><span class="p">):</span>
+    <span class="n">location</span> <span class="o">=</span> <span class="n">DynamicRelationField</span><span class="p">(</span><span class="s1">&#39;LocationSerializer&#39;</span><span class="p">,</span> <span class="n">deferred</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="n">users</span> <span class="o">=</span> <span class="n">DynamicRelationField</span><span class="p">(</span>
+        <span class="s1">&#39;UserSerializer&#39;</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">deferred</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">Event</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;event&#39;</span>
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">,</span> <span class="s1">&#39;status&#39;</span><span class="p">,</span> <span class="s1">&#39;location&#39;</span><span class="p">,</span> <span class="s1">&#39;users&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Here, we’ve added the two relational fields. A few notes:</p>
+<ul class="simple">
+<li>For relational fields, map a field name to a DynamicRelationField object, and then pass in the serializer to use when that field is being serialized.</li>
+<li>If using a serializer that hasn’t been defined yet, you can use the serializer name (or full import path) as a string.</li>
+<li>We set deferred=True on users, which means that field will not be returned unless specifically requested. For many-relations, this could yield better performance since that saves a DB query.</li>
+<li>Relational fields can be a Foreign-Key (one to many), a Many-to-Many, or Many-to-One (a.k.a inverse of a foreign key).</li>
+</ul>
+<p>Now try some queries:</p>
+<ul>
+<li><dl class="first docutils">
+<dt><a class="reference external" href="http://localhost:9002/events/">http://localhost:9002/events/</a></dt>
+<dd><ul class="first last simple">
+<li>Now you should see that location is included, though note that only the ID is returned.</li>
+<li>Users still don’t show up, because we set deferred=True</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><a class="reference external" href="http://localhost:9002/events/?filter{location.name}=1">http://localhost:9002/events/?filter{location.name}=1</a></dt>
+<dd><ul class="first last simple">
+<li>You can filter by relations. Here, we filter for events where the location’s name is &#8220;1&#8221;</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><a class="reference external" href="http://localhost:9002/events/?include[]=users">http://localhost:9002/events/?include[]=users</a></dt>
+<dd><ul class="first last simple">
+<li>Now you get users, but, again, only IDs by default</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><a class="reference external" href="http://localhost:9002/events/?include[]=users.*">http://localhost:9002/events/?include[]=users.*</a></dt>
+<dd><ul class="first last simple">
+<li>Now we get users sideloaded</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><a class="reference external" href="http://localhost:9002/events/?include[]=users.*&amp;filter{users|location}=1">http://localhost:9002/events/?include[]=users.*&amp;filter{users|location}=1</a></dt>
+<dd><ul class="first last simple">
+<li>Now we get users, but only users whose location is 1 (the ‘|’ operator indicates we want to filter the related objects themselves (i.e. users), not the root object (events)).</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><p class="first">Object creation through POST request also works. At the bottom of the page, click on the “Raw data” tab, and paste in the following JSON (or your own) and hit the POST button:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="p">{</span>
+    <span class="s2">&quot;event&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;new event!&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;current&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;location&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="s2">&quot;users&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</li>
+<li><dl class="first docutils">
+<dt><a class="reference external" href="http://localhost:9002/events/5/?include[]=users">http://localhost:9002/events/5/?include[]=users</a></dt>
+<dd><ul class="first last simple">
+<li>Single resource GET works, as do PUT, PATCH and DELETE commands.</li>
+<li>Note that you get the same field inclusion/deferral behavior for single resource retrieval as you do in list queries.</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt><a class="reference external" href="http://localhost:9002/events/5/users/">http://localhost:9002/events/5/users/</a></dt>
+<dd><ul class="first last simple">
+<li>DREST also auto-generates an endpoint to return just the related data (useful as link objects).</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="note-on-optimizations">
+<h3><a class="toc-backref" href="#id14">Note on optimizations</a><a class="headerlink" href="#note-on-optimizations" title="Permalink to this headline">¶</a></h3>
+<p>DREST has reasonable optimization strategies built in, which frees up the API developer from having to understand and employ Django optimization strategies. Some optimizations currently implemented include:</p>
+<ul class="simple">
+<li>Prefetching of sideloaded fields - For example, when we sideloaded users above, DREST internally constructed a Prefetch query so Django only performed 2 queries: one for events, one for users.</li>
+<li>Automatic prefetching - If we were to turn deferred off on users, DREST will automatically prefetch users (otherwise Django will issue a separate query per event object).</li>
+<li>Field selection - DREST will only request fields that are necessary from the DB, which could reduce data transfer between Django and the DB.</li>
+<li>Prefetch filtering for sideloads - When we filtered sideloads, the filtering criteria was converted into a Django query and attached to the prefetch request so that it could be converted into the appropriate SQL query.</li>
+</ul>
+</div>
+</div>
+<div class="section" id="advanced-topics">
+<span id="id2"></span><h2><a class="toc-backref" href="#id15">Advanced Topics</a><a class="headerlink" href="#advanced-topics" title="Permalink to this headline">¶</a></h2>
+<p>As you saw, simple APIs can be implemented with very little code. Obviously, life is more complicated than that...</p>
+<div class="section" id="serializer-field-aliasing">
+<h3><a class="toc-backref" href="#id16">Serializer field aliasing</a><a class="headerlink" href="#serializer-field-aliasing" title="Permalink to this headline">¶</a></h3>
+<p>Sometimes we want serializer fields to be named something other than the underlying model (or Django-ism like <code class="docutils literal"><span class="pre">*_set</span></code>). We can do this by using the DRF source field attribute. Try modifying the EventSerializer thusly:</p>
+<div class="highlight-python"><div class="highlight"><pre>class EventSerializer(DynamicModelSerializer):
+    location = DynamicRelationField(&#39;LocationSerializer&#39;, deferred=False)
+    participants = DynamicRelationField(
+            &#39;UserSerializer&#39;, source=&#39;users&#39;, many=True, deferred=True)
+
+    class Meta:
+        model = Event
+        name = &#39;event&#39;
+        fields = (&#39;id&#39;, &#39;name&#39;, &#39;status&#39;, &#39;location&#39;, &#39;participants
+&#39;)
+</pre></div>
+</div>
+<dl class="docutils">
+<dt>Everything still works as expected:</dt>
+<dd><ul class="first last simple">
+<li><a class="reference external" href="http://localhost:9002/events/?include[]=participants&amp;filter{participants|location}=1">http://localhost:9002/events/?include[]=participants&amp;filter{participants|location}=1</a></li>
+</ul>
+</dd>
+</dl>
+</div>
+<div class="section" id="query-parameter-injection">
+<h3><a class="toc-backref" href="#id17">Query parameter injection</a><a class="headerlink" href="#query-parameter-injection" title="Permalink to this headline">¶</a></h3>
+<p>Sometimes we want to modify DREST’s default behaviors. Perhaps we want default filters applied. Or we want some relations to be sideloaded by default. One easy way to do this is through query parameter injection. Try adding the following method to the EventViewSet:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">EventViewSet</span><span class="p">(</span><span class="n">DynamicModelViewSet</span><span class="p">):</span>
+    <span class="c1"># …</span>
+
+    <span class="k">def</span> <span class="nf">list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># sideload location by default</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;include[]&#39;</span><span class="p">,</span> <span class="s1">&#39;location.&#39;</span><span class="p">)</span>
+
+        <span class="c1"># filter for status=current by default</span>
+        <span class="n">status</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;filter{status}&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">status</span><span class="p">:</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;filter{status}&#39;</span><span class="p">,</span><span class="s1">&#39;current&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">EventViewSet</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">list</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Checkout the default results:
+<a class="reference external" href="http://localhost:9002/events/">http://localhost:9002/events/</a></p>
+</div>
+<div class="section" id="queryset-override">
+<h3><a class="toc-backref" href="#id18">Queryset override</a><a class="headerlink" href="#queryset-override" title="Permalink to this headline">¶</a></h3>
+<p>By default, DREST/DRF will query the model declared in the viewset’s serializer, which is to say, all objects in that model are in-scope and query-able. If you want to change that, you can override the <code class="docutils literal"><span class="pre">get_queryset()</span></code> method in your viewset.
+One use-case might be to dynamically apply filters that can&#8217;t/shouldn’t be overridden by <code class="docutils literal"><span class="pre">filter{}</span></code> params. In a viewset, you might do something like:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">def</span> <span class="nf">get_queryset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">is_admin</span> <span class="o">=</span> <span class="n">user_is_admin</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">user</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">is_admin</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Foo</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Foo</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">creator</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">user</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>In this hypothetical example, this would constrain the scope of query-able objects for non-admin users to only those objects created by them.</p>
+<p>(Note: <code class="docutils literal"><span class="pre">Foo.objects.all()</span></code> does not actually return any objects. It returns a QuerySet which only gets evaluated when its contents are requested, and until a QuerySet is evaluated, it is possible to keep chaining more filters. Internally, DREST/DRF takes the QuerySet returned by get_queryset and modifies it, before it is eventually evaluated.)</p>
+</div>
+<div class="section" id="setting-serializer-context">
+<h3><a class="toc-backref" href="#id19">Setting serializer context</a><a class="headerlink" href="#setting-serializer-context" title="Permalink to this headline">¶</a></h3>
+<p>The DRF way of setting serializer context works as well (serializer context is accessible within the serializer as self.context).:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">FooViewSet</span><span class="p">(</span><span class="n">DynamicModelViewSet</span><span class="p">):</span>
+    <span class="c1"># ....</span>
+    <span class="k">def</span> <span class="nf">get_serializer_context</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">FooViewSet</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_serializer_context</span><span class="p">()</span>
+        <span class="n">foo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;foo&#39;</span><span class="p">)</span>
+        <span class="c1"># modify context</span>
+        <span class="k">return</span> <span class="n">context</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="drest-ifying-existing-viewset">
+<h3><a class="toc-backref" href="#id20">DREST-ifying Existing ViewSet</a><a class="headerlink" href="#drest-ifying-existing-viewset" title="Permalink to this headline">¶</a></h3>
+<p>When migrating existing APIs, it might be possible to “layer” on DREST into an existing ViewSet by using WithDynamicViewSetMixin. Note that getting the old class to play nice might require some shenanigans (see super below):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dynamic_rest.viewsets</span> <span class="kn">import</span> <span class="n">WithDynamicViewSetMixin</span>
+
+<span class="k">class</span> <span class="nc">NewViewSet</span><span class="p">(</span><span class="n">WithDynamicViewSetMixin</span><span class="p">,</span> <span class="n">OldViewSet</span><span class="p">):</span>
+    <span class="c1"># …</span>
+    <span class="k">def</span> <span class="nf">list</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># …</span>
+
+        <span class="c1"># Skip parent’s list() method</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">OldViewSet</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">list</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="drest-ifying-existing-serializer">
+<h3><a class="toc-backref" href="#id21">DREST-ifying Existing Serializer</a><a class="headerlink" href="#drest-ifying-existing-serializer" title="Permalink to this headline">¶</a></h3>
+<p>As with ViewSets, there’s a mixin to DREST-ify an existing serializer. Same shenanigans warning applies as above:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">NewFooSerializer</span><span class="p">(</span><span class="n">WithDynamicModelSerializerMixin</span><span class="p">,</span> <span class="n">OldFooSerializer</span><span class="p">):</span>
+    <span class="c1"># Must override Meta class with DREST attributes</span>
+    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;foo&#39;</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">Foo</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="customizing-serializers">
+<h3><a class="toc-backref" href="#id22">Customizing Serializers</a><a class="headerlink" href="#customizing-serializers" title="Permalink to this headline">¶</a></h3>
+<p>Occasionally, it is useful or necessary to customize serializers themselves. One simple way to customize how objects get serialized in DRF, is to override the <code class="docutils literal"><span class="pre">to_representation()</span></code> method:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">FooSerializer</span><span class="p">(</span><span class="n">DynamicModelSerializer</span><span class="p">):</span>
+    <span class="c1"># …</span>
+    <span class="k">def</span> <span class="nf">to_representation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">):</span>
+        <span class="c1"># modify instance here</span>
+        <span class="c1"># …</span>
+
+        <span class="c1"># pass through default serializer:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">FooSerializer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">to_representation</span><span class="p">(</span><span class="n">instance</span><span class="p">)</span>
+
+        <span class="c1"># modify data (dict) here</span>
+        <span class="c1"># ...</span>
+        <span class="k">return</span> <span class="n">data</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="computed-fields">
+<h3><a class="toc-backref" href="#id23">Computed Fields</a><a class="headerlink" href="#computed-fields" title="Permalink to this headline">¶</a></h3>
+<p>Historically, we’ve implemented computed fields using SerializerMethodField, which led to a proliferation of one-off methods with ad hoc implementations. SerializerMethodFields are also problematic because they may not play nice with standard features (like inclusion/sideloading), and don’t have declared data types. In DREST, we introduced a DynamicComputedField base-class, to encourage developers to define and implement (or use) reusable computed fields.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">from</span> <span class="nn">dynamic_rest.fields</span> <span class="kn">import</span> <span class="n">DynamicComputedField</span>
+
+<span class="k">class</span> <span class="nc">HasPermsField</span><span class="p">(</span><span class="n">DynamicComputedField</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">required_perms</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">required_perms</span> <span class="o">=</span> <span class="n">required_perms</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;field_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">bool</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">HasPermsField</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_attribute</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instance</span><span class="p">):</span>
+        <span class="c1"># Override to get field value</span>
+        <span class="n">perm_checker</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s1">&#39;permission_checker&#39;</span><span class="p">]</span>
+        <span class="n">user</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s1">&#39;user&#39;</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">perm_checker</span><span class="o">.</span><span class="n">has_perms</span><span class="p">(</span><span class="n">user</span><span class="p">,</span> <span class="n">instance</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_perms</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_representation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="c1"># Override if we need to convert complex data-type to a</span>
+        <span class="c1"># primitive data type that’s serializable.</span>
+        <span class="k">return</span> <span class="nb">bool</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+<span class="c1"># in serializer:</span>
+<span class="k">class</span> <span class="nc">DocumentSerializer</span><span class="p">(</span><span class="o">...</span><span class="p">):</span>
+    <span class="n">can_write</span> <span class="o">=</span> <span class="n">HasPermsField</span><span class="p">(</span><span class="s1">&#39;w&#39;</span><span class="p">)</span>
+    <span class="n">can_destroy</span> <span class="o">=</span> <span class="n">HasPermsField</span><span class="p">(</span><span class="s1">&#39;d&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="ephemeral-serializers">
+<h3><a class="toc-backref" href="#id24">Ephemeral Serializers</a><a class="headerlink" href="#ephemeral-serializers" title="Permalink to this headline">¶</a></h3>
+<p>Sometimes, the output objects don’t map cleanly to any existing model. One approach is to return adhoc JSON, but that makes it difficult or cumbersome to support features like dynamic sideloading/inclusion or pagination (which in turn leads to inconsistent and unpredictable implementations). DREST attempts to address these issues by providing limited support for serializers that are not backed by models.</p>
+<p>One use-case for ephemeral serializers is when we want to represent data that is context-sensitive. Consider the earlier query:</p>
+<p><a class="reference external" href="http://localhost:9002/events/?include[]=users.&amp;filter{users|location}=1">http://localhost:9002/events/?include[]=users.&amp;filter{users|location}=1</a></p>
+<p>Note that Event objects returned by this API call only contain users whose location is 1. However, there is nothing in the object indicating that its user set is incomplete, so if that object is cached, there’s no way to know by looking at the object whether the user-set should be considered complete or not.</p>
+<p>An alternative representation of the data might look something like this:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">EventLocationUsersSerializer</span><span class="p">(</span><span class="n">DynamicEphemeralSerializer</span><span class="p">):</span>
+    <span class="k">class</span> <span class="nc">Meta</span><span class="p">:</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;event-location-users&#39;</span>
+
+    <span class="nb">id</span> <span class="o">=</span> <span class="n">CharField</span><span class="p">()</span>
+    <span class="n">user_location</span> <span class="o">=</span> <span class="n">DynamicRelationField</span><span class="p">(</span><span class="s1">&#39;LocationSerializer&#39;</span><span class="p">)</span>
+    <span class="n">users</span> <span class="o">=</span> <span class="n">DynamicRelationField</span><span class="p">(</span><span class="s1">&#39;UserSerializer&#39;</span><span class="p">,</span> <span class="n">many</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">DynamicRelationField</span><span class="p">(</span><span class="s1">&#39;EventSerializer&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">to_representation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+        <span class="n">location</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="p">[</span><span class="s1">&#39;location&#39;</span><span class="p">]</span>
+
+        <span class="c1"># Construct dict representing data we want.</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="s1">&#39;pk&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;</span><span class="si">%s</span><span class="s2">--</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">location</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;user_location&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">location</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;users&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">all</span><span class="p">())</span>
+        <span class="n">data</span><span class="p">[</span><span class="s1">&#39;event&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">event</span>
+
+        <span class="c1"># Construct EphemeralObject instance, and let DREST serialize it.</span>
+        <span class="n">event_location</span> <span class="o">=</span> <span class="n">EphemeralObject</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">EventLocationSerializer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">to_representation</span><span class="p">(</span>
+            <span class="n">event_location</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+<p>This serializer will take an Event object with its users set pre-filtered, and emit an object with a unique ID and context that makes it safe for caching and re-use. If hooked up correctly to a viewset, the resulting API would have support for DREST features like field inclusion/sideloading, auto-generated OPTIONS response, and pagination.</p>
+</div>
+<div class="section" id="embedded-fields">
+<h3><a class="toc-backref" href="#id25">Embedded Fields</a><a class="headerlink" href="#embedded-fields" title="Permalink to this headline">¶</a></h3>
+<p>The DynamicRelationField’s embed option will ensure that the related objects are always included, and also returned nested in the parent object. This is useful for cases where a nested response is desired for legacy reasons, and/or when the related objects should always be returned with the parent objects, and expecting the caller to always include[] those fields is burdensome.:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">BlogPostSerializer</span><span class="p">(</span><span class="n">DynamicModelSerializer</span><span class="p">):</span>
+    <span class="c1"># ...</span>
+
+    <span class="n">author</span> <span class="o">=</span> <span class="n">DynamicRelationField</span><span class="p">(</span><span class="n">UserSerializer</span><span class="p">,</span> <span class="n">embed</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="default-filtering-of-related-objects">
+<h3><a class="toc-backref" href="#id26">Default Filtering of Related Objects</a><a class="headerlink" href="#default-filtering-of-related-objects" title="Permalink to this headline">¶</a></h3>
+<p>DynamicRelationFields can have a default queryset/filter. While clients can apply filtering on related objects (and viewsets can do the same through query injection), sometimes a default filter needs to be applied in all cases, and you don’t want to leave it to the client to know that. An example might be if we wanted to supply a <code class="docutils literal"><span class="pre">Location.upcoming_events</span></code> field, where we want to filter <code class="docutils literal"><span class="pre">Location.events</span></code> for active events and spare the client of having to do <code class="docutils literal"><span class="pre">filter{events|status}=current</span></code>.</p>
+<p>To solve this problem, a default queryset can be defined in the DynamicRelationField:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">LocationSerializer</span><span class="p">(</span><span class="n">DynamicModelSerializer</span><span class="p">):</span>
+    <span class="c1"># ...</span>
+
+    <span class="n">upcoming_events</span> <span class="o">=</span> <span class="n">DynamicRelationField</span><span class="p">(</span>
+        <span class="n">EventSerializer</span><span class="p">,</span>
+        <span class="n">source</span><span class="o">=</span><span class="s1">&#39;events&#39;</span><span class="p">,</span>
+        <span class="n">many</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">queryset</span><span class="o">=</span><span class="n">Event</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">status</span><span class="o">=</span><span class="s1">&#39;current&#39;</span><span class="p">)</span>  <span class="c1"># &lt;--</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Notes:</strong></p>
+<ul class="simple">
+<li>The default filter only applies to read operations, so it will not affect the write-paths.</li>
+<li>When creating/updating an object with relations, this default queryset is ignored in the response, so related objects that don’t match the filter may be returned.</li>
+</ul>
+</div>
+<div class="section" id="fun-times-with-default-querysets">
+<h3><a class="toc-backref" href="#id27">Fun Times with Default Querysets</a><a class="headerlink" href="#fun-times-with-default-querysets" title="Permalink to this headline">¶</a></h3>
+<p>Default QuerySets on DynamicRelationField can also be used to do almost* anything QuerySets can do. The following examples are also valid:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">BlogPostSerializer</span><span class="p">(</span><span class="n">DynamicModelSerializer</span><span class="p">):</span>
+
+    <span class="c1"># default sort applied</span>
+    <span class="n">comments</span> <span class="o">=</span> <span class="n">DynamicRelationField</span><span class="p">(</span>
+        <span class="n">CommentSerializer</span><span class="p">,</span>
+        <span class="n">many</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">queryset</span><span class="o">=</span><span class="n">Comment</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="s1">&#39;posted_at&#39;</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="c1"># most recent comment</span>
+    <span class="n">recent_comment</span> <span class="o">=</span> <span class="n">DynamicRelationField</span><span class="p">(</span>
+        <span class="n">CommentSerializer</span><span class="p">,</span>
+        <span class="n">source</span><span class="o">=</span><span class="s1">&#39;comments&#39;</span><span class="p">,</span>
+        <span class="n">queryset</span><span class="o">=</span><span class="n">Comment</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="s1">&#39;posted_at&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<p>Almost anything? Yes, some things you shouldn’t do:</p>
+<ul>
+<li><p class="first">Anything that would cause the queryset to be evaluated. For instance, this will actually run the queryset when the class is loaded, which is NOT what you want:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">queryset</span><span class="o">=</span><span class="n">Foo</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">foo</span><span class="o">=</span><span class="s1">&#39;bar&#39;</span><span class="p">)[:</span><span class="mi">10</span><span class="p">]</span>
+</pre></div>
+</div>
+</li>
+<li><dl class="first docutils">
+<dt>Some queryset operations will conflict with DREST’s internal query optimization. These include (but may not be limited to):</dt>
+<dd><ul class="first last simple">
+<li>only() - DREST also uses only()</li>
+<li>values_list() - Will probably confuse DREST because the data returned won’t match what it’s expecting.</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+<div class="section" id="dynamic-default-querysets">
+<h3><a class="toc-backref" href="#id28">Dynamic Default Querysets</a><a class="headerlink" href="#dynamic-default-querysets" title="Permalink to this headline">¶</a></h3>
+<p>In the previous examples above, the default querysets are constructed when the module loads. For more dynamic filters that can be constructed at run-time, the queryset attribute can be set to a function (or a lambda):</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">BlogPostSerializer</span><span class="p">(</span><span class="n">DynamicModelSerializer</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="nf">get_recent_comment_queryset</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># Return queryset to filter comments made in last 3 hours</span>
+        <span class="n">recent</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> <span class="o">-</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Comment</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="n">posted_at__gte</span><span class="o">=</span><span class="n">recent</span><span class="p">)</span><span class="o">.</span><span class="n">order_by</span><span class="p">(</span><span class="s1">&#39;posted_at&#39;</span><span class="p">)</span>
+
+    <span class="c1"># default sort applied</span>
+    <span class="n">comments</span> <span class="o">=</span> <span class="n">DynamicRelationField</span><span class="p">(</span>
+        <span class="n">CommentSerializer</span><span class="p">,</span>
+        <span class="n">many</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+        <span class="n">queryset</span><span class="o">=</span><span class="n">get_recent_comment_queryset</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Notes:</strong>
+The function mapped to a queryset should accept one parameter, which is the field (i.e. a DynamicRelationField instance) and return a QuerySet instance. It is also possible to access the parent serializer as field.parent and the child serializer as field.serializer (e.g. in the example above, field.parent refers to a BlogPostSerializer instance, while field.serializer would be a CommentSerializer instance).</p>
+</div>
+<div class="section" id="dynamicmethodfield-and-prefetch-hinting">
+<h3><a class="toc-backref" href="#id29">DynamicMethodField and Prefetch Hinting</a><a class="headerlink" href="#dynamicmethodfield-and-prefetch-hinting" title="Permalink to this headline">¶</a></h3>
+<p>DREST will try pretty hard to optimize queries, specifically by only fetching fields that are required, and by using Django’s prefetch features. In most cases, DREST will automatically do the right thing, but sometimes it doesn’t have all the information it needs to pull the right data. Specific examples include:</p>
+<ul class="simple">
+<li><strong>Serializer method fields</strong> - DREST doesn’t know what kind of shenanigans you’re up to in that serializer method field, and so it won’t be able to infer what data you need.</li>
+<li><strong>Computed properties in models</strong> - Basically the same problem as serializer method fields.</li>
+</ul>
+<p>To address this issue, DREST fields like DynamicField and DynamicMethodField support a <code class="docutils literal"><span class="pre">requires</span></code> attribute that allows you to specify model fields that are required. DREST will then incorporate that information in its optimization strategy:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="k">class</span> <span class="nc">UserSerializer</span><span class="p">(</span><span class="n">DynamicModelSerializer</span><span class="p">):</span>
+    <span class="n">preferred_full_name</span> <span class="o">=</span> <span class="n">DynamicMethodField</span><span class="p">(</span>
+        <span class="n">requires</span><span class="o">=</span><span class="p">[</span>
+            <span class="s1">&#39;profile.preferred_first_name&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;profile.preferred_last_name&#39;</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_preferred_full_name</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">user</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1"> </span><span class="si">%s</span><span class="s1">&#39;</span> <span class="o">%</span> <span class="p">(</span>
+            <span class="n">user</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">preferred_first_name</span><span class="p">,</span>
+            <span class="n">user</span><span class="o">.</span><span class="n">profile</span><span class="o">.</span><span class="n">preferred_last_name</span>
+        <span class="p">)</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="dynamic_rest.html" class="btn btn-neutral float-right" title="dynamic_rest package" accesskey="n">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Dynamic REST Documentation" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, ant@altschool.com, ryo@altschool.com.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.3.15',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

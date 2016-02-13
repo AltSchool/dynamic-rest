@@ -3,6 +3,7 @@ from collections import namedtuple
 from tests.models import (
     Cat,
     Dog,
+    Event,
     Group,
     Horse,
     Location,
@@ -22,13 +23,13 @@ def create_fixture():
 
     types = [
         'users', 'groups', 'locations', 'permissions',
-        'cats', 'dogs', 'horses', 'zebras'
+        'events', 'cats', 'dogs', 'horses', 'zebras'
     ]
     Fixture = namedtuple('Fixture', types)
 
     fixture = Fixture(
         users=[], groups=[], locations=[], permissions=[],
-        cats=[], dogs=[], horses=[], zebras=[]
+        events=[], cats=[], dogs=[], horses=[], zebras=[]
     )
 
     for i in range(0, 4):
@@ -94,6 +95,28 @@ def create_fixture():
         'origin': 'africa'
     }]
 
+    events = [{
+        'name': 'Event 1',
+        'status': 'archived',
+        'location': 2
+    }, {
+        'name': 'Event 2',
+        'status': 'current',
+        'location': 1
+    }, {
+        'name': 'Event 3',
+        'status': 'current',
+        'location': 1
+    }, {
+        'name': 'Event 4',
+        'status': 'archived',
+        'location': 2
+    }, {
+        'name': 'Event 5',
+        'status': 'current',
+        'location': 2
+    }]
+
     for dog in dogs:
         fixture.dogs.append(Dog.objects.create(
             name=dog.get('name'),
@@ -112,6 +135,21 @@ def create_fixture():
             name=zebra.get('name'),
             origin=zebra.get('origin')
         ))
+
+    for event in events:
+        fixture.events.append(Event.objects.create(
+            name=event['name'],
+            status=event['status'],
+            location_id=event['location']
+        ))
+    fixture.events[1].users.add(fixture.users[0])
+    fixture.events[1].users.add(fixture.users[1])
+    fixture.events[2].users.add(fixture.users[0])
+    fixture.events[3].users.add(fixture.users[0])
+    fixture.events[3].users.add(fixture.users[2])
+    fixture.events[4].users.add(fixture.users[0])
+    fixture.events[4].users.add(fixture.users[1])
+    fixture.events[4].users.add(fixture.users[2])
 
     fixture.locations[0].blob = 'here'
     fixture.locations[0].save()

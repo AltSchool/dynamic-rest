@@ -20,6 +20,14 @@ dynamic_rest.conf module
     :undoc-members:
     :show-inheritance:
 
+dynamic_rest.constants module
+-----------------------------
+
+.. automodule:: dynamic_rest.constants
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 dynamic_rest.datastructures module
 ----------------------------------
 
