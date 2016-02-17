@@ -351,7 +351,7 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
             serializer = self.get_serializer(data=entry)
             try:
                 serializer.is_valid(raise_exception=True)
-            except exceptions.ValidationError, e:
+            except exceptions.ValidationError as e:
                 errors.append({
                     'detail': str(e),
                     'source': entry
