@@ -212,7 +212,7 @@ class TestBulkAPI(TestCase):
             list(Group.objects.all().values_list('name', flat=True))
         )
 
-    def test_post_bulk_and_with_existing_items(self):
+    def test_post_bulk_with_existing_items_and_disabled_partial_creation(self):
         data = [{'name': 'foo'}, {'name': 'bar'}]
         Group.objects.create(name='foo')
         request = self.rf.post(
@@ -221,5 +221,6 @@ class TestBulkAPI(TestCase):
             content_type='application/json'
         )
         response = self.view(request)
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(1, Group.objects.all().count())
+        self.assertTrue('errors' in response.data)

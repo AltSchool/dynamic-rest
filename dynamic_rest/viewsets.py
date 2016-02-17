@@ -338,11 +338,47 @@ class WithDynamicViewSetMixin(object):
 
 class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
 
+    ENABLE_BULK_PARTIAL_CREATION = (
+        dynamic_settings.get('ENABLE_BULK_PARTIAL_CREATION', False))
+
     def _create_many(self, data):
-        serializer = self.get_serializer(data=data, many=True)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        items = []
+        errors = []
+        result = {}
+        serializers = []
+
+        for entry in data:
+            serializer = self.get_serializer(data=entry)
+            try:
+                serializer.is_valid(raise_exception=True)
+            except exceptions.ValidationError, e:
+                errors.append({
+                    'detail': str(e),
+                    'source': entry
+                })
+            else:
+                if self.ENABLE_BULK_PARTIAL_CREATION:
+                    self.perform_create(serializer)
+                    items.append(serializer.data)
+                else:
+                    serializers.append(serializer)
+        if not self.ENABLE_BULK_PARTIAL_CREATION and not errors:
+            for serializer in serializers:
+                self.perform_create(serializer)
+                items.append(serializer.data)
+
+        # Populate serialized data to the result.
+        plural_name = self.get_serializer_class().get_plural_name()
+        result[plural_name] = items
+
+        # Include erros if any.
+        if errors:
+            result['errors'] = errors
+
+        code = (status.HTTP_201_CREATED if not errors else
+                status.HTTP_400_BAD_REQUEST)
+
+        return Response(result, status=code)
 
     def create(self, request, *args, **kwargs):
         """
