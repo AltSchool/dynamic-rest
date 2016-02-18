@@ -371,7 +371,7 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         plural_name = self.get_serializer_class().get_plural_name()
         result[plural_name] = items
 
-        # Include erros if any.
+        # Include errors if any.
         if errors:
             result['errors'] = errors
 
