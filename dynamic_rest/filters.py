@@ -458,9 +458,8 @@ class DynamicFilterBackend(BaseFilterBackend):
                 fields[k] = all_fields[k]
             else:
                 pass
-                #TODO: We could enforce a check here so that `requires`
-                #      keys have to be known serializer fields.
-
+                # TODO: We could enforce a check here so that `requires`
+                #       keys have to be known serializer fields.
 
     def _filter_queryset(
         self,
