@@ -319,7 +319,10 @@ class DynamicFilterBackend(BaseFilterBackend):
         # Popping the source here (during explicit prefetch construction)
         # guarantees that implicitly required prefetches that follow will
         # not conflict.
-        required = requirements.pop(source, None)
+        required = requirements.pop(
+            source,
+            requirements.pop(name, None)
+        )
 
         if self.DEBUG:
             # push prefetches
@@ -389,7 +392,8 @@ class DynamicFilterBackend(BaseFilterBackend):
 
             is_remote = is_field_remote(model, source)
             is_id_only = getattr(field, 'id_only', lambda: False)()
-            if is_id_only and not is_remote:
+            is_required = requirements.get(name, False)
+            if is_id_only and not is_remote and not is_required:
                 continue
 
             prefetch_queryset = self._build_prefetch_queryset(
@@ -413,7 +417,8 @@ class DynamicFilterBackend(BaseFilterBackend):
     def _extract_requirements(
         self,
         fields,
-        requirements
+        requirements,
+        serializer
     ):
         """Extract internal prefetch requirements from serializer fields."""
         for name, field in six.iteritems(fields):
@@ -432,6 +437,30 @@ class DynamicFilterBackend(BaseFilterBackend):
                     # supporting 'a.b.' for backwards compatibility.
                     requirement[-1] = '*'
                 requirements.insert(requirement, TreeMap(), update=True)
+
+        if not requirements:
+            return
+
+        # Try to convert `requires` fields to native fields to get same
+        # prefetching behavior as when "include"ing. Note that keys are
+        # popped out of `requirements` in _build_prefetch_queryset() so
+        # they won't get passed to _add_internal_prefetches() below.
+        all_fields = serializer.get_all_fields()
+        for k, v in six.iteritems(requirements):
+            if k in fields:
+                # Already included.
+                continue
+            if k in all_fields:
+                # Add this field to list of fields we want to include.
+                # Note that this doesn't change whether or not the field
+                # is included in output because that's controlled by
+                # `serializer.fields`, which we're not modifying.
+                fields[k] = all_fields[k]
+            else:
+                pass
+                #TODO: We could enforce a check here so that `requires`
+                #      keys have to be known serializer fields.
+
 
     def _filter_queryset(
         self,
@@ -475,18 +504,9 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         self._extract_requirements(
             fields,
-            requirements
+            requirements,
+            serializer
         )
-
-        rem = []
-        if requirements:
-            all_fields = serializer.get_all_fields()
-            for k, v in requirements.iteritems():
-                if k in all_fields and k not in fields:
-                    fields[k] = all_fields[k]
-                    rem.append(k)
-        for k in rem:
-            requirements.pop(k)
 
         if filters is None:
             filters = self._extract_filters()
@@ -501,6 +521,9 @@ class DynamicFilterBackend(BaseFilterBackend):
         )
 
         # add any remaining requirements as prefetches
+        # TODO: if we switch to using field names in `requires`, this can
+        # be removed since all required fields will be converted to
+        # serializer fields above.
         self._add_internal_prefetches(
             prefetches,
             requirements
