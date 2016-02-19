@@ -478,6 +478,16 @@ class DynamicFilterBackend(BaseFilterBackend):
             requirements
         )
 
+        rem = []
+        if requirements:
+            all_fields = serializer.get_all_fields()
+            for k, v in requirements.iteritems():
+                if k in all_fields and k not in fields:
+                    fields[k] = all_fields[k]
+                    rem.append(k)
+        for k in rem:
+            requirements.pop(k)
+
         if filters is None:
             filters = self._extract_filters()
 
