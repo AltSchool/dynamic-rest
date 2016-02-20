@@ -19,7 +19,7 @@ DYNAMIC_REST = {
     'ENABLE_SERIALIZER_OPTIMIZATIONS': True,
 
     # ENABLE_BULK_PARTIAL_CREATION: enable/disable partial creation in bulk
-    'ENABLE_BULK_PARTIAL_CREATION': True,
+    'ENABLE_BULK_PARTIAL_CREATION': False,
 
     # MAX_PAGE_SIZE: global setting for max page size.
     # Can be overriden at the viewset level.
