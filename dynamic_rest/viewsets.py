@@ -1,5 +1,4 @@
 """This module contains custom viewset classes."""
-from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import QueryDict
 from django.utils import six
@@ -8,12 +7,12 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 from rest_framework.response import Response
 
+from dynamic_rest.conf import settings
 from dynamic_rest.filters import DynamicFilterBackend, DynamicSortingFilter
 from dynamic_rest.metadata import DynamicMetadata
 from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.renderers import DynamicBrowsableAPIRenderer
 
-dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
 
 
@@ -67,8 +66,8 @@ class WithDynamicViewSetMixin(object):
     EXCLUDE = 'exclude[]'
     FILTER = 'filter{}'
     SORT = 'sort[]'
-    PAGE = dynamic_settings.get('PAGE_QUERY_PARAM', 'page')
-    PER_PAGE = dynamic_settings.get('PAGE_SIZE_QUERY_PARAM', 'per_page')
+    PAGE = settings.PAGE_QUERY_PARAM
+    PER_PAGE = settings.PAGE_SIZE_QUERY_PARAM
 
     # TODO: add support for `sort{}`
     pagination_class = DynamicPageNumberPagination
@@ -121,7 +120,7 @@ class WithDynamicViewSetMixin(object):
     def get_renderers(self):
         """Optionally block Browsable API rendering. """
         renderers = super(WithDynamicViewSetMixin, self).get_renderers()
-        if dynamic_settings.get('ENABLE_BROWSABLE_API') is False:
+        if settings.ENABLE_BROWSABLE_API is False:
             return [
                 r for r in renderers if not isinstance(r, BrowsableAPIRenderer)
             ]
@@ -338,8 +337,7 @@ class WithDynamicViewSetMixin(object):
 
 class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
 
-    ENABLE_BULK_PARTIAL_CREATION = (
-        dynamic_settings.get('ENABLE_BULK_PARTIAL_CREATION', False))
+    ENABLE_BULK_PARTIAL_CREATION = settings.ENABLE_BULK_PARTIAL_CREATION
 
     def _create_many(self, data):
         items = []

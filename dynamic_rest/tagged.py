@@ -1,10 +1,6 @@
 """This module contains tagging utilities for DREST data structures."""
 from collections import OrderedDict
 
-from django.conf import settings
-
-dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
-
 
 def tag_dict(obj, *args, **kwargs):
     """Create a TaggedDict instance. Will either be a TaggedOrderedDict
