@@ -129,9 +129,10 @@
            <div itemprop="articleBody">
             
   <h1>Source code for dynamic_rest.serializers</h1><div class="highlight"><pre>
-<span class="sd">&quot;&quot;&quot;This module contains custom serializer classes.&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;This module contains custom serializer classes.&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">copy</span>
 
+<span class="kn">import</span> <span class="nn">inflection</span>
 <span class="kn">from</span> <span class="nn">django.db</span> <span class="kn">import</span> <span class="n">models</span>
 <span class="kn">from</span> <span class="nn">django.utils</span> <span class="kn">import</span> <span class="n">six</span>
 <span class="kn">from</span> <span class="nn">django.utils.functional</span> <span class="kn">import</span> <span class="n">cached_property</span>
@@ -330,28 +331,41 @@
                 <span class="c1"># not sideloading this field</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">request_fields</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
 
-<div class="viewcode-block" id="WithDynamicSerializerMixin.get_model"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.serializers.WithDynamicSerializerMixin.get_model">[docs]</a>    <span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="WithDynamicSerializerMixin.get_model"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.serializers.WithDynamicSerializerMixin.get_model">[docs]</a>    <span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get the model, if the serializer has one.</span>
 
 <span class="sd">        Model serializers should implement this method.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">None</span></div>
 
-<div class="viewcode-block" id="WithDynamicSerializerMixin.get_name"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.serializers.WithDynamicSerializerMixin.get_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="WithDynamicSerializerMixin.get_name"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.serializers.WithDynamicSerializerMixin.get_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get the serializer name.</span>
 
-<span class="sd">        The name must be defined on the Meta class.</span>
+<span class="sd">        The name can be defined on the Meta class or will be generated</span>
+<span class="sd">        automatically from the model name.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Meta</span><span class="o">.</span><span class="n">name</span></div>
+        <span class="n">class_name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">get_model</span><span class="p">(),</span> <span class="s1">&#39;__name__&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span>
+            <span class="n">cls</span><span class="o">.</span><span class="n">Meta</span><span class="p">,</span>
+            <span class="s1">&#39;name&#39;</span><span class="p">,</span>
+            <span class="n">inflection</span><span class="o">.</span><span class="n">underscore</span><span class="p">(</span><span class="n">class_name</span><span class="p">)</span> <span class="k">if</span> <span class="n">class_name</span> <span class="k">else</span> <span class="bp">None</span>
+        <span class="p">)</span></div>
 
-<div class="viewcode-block" id="WithDynamicSerializerMixin.get_plural_name"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.serializers.WithDynamicSerializerMixin.get_plural_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_plural_name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="nd">@classmethod</span>
+<div class="viewcode-block" id="WithDynamicSerializerMixin.get_plural_name"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.serializers.WithDynamicSerializerMixin.get_plural_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_plural_name</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Get the serializer&#39;s plural name.</span>
 
 <span class="sd">        The plural name may be defined on the Meta class.</span>
 <span class="sd">        If the plural name is not defined,</span>
 <span class="sd">        the pluralized form of the name will be returned.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Meta</span><span class="p">,</span> <span class="s1">&#39;plural_name&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">%s</span><span class="s1">s&#39;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_name</span><span class="p">())</span></div>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span>
+            <span class="n">cls</span><span class="o">.</span><span class="n">Meta</span><span class="p">,</span>
+            <span class="s1">&#39;plural_name&#39;</span><span class="p">,</span>
+            <span class="n">inflection</span><span class="o">.</span><span class="n">pluralize</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">get_name</span><span class="p">())</span>
+        <span class="p">)</span></div>
 
 <div class="viewcode-block" id="WithDynamicSerializerMixin.get_all_fields"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.serializers.WithDynamicSerializerMixin.get_all_fields">[docs]</a>    <span class="k">def</span> <span class="nf">get_all_fields</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns the entire serializer field set.</span>
@@ -551,8 +565,9 @@
 
     <span class="sd">&quot;&quot;&quot;Adds DREST serializer methods specific to model-based serializers.&quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">Meta</span><span class="o">.</span><span class="n">model</span>
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_model</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">Meta</span><span class="o">.</span><span class="n">model</span>
 
     <span class="k">def</span> <span class="nf">get_id_fields</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>

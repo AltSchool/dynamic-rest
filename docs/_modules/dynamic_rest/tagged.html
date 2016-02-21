@@ -129,12 +129,8 @@
            <div itemprop="articleBody">
             
   <h1>Source code for dynamic_rest.tagged</h1><div class="highlight"><pre>
-<span class="sd">&quot;&quot;&quot;This module contains tagging utilities for DREST data structures.&quot;&quot;&quot;</span>
+<span></span><span class="sd">&quot;&quot;&quot;This module contains tagging utilities for DREST data structures.&quot;&quot;&quot;</span>
 <span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
-
-<span class="kn">from</span> <span class="nn">django.conf</span> <span class="kn">import</span> <span class="n">settings</span>
-
-<span class="n">dynamic_settings</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">settings</span><span class="p">,</span> <span class="s1">&#39;DYNAMIC_REST&#39;</span><span class="p">,</span> <span class="p">{})</span>
 
 
 <div class="viewcode-block" id="tag_dict"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.tagged.tag_dict">[docs]</a><span class="k">def</span> <span class="nf">tag_dict</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>

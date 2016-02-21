@@ -823,9 +823,9 @@ when this field is not being sideloaded but we need to
 return a list of IDs.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="classmethod">
 <dt id="dynamic_rest.serializers.WithDynamicModelSerializerMixin.get_model">
-<code class="descname">get_model</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicModelSerializerMixin.get_model" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="descname">get_model</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicModelSerializerMixin.get_model" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 </dd></dl>
@@ -862,23 +862,24 @@ Otherwise, reverts back to standard DRF behavior.</p>
 <dd><p>Construct dict of name:field for linkable fields.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="classmethod">
 <dt id="dynamic_rest.serializers.WithDynamicSerializerMixin.get_model">
-<code class="descname">get_model</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#WithDynamicSerializerMixin.get_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicSerializerMixin.get_model" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="descname">get_model</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#WithDynamicSerializerMixin.get_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicSerializerMixin.get_model" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the model, if the serializer has one.</p>
 <p>Model serializers should implement this method.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="classmethod">
 <dt id="dynamic_rest.serializers.WithDynamicSerializerMixin.get_name">
-<code class="descname">get_name</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#WithDynamicSerializerMixin.get_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicSerializerMixin.get_name" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="descname">get_name</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#WithDynamicSerializerMixin.get_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicSerializerMixin.get_name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the serializer name.</p>
-<p>The name must be defined on the Meta class.</p>
+<p>The name can be defined on the Meta class or will be generated
+automatically from the model name.</p>
 </dd></dl>
 
-<dl class="method">
+<dl class="classmethod">
 <dt id="dynamic_rest.serializers.WithDynamicSerializerMixin.get_plural_name">
-<code class="descname">get_plural_name</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#WithDynamicSerializerMixin.get_plural_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicSerializerMixin.get_plural_name" title="Permalink to this definition">¶</a></dt>
+<em class="property">classmethod </em><code class="descname">get_plural_name</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#WithDynamicSerializerMixin.get_plural_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicSerializerMixin.get_plural_name" title="Permalink to this definition">¶</a></dt>
 <dd><p>Get the serializer&#8217;s plural name.</p>
 <p>The plural name may be defined on the Meta class.
 If the plural name is not defined,
