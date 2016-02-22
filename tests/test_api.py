@@ -777,33 +777,31 @@ class TestUsersAPI(APITestCase):
             is_dead=True
         )
 
-        url = '/users/?include[]=number_of_alive_cats'
-        with self.assertNumQueries(3):
-            response = self.client.get(url)
-            self.assertEqual(200, response.status_code)
-            self.assertEquals({
-                'users': [{
-                    'id': 1,
-                    'location': 1,
-                    'name': '0',
-                    'number_of_alive_cats': 1,
-                }, {
-                    'id': 2,
-                    'location': 1,
-                    'name': '1',
-                    'number_of_alive_cats': 1,
-                }, {
-                    'id': 3,
-                    'location': 2,
-                    'name': '2',
-                    'number_of_alive_cats': 1,
-                }, {
-                    'id': 4,
-                    'location': 3,
-                    'name': '3',
-                    'number_of_alive_cats': 0,
-                }]
-            }, json.loads(response.content.decode('utf-8')))
+        # number_of_cats is unfiltered, so should get back 2 cats
+        url = '/users/?include[]=number_of_cats&filter{id}=1'
+        response = self.client.get(url)
+        self.assertEqual(200, response.status_code)
+        self.assertEquals({
+            'users': [{
+                'id': 1,
+                'location': 1,
+                'name': '0',
+                'number_of_cats': 2,
+            }]
+        }, json.loads(response.content.decode('utf-8')))
+
+        # number_of_alive_cats shouldn't count the dead cat
+        url = '/users/?include[]=number_of_alive_cats&filter{id}=1'
+        response = self.client.get(url)
+        self.assertEqual(200, response.status_code)
+        self.assertEquals({
+            'users': [{
+                'id': 1,
+                'location': 1,
+                'name': '0',
+                'number_of_alive_cats': 1,
+            }]
+        }, json.loads(response.content.decode('utf-8')))
 
 
 @override_settings(
