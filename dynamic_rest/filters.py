@@ -456,10 +456,6 @@ class DynamicFilterBackend(BaseFilterBackend):
                 # is included in output because that's controlled by
                 # `serializer.fields`, which we're not modifying.
                 fields[k] = all_fields[k]
-            else:
-                pass
-                # TODO: We could enforce a check here so that `requires`
-                #       keys have to be known serializer fields.
 
     def _filter_queryset(
         self,
@@ -520,9 +516,6 @@ class DynamicFilterBackend(BaseFilterBackend):
         )
 
         # add any remaining requirements as prefetches
-        # TODO: if we switch to using field names in `requires`, this can
-        # be removed since all required fields will be converted to
-        # serializer fields above.
         self._add_internal_prefetches(
             prefetches,
             requirements
