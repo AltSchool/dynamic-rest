@@ -10,7 +10,7 @@ AUTHOR_EMAIL := $(shell grep AUTHOR_EMAIL dynamic_rest/constants.py | sed -E $(E
 VERSION := $(shell grep VERSION dynamic_rest/constants.py | sed -E $(EXTRACT_REGEX))
 
 INSTALL_PREFIX := /usr/local
-INSTALL_DIR  := $(INSTALL_PREFIX)/$(ORG_NAME)/$(REPO_NAME)
+INSTALL_DIR  ?= $(INSTALL_PREFIX)/$(ORG_NAME)/$(REPO_NAME)
 PORT         ?= 9002
 
 define header
@@ -68,7 +68,7 @@ fixtures: install
 clean_working_directory:
 	$(call header,"Cleaning working directory")
 	@rm -rf ./.tox ./build ./dist ./$(APP_NAME).egg-info;
-	@find . -name '*.pyc' -type f | xargs rm
+	@find . -name '*.pyc' -type f -exec rm -rf {} \;
 
 # Full clean
 clean: clean_working_directory
@@ -78,7 +78,7 @@ clean: clean_working_directory
 # Run tests
 test: lint install
 	$(call header,"Running unit tests")
-	@$(INSTALL_DIR)/bin/py.test --cov=$(APP_NAME) --tb=short -q -s -rw tests/$(TEST)
+	@$(INSTALL_DIR)/bin/py.test --cov=$(APP_NAME) tests/$(TEST)
 
 # Run all tests (tox)
 tox: install
@@ -117,7 +117,7 @@ start: install
 # Lint the project
 lint: clean_working_directory
 	$(call header,"Linting code")
-	@find . -type f -name '*.py' -not -path './docs/*' -not -path './build/*' | xargs flake8
+	@find . -type f -name '*.py' -not -path '$(INSTALL_DIR)/*' -not -path './docs/*' -not -path './build/*' | xargs flake8
 
 # Auto-format the project
 format: clean_working_directory

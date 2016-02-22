@@ -1,12 +1,15 @@
+import json
+
 from django.test import TestCase
 from django.test.client import RequestFactory
-from rest_framework import exceptions
+from rest_framework import exceptions, status
 from rest_framework.request import Request
 
 from dynamic_rest.filters import DynamicFilterBackend, FilterNode
+from tests.models import Group
 from tests.serializers import GroupSerializer
 from tests.setup import create_fixture
-from tests.viewsets import GroupNoMergeDictViewSet, UserViewSet
+from tests.viewsets import GroupNoMergeDictViewSet, GroupViewSet, UserViewSet
 
 
 class TestUserViewSet(TestCase):
@@ -145,3 +148,79 @@ class TestMergeDictConvertsToDict(TestCase):
             if 'request.FILES' not in message:
                 self.fail('Unexpected error: %s' % message)
             # otherwise, this is a known DRF 3.2 bug
+
+
+class TestBulkAPI(TestCase):
+
+    def setUp(self):
+        self.rf = RequestFactory()
+        self.view = GroupViewSet.as_view({'post': 'create'})
+
+    def test_post_single(self):
+        """
+        Test that POST request with single resource only creates a single
+        resource.
+        """
+        data = {'name': 'foo', 'random_input': [1, 2, 3]}
+        request = self.rf.post(
+            '/group/', json.dumps(data), content_type='application/json')
+        response = self.view(request)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(1, Group.objects.all().count())
+
+    def test_post_bulk_from_resource_plural_name(self):
+        data = {
+            'groups': [
+                {'name': 'foo', 'random_input': [1, 2, 3]},
+                {'name': 'bar', 'random_input': [4, 5, 6]},
+            ]
+        }
+        request = self.rf.post(
+            '/groups/',
+            json.dumps(data),
+            content_type='application/json'
+        )
+        response = self.view(request)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(2, Group.objects.all().count())
+
+    def test_post_bulk_from_list(self):
+        """
+        Test that POST request with multiple resources created all posted
+        resources.
+        """
+        data = [
+            {
+                'name': 'foo',
+                'random_input': [1, 2, 3],
+            },
+            {
+                'name': 'bar',
+                'random_input': [4, 5, 6],
+            }
+        ]
+        request = self.rf.post(
+            '/groups/',
+            json.dumps(data),
+            content_type='application/json'
+        )
+        response = self.view(request)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(2, Group.objects.all().count())
+        self.assertEqual(
+            ['foo', 'bar'],
+            list(Group.objects.all().values_list('name', flat=True))
+        )
+
+    def test_post_bulk_with_existing_items_and_disabled_partial_creation(self):
+        data = [{'name': 'foo'}, {'name': 'bar'}]
+        Group.objects.create(name='foo')
+        request = self.rf.post(
+            '/groups/',
+            json.dumps(data),
+            content_type='application/json'
+        )
+        response = self.view(request)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(1, Group.objects.all().count())
+        self.assertTrue('errors' in response.data)

@@ -228,7 +228,6 @@ class DogSerializer(DynamicModelSerializer):
 
     class Meta:
         model = Dog
-        name = 'dog'
         fields = ('id', 'name', 'origin', 'fur')
 
     fur = CharField(source='fur_color')

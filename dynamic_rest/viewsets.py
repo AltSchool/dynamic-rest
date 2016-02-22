@@ -1,19 +1,18 @@
 """This module contains custom viewset classes."""
-from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import QueryDict
 from django.utils import six
-from rest_framework import exceptions, viewsets
+from rest_framework import exceptions, status, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
 from rest_framework.response import Response
 
+from dynamic_rest.conf import settings
 from dynamic_rest.filters import DynamicFilterBackend, DynamicSortingFilter
 from dynamic_rest.metadata import DynamicMetadata
 from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.renderers import DynamicBrowsableAPIRenderer
 
-dynamic_settings = getattr(settings, 'DYNAMIC_REST', {})
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
 
 
@@ -67,8 +66,8 @@ class WithDynamicViewSetMixin(object):
     EXCLUDE = 'exclude[]'
     FILTER = 'filter{}'
     SORT = 'sort[]'
-    PAGE = dynamic_settings.get('PAGE_QUERY_PARAM', 'page')
-    PER_PAGE = dynamic_settings.get('PAGE_SIZE_QUERY_PARAM', 'per_page')
+    PAGE = settings.PAGE_QUERY_PARAM
+    PER_PAGE = settings.PAGE_SIZE_QUERY_PARAM
 
     # TODO: add support for `sort{}`
     pagination_class = DynamicPageNumberPagination
@@ -121,7 +120,7 @@ class WithDynamicViewSetMixin(object):
     def get_renderers(self):
         """Optionally block Browsable API rendering. """
         renderers = super(WithDynamicViewSetMixin, self).get_renderers()
-        if dynamic_settings.get('ENABLE_BROWSABLE_API') is False:
+        if settings.ENABLE_BROWSABLE_API is False:
             return [
                 r for r in renderers if not isinstance(r, BrowsableAPIRenderer)
             ]
@@ -337,4 +336,92 @@ class WithDynamicViewSetMixin(object):
 
 
 class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
-    pass
+
+    ENABLE_BULK_PARTIAL_CREATION = settings.ENABLE_BULK_PARTIAL_CREATION
+
+    def _create_many(self, data):
+        items = []
+        errors = []
+        result = {}
+        serializers = []
+
+        for entry in data:
+            serializer = self.get_serializer(data=entry)
+            try:
+                serializer.is_valid(raise_exception=True)
+            except exceptions.ValidationError as e:
+                errors.append({
+                    'detail': str(e),
+                    'source': entry
+                })
+            else:
+                if self.ENABLE_BULK_PARTIAL_CREATION:
+                    self.perform_create(serializer)
+                    items.append(
+                        serializer.to_representation(serializer.instance))
+                else:
+                    serializers.append(serializer)
+        if not self.ENABLE_BULK_PARTIAL_CREATION and not errors:
+            for serializer in serializers:
+                self.perform_create(serializer)
+                items.append(
+                    serializer.to_representation(serializer.instance))
+
+        # Populate serialized data to the result.
+        plural_name = self.get_serializer_class().get_plural_name()
+        result[plural_name] = items
+
+        # Include errors if any.
+        if errors:
+            result['errors'] = errors
+
+        code = (status.HTTP_201_CREATED if not errors else
+                status.HTTP_400_BAD_REQUEST)
+
+        return Response(result, status=code)
+
+    def create(self, request, *args, **kwargs):
+        """
+        Either create a single or many model instances in bulk
+        using the Serializer's many=True ability from Django REST >= 2.2.5.
+
+        The data can be represented by the serializer name (single or plural
+        forms), dict or list.
+
+        Examples:
+
+        POST /dogs/
+        {
+          "name": "Fido",
+          "age": 2
+        }
+
+        POST /dogs/
+        {
+          "dog": {
+            "name": "Lucky",
+            "age": 3
+          }
+        }
+
+        POST /dogs/
+        {
+          "dogs": [
+            {"name": "Fido", "age": 2},
+            {"name": "Lucky", "age": 3}
+          ]
+        }
+
+        POST /dogs/
+        [
+            {"name": "Fido", "age": 2},
+            {"name": "Lucky", "age": 3}
+        ]
+        """
+        plural_name = self.get_serializer_class().get_plural_name()
+        if isinstance(request.data, list):
+            return self._create_many(request.data)
+        elif plural_name in request.data and len(request.data) == 1:
+            return self._create_many(request.data[plural_name])
+        return super(DynamicModelViewSet, self).create(
+            request, *args, **kwargs)

@@ -49,7 +49,7 @@ class Zebra(models.Model):
 
 
 class Group(models.Model):
-    name = models.TextField()
+    name = models.TextField(unique=True)
     permissions = models.ManyToManyField('Permission', related_name='groups')
 
 

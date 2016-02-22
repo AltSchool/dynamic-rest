@@ -1,6 +1,7 @@
 """This module contains custom serializer classes."""
 import copy
 
+import inflection
 from django.db import models
 from django.utils import six
 from django.utils.functional import cached_property
@@ -199,28 +200,41 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
                 # not sideloading this field
                 self.request_fields[name] = True
 
-    def get_model(self):
+    @classmethod
+    def get_model(cls):
         """Get the model, if the serializer has one.
 
         Model serializers should implement this method.
         """
         return None
 
-    def get_name(self):
+    @classmethod
+    def get_name(cls):
         """Get the serializer name.
 
-        The name must be defined on the Meta class.
+        The name can be defined on the Meta class or will be generated
+        automatically from the model name.
         """
-        return self.Meta.name
+        class_name = getattr(cls.get_model(), '__name__', None)
+        return getattr(
+            cls.Meta,
+            'name',
+            inflection.underscore(class_name) if class_name else None
+        )
 
-    def get_plural_name(self):
+    @classmethod
+    def get_plural_name(cls):
         """Get the serializer's plural name.
 
         The plural name may be defined on the Meta class.
         If the plural name is not defined,
         the pluralized form of the name will be returned.
         """
-        return getattr(self.Meta, 'plural_name', '%ss' % self.get_name())
+        return getattr(
+            cls.Meta,
+            'plural_name',
+            inflection.pluralize(cls.get_name())
+        )
 
     def get_all_fields(self):
         """Returns the entire serializer field set.
@@ -420,8 +434,9 @@ class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
 
     """Adds DREST serializer methods specific to model-based serializers."""
 
-    def get_model(self):
-        return self.Meta.model
+    @classmethod
+    def get_model(cls):
+        return cls.Meta.model
 
     def get_id_fields(self):
         """
