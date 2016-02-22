@@ -357,13 +357,15 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
             else:
                 if self.ENABLE_BULK_PARTIAL_CREATION:
                     self.perform_create(serializer)
-                    items.append(serializer.data)
+                    items.append(
+                        serializer.to_representation(serializer.instance))
                 else:
                     serializers.append(serializer)
         if not self.ENABLE_BULK_PARTIAL_CREATION and not errors:
             for serializer in serializers:
                 self.perform_create(serializer)
-                items.append(serializer.data)
+                items.append(
+                    serializer.to_representation(serializer.instance))
 
         # Populate serialized data to the result.
         plural_name = self.get_serializer_class().get_plural_name()
