@@ -483,6 +483,7 @@ class TestUsersAPI(APITestCase):
                     "display_name": None,
                     "thumbnail_url": None,
                     "number_of_cats": 1,
+                    "number_of_alive_cats": 1,
                     "profile": None
                 }
             })
@@ -762,6 +763,45 @@ class TestUsersAPI(APITestCase):
                     'location': 3,
                     'name': '3',
                     'number_of_cats': 0,
+                }]
+            }, json.loads(response.content.decode('utf-8')))
+
+    def test_get_with_filtered_requires(self):
+
+        # Add a dead cat. This shouldn't be counted in the
+        # number_of_alive_cats field.
+        Cat.objects.create(
+            name='mort',
+            home=Location.objects.get(id=1),
+            backup_home=Location.objects.get(id=2),
+            is_dead=True
+        )
+
+        url = '/users/?include[]=number_of_alive_cats'
+        with self.assertNumQueries(3):
+            response = self.client.get(url)
+            self.assertEqual(200, response.status_code)
+            self.assertEquals({
+                'users': [{
+                    'id': 1,
+                    'location': 1,
+                    'name': '0',
+                    'number_of_alive_cats': 1,
+                }, {
+                    'id': 2,
+                    'location': 1,
+                    'name': '1',
+                    'number_of_alive_cats': 1,
+                }, {
+                    'id': 3,
+                    'location': 2,
+                    'name': '2',
+                    'number_of_alive_cats': 1,
+                }, {
+                    'id': 4,
+                    'location': 3,
+                    'name': '3',
+                    'number_of_alive_cats': 0,
                 }]
             }, json.loads(response.content.decode('utf-8')))
 
