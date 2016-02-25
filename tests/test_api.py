@@ -483,6 +483,7 @@ class TestUsersAPI(APITestCase):
                     "display_name": None,
                     "thumbnail_url": None,
                     "number_of_cats": 1,
+                    "number_of_alive_cats": 1,
                     "profile": None
                 }
             })
@@ -764,6 +765,43 @@ class TestUsersAPI(APITestCase):
                     'number_of_cats': 0,
                 }]
             }, json.loads(response.content.decode('utf-8')))
+
+    def test_get_with_filtered_requires(self):
+
+        # Add a dead cat. This shouldn't be counted in the
+        # number_of_alive_cats field.
+        Cat.objects.create(
+            name='mort',
+            home=Location.objects.get(id=1),
+            backup_home=Location.objects.get(id=2),
+            is_dead=True
+        )
+
+        # number_of_cats is unfiltered, so should get back 2 cats
+        url = '/users/?include[]=number_of_cats&filter{id}=1'
+        response = self.client.get(url)
+        self.assertEqual(200, response.status_code)
+        self.assertEquals({
+            'users': [{
+                'id': 1,
+                'location': 1,
+                'name': '0',
+                'number_of_cats': 2,
+            }]
+        }, json.loads(response.content.decode('utf-8')))
+
+        # number_of_alive_cats shouldn't count the dead cat
+        url = '/users/?include[]=number_of_alive_cats&filter{id}=1'
+        response = self.client.get(url)
+        self.assertEqual(200, response.status_code)
+        self.assertEquals({
+            'users': [{
+                'id': 1,
+                'location': 1,
+                'name': '0',
+                'number_of_alive_cats': 1,
+            }]
+        }, json.loads(response.content.decode('utf-8')))
 
 
 @override_settings(

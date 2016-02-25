@@ -41,6 +41,9 @@ class CatSerializer(DynamicModelSerializer):
         fields = ('id', 'name', 'home', 'backup_home', 'foobar', 'parent')
         deferred_fields = ('home', 'backup_home', 'foobar', 'parent')
 
+    def filter_queryset(self, queryset):
+        return queryset.exclude(is_dead=True)
+
 
 class LocationSerializer(DynamicModelSerializer):
 
@@ -141,6 +144,7 @@ class UserSerializer(DynamicModelSerializer):
             'display_name',
             'thumbnail_url',
             'number_of_cats',
+            'number_of_alive_cats',
             'profile'
         )
         deferred_fields = (
@@ -166,12 +170,22 @@ class UserSerializer(DynamicModelSerializer):
         requires=['location.cat_set.*'],
         deferred=True
     )
+    number_of_alive_cats = DynamicMethodField(
+        requires=['location.cats.*'],
+        deferred=True
+    )
     profile = DynamicRelationField(
         'ProfileSerializer',
         deferred=True
     )
 
     def get_number_of_cats(self, user):
+        return len(user.location.cat_set.all())
+
+    def get_number_of_alive_cats(self, user):
+        # NOTE: This field requires the `location.cats` serializer
+        #       field, which will be prefetched using the filter
+        #       specified in CatSerializer.
         return len(user.location.cat_set.all())
 
 
