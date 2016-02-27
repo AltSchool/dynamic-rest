@@ -183,6 +183,7 @@ class DynamicRouter(DefaultRouter):
         Arguments:
             resource - Canonical resource name (i.e. Serializer.get_name()).
             pk - (Optional) Object's primary key for a single-resource URL.
+        Returns: Absolute URL as string.
         """
 
         if resource not in resource_map:
@@ -194,6 +195,20 @@ class DynamicRouter(DefaultRouter):
             return base_path + '/%s/' % pk
         else:
             return base_path
+
+    def get_canonical_serializer(self, resource):
+        """
+        Return canonical serializer for a given resource name.
+
+        Arguments:
+            resource - Resource name as string.
+        Returns: serializer class
+        """
+
+        if resource not in resource_map:
+            return None
+
+        return resource_map[resource]['viewset'].serializer_class
 
     def get_routes(self, viewset):
         """
