@@ -10,6 +10,7 @@ from rest_framework.routers import DefaultRouter, Route, replace_methodname
 from dynamic_rest.fields import DynamicRelationField
 
 directory = {}
+resource_map = {}
 
 
 def get_directory(request):
@@ -127,6 +128,72 @@ class DynamicRouter(DefaultRouter):
             current[endpoint] = {}
         current[endpoint]['_url'] = url_name
         current[endpoint]['_viewset'] = viewset
+
+    def register_resource(self, viewset, namespace=None):
+        """
+        Register a viewset that should be considered the canonical
+        endpoint for a particular resource. In addition to generating
+        and registering the route, it adds the route in a reverse map
+        to allow DREST to build the canonical URL for a given resource.
+
+        Arguments:
+            viewset - viewset class, should have `serializer_class` attr.
+            namespace - (optional) URL namespace, e.g. 'v3'.
+        """
+
+        # Try to extract resource name from viewset.
+        try:
+            resource_name = viewset.serializer_class().get_plural_name()
+        except:
+            raise Exception(
+                "Failed to extract resource name from viewset: '%s'."
+                " It, or its serializer, may not be DREST-compatible." % (
+                    viewset
+                )
+            )
+
+        # Construct canonical path and register it.
+        if namespace:
+            namespace = namespace.rstrip('/') + '/'
+        base_path = namespace or ''
+        base_path = r'%s' % base_path + resource_name
+        self.register(base_path, viewset)
+
+        # Make sure resource isn't already registered.
+        if resource_name in resource_map:
+            raise Exception(
+                "The resource '%s' has already been mapped to '%s'."
+                " Each resource can only be mapped to one canonical"
+                " path. " % (
+                    resource_name,
+                    resource_map[resource_name]['path']
+                )
+            )
+
+        # Register resource in reverse map.
+        resource_map[resource_name] = {
+            'path': base_path,
+            'viewset': viewset
+        }
+
+    def get_canonical_path(self, resource, pk=None):
+        """
+        Return canonical resource path.
+
+        Arguments:
+            resource - Canonical resource name (i.e. Serializer.get_name()).
+            pk - (Optional) Object's primary key for a single-resource URL.
+        """
+
+        if resource not in resource_map:
+            # Note: Maybe raise?
+            return None
+
+        base_path = '/' + resource_map[resource]['path']
+        if pk:
+            return base_path + '/%s/' % pk
+        else:
+            return base_path
 
     def get_routes(self, viewset):
         """
