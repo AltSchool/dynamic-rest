@@ -351,11 +351,15 @@ class DynamicFilterBackend(BaseFilterBackend):
         """Add internal (required) prefetches to a prefetch dictionary."""
         paths = requirements.get_paths()
         for path in paths:
-            # Remove last segment, which indicates a field name or wildcard.
-            # For example, {model_a : {model_b : {field_c}}
-            # should be prefetched as a__b
-            prefetch_path = path[:-1]
-            key = '__'.join(prefetch_path)
+            if '__' in path[0]:
+                key = path[0]
+            else:
+                # Remove last segment, which indicates a field name or
+                # wildcard.
+                # For example, {model_a : {model_b : {field_c}}
+                # should be prefetched as a__b
+                prefetch_path = path[:-1]
+                key = '__'.join(prefetch_path)
             if key:
                 prefetches[key] = key
                 if self.DEBUG:

@@ -144,6 +144,7 @@ class UserSerializer(DynamicModelSerializer):
             'display_name',
             'thumbnail_url',
             'number_of_cats',
+            'number_of_katz',
             'number_of_alive_cats',
             'profile'
         )
@@ -170,6 +171,10 @@ class UserSerializer(DynamicModelSerializer):
         requires=['location.cat_set.*'],
         deferred=True
     )
+    number_of_katz = DynamicMethodField(
+        requires=['location__cat_set'],
+        deferred=True
+    )
     number_of_alive_cats = DynamicMethodField(
         requires=['location.cats.*'],
         deferred=True
@@ -181,6 +186,9 @@ class UserSerializer(DynamicModelSerializer):
 
     def get_number_of_cats(self, user):
         return len(user.location.cat_set.all())
+
+    def get_number_of_katz(self, user):
+        return self.get_number_of_cats(user)
 
     def get_number_of_alive_cats(self, user):
         # NOTE: This field requires the `location.cats` serializer
