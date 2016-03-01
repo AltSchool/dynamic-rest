@@ -1,14 +1,7 @@
 from django.db.models import Prefetch
 from django.test import TestCase
 
-from tests.models import (
-    A,
-    B,
-    C,
-    D,
-    Location,
-    User
-)
+from tests.models import A, B, C, D, Location, User
 from tests.setup import create_fixture
 
 
