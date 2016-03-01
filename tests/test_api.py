@@ -483,6 +483,7 @@ class TestUsersAPI(APITestCase):
                     "display_name": None,
                     "thumbnail_url": None,
                     "number_of_cats": 1,
+                    "number_of_katz": 1,
                     "number_of_alive_cats": 1,
                     "profile": None
                 }
@@ -929,6 +930,19 @@ class TestLocationsAPI(APITestCase):
         for url in urls:
             response = self.client.get(url)
             self.assertEqual(200, response.status_code)
+
+    def test_requires_hack(self):
+        # This does N+1 queries on cats
+        # See related test against Django in test_prefetch.py
+        with self.assertNumQueries(8):
+            url = '/locations/?include[]=users.number_of_cats'
+            self.client.get(url)
+
+        with self.assertNumQueries(5):
+            # TODO: There's 1 extra query (cats get queried twice) but it's
+            #       not an N+1 situation.
+            url = '/locations/?include[]=users.number_of_katz'
+            self.client.get(url)
 
 
 class TestRelationsAPI(APITestCase):
