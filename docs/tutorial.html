@@ -689,7 +689,7 @@ The function mapped to a queryset should accept one parameter, which is the fiel
 <li><strong>Serializer method fields</strong> - DREST doesn’t know what kind of shenanigans you’re up to in that serializer method field, and so it won’t be able to infer what data you need.</li>
 <li><strong>Computed properties in models</strong> - Basically the same problem as serializer method fields.</li>
 </ul>
-<p>To address this issue, DREST fields like DynamicField and DynamicMethodField support a <code class="docutils literal"><span class="pre">requires</span></code> attribute that allows you to specify fields that are required. DREST will then incorporate that information in its optimization strategy:</p>
+<p>To address this issue, DREST fields like DynamicField and DynamicMethodField support a <code class="docutils literal"><span class="pre">requires</span></code> attribute that allows you to specify model fields that are required. DREST will then incorporate that information in its optimization strategy:</p>
 <div class="highlight-python"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">UserSerializer</span><span class="p">(</span><span class="n">DynamicModelSerializer</span><span class="p">):</span>
     <span class="n">preferred_full_name</span> <span class="o">=</span> <span class="n">DynamicMethodField</span><span class="p">(</span>
         <span class="n">requires</span><span class="o">=</span><span class="p">[</span>
@@ -705,7 +705,6 @@ The function mapped to a queryset should accept one parameter, which is the fiel
         <span class="p">)</span>
 </pre></div>
 </div>
-<p><strong>NOTE:</strong> It is possible to specify <code class="docutils literal"><span class="pre">require</span></code> fields as either model fields or serializer fields. If requiring nested serializer fields, DREST will prefetch data the same way it does when those relations are included (i.e. features like default querysets are used).</p>
 </div>
 </div>
 </div>
