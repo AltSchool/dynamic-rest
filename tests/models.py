@@ -30,7 +30,6 @@ class Cat(models.Model):
         null=True,
         blank=True,
         related_name='kittens')
-    is_dead = models.NullBooleanField(null=True, blank=True, default=False)
 
 
 class Dog(models.Model):

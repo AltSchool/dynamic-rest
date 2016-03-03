@@ -438,7 +438,7 @@ DREST will try pretty hard to optimize queries, specifically by only fetching fi
 * **Serializer method fields** - DREST doesn’t know what kind of shenanigans you’re up to in that serializer method field, and so it won’t be able to infer what data you need.
 * **Computed properties in models** - Basically the same problem as serializer method fields.
 
-To address this issue, DREST fields like DynamicField and DynamicMethodField support a ``requires`` attribute that allows you to specify fields that are required. DREST will then incorporate that information in its optimization strategy::
+To address this issue, DREST fields like DynamicField and DynamicMethodField support a ``requires`` attribute that allows you to specify model fields that are required. DREST will then incorporate that information in its optimization strategy::
 
     class UserSerializer(DynamicModelSerializer):
         preferred_full_name = DynamicMethodField(
@@ -454,5 +454,5 @@ To address this issue, DREST fields like DynamicField and DynamicMethodField sup
                 user.profile.preferred_last_name
             )
 
-**NOTE:** It is possible to specify ``require`` fields as either model fields or serializer fields. If requiring nested serializer fields, DREST will prefetch data the same way it does when those relations are included (i.e. features like default querysets are used).
+
 

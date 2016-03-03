@@ -450,10 +450,7 @@
         <span class="c1"># Popping the source here (during explicit prefetch construction)</span>
         <span class="c1"># guarantees that implicitly required prefetches that follow will</span>
         <span class="c1"># not conflict.</span>
-        <span class="n">required</span> <span class="o">=</span> <span class="n">requirements</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span>
-            <span class="n">source</span><span class="p">,</span>
-            <span class="n">requirements</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
-        <span class="p">)</span>
+        <span class="n">required</span> <span class="o">=</span> <span class="n">requirements</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">:</span>
             <span class="c1"># push prefetches</span>
@@ -523,8 +520,7 @@
 
             <span class="n">is_remote</span> <span class="o">=</span> <span class="n">is_field_remote</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">source</span><span class="p">)</span>
             <span class="n">is_id_only</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s1">&#39;id_only&#39;</span><span class="p">,</span> <span class="k">lambda</span><span class="p">:</span> <span class="bp">False</span><span class="p">)()</span>
-            <span class="n">is_required</span> <span class="o">=</span> <span class="n">requirements</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">is_id_only</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_remote</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_required</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">is_id_only</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_remote</span><span class="p">:</span>
                 <span class="k">continue</span>
 
             <span class="n">prefetch_queryset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_prefetch_queryset</span><span class="p">(</span>
@@ -548,8 +544,7 @@
     <span class="k">def</span> <span class="nf">_extract_requirements</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">fields</span><span class="p">,</span>
-        <span class="n">requirements</span><span class="p">,</span>
-        <span class="n">serializer</span>
+        <span class="n">requirements</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Extract internal prefetch requirements from serializer fields.&quot;&quot;&quot;</span>
         <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">fields</span><span class="p">):</span>
@@ -568,25 +563,6 @@
                     <span class="c1"># supporting &#39;a.b.&#39; for backwards compatibility.</span>
                     <span class="n">requirement</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;*&#39;</span>
                 <span class="n">requirements</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">requirement</span><span class="p">,</span> <span class="n">TreeMap</span><span class="p">(),</span> <span class="n">update</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">requirements</span><span class="p">:</span>
-            <span class="k">return</span>
-
-        <span class="c1"># Try to convert `requires` fields to native fields to get same</span>
-        <span class="c1"># prefetching behavior as when &quot;include&quot;ing. Note that keys are</span>
-        <span class="c1"># popped out of `requirements` in _build_prefetch_queryset() so</span>
-        <span class="c1"># they won&#39;t get passed to _add_internal_prefetches() below.</span>
-        <span class="n">all_fields</span> <span class="o">=</span> <span class="n">serializer</span><span class="o">.</span><span class="n">get_all_fields</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">requirements</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
-                <span class="c1"># Already included.</span>
-                <span class="k">continue</span>
-            <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">all_fields</span><span class="p">:</span>
-                <span class="c1"># Add this field to list of fields we want to include.</span>
-                <span class="c1"># Note that this doesn&#39;t change whether or not the field</span>
-                <span class="c1"># is included in output because that&#39;s controlled by</span>
-                <span class="c1"># `serializer.fields`, which we&#39;re not modifying.</span>
-                <span class="n">fields</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">all_fields</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
 
     <span class="k">def</span> <span class="nf">_filter_queryset</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -630,8 +606,7 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_extract_requirements</span><span class="p">(</span>
             <span class="n">fields</span><span class="p">,</span>
-            <span class="n">requirements</span><span class="p">,</span>
-            <span class="n">serializer</span>
+            <span class="n">requirements</span>
         <span class="p">)</span>
 
         <span class="k">if</span> <span class="n">filters</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
