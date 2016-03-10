@@ -59,6 +59,9 @@ $(INSTALL_DIR)/bin/activate: requirements.txt install_requires.txt dependency_li
 	@$(INSTALL_DIR)/bin/pip install --process-dependency-links -Ur requirements.txt
 	@touch $(INSTALL_DIR)/bin/activate
 
+$(INSTALL_DIR)/bin/flake8: $(INSTALL_DIR)
+	@$(INSTALL_DIR)/bin/pip install -q flake8
+
 fixtures: install
 	$(call header,"Initializing fixture data")
 	$(INSTALL_DIR)/bin/python manage.py migrate --settings=tests.settings
@@ -115,11 +118,11 @@ start: install
 	$(INSTALL_DIR)/bin/python manage.py runserver $(PORT) --settings=tests.settings
 
 # Lint the project
-lint: clean_working_directory
+lint: clean_working_directory $(INSTALL_DIR)/bin/flake8
 	$(call header,"Linting code")
-	@find . -type f -name '*.py' -not -path '$(INSTALL_DIR)/*' -not -path './docs/*' -not -path './build/*' | xargs flake8
+	@find . -type f -name '*.py' -not -path '$(INSTALL_DIR)/*' -not -path './docs/*' -not -path './build/*' | xargs $(INSTALL_DIR)/bin/flake8
 
 # Auto-format the project
-format: clean_working_directory
+format: clean_working_directory $(INSTALL_DIR)/bin/flake8
 	$(call header,"Auto-formatting code")
-	@find $(APP_NAME) -type f -name '*.py' | xargs flake8 | sed -E 's/^([^:]*\.py).*/\1/g' | uniq | xargs autopep8 --experimental -a --in-place
+	@find $(APP_NAME) -type f -name '*.py' | xargs $(INSTALL_DIR)/bin/flake8 | sed -E 's/^([^:]*\.py).*/\1/g' | uniq | xargs autopep8 --experimental -a --in-place
