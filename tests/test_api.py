@@ -1,3 +1,4 @@
+import datetime
 import json
 
 from django.db import connection
@@ -556,9 +557,18 @@ class TestUsersAPI(APITestCase):
         content = json.loads(response.content.decode('utf-8'))
         self.assertEqual(1, len(content['users']))
 
-    def test_get_with_filter_invalid(self):
+    def test_get_with_filter_nonexistent_field(self):
         # Filtering on non-existent field should return 400
         url = '/users/?filter{foobar}=1'
+        response = self.client.get(url)
+        self.assertEqual(400, response.status_code)
+
+    def test_get_with_filter_invalid_data(self):
+        User.objects.create(
+            name='test',
+            date_of_birth=datetime.datetime.utcnow()
+        )
+        url = '/users/?filter{date_of_birth.gt}=0&filter{date_of_birth.lt}=0'
         response = self.client.get(url)
         self.assertEqual(400, response.status_code)
 
