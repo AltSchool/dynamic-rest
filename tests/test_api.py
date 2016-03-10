@@ -484,7 +484,8 @@ class TestUsersAPI(APITestCase):
                     "display_name": None,
                     "thumbnail_url": None,
                     "number_of_cats": 1,
-                    "profile": None
+                    "profile": None,
+                    "date_of_birth": None
                 }
             })
 
