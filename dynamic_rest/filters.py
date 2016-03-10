@@ -522,7 +522,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         if query:
             try:
                 queryset = queryset.filter(query)
-            except InternalValidationError, e:
+            except InternalValidationError as e:
                 raise ValidationError(
                     dict(e) if hasattr(self, 'error_dict') else list(e)
                 )
