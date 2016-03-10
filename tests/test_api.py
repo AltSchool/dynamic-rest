@@ -532,7 +532,7 @@ class TestUsersAPI(APITestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual([1], content['groups'][0]['loc1users'])
 
-    def test_get_wiht_filter_nested_rewrites(self):
+    def test_get_with_filter_nested_rewrites(self):
         """
         Test filter for members.id which needs to be rewritten as users.id
         """
