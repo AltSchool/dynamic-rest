@@ -1,6 +1,9 @@
 """This module contains custom filter backends."""
 
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import (
+    ImproperlyConfigured,
+    ValidationError as InternalValidationError
+)
 from django.db.models import Q, Prefetch
 from django.utils import six
 from rest_framework import serializers
@@ -517,7 +520,10 @@ class DynamicFilterBackend(BaseFilterBackend):
         )
 
         if query:
-            queryset = queryset.filter(query)
+            try:
+                queryset = queryset.filter(query)
+            except InternalValidationError, e:
+                raise ValidationError(e.message)
 
         # A serializer can have this optional function
         # to dynamically apply additional filters on
