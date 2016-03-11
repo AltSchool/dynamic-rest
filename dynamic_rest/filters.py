@@ -525,7 +525,7 @@ class DynamicFilterBackend(BaseFilterBackend):
                 queryset = queryset.filter(query)
             except InternalValidationError as e:
                 raise ValidationError(
-                    dict(e) if hasattr(self, 'error_dict') else list(e)
+                    dict(e) if hasattr(e, 'error_dict') else list(e)
                 )
 
         # A serializer can have this optional function
