@@ -121,6 +121,7 @@ start: install
 lint: clean_working_directory $(INSTALL_DIR)/bin/flake8
 	$(call header,"Linting code")
 	@find . -type f -name '*.py' -not -path '$(INSTALL_DIR)/*' -not -path './docs/*' -not -path './build/*' | xargs $(INSTALL_DIR)/bin/flake8
+	@. $(INSTALL_DIR)/bin/activate; isort --check-only --recursive $(APP_NAME) tests
 
 # Auto-format the project
 format: clean_working_directory $(INSTALL_DIR)/bin/flake8
