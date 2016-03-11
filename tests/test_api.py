@@ -572,6 +572,11 @@ class TestUsersAPI(APITestCase):
         url = '/users/?filter{date_of_birth.gt}=0&filter{date_of_birth.lt}=0'
         response = self.client.get(url)
         self.assertEqual(400, response.status_code)
+        self.assertEqual(
+            ["'0' value has an invalid date format. "
+             "It must be in YYYY-MM-DD format."],
+            response.data
+        )
 
     def test_get_with_filter_deferred(self):
         # Filtering deferred field should work
