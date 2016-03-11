@@ -518,6 +518,9 @@ class DynamicFilterBackend(BaseFilterBackend):
         )
 
         if query:
+            # Convert internal django ValidationError to APIException-based one
+            # in order to resolve validation errors from 500 status code to
+            # 400.
             try:
                 queryset = queryset.filter(query)
             except InternalValidationError as e:
