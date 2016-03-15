@@ -1,3 +1,4 @@
+import datetime
 import json
 
 from django.db import connection
@@ -483,7 +484,8 @@ class TestUsersAPI(APITestCase):
                     "display_name": None,
                     "thumbnail_url": None,
                     "number_of_cats": 1,
-                    "profile": None
+                    "profile": None,
+                    "date_of_birth": None
                 }
             })
 
@@ -532,7 +534,7 @@ class TestUsersAPI(APITestCase):
         self.assertEqual(200, response.status_code)
         self.assertEqual([1], content['groups'][0]['loc1users'])
 
-    def test_get_wiht_filter_nested_rewrites(self):
+    def test_get_with_filter_nested_rewrites(self):
         """
         Test filter for members.id which needs to be rewritten as users.id
         """
@@ -556,11 +558,25 @@ class TestUsersAPI(APITestCase):
         content = json.loads(response.content.decode('utf-8'))
         self.assertEqual(1, len(content['users']))
 
-    def test_get_with_filter_invalid(self):
+    def test_get_with_filter_nonexistent_field(self):
         # Filtering on non-existent field should return 400
         url = '/users/?filter{foobar}=1'
         response = self.client.get(url)
         self.assertEqual(400, response.status_code)
+
+    def test_get_with_filter_invalid_data(self):
+        User.objects.create(
+            name='test',
+            date_of_birth=datetime.datetime.utcnow()
+        )
+        url = '/users/?filter{date_of_birth.gt}=0&filter{date_of_birth.lt}=0'
+        response = self.client.get(url)
+        self.assertEqual(400, response.status_code)
+        self.assertEqual(
+            ["'0' value has an invalid date format. "
+             "It must be in YYYY-MM-DD format."],
+            response.data
+        )
 
     def test_get_with_filter_deferred(self):
         # Filtering deferred field should work

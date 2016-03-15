@@ -76,7 +76,7 @@ clean: clean_working_directory
 	@rm -rf $(INSTALL_DIR)
 
 # Run tests
-test: lint install
+test: install lint
 	$(call header,"Running unit tests")
 	@$(INSTALL_DIR)/bin/py.test --cov=$(APP_NAME) tests/$(TEST)
 
@@ -117,9 +117,9 @@ start: install
 # Lint the project
 lint: clean_working_directory
 	$(call header,"Linting code")
-	@find . -type f -name '*.py' -not -path '$(INSTALL_DIR)/*' -not -path './docs/*' -not -path './build/*' | xargs flake8
+	@find . -type f -name '*.py' -not -path '$(INSTALL_DIR)/*' -not -path './docs/*' -not -path './build/*' | xargs $(INSTALL_DIR)/bin/flake8
 
 # Auto-format the project
 format: clean_working_directory
 	$(call header,"Auto-formatting code")
-	@find $(APP_NAME) -type f -name '*.py' | xargs flake8 | sed -E 's/^([^:]*\.py).*/\1/g' | uniq | xargs autopep8 --experimental -a --in-place
+	@find $(APP_NAME) -type f -name '*.py' | xargs $(INSTALL_DIR)/bin/flake8 | sed -E 's/^([^:]*\.py).*/\1/g' | uniq | xargs autopep8 --experimental -a --in-place

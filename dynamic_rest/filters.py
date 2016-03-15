@@ -1,5 +1,6 @@
 """This module contains custom filter backends."""
 
+from django.core.exceptions import ValidationError as InternalValidationError
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q, Prefetch
 from django.utils import six
@@ -517,7 +518,15 @@ class DynamicFilterBackend(BaseFilterBackend):
         )
 
         if query:
-            queryset = queryset.filter(query)
+            # Convert internal django ValidationError to APIException-based one
+            # in order to resolve validation errors from 500 status code to
+            # 400.
+            try:
+                queryset = queryset.filter(query)
+            except InternalValidationError as e:
+                raise ValidationError(
+                    dict(e) if hasattr(e, 'error_dict') else list(e)
+                )
 
         # A serializer can have this optional function
         # to dynamically apply additional filters on

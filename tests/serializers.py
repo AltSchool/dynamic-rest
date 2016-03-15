@@ -141,10 +141,12 @@ class UserSerializer(DynamicModelSerializer):
             'display_name',
             'thumbnail_url',
             'number_of_cats',
-            'profile'
+            'profile',
+            'date_of_birth'
         )
         deferred_fields = (
             'last_name',
+            'date_of_birth',
             'display_name',
             'profile',
             'thumbnail_url'
