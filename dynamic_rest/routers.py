@@ -143,8 +143,12 @@ class DynamicRouter(DefaultRouter):
 
         # Try to extract resource name from viewset.
         try:
-            resource_name = viewset.serializer_class().get_plural_name()
+            serializer = viewset.serializer_class()
+            resource_key = serializer.get_resource_key()
+            resource_name = serializer.get_plural_name()
         except:
+            import traceback
+            traceback.print_exc()
             raise Exception(
                 "Failed to extract resource name from viewset: '%s'."
                 " It, or its serializer, may not be DREST-compatible." % (
@@ -160,18 +164,18 @@ class DynamicRouter(DefaultRouter):
         self.register(base_path, viewset)
 
         # Make sure resource isn't already registered.
-        if resource_name in resource_map:
+        if resource_key in resource_map:
             raise Exception(
                 "The resource '%s' has already been mapped to '%s'."
                 " Each resource can only be mapped to one canonical"
                 " path. " % (
-                    resource_name,
-                    resource_map[resource_name]['path']
+                    resource_key,
+                    resource_map[resource_key]['path']
                 )
             )
 
         # Register resource in reverse map.
-        resource_map[resource_name] = {
+        resource_map[resource_key] = {
             'path': base_path,
             'viewset': viewset
         }
@@ -196,19 +200,21 @@ class DynamicRouter(DefaultRouter):
         else:
             return base_path
 
-    def get_canonical_serializer(self, resource):
+    @staticmethod
+    def get_canonical_serializer(resource_key):
         """
         Return canonical serializer for a given resource name.
 
         Arguments:
-            resource - Resource name as string.
+            resource_key - Resource key, usually DB table for model-based
+                           resources, otherwise the plural name.
         Returns: serializer class
         """
 
-        if resource not in resource_map:
+        if resource_key not in resource_map:
             return None
 
-        return resource_map[resource]['viewset'].serializer_class
+        return resource_map[resource_key]['viewset'].serializer_class
 
     def get_routes(self, viewset):
         """
