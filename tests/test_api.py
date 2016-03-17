@@ -478,6 +478,8 @@ class TestUsersAPI(APITestCase):
                     "id": 5,
                     "name": "test",
                     "permissions": [],
+                    "favorite_pet": None,
+                    "favorite_pet_id": None,
                     "groups": [],
                     "location": 1,
                     "last_name": "last",
@@ -917,8 +919,10 @@ class TestRelationsAPI(APITestCase):
         self.fixture = create_fixture()
 
     def test_generated_relation_fields(self):
+        # Links for single-relations is currentlydisabled.
+        # See WithDynamicSerializerMixin.get_link_fields()
         r = self.client.get('/users/1/location/')
-        self.assertEqual(200, r.status_code)
+        self.assertEqual(404, r.status_code)
 
         r = self.client.get('/users/1/permissions/')
         self.assertEqual(200, r.status_code)

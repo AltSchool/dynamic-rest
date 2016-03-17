@@ -7,7 +7,6 @@ from rest_framework.response import Response
 from rest_framework.reverse import reverse
 from rest_framework.routers import DefaultRouter, Route, replace_methodname
 
-from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.meta import get_model_table
 
 directory = {}
@@ -204,7 +203,7 @@ class DynamicRouter(DefaultRouter):
             return base_path
 
     @staticmethod
-    def get_canonical_serializer(resource_key, model=None):
+    def get_canonical_serializer(resource_key, model=None, instance=None):
         """
         Return canonical serializer for a given resource name.
 
@@ -212,11 +211,14 @@ class DynamicRouter(DefaultRouter):
             resource_key - Resource key, usually DB table for model-based
                            resources, otherwise the plural name.
             model - (Optional) Model class to look up by.
+            instance - (Optional) Model object instance.
         Returns: serializer class
         """
 
         if model:
             resource_key = get_model_table(model)
+        elif instance:
+            resource_key = instance._meta.db_table
 
         if resource_key not in resource_map:
             return None
@@ -260,17 +262,11 @@ class DynamicRouter(DefaultRouter):
             return routes
 
         serializer = viewset.serializer_class()
-        fields = getattr(serializer, 'get_all_fields', serializer.get_fields)()
+        fields = getattr(serializer, 'get_link_fields', lambda: [])()
 
         route_name = '{basename}-{methodnamehyphen}'
 
         for field_name, field in six.iteritems(fields):
-            # Only apply to DynamicRelationFields
-            # TODO(ryo): Maybe also apply in cases where fields are mapped
-            #            directly to serializers?
-            if not isinstance(field, DynamicRelationField):
-                continue
-
             methodname = 'list_related'
             url = (
                 r'^{prefix}/{lookup}/(?P<field_name>%s)'

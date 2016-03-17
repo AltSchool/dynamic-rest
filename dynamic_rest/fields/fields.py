@@ -11,6 +11,7 @@ from rest_framework.serializers import SerializerMethodField
 
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
+from dynamic_rest.fields.common import WithRelationalFieldMixin
 from dynamic_rest.meta import is_field_remote
 
 
@@ -56,7 +57,7 @@ class DynamicMethodField(SerializerMethodField, DynamicField):
     pass
 
 
-class DynamicRelationField(DynamicField):
+class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
 
     """Field proxy for a nested serializer.
 
@@ -192,19 +193,6 @@ class DynamicRelationField(DynamicField):
             root._descendant_serializer_cache[cache_key] = szr
 
         return root._descendant_serializer_cache[cache_key]
-
-    def _get_request_fields_from_parent(self):
-        """Get request fields from the parent serializer."""
-        if not self.parent:
-            return None
-
-        if not getattr(self.parent, 'request_fields'):
-            return None
-
-        if not isinstance(self.parent.request_fields, dict):
-            return None
-
-        return self.parent.request_fields.get(self.field_name)
 
     def _inherit_parent_kwargs(self, kwargs):
         """Extract any necessary attributes from parent serializer to
