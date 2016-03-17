@@ -13,7 +13,7 @@ router.register_resource(viewsets.CatViewSet)
 router.register_resource(viewsets.DogViewSet)
 router.register_resource(viewsets.HorseViewSet)
 router.register_resource(viewsets.ZebraViewSet)
-router.register_resource(viewsets.UserLocationViewSet)
+router.register(r'user_locations', viewsets.UserLocationViewSet)
 
 # the above routes are duplicated to test versioned prefixes
 router.register(r'v2/cats', viewsets.CatViewSet)
