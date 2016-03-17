@@ -1,5 +1,6 @@
 from rest_framework.serializers import CharField
 
+from dynamic_rest.content_type_field import DynamicContentTypeField
 from dynamic_rest.fields import (
     CountField,
     DynamicField,
@@ -145,13 +146,18 @@ class UserSerializer(DynamicModelSerializer):
             'thumbnail_url',
             'number_of_cats',
             'number_of_alive_cats',
-            'profile'
+            'profile',
+            'favorite_pet_id',
+            'favorite_pet'
         )
         deferred_fields = (
             'last_name',
             'display_name',
             'profile',
-            'thumbnail_url'
+            'thumbnail_url',
+            'favorite_pet_type',
+            'favorite_pet_id',
+            'favorite_pet',
         )
 
     location = DynamicRelationField('LocationSerializer')
@@ -177,6 +183,11 @@ class UserSerializer(DynamicModelSerializer):
     profile = DynamicRelationField(
         'ProfileSerializer',
         deferred=True
+    )
+    favorite_pet = DynamicContentTypeField(
+        object_field='favorite_pet',
+        type_field='favorite_pet_type',  # not required
+        id_field='favorite_pet_id'  # not required
     )
 
     def get_number_of_cats(self, user):

@@ -477,6 +477,8 @@ class TestUsersAPI(APITestCase):
                     "id": 5,
                     "name": "test",
                     "permissions": [],
+                    "favorite_pet": None,
+                    "favorite_pet_id": None,
                     "groups": [],
                     "location": 1,
                     "last_name": "last",
