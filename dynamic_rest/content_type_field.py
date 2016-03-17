@@ -1,7 +1,7 @@
 import traceback
 
-from dynamic_rest.routers import DynamicRouter
 from dynamic_rest.fields import DynamicField
+from dynamic_rest.routers import DynamicRouter
 
 
 class DynamicContentTypeField(DynamicField):
