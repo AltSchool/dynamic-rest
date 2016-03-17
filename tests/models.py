@@ -1,4 +1,6 @@
 from django.db import models
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 
 
 class User(models.Model):
@@ -8,6 +10,12 @@ class User(models.Model):
     permissions = models.ManyToManyField('Permission', related_name='users')
     # 'related_name' intentionally left unset in location field below:
     location = models.ForeignKey('Location', null=True, blank=True)
+    favorite_pet_type = models.ForeignKey(ContentType, null=True, blank=True)
+    favorite_pet_id = models.TextField(null=True, blank=True)
+    favorite_pet = GenericForeignKey(
+        'favorite_pet_type',
+        'favorite_pet_id',
+    )
 
 
 class Profile(models.Model):
