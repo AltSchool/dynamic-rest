@@ -706,10 +706,16 @@ class TestMeta(TestCase):
 
     def test_default_name(self):
         serializer = DogSerializer()
+        if hasattr(serializer.Meta, 'name'):
+            # bust cached value
+            del(serializer.Meta.name)
         self.assertFalse(hasattr(serializer.Meta, 'name'))
         self.assertEqual('dog', serializer.get_name())
 
     def test_default_plural_name(self):
         serializer = DogSerializer()
+        if hasattr(serializer.Meta, 'plural_name'):
+            # bust cached value
+            del(serializer.Meta.plural_name)
         self.assertFalse(hasattr(serializer.Meta, 'plural_name'))
         self.assertEqual('dogs', serializer.get_plural_name())

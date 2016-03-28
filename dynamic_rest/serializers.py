@@ -215,12 +215,15 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         The name can be defined on the Meta class or will be generated
         automatically from the model name.
         """
-        class_name = getattr(cls.get_model(), '__name__', None)
-        return getattr(
-            cls.Meta,
-            'name',
-            inflection.underscore(class_name) if class_name else None
-        )
+        if not hasattr(cls.Meta, 'name'):
+            class_name = getattr(cls.get_model(), '__name__', None)
+            setattr(
+                cls.Meta,
+                'name',
+                inflection.underscore(class_name) if class_name else None
+            )
+
+        return cls.Meta.name
 
     @classmethod
     def get_plural_name(cls):
@@ -230,11 +233,13 @@ class WithDynamicSerializerMixin(DynamicSerializerBase):
         If the plural name is not defined,
         the pluralized form of the name will be returned.
         """
-        return getattr(
-            cls.Meta,
-            'plural_name',
-            inflection.pluralize(cls.get_name())
-        )
+        if not hasattr(cls.Meta, 'plural_name'):
+            setattr(
+                cls.Meta,
+                'plural_name',
+                inflection.pluralize(cls.get_name())
+            )
+        return cls.Meta.plural_name
 
     def get_all_fields(self):
         """Returns the entire serializer field set.
