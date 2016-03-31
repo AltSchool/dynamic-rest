@@ -13,6 +13,7 @@ from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.links import merge_link_object
+from dynamic_rest.meta import get_model_table
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.tagged import tag_dict
 
@@ -22,7 +23,7 @@ class WithResourceKeyMixin(object):
         """Return canonical resource key, usually the DB table name."""
         model = self.get_model()
         if model:
-            return model._meta.db_table
+            return get_model_table(model)
         else:
             return self.get_name()
 

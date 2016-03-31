@@ -8,6 +8,7 @@ from rest_framework.reverse import reverse
 from rest_framework.routers import DefaultRouter, Route, replace_methodname
 
 from dynamic_rest.fields import DynamicRelationField
+from dynamic_rest.meta import get_model_table
 
 directory = {}
 resource_map = {}
@@ -180,36 +181,42 @@ class DynamicRouter(DefaultRouter):
             'viewset': viewset
         }
 
-    def get_canonical_path(self, resource, pk=None):
+    @staticmethod
+    def get_canonical_path(resource_key, pk=None):
         """
         Return canonical resource path.
 
         Arguments:
-            resource - Canonical resource name (i.e. Serializer.get_name()).
+            resource_key - Canonical resource key
+                           i.e. Serializer.get_resource_key().
             pk - (Optional) Object's primary key for a single-resource URL.
         Returns: Absolute URL as string.
         """
 
-        if resource not in resource_map:
+        if resource_key not in resource_map:
             # Note: Maybe raise?
             return None
 
-        base_path = '/' + resource_map[resource]['path']
+        base_path = '/' + resource_map[resource_key]['path']
         if pk:
-            return base_path + '/%s/' % pk
+            return '%s/%s/' % (base_path, pk)
         else:
             return base_path
 
     @staticmethod
-    def get_canonical_serializer(resource_key):
+    def get_canonical_serializer(resource_key, model=None):
         """
         Return canonical serializer for a given resource name.
 
         Arguments:
             resource_key - Resource key, usually DB table for model-based
                            resources, otherwise the plural name.
+            model - (Optional) Model class to look up by.
         Returns: serializer class
         """
+
+        if model:
+            resource_key = get_model_table(model)
 
         if resource_key not in resource_map:
             return None

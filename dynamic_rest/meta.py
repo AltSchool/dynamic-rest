@@ -72,3 +72,10 @@ def is_field_remote(model, field_name):
 
     model_field = get_model_field(model, field_name)
     return isinstance(model_field, (ManyToManyField, RelatedObject))
+
+
+def get_model_table(model):
+    try:
+        return model._meta.db_table
+    except:
+        return None
