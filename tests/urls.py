@@ -9,14 +9,14 @@ router.register_resource(viewsets.GroupViewSet)
 router.register_resource(viewsets.ProfileViewSet)
 router.register_resource(viewsets.LocationViewSet)
 
-router.register_resource(viewsets.CatViewSet)
+router.register(r'cats', viewsets.CatViewSet)
 router.register_resource(viewsets.DogViewSet)
 router.register_resource(viewsets.HorseViewSet)
 router.register_resource(viewsets.ZebraViewSet)
 router.register(r'user_locations', viewsets.UserLocationViewSet)
 
 # the above routes are duplicated to test versioned prefixes
-router.register(r'v2/cats', viewsets.CatViewSet)
+router.register_resource(viewsets.CatViewSet, namespace='v2')  # canonical
 router.register(r'v1/user_locations', viewsets.UserLocationViewSet)
 
 urlpatterns = patterns(
