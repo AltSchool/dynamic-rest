@@ -11,6 +11,7 @@ from dynamic_rest.meta import get_model_table
 
 directory = {}
 resource_map = {}
+resource_name_map = {}
 
 
 def get_directory(request):
@@ -179,6 +180,7 @@ class DynamicRouter(DefaultRouter):
             'path': base_path,
             'viewset': viewset
         }
+        resource_name_map[resource_name] = resource_key
 
     @staticmethod
     def get_canonical_path(resource_key, pk=None):
@@ -203,7 +205,12 @@ class DynamicRouter(DefaultRouter):
             return base_path
 
     @staticmethod
-    def get_canonical_serializer(resource_key, model=None, instance=None):
+    def get_canonical_serializer(
+        resource_key,
+        model=None,
+        instance=None,
+        resource_name=None
+    ):
         """
         Return canonical serializer for a given resource name.
 
@@ -219,6 +226,8 @@ class DynamicRouter(DefaultRouter):
             resource_key = get_model_table(model)
         elif instance:
             resource_key = instance._meta.db_table
+        elif resource_name:
+            resource_key = resource_name_map[resource_name]
 
         if resource_key not in resource_map:
             return None

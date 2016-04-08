@@ -22,7 +22,7 @@ class DynamicGenericRelationField(
 
         super(DynamicGenericRelationField, self).__init__(*args, **kwargs)
         self.embed = embed
-        self.read_only = True
+        self.read_only = False
 
     def bind(self, field_name, parent):
         super(DynamicGenericRelationField, self).bind(field_name, parent)
@@ -112,3 +112,18 @@ class DynamicGenericRelationField(
             # TODO: Remove once we have more confidence.
             traceback.print_exc()
             return None
+
+    def to_internal_value(self, data):
+        model_name = data.get('type', None)
+        model_id = data.get('id', None)
+        if model_name and model_id:
+            # model_name = inflection.singularize(model_name)
+            serializer_class = DynamicRouter.get_canonical_serializer(
+                resource_key=None,
+                resource_name=model_name
+            )
+            if serializer_class:
+                model = serializer_class.get_model()
+                return model.objects.get(id=model_id)
+
+        return None
