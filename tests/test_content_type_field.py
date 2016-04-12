@@ -2,6 +2,7 @@ import json
 
 from rest_framework.test import APITestCase
 
+from dynamic_rest.fields import DynamicGenericRelationField
 from dynamic_rest.routers import DynamicRouter
 from tests.models import Zebra
 from tests.setup import create_fixture
@@ -113,3 +114,7 @@ class TestContentTypeFieldAPI(APITestCase):
         self.assertTrue('favorite_pet' in user_obj)
         self.assertEqual('Zebra', user_obj['favorite_pet']['type'])
         self.assertEqual(zork.pk, user_obj['favorite_pet']['id'])
+
+    def test_dgrf_with_requires_raises(self):
+        with self.assertRaises(Exception):
+            DynamicGenericRelationField(requires=['foo', 'bar'])

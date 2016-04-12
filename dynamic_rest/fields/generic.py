@@ -12,6 +12,12 @@ class DynamicGenericRelationField(
 ):
 
     def __init__(self, embed=False, *args, **kwargs):
+        if 'requires' in kwargs:
+            raise RuntimeError(
+                "DynamicGenericRelationField does not support manual"
+                " overriding of 'requires'."
+            )
+
         super(DynamicGenericRelationField, self).__init__(*args, **kwargs)
         self.embed = embed
         self.read_only = True
