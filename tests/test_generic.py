@@ -125,5 +125,4 @@ class TestGenericRelationFieldAPI(APITestCase):
             '&filter{favorite_pet_id.isnull}=false'
         )
         response = self.client.get(url)
-        print response.content
         self.assertEqual(400, response.status_code)
