@@ -118,3 +118,12 @@ class TestGenericRelationFieldAPI(APITestCase):
     def test_dgrf_with_requires_raises(self):
         with self.assertRaises(Exception):
             DynamicGenericRelationField(requires=['foo', 'bar'])
+
+    def test_if_field_inclusion_then_error(self):
+        url = (
+            '/users/?include[]=favorite_pet.name'
+            '&filter{favorite_pet_id.isnull}=false'
+        )
+        response = self.client.get(url)
+        print response.content
+        self.assertEqual(400, response.status_code)

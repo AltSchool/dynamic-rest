@@ -1,4 +1,3 @@
-
 class WithRelationalFieldMixin(object):
     """Mostly code shared by DynamicRelationField and
     DynamicGenericRelationField.

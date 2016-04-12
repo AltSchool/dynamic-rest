@@ -1,5 +1,7 @@
 import traceback
 
+from rest_framework.exceptions import ValidationError
+
 from dynamic_rest.fields.common import WithRelationalFieldMixin
 from dynamic_rest.fields.fields import DynamicField
 from dynamic_rest.routers import DynamicRouter
@@ -37,12 +39,24 @@ class DynamicGenericRelationField(
             '*'
         ]
 
+        # Get request fields to support sideloading, but disallow field
+        # inclusion/exclusion.
+        request_fields = self._get_request_fields_from_parent()
+        if isinstance(request_fields, dict) and len(request_fields):
+            raise ValidationError(
+                "%s.%s does not support field inclusion/exclusion" % (
+                    self.parent.get_name(),
+                    self.field_name
+                )
+            )
+        self.request_fields = request_fields
+
     def id_only(self):
         # For DynamicRelationFields, id_only() is a serializer responsibility
         # but for generic relations, we want IDs to be represented differently
         # and that is a field-level concern, not an object-level concern,
         # so we handle it here.
-        request_fields = self._get_request_fields_from_parent()
+        request_fields = self.request_fields
         return request_fields is True
 
     def get_pk_object(self, type_key, id_value):
@@ -76,11 +90,11 @@ class DynamicGenericRelationField(
             if self.id_only():
                 return pk_value
 
-            # Serialize the object. Note that request_fields is set, which
-            # means field inclusion/exclusion *may* work. Yolo!
+            # Serialize the object. Note that request_fields is set, but
+            # field inclusion/exclusion is disallowed via check in bind()
             r = serializer_class(
                 dynamic=True,
-                request_fields=self._get_request_fields_from_parent(),
+                request_fields=self.request_fields,
                 context=self.context,
                 embed=self.embed
             ).to_representation(
@@ -93,5 +107,8 @@ class DynamicGenericRelationField(
                 r.pk_value = pk_value
             return r
         except:
+            # This feature should be considered to be in Beta so don't break
+            # if anything unexpected happens.
+            # TODO: Remove once we have more confidence.
             traceback.print_exc()
             return None
