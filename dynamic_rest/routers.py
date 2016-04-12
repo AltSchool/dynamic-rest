@@ -146,7 +146,8 @@ class DynamicRouter(DefaultRouter):
         try:
             serializer = viewset.serializer_class()
             resource_key = serializer.get_resource_key()
-            resource_name = serializer.get_plural_name()
+            resource_name = serializer.get_name()
+            path_name = serializer.get_plural_name()
         except:
             import traceback
             traceback.print_exc()
@@ -161,7 +162,7 @@ class DynamicRouter(DefaultRouter):
         if namespace:
             namespace = namespace.rstrip('/') + '/'
         base_path = namespace or ''
-        base_path = r'%s' % base_path + resource_name
+        base_path = r'%s' % base_path + path_name
         self.register(base_path, viewset)
 
         # Make sure resource isn't already registered.

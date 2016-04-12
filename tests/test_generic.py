@@ -140,7 +140,7 @@ class TestGenericRelationFieldAPI(APITestCase):
             json.dumps({
                 'id': user.id,
                 'favorite_pet': {
-                    'type': 'dogs',
+                    'type': 'dog',
                     'id': 1
                 }
             }),
