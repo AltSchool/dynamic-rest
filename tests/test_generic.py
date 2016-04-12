@@ -8,7 +8,7 @@ from tests.models import Zebra
 from tests.setup import create_fixture
 
 
-class TestContentTypeFieldAPI(APITestCase):
+class TestGenericRelationFieldAPI(APITestCase):
 
     def setUp(self):
         self.fixture = create_fixture()
