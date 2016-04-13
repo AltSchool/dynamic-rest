@@ -23,6 +23,7 @@ class TaggedDict(object):
         self.serializer = kwargs.pop('serializer')
         self.instance = kwargs.pop('instance')
         self.embed = kwargs.pop('embed', False)
+        self.pk_value = kwargs.pop('pk_value', None)
         if not isinstance(self, dict):
             raise Exception(
                 "TaggedDict constructed not as a dict"
@@ -34,7 +35,8 @@ class TaggedDict(object):
             self,
             serializer=self.serializer,
             instance=self.instance,
-            embed=self.embed
+            embed=self.embed,
+            pk_value=self.pk_value
         )
 
     def __repr__(self):

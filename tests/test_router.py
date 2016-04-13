@@ -42,3 +42,14 @@ class TestDynamicRouter(APITestCase):
             DogSerializer,
             DynamicRouter.get_canonical_serializer(None, model=Dog)
         )
+
+    def test_get_canonical_serializer_by_instance(self):
+        dog = Dog.objects.create(
+            name='Snoopy',
+            fur_color='black and white',
+            origin=''
+        )
+        self.assertEqual(
+            DogSerializer,
+            DynamicRouter.get_canonical_serializer(None, instance=dog)
+        )

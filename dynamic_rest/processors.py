@@ -78,14 +78,18 @@ class SideloadingProcessor(object):
                     return
 
                 name = obj.serializer.get_plural_name()
-                pk = obj.instance.pk
+                pk = obj.pk_value or obj.instance.pk
+
+                # For polymorphic relations, `pk` can be a dict, so use the
+                # string representation (dict isn't hashable).
+                pk_key = repr(pk)
 
                 # sideloading
                 seen = True
                 # if this object has not yet been seen
-                if pk not in self.seen[name]:
+                if pk_key not in self.seen[name]:
                     seen = False
-                    self.seen[name].add(pk)
+                    self.seen[name].add(pk_key)
 
                 # prevent sideloading the primary objects
                 if depth == 0:
