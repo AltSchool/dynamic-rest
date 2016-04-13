@@ -5,10 +5,8 @@ from django.utils import six
 from rest_framework.serializers import ListSerializer
 from rest_framework.utils.serializer_helpers import ReturnDict
 
+from dynamic_rest.conf import settings
 from dynamic_rest.tagged import TaggedDict
-
-
-ADDITIONAL_PRIMARY_RESOURCE_PREFIX = '_'
 
 
 class SideloadingProcessor(object):
@@ -18,6 +16,8 @@ class SideloadingProcessor(object):
     response keys and produces responses that are
     typically smaller than their nested equivalent.
     """
+
+    prefix = settings.ADDITIONAL_PRIMARY_RESOURCE_PREFIX
 
     def __init__(self, serializer, data):
         """Initializes and runs the processor.
@@ -104,7 +104,7 @@ class SideloadingProcessor(object):
                 # if the primary resource is embedded, add it to a prefixed key
                 if name == self.plural_name:
                     name = '%s%s' % (
-                        ADDITIONAL_PRIMARY_RESOURCE_PREFIX,
+                        self.prefix,
                         name
                     )
 
