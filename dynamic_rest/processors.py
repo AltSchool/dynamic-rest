@@ -8,6 +8,9 @@ from rest_framework.utils.serializer_helpers import ReturnDict
 from dynamic_rest.tagged import TaggedDict
 
 
+ADDITIONAL_PRIMARY_RESOURCE_PREFIX = '_'
+
+
 class SideloadingProcessor(object):
     """A processor that sideloads serializer data.
 
@@ -100,7 +103,10 @@ class SideloadingProcessor(object):
 
                 # if the primary resource is embedded, add it to a prefixed key
                 if name == self.plural_name:
-                    name = '+%s' % name
+                    name = '%s%s' % (
+                        ADDITIONAL_PRIMARY_RESOURCE_PREFIX,
+                        name
+                    )
 
                 if not seen:
                     # allocate a top-level key in the data for this resource
