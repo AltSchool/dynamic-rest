@@ -1344,3 +1344,36 @@ class TestBrowsableAPI(APITestCase):
         self.assertIn('/horses', content)
         self.assertIn('/zebras', content)
         self.assertIn('/users', content)
+
+
+class TestCatsAPI(APITestCase):
+
+    """
+    Tests for nested resources
+    """
+
+    def setUp(self):
+        self.fixture = create_fixture()
+        home_id = self.fixture.locations[0].id
+        backup_home_id = self.fixture.locations[1].id
+        parent = Cat.objects.create(
+            name='Parent',
+            home_id=home_id,
+            backup_home_id=backup_home_id
+        )
+        self.kitten = Cat.objects.create(
+            name='Kitten',
+            home_id=home_id,
+            backup_home_id=backup_home_id,
+            parent=parent
+        )
+
+    def test_additional_sideloads(self):
+        response = self.client.get(
+            '/cats/%i?include[]=parent.' % self.kitten.id
+        )
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertTrue('cat' in content)
+        self.assertTrue('_cats' in content)
+        self.assertEquals(content['cat']['name'], 'Kitten')
+        self.assertEquals(content['_cats'][0]['name'], 'Parent')
