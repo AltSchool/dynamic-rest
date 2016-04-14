@@ -1374,6 +1374,6 @@ class TestCatsAPI(APITestCase):
         )
         content = json.loads(response.content.decode('utf-8'))
         self.assertTrue('cat' in content)
-        self.assertTrue('_cats' in content)
+        self.assertTrue('+cats' in content)
         self.assertEquals(content['cat']['name'], 'Kitten')
-        self.assertEquals(content['_cats'][0]['name'], 'Parent')
+        self.assertEquals(content['+cats'][0]['name'], 'Parent')

@@ -588,7 +588,7 @@ DYNAMIC_REST = {
 
     # ADDITIONAL_PRIMARY_RESOURCE_PREFIX: String to prefix additional
     # instances of the primary resource when sideloading.
-    'ADDITIONAL_PRIMARY_RESOURCE_PREFIX': '_'
+    'ADDITIONAL_PRIMARY_RESOURCE_PREFIX': '+'
 }
 ```
 
