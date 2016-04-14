@@ -584,7 +584,11 @@ DYNAMIC_REST = {
 
     # PAGE_SIZE_QUERY_PARAM: global setting for the page size query parameter.
     # Can be overriden at the viewset level.
-    'PAGE_SIZE_QUERY_PARAM': 'per_page'
+    'PAGE_SIZE_QUERY_PARAM': 'per_page',
+
+    # ADDITIONAL_PRIMARY_RESOURCE_PREFIX: String to prefix additional
+    # instances of the primary resource when sideloading.
+    'ADDITIONAL_PRIMARY_RESOURCE_PREFIX': '_'
 }
 ```
 
