@@ -151,6 +151,7 @@ class UserSerializer(DynamicModelSerializer):
             'profile',
             'thumbnail_url'
         )
+        read_only_fields = ('profile',)
 
     location = DynamicRelationField('LocationSerializer')
     permissions = DynamicRelationField(
@@ -168,6 +169,9 @@ class UserSerializer(DynamicModelSerializer):
         requires=['location.cat_set.*'],
         deferred=True
     )
+
+    # Don't set read_only on this field directly. Used in test for
+    # Meta.read_only_fields.
     profile = DynamicRelationField(
         'ProfileSerializer',
         deferred=True

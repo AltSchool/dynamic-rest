@@ -122,6 +122,7 @@ class DynamicRelationField(DynamicField):
             # related_name
             model_field = None
 
+        # Infer `required` and `allow_null`
         if 'required' not in self.kwargs and (
                 remote or (
                     model_field and (
@@ -134,6 +135,15 @@ class DynamicRelationField(DynamicField):
                 model_field, 'null', False
         ):
             self.allow_null = True
+
+        # Infer read_only from parent Meta.read_only_fields
+        if 'read_only' not in self.kwargs:
+            parent_ro_fields = getattr(
+                self.parent.Meta,
+                'read_only_fields',
+                []
+            )
+            self.read_only = self.field_name in parent_ro_fields
 
         self.model_field = model_field
 

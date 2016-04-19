@@ -1081,6 +1081,24 @@ class TestLinks(APITestCase):
         data = szr.to_representation(FakeNested())
         self.assertEqual(data, {'value_count': 1}, data)
 
+    def test_meta_read_only_relation_field(self):
+        """Test for making a DynamicRelationField read-only by adding
+        it to Meta.read_only_fields.
+        """
+        data = {
+            'name': 'test ro',
+            'last_name': 'last',
+            'location': 1,
+            'profile': 'bogus value',  # Read only relation field
+        }
+        response = self.client.post(
+            '/users/', json.dumps(data),
+            content_type='application/json'
+        )
+        # Note: if 'profile' isn't getting ignored, this will return
+        # a 404 since a matching Profile object isn't found.
+        self.assertEquals(201, response.status_code)
+
 
 class TestDogsAPI(APITestCase):
 
