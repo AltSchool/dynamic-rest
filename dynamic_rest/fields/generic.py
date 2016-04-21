@@ -22,7 +22,6 @@ class DynamicGenericRelationField(
 
         super(DynamicGenericRelationField, self).__init__(*args, **kwargs)
         self.embed = embed
-        self.read_only = False
 
     def bind(self, field_name, parent):
         super(DynamicGenericRelationField, self).bind(field_name, parent)
@@ -84,7 +83,7 @@ class DynamicGenericRelationField(
             # We want the pk to be represented as an object with type,
             # rather than just the ID.
             pk_value = self.get_pk_object(
-                serializer_class().get_name(),
+                serializer_class.get_name(),
                 instance.pk
             )
             if self.id_only():

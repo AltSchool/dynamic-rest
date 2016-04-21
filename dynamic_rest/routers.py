@@ -181,6 +181,23 @@ class DynamicRouter(DefaultRouter):
             'path': base_path,
             'viewset': viewset
         }
+
+        # Make sure the resource name isn't registered, either
+        # TODO: Think of a better way to clean this up, there's a lot of
+        # duplicated effort here, between `resource_name` and `resource_key`
+        # This resource name -> key mapping is currently only used by
+        # the DynamicGenericRelationField
+        if resource_name in resource_name_map:
+            resource_key = resource_name_map[resource_name]
+            raise Exception(
+                "The resource name '%s' has already been mapped to '%s'."
+                " A resource name can only be used once." % (
+                    resource_name,
+                    resource_map[resource_key]['path']
+                )
+            )
+
+        # map the resource name to the resource key for easier lookup
         resource_name_map[resource_name] = resource_key
 
     @staticmethod
