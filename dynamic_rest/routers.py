@@ -11,6 +11,7 @@ from dynamic_rest.meta import get_model_table
 
 directory = {}
 resource_map = {}
+resource_name_map = {}
 
 
 def get_directory(request):
@@ -145,7 +146,8 @@ class DynamicRouter(DefaultRouter):
         try:
             serializer = viewset.serializer_class()
             resource_key = serializer.get_resource_key()
-            resource_name = serializer.get_plural_name()
+            resource_name = serializer.get_name()
+            path_name = serializer.get_plural_name()
         except:
             import traceback
             traceback.print_exc()
@@ -160,7 +162,7 @@ class DynamicRouter(DefaultRouter):
         if namespace:
             namespace = namespace.rstrip('/') + '/'
         base_path = namespace or ''
-        base_path = r'%s' % base_path + resource_name
+        base_path = r'%s' % base_path + path_name
         self.register(base_path, viewset)
 
         # Make sure resource isn't already registered.
@@ -179,6 +181,24 @@ class DynamicRouter(DefaultRouter):
             'path': base_path,
             'viewset': viewset
         }
+
+        # Make sure the resource name isn't registered, either
+        # TODO: Think of a better way to clean this up, there's a lot of
+        # duplicated effort here, between `resource_name` and `resource_key`
+        # This resource name -> key mapping is currently only used by
+        # the DynamicGenericRelationField
+        if resource_name in resource_name_map:
+            resource_key = resource_name_map[resource_name]
+            raise Exception(
+                "The resource name '%s' has already been mapped to '%s'."
+                " A resource name can only be used once." % (
+                    resource_name,
+                    resource_map[resource_key]['path']
+                )
+            )
+
+        # map the resource name to the resource key for easier lookup
+        resource_name_map[resource_name] = resource_key
 
     @staticmethod
     def get_canonical_path(resource_key, pk=None):
@@ -203,7 +223,12 @@ class DynamicRouter(DefaultRouter):
             return base_path
 
     @staticmethod
-    def get_canonical_serializer(resource_key, model=None, instance=None):
+    def get_canonical_serializer(
+        resource_key,
+        model=None,
+        instance=None,
+        resource_name=None
+    ):
         """
         Return canonical serializer for a given resource name.
 
@@ -219,6 +244,8 @@ class DynamicRouter(DefaultRouter):
             resource_key = get_model_table(model)
         elif instance:
             resource_key = instance._meta.db_table
+        elif resource_name:
+            resource_key = resource_name_map[resource_name]
 
         if resource_key not in resource_map:
             return None

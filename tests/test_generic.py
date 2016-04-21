@@ -126,3 +126,29 @@ class TestGenericRelationFieldAPI(APITestCase):
         )
         response = self.client.get(url)
         self.assertEqual(400, response.status_code)
+
+    def test_patch_resource(self):
+        """
+        Test that patching a content-type field updates the underlying
+        relationship
+        """
+        user = self.fixture.users[0]
+
+        url = '/users/%s/?include[]=favorite_pet.' % user.pk
+        response = self.client.patch(
+            url,
+            json.dumps({
+                'id': user.id,
+                'favorite_pet': {
+                    'type': 'dog',
+                    'id': 1
+                }
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(200, response.status_code)
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertTrue('user' in content)
+        self.assertFalse('cats' in content)
+        self.assertTrue('dogs' in content)
+        self.assertEqual(1, content['dogs'][0]['id'])

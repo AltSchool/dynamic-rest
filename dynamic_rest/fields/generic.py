@@ -22,7 +22,6 @@ class DynamicGenericRelationField(
 
         super(DynamicGenericRelationField, self).__init__(*args, **kwargs)
         self.embed = embed
-        self.read_only = True
 
     def bind(self, field_name, parent):
         super(DynamicGenericRelationField, self).bind(field_name, parent)
@@ -84,7 +83,7 @@ class DynamicGenericRelationField(
             # We want the pk to be represented as an object with type,
             # rather than just the ID.
             pk_value = self.get_pk_object(
-                serializer_class().get_plural_name(),
+                serializer_class.get_name(),
                 instance.pk
             )
             if self.id_only():
@@ -112,3 +111,17 @@ class DynamicGenericRelationField(
             # TODO: Remove once we have more confidence.
             traceback.print_exc()
             return None
+
+    def to_internal_value(self, data):
+        model_name = data.get('type', None)
+        model_id = data.get('id', None)
+        if model_name and model_id:
+            serializer_class = DynamicRouter.get_canonical_serializer(
+                resource_key=None,
+                resource_name=model_name
+            )
+            if serializer_class:
+                model = serializer_class.get_model()
+                return model.objects.get(id=model_id) if model else None
+
+        return None
