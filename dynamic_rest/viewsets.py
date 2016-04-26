@@ -338,6 +338,61 @@ class WithDynamicViewSetMixin(object):
 class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
 
     ENABLE_BULK_PARTIAL_CREATION = settings.ENABLE_BULK_PARTIAL_CREATION
+    ENABLE_BULK_UPDATE = settings.ENABLE_BULK_UPDATE
+
+    def get_object(self):
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+
+        if lookup_url_kwarg in self.kwargs:
+            return super(DynamicModelViewSet, self).get_object()
+
+        # If the lookup_url_kwarg is not present
+        # get_object() is most likely called as part of options()
+        # which by default simply checks for object permissions
+        # and raises permission denied if necessary.
+        # Here we don't need to check for general permissions
+        # and can simply return None since general permissions
+        # are checked in initial() which always gets executed
+        # before any of the API actions (e.g. create, update, etc)
+        return
+
+    def update(self, request, *args, **kwargs):
+        '''
+        Either update  a single or many model instances.
+
+        Examples:
+
+        PATCH /dogs/1/
+        {
+            'fur': 'white'
+        }
+
+        PATCH /dogs/
+        [
+            {'id': 1, 'fur': 'white'},
+            {'id': 2, 'fur': 'black'},
+            {'id': 3, 'fur': 'yellow'}
+        ]
+
+        PATCH /dogs/?filter{fur.contains}=brown
+        [
+            {'fur': 'grey'}
+        ]
+        '''
+        if isinstance(request.data, list) and self.ENABLE_BULK_UPDATE:
+            partial = kwargs.pop('partial', False)
+            # Restrict the update to the filtered queryset.
+            serializer = self.get_serializer(
+                self.filter_queryset(self.get_queryset()),
+                data=request.data,
+                many=True,
+                partial=partial
+            )
+            serializer.is_valid(raise_exception=True)
+            self.perform_update(serializer)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return super(DynamicModelViewSet, self).update(request, *args,
+                                                       **kwargs)
 
     def _create_many(self, data):
         items = []

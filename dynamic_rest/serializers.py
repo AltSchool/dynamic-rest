@@ -2,6 +2,7 @@
 import copy
 
 import inflection
+import inspect
 from django.db import models
 from django.utils import six
 from django.utils.functional import cached_property
@@ -35,6 +36,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     the child serializer and performs post-processing before
     returning the data.
     """
+
+    update_lookup_field = 'id'
+
     def __init__(self, *args, **kwargs):
         super(DynamicListSerializer, self).__init__(*args, **kwargs)
         self.child.parent = self
@@ -75,6 +79,49 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
             else:
                 self._sideloaded_data = ReturnList(data, serializer=self)
         return self._sideloaded_data
+
+    def update(self, queryset, validated_data):
+        lookup_attr = getattr(self.child.Meta, 'update_lookup_field', 'id')
+
+        lookup_objects = {}
+        all_objects_update = {}
+        for entry in validated_data:
+            lookup_key = entry.pop(lookup_attr)
+            if lookup_key is not fields.empty:
+                lookup_objects[lookup_key] = entry
+            else:
+                all_objects_update.update(entry)
+
+        lookup_keys = lookup_objects.keys()
+
+        if not all((bool(_) and not inspect.isclass(_) for _ in lookup_keys)):
+            raise exceptions.ValidationError('Invalid lookup key value')
+
+        # Since this method is given a queryset which can have many
+        # model instances, first find all objects to update
+        # and only then update the models.
+        objects_to_update = queryset.filter(
+            **{'{}__in'.format(lookup_attr): lookup_keys}
+        )
+
+        if len(lookup_keys) != objects_to_update.count():
+            raise exceptions.ValidationError(
+                'Could not find all objects to update: {} != {}'
+                .format(len(lookup_keys), objects_to_update.count())
+            )
+
+        updated_objects = []
+        for object_to_update in objects_to_update:
+            lookup_key = getattr(object_to_update, lookup_attr)
+            data = lookup_objects.get(lookup_key)
+            # Use model serializer to actually update the model
+            # in case that method is overwritten.
+            updated_objects.append(self.child.update(object_to_update, data))
+
+        if all_objects_update:
+            queryset.update(**all_objects_update)
+
+        return updated_objects
 
 
 class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
@@ -406,6 +453,26 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             instance=instance,
             embed=self.embed
         )
+
+    def to_internal_value(self, data):
+        value = super(WithDynamicSerializerMixin, self).to_internal_value(data)
+        id_attr = getattr(self.Meta, 'update_lookup_field', 'id')
+        request_method = getattr(
+            getattr(self.context.get('view'), 'request'),
+            'method',
+            ''
+        )
+
+        # Add update_lookup_field field back to validated data
+        # since super by default strips out read-only fields
+        # hence id will no longer be present in validated_data.
+        if all((isinstance(self.root, DynamicListSerializer),
+                id_attr, request_method in ('PUT', 'PATCH'))):
+            id_field = self.fields[id_attr]
+            id_value = id_field.get_value(data)
+            value[id_attr] = id_value
+
+        return value
 
     def save(self, *args, **kwargs):
         """Serializer save that address prefetch issues."""
