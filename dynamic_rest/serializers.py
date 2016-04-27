@@ -222,10 +222,8 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         if not self.dynamic:
             return
 
-        if (
-            isinstance(self.request_fields, dict)
-            and self.request_fields.pop('*', None) is False
-        ):
+        if (isinstance(self.request_fields, dict) and
+                self.request_fields.pop('*', None) is False):
             exclude_fields = '*'
 
         only_fields = set(only_fields or [])
@@ -362,17 +360,17 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             all_fields = self.get_all_fields()
             self._link_fields = {
                 name: field for name, field in six.iteritems(all_fields)
-                if isinstance(field, DynamicRelationField)
-                and getattr(field, 'link', True)
-                and not (
+                if isinstance(field, DynamicRelationField) and
+                getattr(field, 'link', True) and
+                not (
                     # Skip sideloaded fields
-                    name in self.fields
-                    and not field.serializer.id_only()
+                    name in self.fields and
+                    not field.serializer.id_only()
                 ) and not (
                     # Skip included single relations
                     # TODO: Use links, when we can generate canonical URLs
-                    name in self.fields
-                    and not getattr(field.serializer, 'many', False)
+                    name in self.fields and
+                    not getattr(field.serializer, 'many', False)
                 )
             }
 
