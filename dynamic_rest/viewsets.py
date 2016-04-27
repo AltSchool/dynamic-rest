@@ -358,7 +358,8 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         '''
-        Either update  a single or many model instances.
+        Either update  a single or many model instances. Use list to indicate
+        bulk update.
 
         Examples:
 
