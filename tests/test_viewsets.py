@@ -2,9 +2,10 @@ import json
 
 from django.test import TestCase
 from django.test.client import RequestFactory
-from dynamic_rest.filters import DynamicFilterBackend, FilterNode
 from rest_framework import exceptions, status
 from rest_framework.request import Request
+
+from dynamic_rest.filters import DynamicFilterBackend, FilterNode
 from tests.models import Dog, Group
 from tests.serializers import GroupSerializer
 from tests.setup import create_fixture
