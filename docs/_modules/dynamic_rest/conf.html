@@ -152,6 +152,9 @@
     <span class="c1"># ENABLE_BULK_PARTIAL_CREATION: enable/disable partial creation in bulk</span>
     <span class="s1">&#39;ENABLE_BULK_PARTIAL_CREATION&#39;</span><span class="p">:</span> <span class="bp">False</span><span class="p">,</span>
 
+    <span class="c1"># ENABLE_BULK_UPDATE: enable/disable update in bulk</span>
+    <span class="s1">&#39;ENABLE_BULK_UPDATE&#39;</span><span class="p">:</span> <span class="bp">True</span><span class="p">,</span>
+
     <span class="c1"># MAX_PAGE_SIZE: global setting for max page size.</span>
     <span class="c1"># Can be overriden at the viewset level.</span>
     <span class="s1">&#39;MAX_PAGE_SIZE&#39;</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
@@ -166,7 +169,11 @@
 
     <span class="c1"># PAGE_SIZE_QUERY_PARAM: global setting for the page size query parameter.</span>
     <span class="c1"># Can be overriden at the viewset level.</span>
-    <span class="s1">&#39;PAGE_SIZE_QUERY_PARAM&#39;</span><span class="p">:</span> <span class="s1">&#39;per_page&#39;</span>
+    <span class="s1">&#39;PAGE_SIZE_QUERY_PARAM&#39;</span><span class="p">:</span> <span class="s1">&#39;per_page&#39;</span><span class="p">,</span>
+
+    <span class="c1"># ADDITIONAL_PRIMARY_RESOURCE_PREFIX: String to prefix additional</span>
+    <span class="c1"># instances of the primary resource when sideloading.</span>
+    <span class="s1">&#39;ADDITIONAL_PRIMARY_RESOURCE_PREFIX&#39;</span><span class="p">:</span> <span class="s1">&#39;+&#39;</span>
 <span class="p">}</span>
 
 

@@ -89,18 +89,18 @@
 <li class="toctree-l2"><a class="reference internal" href="#module-dynamic_rest.conf">dynamic_rest.conf module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-dynamic_rest.constants">dynamic_rest.constants module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-dynamic_rest.datastructures">dynamic_rest.datastructures module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-dynamic_rest.fields">dynamic_rest.fields module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-dynamic_rest.filters">dynamic_rest.filters module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dynamic-rest-fields-module">dynamic_rest.fields module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dynamic-rest-filters-module">dynamic_rest.filters module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-dynamic_rest.links">dynamic_rest.links module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-dynamic_rest.meta">dynamic_rest.meta module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-dynamic_rest.metadata">dynamic_rest.metadata module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dynamic-rest-metadata-module">dynamic_rest.metadata module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-dynamic_rest.pagination">dynamic_rest.pagination module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-dynamic_rest.patches">dynamic_rest.patches module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-dynamic_rest.processors">dynamic_rest.processors module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-dynamic_rest.related">dynamic_rest.related module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-dynamic_rest.renderers">dynamic_rest.renderers module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#dynamic-rest-routers-module">dynamic_rest.routers module</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#module-dynamic_rest.serializers">dynamic_rest.serializers module</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dynamic-rest-serializers-module">dynamic_rest.serializers module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-dynamic_rest.tagged">dynamic_rest.tagged module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#dynamic-rest-viewsets-module">dynamic_rest.viewsets module</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#module-dynamic_rest">Module contents</a></li>
@@ -238,256 +238,11 @@ to replace the value.</li>
 </dd></dl>
 
 </div>
-<div class="section" id="module-dynamic_rest.fields">
-<span id="dynamic-rest-fields-module"></span><h2>dynamic_rest.fields module<a class="headerlink" href="#module-dynamic_rest.fields" title="Permalink to this headline">¶</a></h2>
-<p>This module contains custom field classes.</p>
-<dl class="class">
-<dt id="dynamic_rest.fields.CountField">
-<em class="property">class </em><code class="descclassname">dynamic_rest.fields.</code><code class="descname">CountField</code><span class="sig-paren">(</span><em>serializer_source</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/fields.html#CountField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.fields.CountField" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#dynamic_rest.fields.DynamicComputedField" title="dynamic_rest.fields.DynamicComputedField"><code class="xref py py-class docutils literal"><span class="pre">dynamic_rest.fields.DynamicComputedField</span></code></a></p>
-<p>Computed field that counts the number of elements in another field.</p>
-<dl class="method">
-<dt id="dynamic_rest.fields.CountField.get_attribute">
-<code class="descname">get_attribute</code><span class="sig-paren">(</span><em>obj</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamic_rest.fields.CountField.get_attribute" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="dynamic_rest.fields.DynamicComputedField">
-<em class="property">class </em><code class="descclassname">dynamic_rest.fields.</code><code class="descname">DynamicComputedField</code><span class="sig-paren">(</span><em>requires=None</em>, <em>deferred=False</em>, <em>field_type=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/fields.html#DynamicComputedField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.fields.DynamicComputedField" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#dynamic_rest.fields.DynamicField" title="dynamic_rest.fields.DynamicField"><code class="xref py py-class docutils literal"><span class="pre">dynamic_rest.fields.DynamicField</span></code></a></p>
-</dd></dl>
-
-<dl class="class">
-<dt id="dynamic_rest.fields.DynamicField">
-<em class="property">class </em><code class="descclassname">dynamic_rest.fields.</code><code class="descname">DynamicField</code><span class="sig-paren">(</span><em>requires=None</em>, <em>deferred=False</em>, <em>field_type=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/fields.html#DynamicField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.fields.DynamicField" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">rest_framework.fields.Field</span></code></p>
-<p>Generic field base to capture additional custom field attributes.</p>
-<dl class="method">
-<dt id="dynamic_rest.fields.DynamicField.to_internal_value">
-<code class="descname">to_internal_value</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamic_rest.fields.DynamicField.to_internal_value" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.fields.DynamicField.to_representation">
-<code class="descname">to_representation</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamic_rest.fields.DynamicField.to_representation" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="dynamic_rest.fields.DynamicMethodField">
-<em class="property">class </em><code class="descclassname">dynamic_rest.fields.</code><code class="descname">DynamicMethodField</code><span class="sig-paren">(</span><em>method_name=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/fields.html#DynamicMethodField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.fields.DynamicMethodField" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">rest_framework.fields.SerializerMethodField</span></code>, <a class="reference internal" href="#dynamic_rest.fields.DynamicField" title="dynamic_rest.fields.DynamicField"><code class="xref py py-class docutils literal"><span class="pre">dynamic_rest.fields.DynamicField</span></code></a></p>
-</dd></dl>
-
-<dl class="class">
-<dt id="dynamic_rest.fields.DynamicRelationField">
-<em class="property">class </em><code class="descclassname">dynamic_rest.fields.</code><code class="descname">DynamicRelationField</code><span class="sig-paren">(</span><em>serializer_class</em>, <em>many=False</em>, <em>queryset=None</em>, <em>embed=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/fields.html#DynamicRelationField"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.fields.DynamicRelationField" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#dynamic_rest.fields.DynamicField" title="dynamic_rest.fields.DynamicField"><code class="xref py py-class docutils literal"><span class="pre">dynamic_rest.fields.DynamicField</span></code></a></p>
-<p>Field proxy for a nested serializer.</p>
-<p>Supports passing in the child serializer as a class or string,
-and resolves to the class after binding to the parent serializer.</p>
-<p>Will proxy certain arguments to the child serializer.</p>
-<dl class="attribute">
-<dt id="dynamic_rest.fields.DynamicRelationField.SERIALIZER_KWARGS">
-<code class="descname">SERIALIZER_KWARGS</code><a class="headerlink" href="#dynamic_rest.fields.DynamicRelationField.SERIALIZER_KWARGS" title="Permalink to this definition">¶</a></dt>
-<dd><p>list of arguments that are passed
-to the child serializer.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">SERIALIZER_KWARGS</code><em class="property"> = set(['many', 'source'])</em></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.fields.DynamicRelationField.bind">
-<code class="descname">bind</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamic_rest.fields.DynamicRelationField.bind" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bind to the parent serializer.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.fields.DynamicRelationField.get_attribute">
-<code class="descname">get_attribute</code><span class="sig-paren">(</span><em>instance</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamic_rest.fields.DynamicRelationField.get_attribute" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.fields.DynamicRelationField.get_model">
-<code class="descname">get_model</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dynamic_rest.fields.DynamicRelationField.get_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the child serializer&#8217;s model.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.fields.DynamicRelationField.get_serializer">
-<code class="descname">get_serializer</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamic_rest.fields.DynamicRelationField.get_serializer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get an instance of the child serializer.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="dynamic_rest.fields.DynamicRelationField.root_serializer">
-<code class="descname">root_serializer</code><a class="headerlink" href="#dynamic_rest.fields.DynamicRelationField.root_serializer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the root serializer (serializer for the primary resource).</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="dynamic_rest.fields.DynamicRelationField.serializer">
-<code class="descname">serializer</code><a class="headerlink" href="#dynamic_rest.fields.DynamicRelationField.serializer" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt id="dynamic_rest.fields.DynamicRelationField.serializer_class">
-<code class="descname">serializer_class</code><a class="headerlink" href="#dynamic_rest.fields.DynamicRelationField.serializer_class" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the class of the child serializer.</p>
-<p>Resolves string imports.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.fields.DynamicRelationField.to_internal_value">
-<code class="descname">to_internal_value</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamic_rest.fields.DynamicRelationField.to_internal_value" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the underlying object(s), given the serialized form.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.fields.DynamicRelationField.to_internal_value_single">
-<code class="descname">to_internal_value_single</code><span class="sig-paren">(</span><em>data</em>, <em>serializer</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamic_rest.fields.DynamicRelationField.to_internal_value_single" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return the underlying object, given the serialized form.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.fields.DynamicRelationField.to_representation">
-<code class="descname">to_representation</code><span class="sig-paren">(</span><em>instance</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamic_rest.fields.DynamicRelationField.to_representation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Represent the relationship, either as an ID or object.</p>
-</dd></dl>
-
-</dd></dl>
-
+<div class="section" id="dynamic-rest-fields-module">
+<h2>dynamic_rest.fields module<a class="headerlink" href="#dynamic-rest-fields-module" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="module-dynamic_rest.filters">
-<span id="dynamic-rest-filters-module"></span><h2>dynamic_rest.filters module<a class="headerlink" href="#module-dynamic_rest.filters" title="Permalink to this headline">¶</a></h2>
-<p>This module contains custom filter backends.</p>
-<dl class="class">
-<dt id="dynamic_rest.filters.DynamicFilterBackend">
-<em class="property">class </em><code class="descclassname">dynamic_rest.filters.</code><code class="descname">DynamicFilterBackend</code><a class="reference internal" href="_modules/dynamic_rest/filters.html#DynamicFilterBackend"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.filters.DynamicFilterBackend" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">rest_framework.filters.BaseFilterBackend</span></code></p>
-<p>A DRF filter backend that construct DREST querysets.</p>
-<p>This backend is responsible for interpretting and applying
-filters, includes, and excludes to the base queryset of a view.</p>
-<dl class="attribute">
-<dt id="dynamic_rest.filters.DynamicFilterBackend.VALID_FILTER_OPERATORS">
-<code class="descname">VALID_FILTER_OPERATORS</code><a class="headerlink" href="#dynamic_rest.filters.DynamicFilterBackend.VALID_FILTER_OPERATORS" title="Permalink to this definition">¶</a></dt>
-<dd><p>A list of filter operators.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="dynamic_rest.filters.DynamicFilterBackend.FALSEY_STRINGS">
-<code class="descname">FALSEY_STRINGS</code><a class="headerlink" href="#dynamic_rest.filters.DynamicFilterBackend.FALSEY_STRINGS" title="Permalink to this definition">¶</a></dt>
-<dd><p>A list of strings that are interpretted as
-False by the isnull operator.</p>
-</dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">FALSEY_STRINGS</code><em class="property"> = ('0', 'false', '')</em></dt>
-<dd></dd></dl>
-
-<dl class="attribute">
-<dt>
-<code class="descname">VALID_FILTER_OPERATORS</code><em class="property"> = ('in', 'any', 'all', 'icontains', 'contains', 'startswith', 'istartswith', 'endswith', 'iendswith', 'year', 'month', 'day', 'week_day', 'regex', 'range', 'gt', 'lt', 'gte', 'lte', 'isnull', 'eq', None)</em></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.filters.DynamicFilterBackend.filter_queryset">
-<code class="descname">filter_queryset</code><span class="sig-paren">(</span><em>request</em>, <em>queryset</em>, <em>view</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/filters.html#DynamicFilterBackend.filter_queryset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.filters.DynamicFilterBackend.filter_queryset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Filter the queryset.</p>
-<p>This is the main entry-point to this class, and
-is called by DRF&#8217;s list handler.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="dynamic_rest.filters.DynamicSortingFilter">
-<em class="property">class </em><code class="descclassname">dynamic_rest.filters.</code><code class="descname">DynamicSortingFilter</code><a class="reference internal" href="_modules/dynamic_rest/filters.html#DynamicSortingFilter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.filters.DynamicSortingFilter" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">rest_framework.filters.OrderingFilter</span></code></p>
-<p>Subclass of DRF&#8217;s OrderingFilter.</p>
-<p>This class adds support for multi-field ordering and rewritten fields.</p>
-<dl class="method">
-<dt id="dynamic_rest.filters.DynamicSortingFilter.filter_queryset">
-<code class="descname">filter_queryset</code><span class="sig-paren">(</span><em>request</em>, <em>queryset</em>, <em>view</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/filters.html#DynamicSortingFilter.filter_queryset"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.filters.DynamicSortingFilter.filter_queryset" title="Permalink to this definition">¶</a></dt>
-<dd><p>&#8220;Filter the queryset, applying the ordering.</p>
-<p>The <cite>ordering_param</cite> can be overwritten here.
-In DRF, the ordering_param is &#8216;ordering&#8217;, but we support changing it
-to allow the viewset to control the parameter.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.filters.DynamicSortingFilter.get_ordering">
-<code class="descname">get_ordering</code><span class="sig-paren">(</span><em>request</em>, <em>queryset</em>, <em>view</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/filters.html#DynamicSortingFilter.get_ordering"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.filters.DynamicSortingFilter.get_ordering" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return an ordering for a given request.</p>
-<p>DRF expects a comma separated list, while DREST expects an array.
-This method overwrites the DRF default so it can parse the array.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.filters.DynamicSortingFilter.get_valid_fields">
-<code class="descname">get_valid_fields</code><span class="sig-paren">(</span><em>queryset</em>, <em>view</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/filters.html#DynamicSortingFilter.get_valid_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.filters.DynamicSortingFilter.get_valid_fields" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return valid fields for ordering.</p>
-<p>Overwrites DRF&#8217;s get_valid_fields method so that valid_fields returns
-serializer fields, not model fields.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.filters.DynamicSortingFilter.remove_invalid_fields">
-<code class="descname">remove_invalid_fields</code><span class="sig-paren">(</span><em>queryset</em>, <em>fields</em>, <em>view</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/filters.html#DynamicSortingFilter.remove_invalid_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.filters.DynamicSortingFilter.remove_invalid_fields" title="Permalink to this definition">¶</a></dt>
-<dd><p>Remove invalid fields from an ordering.</p>
-<p>Overwrites the DRF default remove_invalid_fields method to return
-both the valid orderings and any invalid orderings.</p>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="dynamic_rest.filters.FilterNode">
-<em class="property">class </em><code class="descclassname">dynamic_rest.filters.</code><code class="descname">FilterNode</code><span class="sig-paren">(</span><em>field</em>, <em>operator</em>, <em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/filters.html#FilterNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.filters.FilterNode" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<dl class="method">
-<dt id="dynamic_rest.filters.FilterNode.generate_query_key">
-<code class="descname">generate_query_key</code><span class="sig-paren">(</span><em>serializer</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamic_rest.filters.FilterNode.generate_query_key" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the key that can be passed to Django&#8217;s filter method.</p>
-<p>To account for serialier field name rewrites, this method
-translates serializer field names to model field names
-by inspecting <cite>serializer</cite>.</p>
-<p>For example, a query like <cite>filter{users.events}</cite> would be
-returned as <cite>users__events</cite>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>serializer</strong> &#8211; A DRF serializer</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A filter key.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="attribute">
-<dt id="dynamic_rest.filters.FilterNode.key">
-<code class="descname">key</code><a class="headerlink" href="#dynamic_rest.filters.FilterNode.key" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="function">
-<dt id="dynamic_rest.filters.has_joins">
-<code class="descclassname">dynamic_rest.filters.</code><code class="descname">has_joins</code><span class="sig-paren">(</span><em>queryset</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/filters.html#has_joins"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.filters.has_joins" title="Permalink to this definition">¶</a></dt>
-<dd><p>Return True iff. a queryset includes joins.</p>
-<p>If this is the case, it is possible for the queryset
-to return duplicate results.</p>
-</dd></dl>
-
+<div class="section" id="dynamic-rest-filters-module">
+<h2>dynamic_rest.filters module<a class="headerlink" href="#dynamic-rest-filters-module" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="module-dynamic_rest.links">
 <span id="dynamic-rest-links-module"></span><h2>dynamic_rest.links module<a class="headerlink" href="#module-dynamic_rest.links" title="Permalink to this headline">¶</a></h2>
@@ -527,6 +282,11 @@ None otherwise.</p>
 </tbody>
 </table>
 </dd></dl>
+
+<dl class="function">
+<dt id="dynamic_rest.meta.get_model_table">
+<code class="descclassname">dynamic_rest.meta.</code><code class="descname">get_model_table</code><span class="sig-paren">(</span><em>model</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/meta.html#get_model_table"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.meta.get_model_table" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="function">
 <dt id="dynamic_rest.meta.is_field_remote">
@@ -573,35 +333,8 @@ many-to-many relationship.</p>
 </dd></dl>
 
 </div>
-<div class="section" id="module-dynamic_rest.metadata">
-<span id="dynamic-rest-metadata-module"></span><h2>dynamic_rest.metadata module<a class="headerlink" href="#module-dynamic_rest.metadata" title="Permalink to this headline">¶</a></h2>
-<p>This module contains custom DRF metadata classes.</p>
-<dl class="class">
-<dt id="dynamic_rest.metadata.DynamicMetadata">
-<em class="property">class </em><code class="descclassname">dynamic_rest.metadata.</code><code class="descname">DynamicMetadata</code><a class="reference internal" href="_modules/dynamic_rest/metadata.html#DynamicMetadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.metadata.DynamicMetadata" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">rest_framework.metadata.SimpleMetadata</span></code></p>
-<p>A subclass of SimpleMetadata.</p>
-<p>Adds <cite>properties</cite> and <cite>features</cite> to the metdata.</p>
-<dl class="method">
-<dt id="dynamic_rest.metadata.DynamicMetadata.determine_actions">
-<code class="descname">determine_actions</code><span class="sig-paren">(</span><em>request</em>, <em>view</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/metadata.html#DynamicMetadata.determine_actions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.metadata.DynamicMetadata.determine_actions" title="Permalink to this definition">¶</a></dt>
-<dd><p>Prevent displaying action-specific details.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.metadata.DynamicMetadata.determine_metadata">
-<code class="descname">determine_metadata</code><span class="sig-paren">(</span><em>request</em>, <em>view</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/metadata.html#DynamicMetadata.determine_metadata"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.metadata.DynamicMetadata.determine_metadata" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds <cite>properties</cite> and <cite>features</cite> to the metadata response.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.metadata.DynamicMetadata.get_field_info">
-<code class="descname">get_field_info</code><span class="sig-paren">(</span><em>field</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/metadata.html#DynamicMetadata.get_field_info"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.metadata.DynamicMetadata.get_field_info" title="Permalink to this definition">¶</a></dt>
-<dd><p>Adds <cite>related_to</cite> and <cite>nullable</cite> to the metadata response.</p>
-</dd></dl>
-
-</dd></dl>
-
+<div class="section" id="dynamic-rest-metadata-module">
+<h2>dynamic_rest.metadata module<a class="headerlink" href="#dynamic-rest-metadata-module" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="module-dynamic_rest.pagination">
 <span id="dynamic-rest-pagination-module"></span><h2>dynamic_rest.pagination module<a class="headerlink" href="#module-dynamic_rest.pagination" title="Permalink to this headline">¶</a></h2>
@@ -688,6 +421,11 @@ typically smaller than their nested equivalent.</p>
 </table>
 </dd></dl>
 
+<dl class="attribute">
+<dt id="dynamic_rest.processors.SideloadingProcessor.prefix">
+<code class="descname">prefix</code><em class="property"> = '+'</em><a class="headerlink" href="#dynamic_rest.processors.SideloadingProcessor.prefix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
 <dl class="method">
 <dt id="dynamic_rest.processors.SideloadingProcessor.process">
 <code class="descname">process</code><span class="sig-paren">(</span><em>obj</em>, <em>parent=None</em>, <em>parent_key=None</em>, <em>depth=0</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/processors.html#SideloadingProcessor.process"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.processors.SideloadingProcessor.process" title="Permalink to this definition">¶</a></dt>
@@ -721,210 +459,8 @@ typically smaller than their nested equivalent.</p>
 <div class="section" id="dynamic-rest-routers-module">
 <h2>dynamic_rest.routers module<a class="headerlink" href="#dynamic-rest-routers-module" title="Permalink to this headline">¶</a></h2>
 </div>
-<div class="section" id="module-dynamic_rest.serializers">
-<span id="dynamic-rest-serializers-module"></span><h2>dynamic_rest.serializers module<a class="headerlink" href="#module-dynamic_rest.serializers" title="Permalink to this headline">¶</a></h2>
-<p>This module contains custom serializer classes.</p>
-<dl class="class">
-<dt id="dynamic_rest.serializers.DynamicEphemeralSerializer">
-<em class="property">class </em><code class="descclassname">dynamic_rest.serializers.</code><code class="descname">DynamicEphemeralSerializer</code><span class="sig-paren">(</span><em>instance=None</em>, <em>data=&lt;class rest_framework.fields.empty&gt;</em>, <em>only_fields=None</em>, <em>include_fields=None</em>, <em>exclude_fields=None</em>, <em>request_fields=None</em>, <em>sideload=False</em>, <em>dynamic=True</em>, <em>embed=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#DynamicEphemeralSerializer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.DynamicEphemeralSerializer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#dynamic_rest.serializers.WithDynamicSerializerMixin" title="dynamic_rest.serializers.WithDynamicSerializerMixin"><code class="xref py py-class docutils literal"><span class="pre">dynamic_rest.serializers.WithDynamicSerializerMixin</span></code></a>, <code class="xref py py-class docutils literal"><span class="pre">rest_framework.serializers.Serializer</span></code></p>
-<p>DREST-compatible baseclass for non-model serializers.</p>
-<dl class="method">
-<dt id="dynamic_rest.serializers.DynamicEphemeralSerializer.to_representation">
-<code class="descname">to_representation</code><span class="sig-paren">(</span><em>instance</em><span class="sig-paren">)</span><a class="headerlink" href="#dynamic_rest.serializers.DynamicEphemeralSerializer.to_representation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Provides post processing. Sub-classes should implement their own
-to_representation method, but pass the resulting dict through
-this function to get tagging and field selection.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>instance</strong> &#8211; Serialized dict, or object. If object,
-it will be serialized by the super class&#8217;s
-to_representation() method.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="dynamic_rest.serializers.DynamicListSerializer">
-<em class="property">class </em><code class="descclassname">dynamic_rest.serializers.</code><code class="descname">DynamicListSerializer</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#DynamicListSerializer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.DynamicListSerializer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">rest_framework.serializers.ListSerializer</span></code></p>
-<p>Custom ListSerializer class.</p>
-<p>This implementation delegates DREST-specific methods to
-the child serializer and performs post-processing before
-returning the data.</p>
-<dl class="attribute">
-<dt id="dynamic_rest.serializers.DynamicListSerializer.data">
-<code class="descname">data</code><a class="headerlink" href="#dynamic_rest.serializers.DynamicListSerializer.data" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the data, after performing post-processing if necessary.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.serializers.DynamicListSerializer.get_model">
-<code class="descname">get_model</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#DynamicListSerializer.get_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.DynamicListSerializer.get_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the child&#8217;s model.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.serializers.DynamicListSerializer.get_name">
-<code class="descname">get_name</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#DynamicListSerializer.get_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.DynamicListSerializer.get_name" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the child&#8217;s name.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.serializers.DynamicListSerializer.get_plural_name">
-<code class="descname">get_plural_name</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#DynamicListSerializer.get_plural_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.DynamicListSerializer.get_plural_name" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the child&#8217;s plural name.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.serializers.DynamicListSerializer.id_only">
-<code class="descname">id_only</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#DynamicListSerializer.id_only"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.DynamicListSerializer.id_only" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the child&#8217;s rendering mode.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.serializers.DynamicListSerializer.to_representation">
-<code class="descname">to_representation</code><span class="sig-paren">(</span><em>data</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#DynamicListSerializer.to_representation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.DynamicListSerializer.to_representation" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="dynamic_rest.serializers.DynamicModelSerializer">
-<em class="property">class </em><code class="descclassname">dynamic_rest.serializers.</code><code class="descname">DynamicModelSerializer</code><span class="sig-paren">(</span><em>instance=None</em>, <em>data=&lt;class rest_framework.fields.empty&gt;</em>, <em>only_fields=None</em>, <em>include_fields=None</em>, <em>exclude_fields=None</em>, <em>request_fields=None</em>, <em>sideload=False</em>, <em>dynamic=True</em>, <em>embed=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#DynamicModelSerializer"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.DynamicModelSerializer" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#dynamic_rest.serializers.WithDynamicModelSerializerMixin" title="dynamic_rest.serializers.WithDynamicModelSerializerMixin"><code class="xref py py-class docutils literal"><span class="pre">dynamic_rest.serializers.WithDynamicModelSerializerMixin</span></code></a>, <code class="xref py py-class docutils literal"><span class="pre">rest_framework.serializers.ModelSerializer</span></code></p>
-<p>DREST-compatible model-based serializer.</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="dynamic_rest.serializers.EphemeralObject">
-<em class="property">class </em><code class="descclassname">dynamic_rest.serializers.</code><code class="descname">EphemeralObject</code><span class="sig-paren">(</span><em>values_dict</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#EphemeralObject"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.EphemeralObject" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal"><span class="pre">object</span></code></p>
-<p>Object that initializes attributes from a dict.</p>
-</dd></dl>
-
-<dl class="class">
-<dt id="dynamic_rest.serializers.WithDynamicModelSerializerMixin">
-<em class="property">class </em><code class="descclassname">dynamic_rest.serializers.</code><code class="descname">WithDynamicModelSerializerMixin</code><span class="sig-paren">(</span><em>instance=None</em>, <em>data=&lt;class rest_framework.fields.empty&gt;</em>, <em>only_fields=None</em>, <em>include_fields=None</em>, <em>exclude_fields=None</em>, <em>request_fields=None</em>, <em>sideload=False</em>, <em>dynamic=True</em>, <em>embed=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#WithDynamicModelSerializerMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicModelSerializerMixin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#dynamic_rest.serializers.WithDynamicSerializerMixin" title="dynamic_rest.serializers.WithDynamicSerializerMixin"><code class="xref py py-class docutils literal"><span class="pre">dynamic_rest.serializers.WithDynamicSerializerMixin</span></code></a></p>
-<p>Adds DREST serializer methods specific to model-based serializers.</p>
-<dl class="method">
-<dt id="dynamic_rest.serializers.WithDynamicModelSerializerMixin.get_id_fields">
-<code class="descname">get_id_fields</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicModelSerializerMixin.get_id_fields" title="Permalink to this definition">¶</a></dt>
-<dd><p>Called to return a list of fields consisting of, at minimum,
-the PK field name. The output of this method is used to
-construct a Prefetch object with a .only() queryset
-when this field is not being sideloaded but we need to
-return a list of IDs.</p>
-</dd></dl>
-
-<dl class="classmethod">
-<dt id="dynamic_rest.serializers.WithDynamicModelSerializerMixin.get_model">
-<em class="property">classmethod </em><code class="descname">get_model</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicModelSerializerMixin.get_model" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-</dd></dl>
-
-<dl class="class">
-<dt id="dynamic_rest.serializers.WithDynamicSerializerMixin">
-<em class="property">class </em><code class="descclassname">dynamic_rest.serializers.</code><code class="descname">WithDynamicSerializerMixin</code><span class="sig-paren">(</span><em>instance=None</em>, <em>data=&lt;class rest_framework.fields.empty&gt;</em>, <em>only_fields=None</em>, <em>include_fields=None</em>, <em>exclude_fields=None</em>, <em>request_fields=None</em>, <em>sideload=False</em>, <em>dynamic=True</em>, <em>embed=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#WithDynamicSerializerMixin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicSerializerMixin" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <a class="reference internal" href="#dynamic_rest.bases.DynamicSerializerBase" title="dynamic_rest.bases.DynamicSerializerBase"><code class="xref py py-class docutils literal"><span class="pre">dynamic_rest.bases.DynamicSerializerBase</span></code></a></p>
-<p>Base class for DREST serializers.</p>
-<p>This class provides support for dynamic field inclusions/exclusions.</p>
-<dl class="attribute">
-<dt id="dynamic_rest.serializers.WithDynamicSerializerMixin.data">
-<code class="descname">data</code><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicSerializerMixin.data" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.serializers.WithDynamicSerializerMixin.get_all_fields">
-<code class="descname">get_all_fields</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#WithDynamicSerializerMixin.get_all_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicSerializerMixin.get_all_fields" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the entire serializer field set.</p>
-<p>Does not respect dynamic field inclusions/exclusions.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.serializers.WithDynamicSerializerMixin.get_fields">
-<code class="descname">get_fields</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#WithDynamicSerializerMixin.get_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicSerializerMixin.get_fields" title="Permalink to this definition">¶</a></dt>
-<dd><p>Returns the serializer&#8217;s field set.</p>
-<p>If <cite>dynamic</cite> is True, respects field inclusions/exlcusions.
-Otherwise, reverts back to standard DRF behavior.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.serializers.WithDynamicSerializerMixin.get_link_fields">
-<code class="descname">get_link_fields</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#WithDynamicSerializerMixin.get_link_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicSerializerMixin.get_link_fields" title="Permalink to this definition">¶</a></dt>
-<dd><p>Construct dict of name:field for linkable fields.</p>
-</dd></dl>
-
-<dl class="classmethod">
-<dt id="dynamic_rest.serializers.WithDynamicSerializerMixin.get_model">
-<em class="property">classmethod </em><code class="descname">get_model</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#WithDynamicSerializerMixin.get_model"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicSerializerMixin.get_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the model, if the serializer has one.</p>
-<p>Model serializers should implement this method.</p>
-</dd></dl>
-
-<dl class="classmethod">
-<dt id="dynamic_rest.serializers.WithDynamicSerializerMixin.get_name">
-<em class="property">classmethod </em><code class="descname">get_name</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#WithDynamicSerializerMixin.get_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicSerializerMixin.get_name" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the serializer name.</p>
-<p>The name can be defined on the Meta class or will be generated
-automatically from the model name.</p>
-</dd></dl>
-
-<dl class="classmethod">
-<dt id="dynamic_rest.serializers.WithDynamicSerializerMixin.get_plural_name">
-<em class="property">classmethod </em><code class="descname">get_plural_name</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#WithDynamicSerializerMixin.get_plural_name"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicSerializerMixin.get_plural_name" title="Permalink to this definition">¶</a></dt>
-<dd><p>Get the serializer&#8217;s plural name.</p>
-<p>The plural name may be defined on the Meta class.
-If the plural name is not defined,
-the pluralized form of the name will be returned.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.serializers.WithDynamicSerializerMixin.id_only">
-<code class="descname">id_only</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#WithDynamicSerializerMixin.id_only"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicSerializerMixin.id_only" title="Permalink to this definition">¶</a></dt>
-<dd><p>Check whether the serializer should return an ID instead of an object.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if and only if <cite>request_fields</cite> is True.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.serializers.WithDynamicSerializerMixin.save">
-<code class="descname">save</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#WithDynamicSerializerMixin.save"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicSerializerMixin.save" title="Permalink to this definition">¶</a></dt>
-<dd><p>Serializer save that address prefetch issues.</p>
-</dd></dl>
-
-<dl class="method">
-<dt id="dynamic_rest.serializers.WithDynamicSerializerMixin.to_representation">
-<code class="descname">to_representation</code><span class="sig-paren">(</span><em>instance</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/dynamic_rest/serializers.html#WithDynamicSerializerMixin.to_representation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#dynamic_rest.serializers.WithDynamicSerializerMixin.to_representation" title="Permalink to this definition">¶</a></dt>
-<dd><p>Modified to_representation method.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>instance</strong> &#8211; A model instance or data object.</td>
-</tr>
-<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Instance ID if the serializer is meant to represent its ID.
-Otherwise, a tagged data dict representation.</td>
-</tr>
-</tbody>
-</table>
-</dd></dl>
-
-</dd></dl>
-
+<div class="section" id="dynamic-rest-serializers-module">
+<h2>dynamic_rest.serializers module<a class="headerlink" href="#dynamic-rest-serializers-module" title="Permalink to this headline">¶</a></h2>
 </div>
 <div class="section" id="module-dynamic_rest.tagged">
 <span id="dynamic-rest-tagged-module"></span><h2>dynamic_rest.tagged module<a class="headerlink" href="#module-dynamic_rest.tagged" title="Permalink to this headline">¶</a></h2>
