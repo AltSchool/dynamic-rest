@@ -39,6 +39,7 @@ class DynamicField(fields.Field):
         self.requires = requires
         self.deferred = deferred
         self.field_type = field_type
+        self.kwargs = kwargs
         super(DynamicField, self).__init__(**kwargs)
 
     def to_representation(self, value):
@@ -46,6 +47,18 @@ class DynamicField(fields.Field):
 
     def to_internal_value(self, data):
         return data
+
+    def bind(self, *args, **kwargs):
+        super(DynamicField, self).bind(*args, **kwargs)
+
+        # Infer read_only from parent Meta.read_only_fields
+        if 'read_only' not in self.kwargs:
+            parent_ro_fields = getattr(
+                self.parent.Meta,
+                'read_only_fields',
+                []
+            )
+            self.read_only = self.field_name in parent_ro_fields
 
 
 class DynamicComputedField(DynamicField):
@@ -90,12 +103,11 @@ class DynamicRelationField(DynamicField):
             embed: If True, always embed related object(s). Will not sideload,
                 and will include the full object unless specifically excluded.
         """
-        self.kwargs = kwargs
         self._serializer_class = serializer_class
         self.bound = False
         self.queryset = queryset
         self.embed = embed
-        if '.' in self.kwargs.get('source', ''):
+        if '.' in kwargs.get('source', ''):
             raise Exception('Nested relationships are not supported')
         if 'link' in kwargs:
             self.link = kwargs.pop('link')
@@ -122,6 +134,7 @@ class DynamicRelationField(DynamicField):
             # related_name
             model_field = None
 
+        # Infer `required` and `allow_null`
         if 'required' not in self.kwargs and (
                 remote or (
                     model_field and (
