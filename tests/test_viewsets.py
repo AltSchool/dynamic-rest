@@ -162,7 +162,7 @@ class BulkUpdateTestCase(TestCase):
         self.rf = RequestFactory()
         self.view = DogViewSet.as_view({'patch': 'partial_update'})
 
-    def test_bulk_update(self):
+    def test_bulk_update_default_style(self):
         '''
         Test that PATCH request partially updates all submitted resources.
         '''
@@ -179,6 +179,17 @@ class BulkUpdateTestCase(TestCase):
         self.assertTrue(
             all([Dog.objects.get(id=pk).fur_color == 'grey' for pk in (1, 2)])
         )
+
+    def test_bulk_update_drest_style(self):
+        data = {'dogs': [{'id': 1, 'fur': 'grey'}, {'id': 2, 'fur': 'grey'}]}
+        request = self.rf.patch(
+            '/dogs/',
+            json.dumps(data),
+            content_type='application/json'
+        )
+        response = self.view(request)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue('dogs' in response.data)
 
     def test_bulk_update_with_filter(self):
         '''

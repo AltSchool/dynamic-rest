@@ -356,6 +356,18 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         # before any of the API actions (e.g. create, update, etc)
         return
 
+    def _bulk_update(self, data, partial=False):
+        # Restrict the update to the filtered queryset.
+        serializer = self.get_serializer(
+            self.filter_queryset(self.get_queryset()),
+            data=data,
+            many=True,
+            partial=partial
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     def update(self, request, *args, **kwargs):
         '''
         Either update  a single or many model instances. Use list to indicate
@@ -369,29 +381,26 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         }
 
         PATCH /dogs/
-        [
-            {'id': 1, 'fur': 'white'},
-            {'id': 2, 'fur': 'black'},
-            {'id': 3, 'fur': 'yellow'}
-        ]
+        {
+            'dogs': [
+                {'id': 1, 'fur': 'white'},
+                {'id': 2, 'fur': 'black'},
+                {'id': 3, 'fur': 'yellow'}
+            ]
+        }
 
         PATCH /dogs/?filter{fur.contains}=brown
         [
-            {'fur': 'grey'}
+            {'id': 3, 'fur': 'gold'}
         ]
         '''
-        if isinstance(request.data, list) and self.ENABLE_BULK_UPDATE:
-            partial = kwargs.pop('partial', False)
-            # Restrict the update to the filtered queryset.
-            serializer = self.get_serializer(
-                self.filter_queryset(self.get_queryset()),
-                data=request.data,
-                many=True,
-                partial=partial
-            )
-            serializer.is_valid(raise_exception=True)
-            self.perform_update(serializer)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+        if self.ENABLE_BULK_UPDATE:
+            plural_name = self.get_serializer_class().get_plural_name()
+            partial = 'partial' in kwargs
+            if isinstance(request.data, list):
+                return self._bulk_update(request.data, partial)
+            elif plural_name in request.data and len(request.data) == 1:
+                return self._bulk_update(request.data[plural_name], partial)
         return super(DynamicModelViewSet, self).update(request, *args,
                                                        **kwargs)
 
