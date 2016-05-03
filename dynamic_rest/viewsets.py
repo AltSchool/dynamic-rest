@@ -17,11 +17,10 @@ UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
 
 
 class QueryParams(QueryDict):
-
     """
     Extension of Django's QueryDict. Instantiated from a DRF Request
-    object, and returns a mutable QueryDict subclass.
-    Also adds methods that might be useful for our usecase.
+    object, and returns a mutable QueryDict subclass. Also adds methods that
+    might be useful for our usecase.
     """
 
     def __init__(self, query_params, *args, **kwargs):
@@ -353,9 +352,8 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     def update(self, request, *args, **kwargs):
-        '''
-        Either update  a single or many model instances. Use list to indicate
-        bulk update.
+        """Either update  a single or many model instances. Use list to
+        indicate bulk update.
 
         Examples:
 
@@ -377,7 +375,7 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         [
             {'id': 3, 'fur': 'gold'}
         ]
-        '''
+        """
         if self.ENABLE_BULK_UPDATE:
             plural_name = self.get_serializer_class().get_plural_name()
             partial = 'partial' in kwargs
