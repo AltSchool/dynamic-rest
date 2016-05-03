@@ -131,6 +131,7 @@
   <h1>Source code for dynamic_rest.serializers</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;This module contains custom serializer classes.&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
 
 <span class="kn">import</span> <span class="nn">inflection</span>
 <span class="kn">from</span> <span class="nn">django.db</span> <span class="kn">import</span> <span class="n">models</span>
@@ -144,17 +145,31 @@
 <span class="kn">from</span> <span class="nn">dynamic_rest.conf</span> <span class="kn">import</span> <span class="n">settings</span>
 <span class="kn">from</span> <span class="nn">dynamic_rest.fields</span> <span class="kn">import</span> <span class="n">DynamicRelationField</span>
 <span class="kn">from</span> <span class="nn">dynamic_rest.links</span> <span class="kn">import</span> <span class="n">merge_link_object</span>
+<span class="kn">from</span> <span class="nn">dynamic_rest.meta</span> <span class="kn">import</span> <span class="n">get_model_table</span>
 <span class="kn">from</span> <span class="nn">dynamic_rest.processors</span> <span class="kn">import</span> <span class="n">SideloadingProcessor</span>
 <span class="kn">from</span> <span class="nn">dynamic_rest.tagged</span> <span class="kn">import</span> <span class="n">tag_dict</span>
 
 
-<div class="viewcode-block" id="DynamicListSerializer"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.serializers.DynamicListSerializer">[docs]</a><span class="k">class</span> <span class="nc">DynamicListSerializer</span><span class="p">(</span><span class="n">serializers</span><span class="o">.</span><span class="n">ListSerializer</span><span class="p">):</span>
+<div class="viewcode-block" id="WithResourceKeyMixin"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.serializers.WithResourceKeyMixin">[docs]</a><span class="k">class</span> <span class="nc">WithResourceKeyMixin</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="WithResourceKeyMixin.get_resource_key"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.serializers.WithResourceKeyMixin.get_resource_key">[docs]</a>    <span class="k">def</span> <span class="nf">get_resource_key</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return canonical resource key, usually the DB table name.&quot;&quot;&quot;</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_model</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">model</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">get_model_table</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_name</span><span class="p">()</span></div></div>
+
+
+<div class="viewcode-block" id="DynamicListSerializer"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.serializers.DynamicListSerializer">[docs]</a><span class="k">class</span> <span class="nc">DynamicListSerializer</span><span class="p">(</span><span class="n">WithResourceKeyMixin</span><span class="p">,</span> <span class="n">serializers</span><span class="o">.</span><span class="n">ListSerializer</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Custom ListSerializer class.</span>
 
 <span class="sd">    This implementation delegates DREST-specific methods to</span>
 <span class="sd">    the child serializer and performs post-processing before</span>
 <span class="sd">    returning the data.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">update_lookup_field</span> <span class="o">=</span> <span class="s1">&#39;id&#39;</span>
+
     <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">DynamicListSerializer</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">parent</span> <span class="o">=</span> <span class="bp">self</span>
@@ -194,10 +209,46 @@
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_sideloaded_data</span> <span class="o">=</span> <span class="n">ReturnList</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">serializer</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sideloaded_data</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_sideloaded_data</span>
+
+<div class="viewcode-block" id="DynamicListSerializer.update"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.serializers.DynamicListSerializer.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">queryset</span><span class="p">,</span> <span class="n">validated_data</span><span class="p">):</span>
+        <span class="n">lookup_attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">Meta</span><span class="p">,</span> <span class="s1">&#39;update_lookup_field&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">)</span>
+
+        <span class="n">lookup_objects</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">entry</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">lookup_attr</span><span class="p">):</span> <span class="n">entry</span>
+            <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">validated_data</span>
+        <span class="p">}</span>
+
+        <span class="n">lookup_keys</span> <span class="o">=</span> <span class="n">lookup_objects</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">((</span><span class="nb">bool</span><span class="p">(</span><span class="n">_</span><span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span><span class="n">_</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">lookup_keys</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">ValidationError</span><span class="p">(</span><span class="s1">&#39;Invalid lookup key value&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Since this method is given a queryset which can have many</span>
+        <span class="c1"># model instances, first find all objects to update</span>
+        <span class="c1"># and only then update the models.</span>
+        <span class="n">objects_to_update</span> <span class="o">=</span> <span class="n">queryset</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span>
+            <span class="o">**</span><span class="p">{</span><span class="s1">&#39;{}__in&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">lookup_attr</span><span class="p">):</span> <span class="n">lookup_keys</span><span class="p">}</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lookup_keys</span><span class="p">)</span> <span class="o">!=</span> <span class="n">objects_to_update</span><span class="o">.</span><span class="n">count</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">ValidationError</span><span class="p">(</span>
+                <span class="s1">&#39;Could not find all objects to update: {} != {}&#39;</span>
+                <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">lookup_keys</span><span class="p">),</span> <span class="n">objects_to_update</span><span class="o">.</span><span class="n">count</span><span class="p">())</span>
+            <span class="p">)</span>
+
+        <span class="n">updated_objects</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">object_to_update</span> <span class="ow">in</span> <span class="n">objects_to_update</span><span class="p">:</span>
+            <span class="n">lookup_key</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">object_to_update</span><span class="p">,</span> <span class="n">lookup_attr</span><span class="p">)</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">lookup_objects</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">lookup_key</span><span class="p">)</span>
+            <span class="c1"># Use model serializer to actually update the model</span>
+            <span class="c1"># in case that method is overwritten.</span>
+            <span class="n">updated_objects</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">object_to_update</span><span class="p">,</span> <span class="n">data</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">updated_objects</span></div></div>
 
 
-<div class="viewcode-block" id="WithDynamicSerializerMixin"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.serializers.WithDynamicSerializerMixin">[docs]</a><span class="k">class</span> <span class="nc">WithDynamicSerializerMixin</span><span class="p">(</span><span class="n">DynamicSerializerBase</span><span class="p">):</span>
+<div class="viewcode-block" id="WithDynamicSerializerMixin"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.serializers.WithDynamicSerializerMixin">[docs]</a><span class="k">class</span> <span class="nc">WithDynamicSerializerMixin</span><span class="p">(</span><span class="n">WithResourceKeyMixin</span><span class="p">,</span> <span class="n">DynamicSerializerBase</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Base class for DREST serializers.</span>
 
 <span class="sd">    This class provides support for dynamic field inclusions/exclusions.</span>
@@ -296,10 +347,8 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">dynamic</span><span class="p">:</span>
             <span class="k">return</span>
 
-        <span class="k">if</span> <span class="p">(</span>
-            <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">request_fields</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span>
-            <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">request_fields</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">False</span>
-        <span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">request_fields</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">and</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">request_fields</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;*&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">):</span>
             <span class="n">exclude_fields</span> <span class="o">=</span> <span class="s1">&#39;*&#39;</span>
 
         <span class="n">only_fields</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">only_fields</span> <span class="ow">or</span> <span class="p">[])</span>
@@ -346,12 +395,15 @@
 <span class="sd">        The name can be defined on the Meta class or will be generated</span>
 <span class="sd">        automatically from the model name.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">class_name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">get_model</span><span class="p">(),</span> <span class="s1">&#39;__name__&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
-        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span>
-            <span class="n">cls</span><span class="o">.</span><span class="n">Meta</span><span class="p">,</span>
-            <span class="s1">&#39;name&#39;</span><span class="p">,</span>
-            <span class="n">inflection</span><span class="o">.</span><span class="n">underscore</span><span class="p">(</span><span class="n">class_name</span><span class="p">)</span> <span class="k">if</span> <span class="n">class_name</span> <span class="k">else</span> <span class="bp">None</span>
-        <span class="p">)</span></div>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">Meta</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">):</span>
+            <span class="n">class_name</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">get_model</span><span class="p">(),</span> <span class="s1">&#39;__name__&#39;</span><span class="p">,</span> <span class="bp">None</span><span class="p">)</span>
+            <span class="nb">setattr</span><span class="p">(</span>
+                <span class="n">cls</span><span class="o">.</span><span class="n">Meta</span><span class="p">,</span>
+                <span class="s1">&#39;name&#39;</span><span class="p">,</span>
+                <span class="n">inflection</span><span class="o">.</span><span class="n">underscore</span><span class="p">(</span><span class="n">class_name</span><span class="p">)</span> <span class="k">if</span> <span class="n">class_name</span> <span class="k">else</span> <span class="bp">None</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">Meta</span><span class="o">.</span><span class="n">name</span></div>
 
     <span class="nd">@classmethod</span>
 <div class="viewcode-block" id="WithDynamicSerializerMixin.get_plural_name"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.serializers.WithDynamicSerializerMixin.get_plural_name">[docs]</a>    <span class="k">def</span> <span class="nf">get_plural_name</span><span class="p">(</span><span class="n">cls</span><span class="p">):</span>
@@ -361,11 +413,13 @@
 <span class="sd">        If the plural name is not defined,</span>
 <span class="sd">        the pluralized form of the name will be returned.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span>
-            <span class="n">cls</span><span class="o">.</span><span class="n">Meta</span><span class="p">,</span>
-            <span class="s1">&#39;plural_name&#39;</span><span class="p">,</span>
-            <span class="n">inflection</span><span class="o">.</span><span class="n">pluralize</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">get_name</span><span class="p">())</span>
-        <span class="p">)</span></div>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">Meta</span><span class="p">,</span> <span class="s1">&#39;plural_name&#39;</span><span class="p">):</span>
+            <span class="nb">setattr</span><span class="p">(</span>
+                <span class="n">cls</span><span class="o">.</span><span class="n">Meta</span><span class="p">,</span>
+                <span class="s1">&#39;plural_name&#39;</span><span class="p">,</span>
+                <span class="n">inflection</span><span class="o">.</span><span class="n">pluralize</span><span class="p">(</span><span class="n">cls</span><span class="o">.</span><span class="n">get_name</span><span class="p">())</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">cls</span><span class="o">.</span><span class="n">Meta</span><span class="o">.</span><span class="n">plural_name</span></div>
 
 <div class="viewcode-block" id="WithDynamicSerializerMixin.get_all_fields"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.serializers.WithDynamicSerializerMixin.get_all_fields">[docs]</a>    <span class="k">def</span> <span class="nf">get_all_fields</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Returns the entire serializer field set.</span>
@@ -431,17 +485,17 @@
             <span class="n">all_fields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_all_fields</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_link_fields</span> <span class="o">=</span> <span class="p">{</span>
                 <span class="n">name</span><span class="p">:</span> <span class="n">field</span> <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">six</span><span class="o">.</span><span class="n">iteritems</span><span class="p">(</span><span class="n">all_fields</span><span class="p">)</span>
-                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">DynamicRelationField</span><span class="p">)</span>
-                <span class="ow">and</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s1">&#39;link&#39;</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span>
-                <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">DynamicRelationField</span><span class="p">)</span> <span class="ow">and</span>
+                <span class="nb">getattr</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="s1">&#39;link&#39;</span><span class="p">,</span> <span class="bp">True</span><span class="p">)</span> <span class="ow">and</span>
+                <span class="ow">not</span> <span class="p">(</span>
                     <span class="c1"># Skip sideloaded fields</span>
-                    <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span>
-                    <span class="ow">and</span> <span class="ow">not</span> <span class="n">field</span><span class="o">.</span><span class="n">serializer</span><span class="o">.</span><span class="n">id_only</span><span class="p">()</span>
+                    <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span> <span class="ow">and</span>
+                    <span class="ow">not</span> <span class="n">field</span><span class="o">.</span><span class="n">serializer</span><span class="o">.</span><span class="n">id_only</span><span class="p">()</span>
                 <span class="p">)</span> <span class="ow">and</span> <span class="ow">not</span> <span class="p">(</span>
                     <span class="c1"># Skip included single relations</span>
                     <span class="c1"># TODO: Use links, when we can generate canonical URLs</span>
-                    <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span>
-                    <span class="ow">and</span> <span class="ow">not</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">serializer</span><span class="p">,</span> <span class="s1">&#39;many&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
+                    <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span> <span class="ow">and</span>
+                    <span class="ow">not</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">field</span><span class="o">.</span><span class="n">serializer</span><span class="p">,</span> <span class="s1">&#39;many&#39;</span><span class="p">,</span> <span class="bp">False</span><span class="p">)</span>
                 <span class="p">)</span>
             <span class="p">}</span>
 
@@ -521,6 +575,26 @@
             <span class="n">instance</span><span class="o">=</span><span class="n">instance</span><span class="p">,</span>
             <span class="n">embed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">embed</span>
         <span class="p">)</span></div>
+
+<div class="viewcode-block" id="WithDynamicSerializerMixin.to_internal_value"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.serializers.WithDynamicSerializerMixin.to_internal_value">[docs]</a>    <span class="k">def</span> <span class="nf">to_internal_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">WithDynamicSerializerMixin</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">to_internal_value</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="n">id_attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Meta</span><span class="p">,</span> <span class="s1">&#39;update_lookup_field&#39;</span><span class="p">,</span> <span class="s1">&#39;id&#39;</span><span class="p">)</span>
+        <span class="n">request_method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;view&#39;</span><span class="p">),</span> <span class="s1">&#39;request&#39;</span><span class="p">),</span>
+            <span class="s1">&#39;method&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;&#39;</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Add update_lookup_field field back to validated data</span>
+        <span class="c1"># since super by default strips out read-only fields</span>
+        <span class="c1"># hence id will no longer be present in validated_data.</span>
+        <span class="k">if</span> <span class="nb">all</span><span class="p">((</span><span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">root</span><span class="p">,</span> <span class="n">DynamicListSerializer</span><span class="p">),</span>
+                <span class="n">id_attr</span><span class="p">,</span> <span class="n">request_method</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;PUT&#39;</span><span class="p">,</span> <span class="s1">&#39;PATCH&#39;</span><span class="p">))):</span>
+            <span class="n">id_field</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fields</span><span class="p">[</span><span class="n">id_attr</span><span class="p">]</span>
+            <span class="n">id_value</span> <span class="o">=</span> <span class="n">id_field</span><span class="o">.</span><span class="n">get_value</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">value</span><span class="p">[</span><span class="n">id_attr</span><span class="p">]</span> <span class="o">=</span> <span class="n">id_value</span>
+
+        <span class="k">return</span> <span class="n">value</span></div>
 
 <div class="viewcode-block" id="WithDynamicSerializerMixin.save"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.serializers.WithDynamicSerializerMixin.save">[docs]</a>    <span class="k">def</span> <span class="nf">save</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Serializer save that address prefetch issues.&quot;&quot;&quot;</span>

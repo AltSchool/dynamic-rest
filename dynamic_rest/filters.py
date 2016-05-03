@@ -505,8 +505,8 @@ class DynamicFilterBackend(BaseFilterBackend):
             # only include local model fields
             only = [
                 field for field in set(id_fields + list(requirements.keys()))
-                if is_model_field(model, field)
-                and not is_field_remote(model, field)
+                if is_model_field(model, field) and
+                not is_field_remote(model, field)
             ]
             queryset = queryset.only(*only)
 
@@ -649,7 +649,7 @@ class DynamicSortingFilter(OrderingFilter):
             valid_fields = [
                 (field_name, field.label, field.source or field_name)
                 for field_name, field in serializer_class().fields.items()
-                if not getattr(field, 'write_only', False)
-                and not field.source == '*' and field_name in valid_fields
+                if not getattr(field, 'write_only', False) and
+                not field.source == '*' and field_name in valid_fields
             ]
         return valid_fields

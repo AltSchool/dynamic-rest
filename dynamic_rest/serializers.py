@@ -1,5 +1,6 @@
 """This module contains custom serializer classes."""
 import copy
+import inspect
 
 import inflection
 from django.db import models
@@ -35,6 +36,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     the child serializer and performs post-processing before
     returning the data.
     """
+
+    update_lookup_field = 'id'
+
     def __init__(self, *args, **kwargs):
         super(DynamicListSerializer, self).__init__(*args, **kwargs)
         self.child.parent = self
@@ -75,6 +79,42 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
             else:
                 self._sideloaded_data = ReturnList(data, serializer=self)
         return self._sideloaded_data
+
+    def update(self, queryset, validated_data):
+        lookup_attr = getattr(self.child.Meta, 'update_lookup_field', 'id')
+
+        lookup_objects = {
+            entry.pop(lookup_attr): entry
+            for entry in validated_data
+        }
+
+        lookup_keys = lookup_objects.keys()
+
+        if not all((bool(_) and not inspect.isclass(_) for _ in lookup_keys)):
+            raise exceptions.ValidationError('Invalid lookup key value')
+
+        # Since this method is given a queryset which can have many
+        # model instances, first find all objects to update
+        # and only then update the models.
+        objects_to_update = queryset.filter(
+            **{'{}__in'.format(lookup_attr): lookup_keys}
+        )
+
+        if len(lookup_keys) != objects_to_update.count():
+            raise exceptions.ValidationError(
+                'Could not find all objects to update: {} != {}'
+                .format(len(lookup_keys), objects_to_update.count())
+            )
+
+        updated_objects = []
+        for object_to_update in objects_to_update:
+            lookup_key = getattr(object_to_update, lookup_attr)
+            data = lookup_objects.get(lookup_key)
+            # Use model serializer to actually update the model
+            # in case that method is overwritten.
+            updated_objects.append(self.child.update(object_to_update, data))
+
+        return updated_objects
 
 
 class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
@@ -176,10 +216,8 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         if not self.dynamic:
             return
 
-        if (
-            isinstance(self.request_fields, dict)
-            and self.request_fields.pop('*', None) is False
-        ):
+        if (isinstance(self.request_fields, dict) and
+                self.request_fields.pop('*', None) is False):
             exclude_fields = '*'
 
         only_fields = set(only_fields or [])
@@ -316,17 +354,17 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             all_fields = self.get_all_fields()
             self._link_fields = {
                 name: field for name, field in six.iteritems(all_fields)
-                if isinstance(field, DynamicRelationField)
-                and getattr(field, 'link', True)
-                and not (
+                if isinstance(field, DynamicRelationField) and
+                getattr(field, 'link', True) and
+                not (
                     # Skip sideloaded fields
-                    name in self.fields
-                    and not field.serializer.id_only()
+                    name in self.fields and
+                    not field.serializer.id_only()
                 ) and not (
                     # Skip included single relations
                     # TODO: Use links, when we can generate canonical URLs
-                    name in self.fields
-                    and not getattr(field.serializer, 'many', False)
+                    name in self.fields and
+                    not getattr(field.serializer, 'many', False)
                 )
             }
 
@@ -406,6 +444,26 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             instance=instance,
             embed=self.embed
         )
+
+    def to_internal_value(self, data):
+        value = super(WithDynamicSerializerMixin, self).to_internal_value(data)
+        id_attr = getattr(self.Meta, 'update_lookup_field', 'id')
+        request_method = getattr(
+            getattr(self.context.get('view'), 'request'),
+            'method',
+            ''
+        )
+
+        # Add update_lookup_field field back to validated data
+        # since super by default strips out read-only fields
+        # hence id will no longer be present in validated_data.
+        if all((isinstance(self.root, DynamicListSerializer),
+                id_attr, request_method in ('PUT', 'PATCH'))):
+            id_field = self.fields[id_attr]
+            id_value = id_field.get_value(data)
+            value[id_attr] = id_value
+
+        return value
 
     def save(self, *args, **kwargs):
         """Serializer save that address prefetch issues."""

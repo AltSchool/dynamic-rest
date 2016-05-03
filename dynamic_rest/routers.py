@@ -25,7 +25,10 @@ def get_directory(request):
 
     path = request.path
     directory_list = []
-    sort_key = lambda r: r[0]
+
+    def sort_key(r):
+        return r[0]
+
     # TODO(ant): support arbitrarily nested
     # structure, for now it is capped at a single level
     # for UX reasons

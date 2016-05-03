@@ -6,10 +6,15 @@ from rest_framework import exceptions, status
 from rest_framework.request import Request
 
 from dynamic_rest.filters import DynamicFilterBackend, FilterNode
-from tests.models import Group
+from tests.models import Dog, Group
 from tests.serializers import GroupSerializer
 from tests.setup import create_fixture
-from tests.viewsets import GroupNoMergeDictViewSet, GroupViewSet, UserViewSet
+from tests.viewsets import (
+    DogViewSet,
+    GroupNoMergeDictViewSet,
+    GroupViewSet,
+    UserViewSet
+)
 
 
 class TestUserViewSet(TestCase):
@@ -150,7 +155,71 @@ class TestMergeDictConvertsToDict(TestCase):
             # otherwise, this is a known DRF 3.2 bug
 
 
-class TestBulkAPI(TestCase):
+class BulkUpdateTestCase(TestCase):
+
+    def setUp(self):
+        self.fixture = create_fixture()
+        self.rf = RequestFactory()
+        self.view = DogViewSet.as_view({'patch': 'partial_update'})
+
+    def test_bulk_update_default_style(self):
+        '''
+        Test that PATCH request partially updates all submitted resources.
+        '''
+        data = [{'id': 1, 'fur': 'grey'}, {'id': 2, 'fur': 'grey'}]
+        request = self.rf.patch(
+            '/dogs/',
+            json.dumps(data),
+            content_type='application/json'
+        )
+        response = self.view(request)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue('dogs' in response.data)
+        self.assertTrue(2, len(response.data['dogs']))
+        self.assertTrue(
+            all([Dog.objects.get(id=pk).fur_color == 'grey' for pk in (1, 2)])
+        )
+
+    def test_bulk_update_drest_style(self):
+        data = {'dogs': [{'id': 1, 'fur': 'grey'}, {'id': 2, 'fur': 'grey'}]}
+        request = self.rf.patch(
+            '/dogs/',
+            json.dumps(data),
+            content_type='application/json'
+        )
+        response = self.view(request)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue('dogs' in response.data)
+
+    def test_bulk_update_with_filter(self):
+        '''
+        Test that you can patch inside of the filtered queryset.
+        '''
+        data = [{'id': 3, 'fur': 'gold'}]
+        request = self.rf.patch(
+            '/dogs/?filter{fur.contains}=brown',
+            json.dumps(data),
+            content_type='application/json'
+        )
+        response = self.view(request)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(Dog.objects.get(id=3).fur_color == 'gold')
+
+    def test_bulk_update_fail_without_lookup_attribute(self):
+        '''
+        Test that PATCH request will fail if lookup attribute wasn't provided.
+        '''
+        data = [{'fur': 'grey'}]
+        request = self.rf.patch(
+            '/dogs/?filter{fur.contains}=brown',
+            json.dumps(data),
+            content_type='application/json'
+        )
+        response = self.view(request)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+
+class BulkCreationTestCase(TestCase):
 
     def setUp(self):
         self.rf = RequestFactory()

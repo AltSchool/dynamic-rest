@@ -17,11 +17,10 @@ UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
 
 
 class QueryParams(QueryDict):
-
     """
     Extension of Django's QueryDict. Instantiated from a DRF Request
-    object, and returns a mutable QueryDict subclass.
-    Also adds methods that might be useful for our usecase.
+    object, and returns a mutable QueryDict subclass. Also adds methods that
+    might be useful for our usecase.
     """
 
     def __init__(self, query_params, *args, **kwargs):
@@ -338,6 +337,54 @@ class WithDynamicViewSetMixin(object):
 class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
 
     ENABLE_BULK_PARTIAL_CREATION = settings.ENABLE_BULK_PARTIAL_CREATION
+    ENABLE_BULK_UPDATE = settings.ENABLE_BULK_UPDATE
+
+    def _bulk_update(self, data, partial=False):
+        # Restrict the update to the filtered queryset.
+        serializer = self.get_serializer(
+            self.filter_queryset(self.get_queryset()),
+            data=data,
+            many=True,
+            partial=partial
+        )
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def update(self, request, *args, **kwargs):
+        """Either update  a single or many model instances. Use list to
+        indicate bulk update.
+
+        Examples:
+
+        PATCH /dogs/1/
+        {
+            'fur': 'white'
+        }
+
+        PATCH /dogs/
+        {
+            'dogs': [
+                {'id': 1, 'fur': 'white'},
+                {'id': 2, 'fur': 'black'},
+                {'id': 3, 'fur': 'yellow'}
+            ]
+        }
+
+        PATCH /dogs/?filter{fur.contains}=brown
+        [
+            {'id': 3, 'fur': 'gold'}
+        ]
+        """
+        if self.ENABLE_BULK_UPDATE:
+            plural_name = self.get_serializer_class().get_plural_name()
+            partial = 'partial' in kwargs
+            if isinstance(request.data, list):
+                return self._bulk_update(request.data, partial)
+            elif plural_name in request.data and len(request.data) == 1:
+                return self._bulk_update(request.data[plural_name], partial)
+        return super(DynamicModelViewSet, self).update(request, *args,
+                                                       **kwargs)
 
     def _create_many(self, data):
         items = []

@@ -203,6 +203,13 @@
 
     <span class="n">model_field</span> <span class="o">=</span> <span class="n">get_model_field</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">field_name</span><span class="p">)</span>
     <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model_field</span><span class="p">,</span> <span class="p">(</span><span class="n">ManyToManyField</span><span class="p">,</span> <span class="n">RelatedObject</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="get_model_table"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.meta.get_model_table">[docs]</a><span class="k">def</span> <span class="nf">get_model_table</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">_meta</span><span class="o">.</span><span class="n">db_table</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">None</span></div>
 </pre></div>
 
            </div>
