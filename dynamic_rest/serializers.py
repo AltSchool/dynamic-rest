@@ -83,14 +83,10 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def update(self, queryset, validated_data):
         lookup_attr = getattr(self.child.Meta, 'update_lookup_field', 'id')
 
-        lookup_objects = {}
-        all_objects_update = {}
-        for entry in validated_data:
-            lookup_key = entry.pop(lookup_attr)
-            if lookup_key is not fields.empty:
-                lookup_objects[lookup_key] = entry
-            else:
-                all_objects_update.update(entry)
+        lookup_objects = {
+            entry.pop(lookup_attr): entry
+            for entry in validated_data
+        }
 
         lookup_keys = lookup_objects.keys()
 
@@ -117,9 +113,6 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
             # Use model serializer to actually update the model
             # in case that method is overwritten.
             updated_objects.append(self.child.update(object_to_update, data))
-
-        if all_objects_update:
-            queryset.update(**all_objects_update)
 
         return updated_objects
 
