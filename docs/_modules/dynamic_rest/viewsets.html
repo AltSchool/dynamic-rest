@@ -1,0 +1,666 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>dynamic_rest.viewsets &mdash; Dynamic REST 1.3.15 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="Dynamic REST 1.3.15 documentation" href="../../index.html"/>
+        <link rel="up" title="Module code" href="../index.html"/> 
+
+  
+  <script src="../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../index.html" class="icon icon-home"> Dynamic REST
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                1.3.15
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+                <p class="caption"><span class="caption-text">Contents</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../tutorial.html">Dynamic REST Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../dynamic_rest.html">dynamic_rest package</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../../index.html">Dynamic REST</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../../index.html">Docs</a> &raquo;</li>
+      
+          <li><a href="../index.html">Module code</a> &raquo;</li>
+      
+    <li>dynamic_rest.viewsets</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for dynamic_rest.viewsets</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This module contains custom viewset classes.&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">django.core.exceptions</span> <span class="kn">import</span> <span class="n">ObjectDoesNotExist</span>
+<span class="kn">from</span> <span class="nn">django.http</span> <span class="kn">import</span> <span class="n">QueryDict</span>
+<span class="kn">from</span> <span class="nn">django.utils</span> <span class="kn">import</span> <span class="n">six</span>
+<span class="kn">from</span> <span class="nn">rest_framework</span> <span class="kn">import</span> <span class="n">exceptions</span><span class="p">,</span> <span class="n">status</span><span class="p">,</span> <span class="n">viewsets</span>
+<span class="kn">from</span> <span class="nn">rest_framework.exceptions</span> <span class="kn">import</span> <span class="n">ValidationError</span>
+<span class="kn">from</span> <span class="nn">rest_framework.renderers</span> <span class="kn">import</span> <span class="n">BrowsableAPIRenderer</span><span class="p">,</span> <span class="n">JSONRenderer</span>
+<span class="kn">from</span> <span class="nn">rest_framework.response</span> <span class="kn">import</span> <span class="n">Response</span>
+
+<span class="kn">from</span> <span class="nn">dynamic_rest.conf</span> <span class="kn">import</span> <span class="n">settings</span>
+<span class="kn">from</span> <span class="nn">dynamic_rest.filters</span> <span class="kn">import</span> <span class="n">DynamicFilterBackend</span><span class="p">,</span> <span class="n">DynamicSortingFilter</span>
+<span class="kn">from</span> <span class="nn">dynamic_rest.metadata</span> <span class="kn">import</span> <span class="n">DynamicMetadata</span>
+<span class="kn">from</span> <span class="nn">dynamic_rest.pagination</span> <span class="kn">import</span> <span class="n">DynamicPageNumberPagination</span>
+<span class="kn">from</span> <span class="nn">dynamic_rest.renderers</span> <span class="kn">import</span> <span class="n">DynamicBrowsableAPIRenderer</span>
+
+<span class="n">UPDATE_REQUEST_METHODS</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;PUT&#39;</span><span class="p">,</span> <span class="s1">&#39;PATCH&#39;</span><span class="p">,</span> <span class="s1">&#39;POST&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="QueryParams"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.viewsets.QueryParams">[docs]</a><span class="k">class</span> <span class="nc">QueryParams</span><span class="p">(</span><span class="n">QueryDict</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Extension of Django&#39;s QueryDict. Instantiated from a DRF Request</span>
+<span class="sd">    object, and returns a mutable QueryDict subclass. Also adds methods that</span>
+<span class="sd">    might be useful for our usecase.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query_params</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">query_params</span><span class="p">,</span> <span class="s1">&#39;urlencode&#39;</span><span class="p">):</span>
+            <span class="n">query_string</span> <span class="o">=</span> <span class="n">query_params</span><span class="o">.</span><span class="n">urlencode</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span>
+                <span class="n">query_params</span><span class="p">,</span>
+                <span class="p">(</span><span class="n">six</span><span class="o">.</span><span class="n">string_types</span><span class="p">,</span> <span class="n">six</span><span class="o">.</span><span class="n">binary_type</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">query_string</span> <span class="o">=</span> <span class="n">query_params</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;mutable&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">True</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">QueryParams</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">__init__</span><span class="p">(</span><span class="n">query_string</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+<div class="viewcode-block" id="QueryParams.add"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.viewsets.QueryParams.add">[docs]</a>    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Method to accept a list of values and append to flat list.</span>
+<span class="sd">        QueryDict.appendlist(), if given a list, will append the list,</span>
+<span class="sd">        which creates nested lists. In most cases, we want to be able</span>
+<span class="sd">        to pass in a list (for convenience) but have it appended into</span>
+<span class="sd">        a flattened list.</span>
+<span class="sd">        TODO: Possibly throw an error if add() is used on a non-list param.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">value</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">appendlist</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">appendlist</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="WithDynamicViewSetMixin"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.viewsets.WithDynamicViewSetMixin">[docs]</a><span class="k">class</span> <span class="nc">WithDynamicViewSetMixin</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span></div>
+
+    <span class="sd">&quot;&quot;&quot;A viewset that can support dynamic API features.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">      features: A list of features supported by the viewset.</span>
+<span class="sd">      sideload: Whether or not to enable sideloading in the DynamicRenderer.</span>
+<span class="sd">      meta: Extra data that is added to the response by the DynamicRenderer.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">INCLUDE</span> <span class="o">=</span> <span class="s1">&#39;include[]&#39;</span>
+    <span class="n">EXCLUDE</span> <span class="o">=</span> <span class="s1">&#39;exclude[]&#39;</span>
+    <span class="n">FILTER</span> <span class="o">=</span> <span class="s1">&#39;filter{}&#39;</span>
+    <span class="n">SORT</span> <span class="o">=</span> <span class="s1">&#39;sort[]&#39;</span>
+    <span class="n">PAGE</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">PAGE_QUERY_PARAM</span>
+    <span class="n">PER_PAGE</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">PAGE_SIZE_QUERY_PARAM</span>
+
+    <span class="c1"># TODO: add support for `sort{}`</span>
+    <span class="n">pagination_class</span> <span class="o">=</span> <span class="n">DynamicPageNumberPagination</span>
+    <span class="n">metadata_class</span> <span class="o">=</span> <span class="n">DynamicMetadata</span>
+    <span class="n">renderer_classes</span> <span class="o">=</span> <span class="p">(</span><span class="n">JSONRenderer</span><span class="p">,</span> <span class="n">DynamicBrowsableAPIRenderer</span><span class="p">)</span>
+    <span class="n">features</span> <span class="o">=</span> <span class="p">(</span><span class="n">INCLUDE</span><span class="p">,</span> <span class="n">EXCLUDE</span><span class="p">,</span> <span class="n">FILTER</span><span class="p">,</span> <span class="n">PAGE</span><span class="p">,</span> <span class="n">PER_PAGE</span><span class="p">,</span> <span class="n">SORT</span><span class="p">)</span>
+    <span class="n">sideload</span> <span class="o">=</span> <span class="bp">True</span>
+    <span class="n">meta</span> <span class="o">=</span> <span class="bp">None</span>
+    <span class="n">filter_backends</span> <span class="o">=</span> <span class="p">(</span><span class="n">DynamicFilterBackend</span><span class="p">,</span> <span class="n">DynamicSortingFilter</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">initialize_request</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Override DRF initialize_request() method to swap request.GET</span>
+<span class="sd">        (which is aliased by request.query_params) with a mutable instance</span>
+<span class="sd">        of QueryParams, and to convert request MergeDict to a subclass of dict</span>
+<span class="sd">        for consistency (MergeDict is not a subclass of dict)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">GET</span> <span class="o">=</span> <span class="n">QueryParams</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">GET</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">UnicodeEncodeError</span><span class="p">:</span>
+            <span class="c1"># WSGIRequest does not support Unicode values in the query string.</span>
+            <span class="c1"># Deal with this here to avoid 500s, code adapted from:</span>
+            <span class="c1"># https://github.com/django/django/blob/1.7.9/django/core/handlers/wsgi.py#L130 # noqa</span>
+            <span class="n">request</span><span class="o">.</span><span class="n">GET</span> <span class="o">=</span> <span class="n">QueryParams</span><span class="p">(</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;QUERY_STRING&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="n">request</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">WithDynamicViewSetMixin</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">initialize_request</span><span class="p">(</span>
+            <span class="n">request</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kargs</span>
+        <span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Django&lt;1.9, DRF&lt;3.2</span>
+
+            <span class="c1"># MergeDict doesn&#39;t have the same API as dict.</span>
+            <span class="c1"># Django has deprecated MergeDict and DRF is moving away from</span>
+            <span class="c1"># using it - thus, were comfortable replacing it with a QueryDict</span>
+            <span class="c1"># This will allow the data property to have normal dict methods.</span>
+            <span class="kn">from</span> <span class="nn">django.utils.datastructures</span> <span class="kn">import</span> <span class="n">MergeDict</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">_full_data</span><span class="p">,</span> <span class="n">MergeDict</span><span class="p">):</span>
+                <span class="n">data_as_dict</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">dicts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">dicts</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+                    <span class="n">data_as_dict</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+                <span class="n">request</span><span class="o">.</span><span class="n">_full_data</span> <span class="o">=</span> <span class="n">data_as_dict</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="n">request</span>
+
+    <span class="k">def</span> <span class="nf">get_renderers</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Optionally block Browsable API rendering. &quot;&quot;&quot;</span>
+        <span class="n">renderers</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">WithDynamicViewSetMixin</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_renderers</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">settings</span><span class="o">.</span><span class="n">ENABLE_BROWSABLE_API</span> <span class="ow">is</span> <span class="bp">False</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[</span>
+                <span class="n">r</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">renderers</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">BrowsableAPIRenderer</span><span class="p">)</span>
+            <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">renderers</span>
+
+    <span class="k">def</span> <span class="nf">get_request_feature</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Parses the request for a particular feature.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">          name: A feature name.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">          A feature parsed from the URL if the feature is supported, or None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="s1">&#39;[]&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+            <span class="c1"># array-type</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">getlist</span><span class="p">(</span>
+                <span class="n">name</span><span class="p">)</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span> <span class="k">else</span> <span class="bp">None</span>
+        <span class="k">elif</span> <span class="s1">&#39;{}&#39;</span> <span class="ow">in</span> <span class="n">name</span><span class="p">:</span>
+            <span class="c1"># object-type (keys are not consistent)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_object_params</span><span class="p">(</span>
+                <span class="n">name</span><span class="p">)</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span> <span class="k">else</span> <span class="p">{}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># single-type</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+                <span class="n">name</span><span class="p">)</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span> <span class="k">else</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">_extract_object_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Extract object params, return as dict</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">lists</span><span class="p">()</span>
+        <span class="n">params_map</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">prefix</span> <span class="o">=</span> <span class="n">name</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">params</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;}&#39;</span><span class="p">):</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">[</span><span class="n">offset</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="n">name</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;}[]&#39;</span><span class="p">):</span>
+                    <span class="c1"># strip off trailing []</span>
+                    <span class="c1"># this fixes an Ember queryparams issue</span>
+                    <span class="n">name</span> <span class="o">=</span> <span class="n">name</span><span class="p">[</span><span class="n">offset</span><span class="p">:</span><span class="o">-</span><span class="mi">3</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># malformed argument like:</span>
+                    <span class="c1"># filter{foo=bar</span>
+                    <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">ParseError</span><span class="p">(</span>
+                        <span class="s2">&quot;&#39;</span><span class="si">%s</span><span class="s2">&#39; is not a well-formed filter key&quot;</span> <span class="o">%</span> <span class="n">name</span>
+                    <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">params_map</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+        <span class="k">return</span> <span class="n">params_map</span>
+
+    <span class="k">def</span> <span class="nf">get_queryset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">queryset</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a queryset for this request.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">          queryset: Optional root-level queryset.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">serializer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_serializer</span><span class="p">()</span>
+        <span class="k">return</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;queryset&#39;</span><span class="p">,</span> <span class="n">serializer</span><span class="o">.</span><span class="n">Meta</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">objects</span><span class="o">.</span><span class="n">all</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">get_request_fields</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Parses the `include[]` and `exclude[]` features.</span>
+
+<span class="sd">        Extracts the dynamic field features from the request parameters</span>
+<span class="sd">        into a field map that can be passed to a serializer.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">          A nested dict mapping serializer keys to</span>
+<span class="sd">          True (include) or False (exclude).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;_request_fields&#39;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_request_fields</span>
+
+        <span class="n">include_fields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_request_feature</span><span class="p">(</span><span class="s1">&#39;include[]&#39;</span><span class="p">)</span>
+        <span class="n">exclude_fields</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_request_feature</span><span class="p">(</span><span class="s1">&#39;exclude[]&#39;</span><span class="p">)</span>
+        <span class="n">request_fields</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">fields</span><span class="p">,</span> <span class="n">include</span> <span class="ow">in</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">include_fields</span><span class="p">,</span> <span class="bp">True</span><span class="p">),</span>
+                <span class="p">(</span><span class="n">exclude_fields</span><span class="p">,</span> <span class="bp">False</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="n">fields</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+                <span class="n">field_segments</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+                <span class="n">num_segments</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">field_segments</span><span class="p">)</span>
+                <span class="n">current_fields</span> <span class="o">=</span> <span class="n">request_fields</span>
+                <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">segment</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">field_segments</span><span class="p">):</span>
+                    <span class="n">last</span> <span class="o">=</span> <span class="n">i</span> <span class="o">==</span> <span class="n">num_segments</span> <span class="o">-</span> <span class="mi">1</span>
+                    <span class="k">if</span> <span class="n">segment</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">last</span><span class="p">:</span>
+                            <span class="n">current_fields</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span> <span class="o">=</span> <span class="n">include</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="k">if</span> <span class="n">segment</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">current_fields</span><span class="p">:</span>
+                                <span class="n">current_fields</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+                            <span class="n">current_fields</span> <span class="o">=</span> <span class="n">current_fields</span><span class="p">[</span><span class="n">segment</span><span class="p">]</span>
+                    <span class="k">elif</span> <span class="ow">not</span> <span class="n">last</span><span class="p">:</span>
+                        <span class="c1"># empty segment must be the last segment</span>
+                        <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">ParseError</span><span class="p">(</span>
+                            <span class="s2">&quot;&#39;</span><span class="si">%s</span><span class="s2">&#39; is not a valid field&quot;</span> <span class="o">%</span>
+                            <span class="n">field</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_request_fields</span> <span class="o">=</span> <span class="n">request_fields</span>
+        <span class="k">return</span> <span class="n">request_fields</span>
+
+    <span class="k">def</span> <span class="nf">is_update</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">request</span> <span class="ow">and</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">method</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span> <span class="ow">in</span> <span class="n">UPDATE_REQUEST_METHODS</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="bp">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">False</span>
+
+    <span class="k">def</span> <span class="nf">get_serializer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="s1">&#39;request_fields&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;request_fields&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_request_fields</span><span class="p">()</span>
+        <span class="k">if</span> <span class="s1">&#39;sideload&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;sideload&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sideload</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_update</span><span class="p">():</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;include_fields&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;*&#39;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span>
+            <span class="n">WithDynamicViewSetMixin</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">get_serializer</span><span class="p">(</span>
+            <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">paginate_queryset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">PAGE</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span><span class="p">:</span>
+            <span class="c1"># make sure pagination is enabled</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">PER_PAGE</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">features</span> <span class="ow">and</span> \
+                    <span class="bp">self</span><span class="o">.</span><span class="n">PER_PAGE</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="p">:</span>
+                <span class="c1"># remove per_page if it is disabled</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">PER_PAGE</span><span class="p">]</span> <span class="o">=</span> <span class="bp">None</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span>
+                <span class="n">WithDynamicViewSetMixin</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">paginate_queryset</span><span class="p">(</span>
+                <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">_prefix_inex_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">feature</span><span class="p">,</span> <span class="n">prefix</span><span class="p">):</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_request_feature</span><span class="p">(</span><span class="n">feature</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">values</span><span class="p">:</span>
+            <span class="k">return</span>
+        <span class="k">del</span> <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="p">[</span><span class="n">feature</span><span class="p">]</span>
+        <span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+            <span class="n">feature</span><span class="p">,</span>
+            <span class="p">[</span><span class="n">prefix</span> <span class="o">+</span> <span class="n">val</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">values</span><span class="p">]</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">list_related</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="n">pk</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="n">field_name</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Fetch related object(s), as if sideloaded (used to support</span>
+<span class="sd">        link objects).</span>
+
+<span class="sd">        This method gets mapped to `/&lt;resource&gt;/&lt;pk&gt;/&lt;field_name&gt;/` by</span>
+<span class="sd">        DynamicRouter for all DynamicRelationField fields. Generally,</span>
+<span class="sd">        this method probably shouldn&#39;t be overridden.</span>
+
+<span class="sd">        An alternative implementation would be to generate reverse queries.</span>
+<span class="sd">        For an exploration of that approach, see:</span>
+<span class="sd">            https://gist.github.com/ryochiji/54687d675978c7d96503</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># Explicitly disable support filtering. Applying filters to this</span>
+        <span class="c1"># endpoint would require us to pass through sideload filters, which</span>
+        <span class="c1"># can have unintended consequences when applied asynchronously.</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_request_feature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">FILTER</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span>
+                <span class="s2">&quot;Filtering is not enabled on relation endpoints.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Prefix include/exclude filters with field_name so it&#39;s scoped to</span>
+        <span class="c1"># the parent object.</span>
+        <span class="n">field_prefix</span> <span class="o">=</span> <span class="n">field_name</span> <span class="o">+</span> <span class="s1">&#39;.&#39;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prefix_inex_params</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">INCLUDE</span><span class="p">,</span> <span class="n">field_prefix</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_prefix_inex_params</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">EXCLUDE</span><span class="p">,</span> <span class="n">field_prefix</span><span class="p">)</span>
+
+        <span class="c1"># Filter for parent object, include related field.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;filter{pk}&#39;</span><span class="p">,</span> <span class="n">pk</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">query_params</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;include[]&#39;</span><span class="p">,</span> <span class="n">field_prefix</span><span class="p">)</span>
+
+        <span class="c1"># Get serializer and field.</span>
+        <span class="n">serializer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_serializer</span><span class="p">()</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="n">serializer</span><span class="o">.</span><span class="n">fields</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">field_name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">field</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ValidationError</span><span class="p">(</span><span class="s2">&quot;Unknown field: </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">field_name</span><span class="p">)</span>
+
+        <span class="c1"># Query for root object, with related field prefetched</span>
+        <span class="n">queryset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_queryset</span><span class="p">()</span>
+        <span class="n">queryset</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">filter_queryset</span><span class="p">(</span><span class="n">queryset</span><span class="p">)</span>
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">queryset</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">obj</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="s2">&quot;Not found&quot;</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="mi">404</span><span class="p">)</span>
+
+        <span class="c1"># Serialize the related data. Use the field&#39;s serializer to ensure</span>
+        <span class="c1"># it&#39;s configured identically to the sideload case.</span>
+        <span class="n">serializer</span> <span class="o">=</span> <span class="n">field</span><span class="o">.</span><span class="n">serializer</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># TODO(ryo): Probably should use field.get_attribute() but that</span>
+            <span class="c1">#            seems to break a bunch of things. Investigate later.</span>
+            <span class="n">serializer</span><span class="o">.</span><span class="n">instance</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">field</span><span class="o">.</span><span class="n">source</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">ObjectDoesNotExist</span><span class="p">:</span>
+            <span class="c1"># See:</span>
+            <span class="c1"># http://jsonapi.org/format/#fetching-relationships-responses-404</span>
+            <span class="c1"># This is a case where the &quot;link URL exists but the relationship</span>
+            <span class="c1"># is empty&quot; and therefore must return a 200.</span>
+            <span class="k">return</span> <span class="n">Response</span><span class="p">({},</span> <span class="n">status</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">serializer</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="DynamicModelViewSet"><a class="viewcode-back" href="../../dynamic_rest.html#dynamic_rest.viewsets.DynamicModelViewSet">[docs]</a><span class="k">class</span> <span class="nc">DynamicModelViewSet</span><span class="p">(</span><span class="n">WithDynamicViewSetMixin</span><span class="p">,</span> <span class="n">viewsets</span><span class="o">.</span><span class="n">ModelViewSet</span><span class="p">):</span></div>
+
+    <span class="n">ENABLE_BULK_PARTIAL_CREATION</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">ENABLE_BULK_PARTIAL_CREATION</span>
+    <span class="n">ENABLE_BULK_UPDATE</span> <span class="o">=</span> <span class="n">settings</span><span class="o">.</span><span class="n">ENABLE_BULK_UPDATE</span>
+
+    <span class="k">def</span> <span class="nf">_bulk_update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">partial</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="c1"># Restrict the update to the filtered queryset.</span>
+        <span class="n">serializer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_serializer</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">filter_queryset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">get_queryset</span><span class="p">()),</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+            <span class="n">many</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+            <span class="n">partial</span><span class="o">=</span><span class="n">partial</span>
+        <span class="p">)</span>
+        <span class="n">serializer</span><span class="o">.</span><span class="n">is_valid</span><span class="p">(</span><span class="n">raise_exception</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">perform_update</span><span class="p">(</span><span class="n">serializer</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">serializer</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_200_OK</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Either update  a single or many model instances. Use list to</span>
+<span class="sd">        indicate bulk update.</span>
+
+<span class="sd">        Examples:</span>
+
+<span class="sd">        PATCH /dogs/1/</span>
+<span class="sd">        {</span>
+<span class="sd">            &#39;fur&#39;: &#39;white&#39;</span>
+<span class="sd">        }</span>
+
+<span class="sd">        PATCH /dogs/</span>
+<span class="sd">        {</span>
+<span class="sd">            &#39;dogs&#39;: [</span>
+<span class="sd">                {&#39;id&#39;: 1, &#39;fur&#39;: &#39;white&#39;},</span>
+<span class="sd">                {&#39;id&#39;: 2, &#39;fur&#39;: &#39;black&#39;},</span>
+<span class="sd">                {&#39;id&#39;: 3, &#39;fur&#39;: &#39;yellow&#39;}</span>
+<span class="sd">            ]</span>
+<span class="sd">        }</span>
+
+<span class="sd">        PATCH /dogs/?filter{fur.contains}=brown</span>
+<span class="sd">        [</span>
+<span class="sd">            {&#39;id&#39;: 3, &#39;fur&#39;: &#39;gold&#39;}</span>
+<span class="sd">        ]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ENABLE_BULK_UPDATE</span><span class="p">:</span>
+            <span class="n">plural_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_serializer_class</span><span class="p">()</span><span class="o">.</span><span class="n">get_plural_name</span><span class="p">()</span>
+            <span class="n">partial</span> <span class="o">=</span> <span class="s1">&#39;partial&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_update</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">partial</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">plural_name</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">data</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_bulk_update</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">plural_name</span><span class="p">],</span> <span class="n">partial</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">DynamicModelViewSet</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">request</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span>
+                                                       <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_create_many</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+        <span class="n">items</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">errors</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">serializers</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+            <span class="n">serializer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_serializer</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">entry</span><span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">serializer</span><span class="o">.</span><span class="n">is_valid</span><span class="p">(</span><span class="n">raise_exception</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">ValidationError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="n">errors</span><span class="o">.</span><span class="n">append</span><span class="p">({</span>
+                    <span class="s1">&#39;detail&#39;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">),</span>
+                    <span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="n">entry</span>
+                <span class="p">})</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ENABLE_BULK_PARTIAL_CREATION</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">perform_create</span><span class="p">(</span><span class="n">serializer</span><span class="p">)</span>
+                    <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="n">serializer</span><span class="o">.</span><span class="n">to_representation</span><span class="p">(</span><span class="n">serializer</span><span class="o">.</span><span class="n">instance</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">serializers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">serializer</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">ENABLE_BULK_PARTIAL_CREATION</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">errors</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">serializer</span> <span class="ow">in</span> <span class="n">serializers</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">perform_create</span><span class="p">(</span><span class="n">serializer</span><span class="p">)</span>
+                <span class="n">items</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">serializer</span><span class="o">.</span><span class="n">to_representation</span><span class="p">(</span><span class="n">serializer</span><span class="o">.</span><span class="n">instance</span><span class="p">))</span>
+
+        <span class="c1"># Populate serialized data to the result.</span>
+        <span class="n">plural_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_serializer_class</span><span class="p">()</span><span class="o">.</span><span class="n">get_plural_name</span><span class="p">()</span>
+        <span class="n">result</span><span class="p">[</span><span class="n">plural_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">items</span>
+
+        <span class="c1"># Include errors if any.</span>
+        <span class="k">if</span> <span class="n">errors</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="s1">&#39;errors&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">errors</span>
+
+        <span class="n">code</span> <span class="o">=</span> <span class="p">(</span><span class="n">status</span><span class="o">.</span><span class="n">HTTP_201_CREATED</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">errors</span> <span class="k">else</span>
+                <span class="n">status</span><span class="o">.</span><span class="n">HTTP_400_BAD_REQUEST</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">Response</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="n">code</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">request</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Either create a single or many model instances in bulk</span>
+<span class="sd">        using the Serializer&#39;s many=True ability from Django REST &gt;= 2.2.5.</span>
+
+<span class="sd">        The data can be represented by the serializer name (single or plural</span>
+<span class="sd">        forms), dict or list.</span>
+
+<span class="sd">        Examples:</span>
+
+<span class="sd">        POST /dogs/</span>
+<span class="sd">        {</span>
+<span class="sd">          &quot;name&quot;: &quot;Fido&quot;,</span>
+<span class="sd">          &quot;age&quot;: 2</span>
+<span class="sd">        }</span>
+
+<span class="sd">        POST /dogs/</span>
+<span class="sd">        {</span>
+<span class="sd">          &quot;dog&quot;: {</span>
+<span class="sd">            &quot;name&quot;: &quot;Lucky&quot;,</span>
+<span class="sd">            &quot;age&quot;: 3</span>
+<span class="sd">          }</span>
+<span class="sd">        }</span>
+
+<span class="sd">        POST /dogs/</span>
+<span class="sd">        {</span>
+<span class="sd">          &quot;dogs&quot;: [</span>
+<span class="sd">            {&quot;name&quot;: &quot;Fido&quot;, &quot;age&quot;: 2},</span>
+<span class="sd">            {&quot;name&quot;: &quot;Lucky&quot;, &quot;age&quot;: 3}</span>
+<span class="sd">          ]</span>
+<span class="sd">        }</span>
+
+<span class="sd">        POST /dogs/</span>
+<span class="sd">        [</span>
+<span class="sd">            {&quot;name&quot;: &quot;Fido&quot;, &quot;age&quot;: 2},</span>
+<span class="sd">            {&quot;name&quot;: &quot;Lucky&quot;, &quot;age&quot;: 3}</span>
+<span class="sd">        ]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">plural_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_serializer_class</span><span class="p">()</span><span class="o">.</span><span class="n">get_plural_name</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_many</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">plural_name</span> <span class="ow">in</span> <span class="n">request</span><span class="o">.</span><span class="n">data</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_many</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">plural_name</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">DynamicModelViewSet</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">create</span><span class="p">(</span>
+            <span class="n">request</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2016, ant@altschool.com, ryo@altschool.com.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../',
+            VERSION:'1.3.15',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
