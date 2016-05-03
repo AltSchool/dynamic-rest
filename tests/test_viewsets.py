@@ -182,7 +182,21 @@ class BulkUpdateTestCase(TestCase):
 
     def test_bulk_update_with_filter(self):
         '''
-        Test that PATCH request partially updates filtered resources.
+        Test that you can patch inside of the filtered queryset.
+        '''
+        data = [{'id': 3, 'fur': 'gold'}]
+        request = self.rf.patch(
+            '/dogs/?filter{fur.contains}=brown',
+            json.dumps(data),
+            content_type='application/json'
+        )
+        response = self.view(request)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(Dog.objects.get(id=3).fur_color == 'gold')
+
+    def test_bulk_update_fail_without_lookup_attribute(self):
+        '''
+        Test that PATCH request will fail if lookup attribute wasn't provided.
         '''
         data = [{'fur': 'grey'}]
         request = self.rf.patch(
@@ -191,11 +205,7 @@ class BulkUpdateTestCase(TestCase):
             content_type='application/json'
         )
         response = self.view(request)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertTrue(
-            all([Dog.objects.get(id=pk).fur_color == 'grey'
-                for pk in (3, 4, 5)])
-        )
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 class BulkCreationTestCase(TestCase):
