@@ -819,6 +819,7 @@ class TestLocationsAPI(APITestCase):
                 },
                 'address': {
                     'default': None,
+                    'immutable': False,
                     'label': 'Address',
                     'nullable': False,
                     'read_only': False,
@@ -835,6 +836,7 @@ class TestLocationsAPI(APITestCase):
                 },
                 'user_count': {
                     'default': None,
+                    'immutable': False,
                     'label': 'User count',
                     'nullable': False,
                     'read_only': False,
@@ -843,6 +845,7 @@ class TestLocationsAPI(APITestCase):
                 },
                 'users': {
                     'default': None,
+                    'immutable': False,
                     'label': 'Users',
                     'nullable': False,
                     'read_only': False,
@@ -852,6 +855,7 @@ class TestLocationsAPI(APITestCase):
                 },
                 'cats': {
                     'default': None,
+                    'immutable': False,
                     'label': 'Cats',
                     'nullable': False,
                     'read_only': False,
@@ -861,6 +865,7 @@ class TestLocationsAPI(APITestCase):
                 },
                 'bad_cats': {
                     'default': None,
+                    'immutable': False,
                     'label': 'Bad cats',
                     'nullable': False,
                     'read_only': False,
@@ -870,6 +875,7 @@ class TestLocationsAPI(APITestCase):
                 },
                 'friendly_cats': {
                     'default': None,
+                    'immutable': False,
                     'label': 'Friendly cats',
                     'nullable': True,
                     'read_only': False,
