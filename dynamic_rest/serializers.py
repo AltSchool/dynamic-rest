@@ -449,7 +449,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         value = super(WithDynamicSerializerMixin, self).to_internal_value(data)
         id_attr = getattr(self.Meta, 'update_lookup_field', 'id')
         request_method = getattr(
-            getattr(self.context.get('view'), 'request', None),
+            self.context.get('request', None),
             'method',
             ''
         )
