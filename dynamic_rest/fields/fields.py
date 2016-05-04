@@ -68,6 +68,10 @@ class DynamicField(fields.Field):
         super(DynamicField, self).bind(*args, **kwargs)
 
         self.read_only = self.get_meta_arg('read_only', 'read_only_fields')
+        self.immutable = self.immutable or self.get_meta_arg(
+            'immutable',
+            'immutable_fields'
+        )
 
         # If immutable and not a POST, set read_only to True
         request_method = getattr(

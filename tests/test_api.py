@@ -1411,7 +1411,7 @@ class TestCatsAPI(APITestCase):
             content_type='application/json'
         )
         self.assertEqual(201, response.status_code)
-        data = json.loads(response.content)
+        data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(data['cat']['parent'], parent_id)
 
         # Try to change 'parent' in a PATCH request...
@@ -1424,7 +1424,7 @@ class TestCatsAPI(APITestCase):
             content_type='application/json'
         )
         self.assertEqual(200, response.status_code)
-        data = json.loads(response.content)
+        data = json.loads(response.content.decode('utf-8'))
 
         # ... and it should not have changed:
         self.assertEqual(data['cat']['parent'], parent_id)

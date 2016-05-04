@@ -1,8 +1,8 @@
+import unittest
 from collections import OrderedDict
 
 from django.test import TestCase, override_settings
 from django.utils import six
-import unittest
 
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.serializers import DynamicListSerializer, EphemeralObject
