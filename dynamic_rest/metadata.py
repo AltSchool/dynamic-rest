@@ -43,6 +43,8 @@ class DynamicMetadata(SimpleMetadata):
             field_info[attr] = getattr(field, attr)
         if field_info['default'] is empty:
             field_info['default'] = None
+        if hasattr(field, 'immutable'):
+            field_info['immutable'] = field.immutable
         field_info['nullable'] = field.allow_null
         if hasattr(field, 'choices'):
             field_info['choices'] = [
