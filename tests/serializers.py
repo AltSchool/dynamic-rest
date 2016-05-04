@@ -34,7 +34,7 @@ class CatSerializer(DynamicModelSerializer):
         'LocationSerializer', link=backup_home_link)
     foobar = DynamicRelationField(
         'LocationSerializer', source='hunting_grounds', many=True)
-    parent = DynamicRelationField('CatSerializer')
+    parent = DynamicRelationField('CatSerializer', immutable=True)
 
     class Meta:
         model = Cat

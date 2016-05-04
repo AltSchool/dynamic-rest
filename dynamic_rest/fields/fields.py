@@ -26,6 +26,7 @@ class DynamicField(fields.Field):
         requires=None,
         deferred=False,
         field_type=None,
+        immutable=False,
         **kwargs
     ):
         """
@@ -40,6 +41,7 @@ class DynamicField(fields.Field):
         self.requires = requires
         self.deferred = deferred
         self.field_type = field_type
+        self.immutable = immutable
         self.kwargs = kwargs
         super(DynamicField, self).__init__(**kwargs)
 
@@ -49,17 +51,32 @@ class DynamicField(fields.Field):
     def to_internal_value(self, data):
         return data
 
+    def get_meta_arg(self, local_kwarg, meta_attr):
+        """ Get arguments that can either be set on the field itself,
+        or on a Meta attribute (e.g. "read_only").
+        """
+
+        # Explicit kwarg on field takes precedence
+        if local_kwarg in self.kwargs:
+            return self.kwargs[local_kwarg]
+
+        # Otherwise infer from parent's Meta attr
+        parent_meta_attr = getattr(self.parent.Meta, meta_attr, [])
+        return self.field_name in parent_meta_attr
+
     def bind(self, *args, **kwargs):
         super(DynamicField, self).bind(*args, **kwargs)
 
-        # Infer read_only from parent Meta.read_only_fields
-        if 'read_only' not in self.kwargs:
-            parent_ro_fields = getattr(
-                self.parent.Meta,
-                'read_only_fields',
-                []
-            )
-            self.read_only = self.field_name in parent_ro_fields
+        self.read_only = self.get_meta_arg('read_only', 'read_only_fields')
+
+        # If immutable and not a POST, set read_only to True
+        request_method = getattr(
+            self.context.get('request'),
+            'method',
+            ''
+        )
+        if self.immutable and request_method != 'POST':
+            self.read_only = True
 
 
 class DynamicComputedField(DynamicField):

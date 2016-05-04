@@ -2,6 +2,7 @@ from collections import OrderedDict
 
 from django.test import TestCase, override_settings
 from django.utils import six
+import unittest
 
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.serializers import DynamicListSerializer, EphemeralObject
@@ -662,6 +663,9 @@ class TestSerializerCaching(TestCase):
             'Different root serializers should yield different instances.'
         )
 
+    @unittest.skip(
+        "skipping because DRF's Field.root doesn't have cycle-detection."
+    )
     def test_root_serializer_cycle_busting(self):
         s = CatSerializer(
             request_fields={'home': {}, 'backup_home': {}}
