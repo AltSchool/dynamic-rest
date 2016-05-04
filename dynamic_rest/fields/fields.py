@@ -74,11 +74,7 @@ class DynamicField(fields.Field):
         )
 
         # If immutable and not a POST, set read_only to True
-        request_method = getattr(
-            self.context.get('request'),
-            'method',
-            ''
-        )
+        request_method = self.parent.get_request_method()
         if self.immutable and request_method != 'POST':
             self.read_only = True
 

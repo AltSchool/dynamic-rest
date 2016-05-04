@@ -290,6 +290,13 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             )
         return cls.Meta.plural_name
 
+    def get_request_method(self):
+        return getattr(
+            self.context.get('request'),
+            'method',
+            ''
+        )
+
     def get_all_fields(self):
         """Returns the entire serializer field set.
 
@@ -448,11 +455,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
     def to_internal_value(self, data):
         value = super(WithDynamicSerializerMixin, self).to_internal_value(data)
         id_attr = getattr(self.Meta, 'update_lookup_field', 'id')
-        request_method = getattr(
-            self.context.get('request', None),
-            'method',
-            ''
-        )
+        request_method = self.get_request_method()
 
         # Add update_lookup_field field back to validated data
         # since super by default strips out read-only fields
