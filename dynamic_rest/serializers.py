@@ -449,7 +449,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         value = super(WithDynamicSerializerMixin, self).to_internal_value(data)
         id_attr = getattr(self.Meta, 'update_lookup_field', 'id')
         request_method = getattr(
-            getattr(self.context.get('view'), 'request'),
+            getattr(self.context.get('view'), 'request', None),
             'method',
             ''
         )
@@ -510,7 +510,7 @@ class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
 
     @classmethod
     def get_model(cls):
-        return cls.Meta.model
+        return getattr(cls.Meta, 'model', None)
 
     def get_id_fields(self):
         """
