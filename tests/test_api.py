@@ -1405,8 +1405,9 @@ class TestCatsAPI(APITestCase):
     def test_immutable_field(self):
         """ Make sure immutable 'parent' field can be set on POST """
         parent_id = self.kitten.parent_id
+        kitten_name = 'New Kitten'
         data = {
-            'name': 'New Kitten',
+            'name': kitten_name,
             'home': self.kitten.home_id,
             'backup_home': self.kitten.backup_home_id,
             'parent': parent_id
@@ -1419,10 +1420,12 @@ class TestCatsAPI(APITestCase):
         self.assertEqual(201, response.status_code)
         data = json.loads(response.content.decode('utf-8'))
         self.assertEqual(data['cat']['parent'], parent_id)
+        self.assertEqual(data['cat']['name'], kitten_name)
 
-        # Try to change 'parent' in a PATCH request...
+        # Try to change immutable data in a PATCH request...
         patch_data = {
-            'parent': self.kitten.pk
+            'parent': self.kitten.pk,
+            'name': 'Renamed Kitten',
         }
         response = self.client.patch(
             '/cats/%s/' % data['cat']['id'],
@@ -1434,3 +1437,4 @@ class TestCatsAPI(APITestCase):
 
         # ... and it should not have changed:
         self.assertEqual(data['cat']['parent'], parent_id)
+        self.assertEqual(data['cat']['name'], kitten_name)

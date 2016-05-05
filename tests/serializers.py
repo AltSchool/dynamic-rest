@@ -41,6 +41,7 @@ class CatSerializer(DynamicModelSerializer):
         name = 'cat'
         fields = ('id', 'name', 'home', 'backup_home', 'foobar', 'parent')
         deferred_fields = ('home', 'backup_home', 'foobar', 'parent')
+        immutable_fields = ('name',)
 
 
 class LocationSerializer(DynamicModelSerializer):

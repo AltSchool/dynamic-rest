@@ -51,33 +51,6 @@ class DynamicField(fields.Field):
     def to_internal_value(self, data):
         return data
 
-    def get_meta_arg(self, local_kwarg, meta_attr):
-        """ Get arguments that can either be set on the field itself,
-        or on a Meta attribute (e.g. "read_only").
-        """
-
-        # Explicit kwarg on field takes precedence
-        if local_kwarg in self.kwargs:
-            return self.kwargs[local_kwarg]
-
-        # Otherwise infer from parent's Meta attr
-        parent_meta_attr = getattr(self.parent.Meta, meta_attr, [])
-        return self.field_name in parent_meta_attr
-
-    def bind(self, *args, **kwargs):
-        super(DynamicField, self).bind(*args, **kwargs)
-
-        self.read_only = self.get_meta_arg('read_only', 'read_only_fields')
-        self.immutable = self.immutable or self.get_meta_arg(
-            'immutable',
-            'immutable_fields'
-        )
-
-        # If immutable and not a POST, set read_only to True
-        request_method = self.parent.get_request_method()
-        if self.immutable and request_method != 'POST':
-            self.read_only = True
-
 
 class DynamicComputedField(DynamicField):
     pass
