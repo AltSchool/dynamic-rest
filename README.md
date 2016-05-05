@@ -27,7 +27,7 @@ See http://dynamic-rest.readthedocs.org for full documentation.
   - [Directory panel](#directory-panel)
   - [Optimizations](#optimizations)
 - [Settings](#settings)
-- [Compatability table](#compatability-table)
+- [Compatibility table](#compatibility-table)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -592,7 +592,7 @@ DYNAMIC_REST = {
 }
 ```
 
-# Compatability table
+# Compatibility table
 
 Not all versions of Python, Django, and DRF are compatible. Here are the combinations you can use reliably with DREST (all tested by our tox configuration):
 
