@@ -322,12 +322,12 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             meta_list
         }
 
-    def make_fields_read_only(self, fields, ro_field_names, value):
-        for name in ro_field_names:
-            field = fields.get(name)
+    def flag_fields(self, all_fields, fields_to_flag, attr, value):
+        for name in fields_to_flag:
+            field = all_fields.get(name)
             if not field:
                 continue
-            setattr(field, 'read_only', value)
+            setattr(field, attr, value)
 
     def get_fields(self):
         """Returns the serializer's field set.
@@ -364,16 +364,19 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         # Set read_only flags based on read_only_fields meta list.
         # Here to cover DynamicFields not covered by DRF.
         ro_fields = getattr(self.Meta, 'read_only_fields', [])
-        self.make_fields_read_only(serializer_fields, ro_fields, True)
+        self.flag_fields(serializer_fields, ro_fields, 'read_only', True)
 
         # Toggle read_only flags for immutable fields.
+        # Note: This overrides `read_only` if both are set, to allow
+        #       inferred DRF fields to be made immutable.
         immutable_field_names = self._get_flagged_field_names(
             serializer_fields,
             'immutable'
         )
-        self.make_fields_read_only(
+        self.flag_fields(
             serializer_fields,
             immutable_field_names,
+            'read_only',
             value=False if self.get_request_method() == 'POST' else True
         )
 
