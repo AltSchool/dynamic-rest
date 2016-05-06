@@ -295,7 +295,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             self.context.get('request'),
             'method',
             ''
-        )
+        ).upper()
 
     def get_all_fields(self):
         """Returns the entire serializer field set.
