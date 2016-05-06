@@ -1,13 +1,24 @@
 from rest_framework import exceptions
 
 from dynamic_rest.viewsets import DynamicModelViewSet
-from tests.models import Cat, Dog, Group, Horse, Location, Profile, User, Zebra
+from tests.models import (
+    Cat,
+    Dog,
+    Group,
+    Horse,
+    Location,
+    Permission,
+    Profile,
+    User,
+    Zebra,
+)
 from tests.serializers import (
     CatSerializer,
     DogSerializer,
     GroupSerializer,
     HorseSerializer,
     LocationSerializer,
+    PermissionSerializer,
     ProfileSerializer,
     UserLocationSerializer,
     UserSerializer,
@@ -132,3 +143,8 @@ class ZebraViewSet(DynamicModelViewSet):
     serializer_class = ZebraSerializer
     queryset = Zebra.objects.all()
     ordering_fields = '__all__'
+
+
+class PermissionViewSet(DynamicModelViewSet):
+    serializer_class = PermissionSerializer
+    queryset = Permission.objects.all()

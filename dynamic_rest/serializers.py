@@ -322,6 +322,18 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             meta_list
         }
 
+    def _get_deferred_field_names(self, fields):
+        deferred_fields = self._get_flagged_field_names(
+            fields,
+            'deferred'
+        )
+        if settings.DEFER_MANY_RELATIONS:
+            deferred_fields.update(
+                self._get_flagged_field_names(fields, 'many')
+            )
+
+        return deferred_fields
+
     def flag_fields(self, all_fields, fields_to_flag, attr, value):
         for name in fields_to_flag:
             field = all_fields.get(name)
@@ -344,7 +356,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
 
         serializer_fields = copy.deepcopy(all_fields)
         request_fields = self.request_fields
-        deferred = self._get_flagged_field_names(serializer_fields, 'deferred')
+        deferred = self._get_deferred_field_names(serializer_fields)
 
         # apply request overrides
         if request_fields:

@@ -12,6 +12,10 @@ DYNAMIC_REST = {
     # ENABLE_LINKS: enable/disable relationship links
     'ENABLE_LINKS': True,
 
+    # DEFER_MANY_RELATIONS: automatically defer many-relations if links
+    # are enabled.
+    'DEFER_MANY_RELATIONS': False,
+
     # ENABLE_SERIALIZER_CACHE: enable/disable caching of related serializers
     'ENABLE_SERIALIZER_CACHE': True,
 

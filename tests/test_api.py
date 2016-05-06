@@ -6,7 +6,7 @@ from django.test import override_settings
 from django.utils import six
 from rest_framework.test import APITestCase
 
-from tests.models import Cat, Group, Location, Profile, User
+from tests.models import Cat, Group, Location, Permission, Profile, User
 from tests.serializers import NestedEphemeralSerializer
 from tests.setup import create_fixture
 
@@ -1108,6 +1108,24 @@ class TestLinks(APITestCase):
         # Note: if 'profile' isn't getting ignored, this will return
         # a 404 since a matching Profile object isn't found.
         self.assertEquals(201, response.status_code)
+
+    @override_settings(
+        DYNAMIC_REST={
+            'ENABLE_LINKS': True,
+            'DEFER_MANY_RELATIONS': True,
+        }
+    )
+    def test_auto_deferral(self):
+        perm = Permission.objects.create(
+            name='test',
+            code=1
+        )
+        perm.groups.add(self.fixture.groups[0])
+
+        url = '/permissions/%s/' % perm.pk
+        r = self.client.get(url)
+        data = json.loads(r.content)
+        self.assertFalse('groups' in data['permission'])
 
 
 class TestDogsAPI(APITestCase):
