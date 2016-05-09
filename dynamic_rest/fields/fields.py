@@ -26,6 +26,7 @@ class DynamicField(fields.Field):
         requires=None,
         deferred=False,
         field_type=None,
+        immutable=False,
         **kwargs
     ):
         """
@@ -40,6 +41,7 @@ class DynamicField(fields.Field):
         self.requires = requires
         self.deferred = deferred
         self.field_type = field_type
+        self.immutable = immutable
         self.kwargs = kwargs
         super(DynamicField, self).__init__(**kwargs)
 
@@ -48,18 +50,6 @@ class DynamicField(fields.Field):
 
     def to_internal_value(self, data):
         return data
-
-    def bind(self, *args, **kwargs):
-        super(DynamicField, self).bind(*args, **kwargs)
-
-        # Infer read_only from parent Meta.read_only_fields
-        if 'read_only' not in self.kwargs:
-            parent_ro_fields = getattr(
-                self.parent.Meta,
-                'read_only_fields',
-                []
-            )
-            self.read_only = self.field_name in parent_ro_fields
 
 
 class DynamicComputedField(DynamicField):

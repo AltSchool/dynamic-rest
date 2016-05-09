@@ -819,6 +819,7 @@ class TestLocationsAPI(APITestCase):
                 },
                 'address': {
                     'default': None,
+                    'immutable': False,
                     'label': 'Address',
                     'nullable': False,
                     'read_only': False,
@@ -835,6 +836,7 @@ class TestLocationsAPI(APITestCase):
                 },
                 'user_count': {
                     'default': None,
+                    'immutable': False,
                     'label': 'User count',
                     'nullable': False,
                     'read_only': False,
@@ -843,6 +845,7 @@ class TestLocationsAPI(APITestCase):
                 },
                 'users': {
                     'default': None,
+                    'immutable': False,
                     'label': 'Users',
                     'nullable': False,
                     'read_only': False,
@@ -852,6 +855,7 @@ class TestLocationsAPI(APITestCase):
                 },
                 'cats': {
                     'default': None,
+                    'immutable': False,
                     'label': 'Cats',
                     'nullable': False,
                     'read_only': False,
@@ -861,6 +865,7 @@ class TestLocationsAPI(APITestCase):
                 },
                 'bad_cats': {
                     'default': None,
+                    'immutable': False,
                     'label': 'Bad cats',
                     'nullable': False,
                     'read_only': False,
@@ -870,6 +875,7 @@ class TestLocationsAPI(APITestCase):
                 },
                 'friendly_cats': {
                     'default': None,
+                    'immutable': False,
                     'label': 'Friendly cats',
                     'nullable': True,
                     'read_only': False,
@@ -1395,3 +1401,40 @@ class TestCatsAPI(APITestCase):
         self.assertTrue('+cats' in content)
         self.assertEquals(content['cat']['name'], 'Kitten')
         self.assertEquals(content['+cats'][0]['name'], 'Parent')
+
+    def test_immutable_field(self):
+        """ Make sure immutable 'parent' field can be set on POST """
+        parent_id = self.kitten.parent_id
+        kitten_name = 'New Kitten'
+        data = {
+            'name': kitten_name,
+            'home': self.kitten.home_id,
+            'backup_home': self.kitten.backup_home_id,
+            'parent': parent_id
+        }
+        response = self.client.post(
+            '/cats/',
+            json.dumps(data),
+            content_type='application/json'
+        )
+        self.assertEqual(201, response.status_code)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['cat']['parent'], parent_id)
+        self.assertEqual(data['cat']['name'], kitten_name)
+
+        # Try to change immutable data in a PATCH request...
+        patch_data = {
+            'parent': self.kitten.pk,
+            'name': 'Renamed Kitten',
+        }
+        response = self.client.patch(
+            '/cats/%s/' % data['cat']['id'],
+            json.dumps(patch_data),
+            content_type='application/json'
+        )
+        self.assertEqual(200, response.status_code)
+        data = json.loads(response.content.decode('utf-8'))
+
+        # ... and it should not have changed:
+        self.assertEqual(data['cat']['parent'], parent_id)
+        self.assertEqual(data['cat']['name'], kitten_name)

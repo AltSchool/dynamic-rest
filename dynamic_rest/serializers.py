@@ -290,6 +290,13 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             )
         return cls.Meta.plural_name
 
+    def get_request_method(self):
+        return getattr(
+            self.context.get('request'),
+            'method',
+            ''
+        ).upper()
+
     def get_all_fields(self):
         """Returns the entire serializer field set.
 
@@ -305,14 +312,22 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
                 field.parent = self
         return self._all_fields
 
-    def _get_deferred_field_names(self, serializer_fields):
-        """Return set of deferred field names."""
-        meta_deferred = set(getattr(self.Meta, 'deferred_fields', []))
+    def _get_flagged_field_names(self, fields, attr, meta_attr=None):
+        if meta_attr is None:
+            meta_attr = '%s_fields' % attr
+        meta_list = set(getattr(self.Meta, meta_attr, []))
         return {
-            name for name, field in six.iteritems(serializer_fields)
-            if getattr(field, 'deferred', None) is True or name in
-            meta_deferred
+            name for name, field in six.iteritems(fields)
+            if getattr(field, attr, None) is True or name in
+            meta_list
         }
+
+    def flag_fields(self, all_fields, fields_to_flag, attr, value):
+        for name in fields_to_flag:
+            field = all_fields.get(name)
+            if not field:
+                continue
+            setattr(field, attr, value)
 
     def get_fields(self):
         """Returns the serializer's field set.
@@ -329,7 +344,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
 
         serializer_fields = copy.deepcopy(all_fields)
         request_fields = self.request_fields
-        deferred = self._get_deferred_field_names(serializer_fields)
+        deferred = self._get_flagged_field_names(serializer_fields, 'deferred')
 
         # apply request overrides
         if request_fields:
@@ -345,6 +360,25 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
 
         for name in deferred:
             serializer_fields.pop(name)
+
+        # Set read_only flags based on read_only_fields meta list.
+        # Here to cover DynamicFields not covered by DRF.
+        ro_fields = getattr(self.Meta, 'read_only_fields', [])
+        self.flag_fields(serializer_fields, ro_fields, 'read_only', True)
+
+        # Toggle read_only flags for immutable fields.
+        # Note: This overrides `read_only` if both are set, to allow
+        #       inferred DRF fields to be made immutable.
+        immutable_field_names = self._get_flagged_field_names(
+            serializer_fields,
+            'immutable'
+        )
+        self.flag_fields(
+            serializer_fields,
+            immutable_field_names,
+            'read_only',
+            value=False if self.get_request_method() == 'POST' else True
+        )
 
         return serializer_fields
 
@@ -448,11 +482,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
     def to_internal_value(self, data):
         value = super(WithDynamicSerializerMixin, self).to_internal_value(data)
         id_attr = getattr(self.Meta, 'update_lookup_field', 'id')
-        request_method = getattr(
-            self.context.get('request', None),
-            'method',
-            ''
-        )
+        request_method = self.get_request_method()
 
         # Add update_lookup_field field back to validated data
         # since super by default strips out read-only fields
