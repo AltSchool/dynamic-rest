@@ -7,10 +7,7 @@ from django.utils import six
 from rest_framework.test import APITestCase
 
 from tests.models import Cat, Group, Location, Permission, Profile, User
-from tests.serializers import (
-    NestedEphemeralSerializer,
-    PermissionSerializer,
-)
+from tests.serializers import NestedEphemeralSerializer, PermissionSerializer
 from tests.setup import create_fixture
 
 UNICODE_STRING = six.unichr(9629)  # unicode heart
@@ -1132,7 +1129,7 @@ class TestLinks(APITestCase):
 
         url = '/permissions/%s/' % perm.pk
         r = self.client.get(url)
-        data = json.loads(r.content)
+        data = json.loads(r.content.decode('utf-8'))
         self.assertFalse('groups' in data['permission'])
 
         # users shouldn't be deferred because `deferred=False` is

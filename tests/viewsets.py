@@ -10,7 +10,7 @@ from tests.models import (
     Permission,
     Profile,
     User,
-    Zebra,
+    Zebra
 )
 from tests.serializers import (
     CatSerializer,
