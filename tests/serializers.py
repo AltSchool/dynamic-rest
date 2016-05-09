@@ -77,7 +77,7 @@ class PermissionSerializer(DynamicModelSerializer):
         fields = ('id', 'name', 'code', 'users', 'groups')
         deferred_fields = ('code',)
 
-    users = DynamicRelationField('UserSerializer', many=True, deferred=True)
+    users = DynamicRelationField('UserSerializer', many=True, deferred=False)
     groups = DynamicRelationField('GroupSerializer', many=True)
 
 
