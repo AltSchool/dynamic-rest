@@ -18,7 +18,7 @@ setup(
     include_package_data=True,
     dependency_links=open('dependency_links.txt').readlines(),
     install_requires=open('install_requires.txt').readlines(),
-    long_description=open('README.md').read(),
+    long_description=open('README.rst').read(),
     name=REPO_NAME,
     packages=find_packages(exclude=EXCLUDE_FROM_PACKAGES),
     scripts=['manage.py'],
