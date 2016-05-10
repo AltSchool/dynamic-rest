@@ -24,6 +24,10 @@ DYNAMIC_REST = {
     # ENABLE_BULK_UPDATE: enable/disable update in bulk
     'ENABLE_BULK_UPDATE': True,
 
+    # DEFER_MANY_RELATIONS: automatically defer many-relations, unless
+    # `deferred=False` is explicitly set on the field.
+    'DEFER_MANY_RELATIONS': False,
+
     # MAX_PAGE_SIZE: global setting for max page size.
     # Can be overriden at the viewset level.
     'MAX_PAGE_SIZE': None,

@@ -24,7 +24,7 @@ class DynamicField(fields.Field):
     def __init__(
         self,
         requires=None,
-        deferred=False,
+        deferred=None,
         field_type=None,
         immutable=False,
         **kwargs
@@ -103,7 +103,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         if 'link' in kwargs:
             self.link = kwargs.pop('link')
         super(DynamicRelationField, self).__init__(**kwargs)
-        self.kwargs['many'] = many
+        self.kwargs['many'] = self.many = many
 
     def get_model(self):
         """Get the child serializer's model."""

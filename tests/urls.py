@@ -12,6 +12,7 @@ router.register_resource(viewsets.LocationViewSet)
 router.register(r'cats', viewsets.CatViewSet)
 router.register_resource(viewsets.DogViewSet)
 router.register_resource(viewsets.HorseViewSet)
+router.register_resource(viewsets.PermissionViewSet)
 router.register(r'zebras', viewsets.ZebraViewSet)  # not canonical
 router.register(r'user_locations', viewsets.UserLocationViewSet)
 
