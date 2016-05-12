@@ -47,6 +47,7 @@ class CatSerializer(DynamicModelSerializer):
 class LocationSerializer(DynamicModelSerializer):
 
     class Meta:
+        defer_many_relations = False
         model = Location
         name = 'location'
         fields = (
@@ -72,6 +73,7 @@ class LocationSerializer(DynamicModelSerializer):
 class PermissionSerializer(DynamicModelSerializer):
 
     class Meta:
+        defer_many_relations = True
         model = Permission
         name = 'permission'
         fields = ('id', 'name', 'code', 'users', 'groups')
