@@ -931,6 +931,7 @@ class TestRelationsAPI(APITestCase):
         self.assertEqual(404, r.status_code)
 
         r = self.client.get('/users/1/permissions/')
+        self.assertFalse('groups' in r.data['permissions'][0])
         self.assertEqual(200, r.status_code)
 
         r = self.client.get('/users/1/groups/')

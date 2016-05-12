@@ -327,7 +327,12 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             fields,
             'deferred'
         )
-        if settings.DEFER_MANY_RELATIONS:
+        defer_many_relations = (
+            settings.DEFER_MANY_RELATIONS
+            if not hasattr(self.Meta, 'defer_many_relations')
+            else self.Meta.defer_many_relations
+        )
+        if defer_many_relations:
             # Auto-defer all fields, unless the 'deferred' attribute
             # on the field is specifically set to False.
             many_fields = self._get_flagged_field_names(fields, 'many')

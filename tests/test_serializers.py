@@ -589,6 +589,52 @@ class TestUserLocationSerializer(TestCase):
         self.assertTrue('location' in data)
         self.assertEqual(data['location']['name'], '0')
 
+    @override_settings(
+        DYNAMIC_REST={
+            'DEFER_MANY_RELATIONS': False,
+        }
+    )
+    def test_data_with_many_deferred(self):
+        class UserDeferredLocationSerializer(UserLocationSerializer):
+
+            class Meta:
+                defer_many_relations = True
+                model = User
+                name = 'user_deferred_location'
+            groups = DynamicRelationField('GroupSerializer', many=True)
+
+        data = UserDeferredLocationSerializer(
+            self.fixture.users[0]).data
+        self.assertFalse('groups' in data)
+
+        # Now include deferred embedded field
+        data = UserDeferredLocationSerializer(
+            self.fixture.users[0],
+            request_fields={
+                'id': True,
+                'name': True,
+                'groups': True
+            }).data
+        self.assertTrue('groups' in data)
+
+    @override_settings(
+        DYNAMIC_REST={
+            'DEFER_MANY_RELATIONS': True,
+        }
+    )
+    def test_data_with_many_not_deferred(self):
+        class UserDeferredLocationSerializer(UserLocationSerializer):
+
+            class Meta:
+                defer_many_relations = False
+                model = User
+                name = 'user_deferred_location'
+            groups = DynamicRelationField('GroupSerializer', many=True)
+
+        data = UserDeferredLocationSerializer(
+            self.fixture.users[0]).data
+        self.assertTrue('groups' in data)
+
 
 @override_settings(
     DYNAMIC_REST={
