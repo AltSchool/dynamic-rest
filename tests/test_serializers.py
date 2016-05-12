@@ -595,7 +595,6 @@ class TestUserLocationSerializer(TestCase):
         }
     )
     def test_data_with_many_deferred(self):
-        # Make sure 'embed' fields can be deferred
         class UserDeferredLocationSerializer(UserLocationSerializer):
 
             class Meta:
@@ -624,7 +623,6 @@ class TestUserLocationSerializer(TestCase):
         }
     )
     def test_data_with_many_not_deferred(self):
-        # Make sure 'embed' fields can be deferred
         class UserDeferredLocationSerializer(UserLocationSerializer):
 
             class Meta:
