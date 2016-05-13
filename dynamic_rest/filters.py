@@ -203,10 +203,9 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         """
 
-        filters_map = (
-            kwargs.get('filters_map') or
-            self.view.get_request_feature(self.view.FILTER)
-        )
+        filters_map = kwargs.get('filters_map')
+        if filters_map is None:
+            filters_map = self.view.get_request_feature(self.view.FILTER)
 
         out = TreeMap()
 
