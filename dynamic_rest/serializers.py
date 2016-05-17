@@ -10,6 +10,7 @@ from rest_framework import exceptions, fields, serializers
 from rest_framework.fields import SkipField
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 
+from dynamic_rest import prefetch
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
 from dynamic_rest.fields import DynamicRelationField
@@ -467,6 +468,19 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             if not field.write_only
         ]
 
+    @cached_property
+    def _readable_id_fields(self):
+        fields = self._readable_fields
+        return {
+            field for field in fields
+            if (
+                isinstance(field, DynamicRelationField)
+                and not isinstance(
+                    self.request_fields.get(field.field_name), dict
+                )
+            )
+        }
+
     def _faster_to_representation(self, instance):
         """Modified to_representation with optimizations.
 
@@ -484,11 +498,23 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         ret = {}
         fields = self._readable_fields
 
+        is_fast = isinstance(instance, prefetch.FastObject)
+        id_fields = self._readable_id_fields
+
         for field in fields:
-            try:
-                attribute = field.get_attribute(instance)
-            except SkipField:
-                continue
+            if is_fast:
+                if field in id_fields and field.field_name not in instance:
+                    # TODO - make better.
+                    attribute = instance.get(field.source + '_id')
+                    ret[field.field_name] = attribute
+                    continue
+                else:
+                    attribute = instance[field.source]
+            else:
+                try:
+                    attribute = field.get_attribute(instance)
+                except SkipField:
+                    continue
 
             if attribute is None:
                 # We skip `to_representation` for `None` values so that

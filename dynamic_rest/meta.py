@@ -1,7 +1,15 @@
 """Module containing Django meta helpers."""
 from itertools import chain
 
-from django.db.models import ManyToManyField
+from django.db.models import (
+    ForeignKey,
+    OneToOneField,
+    OneToOneRel,  # tested in 1.9
+    ManyToManyField,
+    ManyToOneRel,  # tested in 1.9
+    ManyToManyRel,
+)
+# from django.utils import six
 
 from dynamic_rest.related import RelatedObject
 
@@ -53,6 +61,36 @@ def get_model_field(model, field_name):
             )
 
 
+def get_model_field_and_type(model, field_name):
+    field = get_model_field(model, field_name)
+
+    # Django 1.7 (and 1.8?)
+    if isinstance(field, RelatedObject):
+        if isinstance(field.field, OneToOneField):
+            return field, 'o2or'
+        elif isinstance(field.field, ManyToManyField):
+            return field, 'm2m'
+        elif isinstance(field.field, ForeignKey):
+            return field, 'm2o'
+        else:
+            raise RuntimeError("Unexpected field type")
+
+    # Django 1.9
+    type_map = [
+        (OneToOneField,  'o2o'),
+        (OneToOneRel,  'o2or'),  # is subclass of m2o so check first
+        (ManyToManyField,  'm2m'),
+        (ManyToOneRel,  'm2o'),
+        (ManyToManyRel, 'm2m'),
+        (ForeignKey, 'fk'),  # check last
+    ]
+    for cls, type_str in type_map:
+        if isinstance(field, cls):
+            return field, type_str,
+
+    return field, '',
+
+
 def is_field_remote(model, field_name):
     """Check whether a given model field is a remote field.
 
@@ -72,6 +110,39 @@ def is_field_remote(model, field_name):
 
     model_field = get_model_field(model, field_name)
     return isinstance(model_field, (ManyToManyField, RelatedObject))
+
+
+def reverse_m2m_field_name(m2m_field):
+    try:
+        # Django 1.9
+        return m2m_field.remote_field.name
+    except:
+        # Django 1.7
+        if hasattr(m2m_field, 'rel'):
+            return m2m_field.rel.related_name
+        elif hasattr(m2m_field, 'field'):
+            return m2m_field.field.name
+
+
+def reverse_o2o_field_name(o2or_field):
+    try:
+        # Django 1.9
+        return o2or_field.remote_field.attname
+    except:
+        # Django 1.7
+        return o2or_field.field.attname
+
+
+def get_remote_model(field):
+    try:
+        # Django 1.9
+        return field.remote_field.model
+    except:
+        # Django 1.7
+        if hasattr(field, 'field'):
+            return field.field.model
+        elif hasattr(field, 'rel'):
+            return field.rel.to
 
 
 def get_model_table(model):
