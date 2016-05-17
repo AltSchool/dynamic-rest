@@ -317,7 +317,7 @@ class QueryCount(object):
                 num_queries
             )
         )
-        print "Success! %d queries" % num_queries
+        print("Success! %d queries" % num_queries)
 
 
 def test():

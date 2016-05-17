@@ -31,9 +31,9 @@ class Profiling(object):
             fp = open(self.out_file_path, 'w')
             fp.write(s.getvalue())
             fp.close()
-            print "Wrote to %s" % self.out_file_path
+            print("Wrote to %s" % self.out_file_path)
         else:
-            print s.getvalue()
+            print(s.getvalue())
 
 
 def get_cpu_usage():
@@ -49,7 +49,7 @@ class CPUTimer(object):
 
     def __exit__(self, type, value, traceback):
         used = get_cpu_usage() - self.start_cpu
-        print "CPU Usage: %.4f secs" % used
+        print("CPU Usage: %.4f secs" % used)
 
 
 def run_test():
@@ -68,18 +68,18 @@ def run_test():
     szr.enable_optimization = False
     szr.getattr_optimization = False
 
-    print "Base-line (DRF):"
+    print("Base-line (DRF):")
     with CPUTimer():
         do_thing(szr, user)
 
     szr.enable_optimization = True
-    print "DREST latest:"
+    print("DREST latest:")
     with CPUTimer():
         do_thing(szr, user)
 
     szr.enable_optimization = True
     szr.getattr_optimization = True
-    print "With getattr optimization:"
+    print("With getattr optimization:")
     with CPUTimer():
         do_thing(szr, user)
 
