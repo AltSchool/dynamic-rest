@@ -9,6 +9,7 @@ from rest_framework import fields
 from rest_framework.exceptions import NotFound, ParseError
 from rest_framework.serializers import SerializerMethodField
 
+from dynamic_rest import prefetch
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
 from dynamic_rest.fields.common import WithRelationalFieldMixin
@@ -282,7 +283,9 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             if hasattr(instance, source_id):
                 return getattr(instance, source_id)
 
-        if model is None:
+        if isinstance(instance, prefetch.FastObject):
+            related = instance
+        elif model is None:
             related = getattr(instance, source)
         else:
             try:
