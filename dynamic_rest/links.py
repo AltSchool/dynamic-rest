@@ -1,7 +1,8 @@
 """This module contains utilities to support API links."""
 from django.utils import six
+
 from dynamic_rest.conf import settings
-from .routers import DynamicRouter
+from dynamic_rest.routers import DynamicRouter
 
 
 def merge_link_object(serializer, data, instance):
