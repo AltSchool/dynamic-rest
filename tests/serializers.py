@@ -199,7 +199,9 @@ class ProfileSerializer(DynamicModelSerializer):
 
     user = DynamicRelationField('UserSerializer')
     user_location_name = DynamicField(
-        source='user.location.name', read_only=True
+        source='user.location.name',
+        requires=['user.location.name'],
+        read_only=True
     )
 
 

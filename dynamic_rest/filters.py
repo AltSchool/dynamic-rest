@@ -13,6 +13,7 @@ from dynamic_rest.datastructures import TreeMap
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.meta import get_model_field, is_field_remote, is_model_field
 from dynamic_rest.patches import patch_prefetch_one_level
+from dynamic_rest.prefetch import FastQuery
 from dynamic_rest.related import RelatedObject
 
 patch_prefetch_one_level()
@@ -184,6 +185,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         self.view = view
 
         self.DEBUG = settings.DEBUG
+        self.make_fast = self.request.query_params.get('make_fast')
 
         if self.DEBUG:
             # in DEBUG mode, save a representation of the prefetch tree
@@ -464,6 +466,10 @@ class DynamicFilterBackend(BaseFilterBackend):
             is_root_level = True
 
         model = getattr(serializer.Meta, 'model', None)
+
+        # TODO(fastquery): make this conditional on... something
+        if not isinstance(queryset, FastQuery) and self.make_fast:
+            queryset = FastQuery(queryset)
 
         if not model:
             return queryset

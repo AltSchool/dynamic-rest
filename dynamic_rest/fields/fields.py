@@ -272,7 +272,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             if hasattr(instance, source_id):
                 return getattr(instance, source_id)
 
-        if isinstance(instance, prefetch.FastObject):
+        if isinstance(instance, (prefetch.FastObject, prefetch.FastList)):
             related = instance
         elif model is None:
             related = getattr(instance, source)
@@ -284,6 +284,9 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
 
         if related is None:
             return None
+
+        return serializer.to_representation(related)
+        '''
         try:
             return serializer.to_representation(related)
         except Exception as e:
@@ -300,6 +303,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
                     repr(related)
                 )
             )
+        '''
 
     def to_internal_value_single(self, data, serializer):
         """Return the underlying object, given the serialized form."""

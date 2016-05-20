@@ -127,6 +127,46 @@ class WithDynamicViewSetMixin(object):
         else:
             return renderers
 
+    def list(self, *args, **kwargs):
+        '''
+        from dynamic_rest.utils import profiling as prof
+
+        file_name = '/tmp/profiling/%s' % datetime.datetime.now().isoformat()
+        with prof.Profiling(
+            out_file_path=file_name,
+            num_rows=100,
+            # time_func=prof.get_cpu_usage,
+        ):
+            r = super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
+        return r
+        '''
+
+        from dynamic_rest.utils import profiling as prof
+        s = prof.get_cpu_usage()
+        r = super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
+        e = prof.get_cpu_usage()
+        r['X-CPU-Usage'] = "%.4f" % (e - s)
+        print "CPU Usage: %.4f" % (e - s)
+
+        '''
+        import datetime
+        from dynamic_rest.utils.py2devtools import Profiler
+        import gevent
+
+        profiler = Profiler(gevent.getcurrent())
+        s = get_cpu_usage()
+        profiler.start()
+        r = super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
+        profiler.stop()
+        e = get_cpu_usage()
+        file_name = '/tmp/profiling/%s' % datetime.datetime.now().isoformat()
+        with open(file_name, 'w') as f:
+            f.write(profiler.output())
+        r['X-CPU-Usage'] = "%.4f" % (e - s)
+        '''
+
+        return r
+
     def get_request_feature(self, name):
         """Parses the request for a particular feature.
 
