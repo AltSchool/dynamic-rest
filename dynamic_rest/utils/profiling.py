@@ -10,15 +10,20 @@ class Profiling(object):
         self,
         out_file_path=None,
         sortby='cumulative',
-        num_rows=50
+        num_rows=50,
+        time_func=None,
     ):
         self.prof = None
         self.sortby = sortby
         self.out_file_path = out_file_path
         self.num_rows = num_rows
+        self.time_func = time_func
 
     def __enter__(self):
-        self.prof = cProfile.Profile()
+        if self.time_func:
+            self.prof = cProfile.Profile(self.time_func)
+        else:
+            self.prof = cProfile.Profile()
         self.prof.enable()
 
     def __exit__(self, type, value, traceback):

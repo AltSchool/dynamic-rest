@@ -1,5 +1,5 @@
 from collections import defaultdict
-from django.db import connection
+from django.db import connection, models
 from django.db.models import QuerySet, Prefetch
 
 from dynamic_rest.meta import (
@@ -12,15 +12,41 @@ from dynamic_rest.meta import (
 
 class FastObject(dict):
 
+    def __init__(self, *args, **kwargs):
+        self.pk_field = kwargs.pop('pk_field', 'id')
+        return super(FastObject, self).__init__(*args)
+
+    @property
+    def pk(self):
+        return self[self.pk_field]
+
+    def _slow_getattr(self, name):
+        if '.' in name:
+            parts = name.split('.')
+            obj = self
+            for part in parts:
+                obj = obj[part]
+            return obj
+        else:
+            raise AttributeError
+
     def __getattr__(self, name):
         try:
             return self[name]
         except KeyError:
+            # Fast approach failed, fall back on slower logic.
+            return self._slow_getattr(name)
             raise AttributeError
+
+
+class FastList(list):
+    pass
 
 
 class FastPrefetch(object):
     def __init__(self, field, query):
+        if isinstance(query, models.Manager):
+            query = query.all()
         if isinstance(query, QuerySet):
             query = FastQuery(query)
 
@@ -56,18 +82,80 @@ class FastPrefetch(object):
         return prefetch
 
     @classmethod
-    def make_from_prefetch(cls, prefetch):
+    def make_from_prefetch(cls, prefetch, parent_model):
         assert isinstance(prefetch, Prefetch)
 
-        return cls.make_from_field(
-            model=prefetch.queryset.model,
-            field_name=prefetch.prefetch_through
-        )
+        if isinstance(prefetch.queryset, FastQuery):
+            return cls(
+                prefetch.prefetch_through,
+                prefetch.queryset
+            )
+        else:
+            return cls.make_from_field(
+                model=parent_model,
+                field_name=prefetch.prefetch_through
+            )
 
 
-class FastQuery(object):
+class FastQueryCompatMixin(object):
+    """ Mixins for FastQuery to provide QuerySet-compatibility APIs.
+    They basically just modify the underlying QuerySet object.
+    Separated in a mixin so it's clearer which APIs are supported.
+    """
+
+    def prefetch_related(self, *args):
+        try:
+            for arg in args:
+                if isinstance(arg, str):
+                    arg = FastPrefetch.make_from_field(
+                        model=self.model,
+                        field_name=arg
+                    )
+                elif isinstance(arg, Prefetch):
+                    arg = FastPrefetch.make_from_prefetch(arg, self.model)
+                if not isinstance(arg, FastPrefetch):
+                    raise Exception("Must be FastPrefetch object")
+
+                if arg.field in self.prefetches:
+                    raise Exception(
+                        "Prefetch for field '%s' already exists."
+                    )
+                self.prefetches[arg.field] = arg
+        except:
+            import pdb
+            pdb.set_trace()
+
+        return self
+
+    def only(self, *fields):
+        # TODO: support this for realz
+        '''
+        self.fields = set(self.fields) + set(fields)
+        '''
+        return self
+
+    def filter(self, *args, **kwargs):
+        self.queryset = self.queryset.filter(*args, **kwargs)
+        return self
+
+    def order_by(self, *ordering):
+        self.queryset = self.queryset.order_by(*ordering)
+        return self
+
+    def distinct(self, *args, **kwargs):
+        self.queryset = self.queryset.distinct(*args, **kwargs)
+        return self
+
+    @property
+    def query(self):
+        return self.queryset.query
+
+
+class FastQuery(FastQueryCompatMixin, object):
 
     def __init__(self, queryset):
+        if isinstance(queryset, models.Manager):
+            queryset = queryset.all()
         self.queryset = queryset
         self.model = queryset.model
         self.prefetches = {}
@@ -75,33 +163,6 @@ class FastQuery(object):
         self.pk_field = queryset.model._meta.pk.name
         self._data = None
         self._my_ids = None
-
-    def prefetch_related(self, *args):
-        for arg in args:
-            if isinstance(arg, str):
-                arg = FastPrefetch.make_from_field(
-                    model=self.model,
-                    field_name=arg
-                )
-            elif isinstance(arg, Prefetch):
-                arg = FastPrefetch.make_from_prefetch(arg)
-            if not isinstance(arg, FastPrefetch):
-                raise Exception("Must be FastPrefetch object")
-
-            if arg.field in self.prefetches:
-                raise Exception(
-                    "Prefetch for field '%s' already exists."
-                )
-            self.prefetches[arg.field] = arg
-
-        return self
-
-    '''
-    # TODO: support this
-    def only(self, *fields):
-        self.fields = set(self.fields) + set(fields)
-        return self
-    '''
 
     # TODO: probably override __iter__ or something
     # instead of having an explicit 'execute()' method
@@ -115,13 +176,21 @@ class FastQuery(object):
 
         self.merge_prefetch(data)
 
-        self._data = data
-        return map(FastObject, data)
+        self._data = FastList(
+            map(lambda obj: FastObject(obj, pk_field=self.pk_field), data)
+        )
+        return self._data
 
     def __iter__(self):
+        """Allow this to be cast to an iterable.
+        Note: as with Django QuerySets, calling this will cause the
+              query to execute.
+        """
         return iter(self.execute())
 
     def __getitem__(self, k):
+        """Support list index and slicing, similar to Django QuerySet."""
+
         if self._data is not None:
             # Query has already been executed. Extract from local cache.
             return self._data[k]
@@ -145,12 +214,11 @@ class FastQuery(object):
             self.queryset.query.set_limits(k, k+1)
             return self.execute()
 
+    def __len__(self):
+        return len(self.execute())
+
     def get_ids(self, ids):
         self.queryset = self.queryset.filter(pk__in=ids)
-        return self
-
-    def filter(self, **kwargs):
-        self.queryset = self.queryset.filter(**kwargs)
         return self
 
     def merge_prefetch(self, data):
@@ -244,7 +312,7 @@ class FastQuery(object):
             if m2o_mode:
                 # in many-to-one mode, this is a list
                 if field_name not in local_obj:
-                    local_obj[field_name] = []
+                    local_obj[field_name] = FastList([])
                 local_obj[field_name].append(remote_obj)
             else:
                 # in o2or mode, there can only be one
@@ -270,24 +338,33 @@ class FastQuery(object):
         remote_pk_field = base_qs.model._meta.pk.name  # get pk field name
         reverse_field = reverse_m2m_field_name(field)
 
-        # Get reverse mapping (for User.groups, get Group.users)
-        # Note: `qs` already has base filter applied on remote model.
-        filters = {
-            reverse_field+'__in': my_ids
-        }
-        joins = base_qs.filter(**filters).values_list(
-            remote_pk_field,
-            reverse_field
-        )
+        if reverse_field is None:
+            filters = {
+                '%s__isnull' % field.attname: False
+            }
+            joins = list(self.queryset.filter(**filters).values_list(
+                field.attname,
+                self.pk_field
+            ))
+        else:
+            # Get reverse mapping (for User.groups, get Group.users)
+            # Note: `qs` already has base filter applied on remote model.
+            filters = {
+                reverse_field+'__in': my_ids
+            }
+            joins = list(base_qs.filter(**filters).values_list(
+                remote_pk_field,
+                reverse_field
+            ))
 
         # Fetch remote objects, as values.
-        remote_ids = [o[0] for o in joins]
+        remote_ids = set([o[0] for o in joins])
         remote_objects = prefetch.query.get_ids(remote_ids).execute()
         id_map = self._make_id_map(remote_objects, pk_field=remote_pk_field)
 
         # Create mapping of local ID -> remote objects
         to_field = prefetch.field
-        object_map = defaultdict(list)
+        object_map = defaultdict(FastList)
         for remote_id, local_id in joins:
             object_map[local_id].append(id_map[remote_id])
 
@@ -321,7 +398,7 @@ class QueryCount(object):
 
 
 def test():
-    from tests.models import Location
+    from tests.models import User
 
     out = []
 
@@ -342,8 +419,10 @@ def test():
     out.append(q.execute())
     '''
 
-    q = FastQuery(Location.objects.all())
-    q.prefetch_related('user_set__profile')
+    from django.db.models import Prefetch
+    from tests.models import Group
+    q = FastQuery(User.objects.all())
+    q.prefetch_related(Prefetch('groups', Group.objects.all()))
     out = q.execute()
 
     return out
