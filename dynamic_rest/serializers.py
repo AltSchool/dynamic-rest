@@ -529,7 +529,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
                     ret[field.field_name] = attribute
                     continue
                 else:
-                    attribute = instance[field.source]
+                    try:
+                        attribute = instance[field.source]
+                    except KeyError:
+                        # slower, but does more stuff
+                        attribute = getattr(instance, field.source)
             else:
                 try:
                     attribute = field.get_attribute(instance)

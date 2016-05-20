@@ -20,6 +20,7 @@ from dynamic_rest.meta import (
     get_related_model
 )
 from dynamic_rest.patches import patch_prefetch_one_level
+from dynamic_rest.prefetch import FastQuery
 from dynamic_rest.related import RelatedObject
 
 patch_prefetch_one_level()
@@ -183,6 +184,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         """
         self.request = request
         self.view = view
+        self.make_fast = self.request.query_params.get('make_fast')
 
         # enable addition of extra filters (i.e., a Q())
         # so custom filters can be added to the queryset without
@@ -479,6 +481,10 @@ class DynamicFilterBackend(BaseFilterBackend):
             is_root_level = True
 
         model = getattr(serializer.Meta, 'model', None)
+
+        # TODO(fastquery): make this conditional on... something
+        if not isinstance(queryset, FastQuery) and self.make_fast:
+            queryset = FastQuery(queryset)
 
         if not model:
             return queryset
