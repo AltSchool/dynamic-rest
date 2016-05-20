@@ -46,7 +46,12 @@ DYNAMIC_REST = {
 
     # ADDITIONAL_PRIMARY_RESOURCE_PREFIX: String to prefix additional
     # instances of the primary resource when sideloading.
-    'ADDITIONAL_PRIMARY_RESOURCE_PREFIX': '+'
+    'ADDITIONAL_PRIMARY_RESOURCE_PREFIX': '+',
+
+    # Enables host-relative links.  Only compatible with resources registered
+    # through the dynamic router.  If a resource doesn't have a canonical
+    # path registered, links will default back to being resource-relative urls
+    'ENABLE_HOST_RELATIVE_LINKS': True,
 }
 
 
