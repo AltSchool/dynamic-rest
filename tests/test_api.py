@@ -1021,7 +1021,7 @@ class TestLinks(APITestCase):
 
         # test for default link (auto-generated relation endpoint)
         # Note that the pluralized name is used rather than the full prefix.
-        self.assertEqual(cat['links']['foobar'], '/cats/1/foobar/')
+        self.assertEqual(cat['links']['foobar'], '/v2/cats/1/foobar/')
 
         # test for dynamically generated link URL
         cat1 = Cat.objects.get(pk=1)
@@ -1029,6 +1029,23 @@ class TestLinks(APITestCase):
             cat['links']['backup_home'],
             '/locations/%s/?include[]=address' % cat1.backup_home.pk
         )
+
+    @override_settings(
+        DYNAMIC_REST={
+            'ENABLE_HOST_RELATIVE_LINKS': False
+        }
+    )
+    def test_relative_links(self):
+        r = self.client.get('/v2/cats/1/')
+        self.assertEqual(200, r.status_code)
+        content = json.loads(r.content.decode('utf-8'))
+
+        cat = content['cat']
+        self.assertTrue('links' in cat)
+
+        # test that links urls become resource-relative urls when
+        # host-relative urls are turned off.
+        self.assertEqual(cat['links']['foobar'], 'foobar/')
 
     def test_including_empty_relation_hides_link(self):
         r = self.client.get('/v2/cats/1/?include[]=foobar')
