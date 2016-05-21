@@ -27,6 +27,8 @@ class FastObject(dict):
             for part in parts:
                 obj = obj[part]
             return obj
+        elif name == '*':
+            return self
         else:
             raise AttributeError
 
@@ -134,6 +136,18 @@ class FastQueryCompatMixin(object):
         '''
         return self
 
+    def exclude(self, *fields):
+        # TODO: support for realz
+        return self
+
+    def count(self):
+        qs = self.queryset._clone()
+        return qs.count()
+
+    def extra(self, *args,  **kwargs):
+        self.queryset = self.queryset.extra(*args, **kwargs)
+        return self
+
     def filter(self, *args, **kwargs):
         self.queryset = self.queryset.filter(*args, **kwargs)
         return self
@@ -172,7 +186,8 @@ class FastQuery(FastQueryCompatMixin, object):
 
         # TODO: check if queryset already has values() called
         # TODO: use self.fields
-        data = list(self.queryset.values())
+        qs = self.queryset._clone()
+        data = list(qs.values())
 
         self.merge_prefetch(data)
 
@@ -339,10 +354,15 @@ class FastQuery(FastQueryCompatMixin, object):
         reverse_field = reverse_m2m_field_name(field)
 
         if reverse_field is None:
+            # Note: We can't just reuse self.queryset here because it's
+            #       been sliced already.
             filters = {
-                '%s__isnull' % field.attname: False
+                field.attname + '__isnull': False
             }
-            joins = list(self.queryset.filter(**filters).values_list(
+            qs = self.queryset.model.objects.filter(
+                pk__in=my_ids, **filters
+            )
+            joins = list(qs.values_list(
                 field.attname,
                 self.pk_field
             ))
