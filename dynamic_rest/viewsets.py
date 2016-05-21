@@ -163,9 +163,19 @@ class WithDynamicViewSetMixin(object):
         return r
         '''
 
+        import datetime
         from dynamic_rest.utils import profiling as prof
         s = prof.get_cpu_usage()
-        r = super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
+        if self.request.query_params.get('enable_profiling'):
+            file_name = '/tmp/profiling/%s' % datetime.datetime.now().isoformat()
+            with prof.Profiling(
+                out_file_path=file_name,
+                num_rows=100,
+                # time_func=prof.get_cpu_usage,
+            ):
+                r = super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
+        else:
+            r = super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
         e = prof.get_cpu_usage()
         r['X-CPU-Usage'] = "%.4f" % (e - s)
         print "CPU Usage: %.4f" % (e - s)
