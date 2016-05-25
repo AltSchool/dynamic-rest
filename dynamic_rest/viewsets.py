@@ -150,17 +150,37 @@ class WithDynamicViewSetMixin(object):
             return renderers
 
     def list(self, *args, **kwargs):
+
         '''
+        # Using custom profiler
+        import datetime
+        import gevent
         from dynamic_rest.utils import profiling as prof
 
-        file_name = '/tmp/profiling/%s' % datetime.datetime.now().isoformat()
-        with prof.Profiling(
-            out_file_path=file_name,
-            num_rows=100,
-            # time_func=prof.get_cpu_usage,
-        ):
-            r = super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
+        file_name = '/tmp/profiling/%s.txt' % (
+            datetime.datetime.now().isoformat()
+        )
+        p = prof.Profiler(file_name, greenlet=gevent.getcurrent())
+        p.start()
+        r = super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
+        p.end()
         return r
+        '''
+
+
+        '''
+        def profiler(frame, event, arg):
+            if event not in ('call', 'return',):
+                return
+            if frame.f_code.co_name == 'get_fields':
+                print (
+                    get_cpu_usage(),
+                    event
+                )
+        import sys
+        from dynamic_rest.utils.profiling import get_cpu_usage
+        sys.setprofile(profiler)
+        return super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
         '''
 
         import datetime
@@ -171,7 +191,7 @@ class WithDynamicViewSetMixin(object):
             with prof.Profiling(
                 out_file_path=file_name,
                 num_rows=100,
-                # time_func=prof.get_cpu_usage,
+                time_func=prof.get_cpu_usage,
             ):
                 r = super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
         else:
