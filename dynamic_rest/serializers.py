@@ -424,12 +424,12 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
                     not (
                         # Skip sideloaded fields
                         name in self.fields and
-                        not field.serializer.id_only()
+                        isinstance(self.request_fields.get(name), dict)
                     ) and not (
                         # Skip included single relations
                         # TODO: Use links, when we can generate canonical URLs
                         name in self.fields and
-                        not getattr(field.serializer, 'many', False)
+                        not getattr(field, 'many', False)
                     )
                 }
 
