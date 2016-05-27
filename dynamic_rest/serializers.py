@@ -20,6 +20,9 @@ from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.tagged import tag_dict
 
 
+FIELDS_CACHE = {}
+
+
 class WithResourceKeyMixin(object):
     def get_resource_key(self):
         """Return canonical resource key, usually the DB table name."""
@@ -334,19 +337,31 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             ''
         ).upper()
 
-    def get_all_fields(self):
+    def _get_all_fields(self):
         """Returns the entire serializer field set.
 
         Does not respect dynamic field inclusions/exclusions.
         """
-        if not hasattr(self, '_all_fields'):
-            self._all_fields = super(
+        if self.__class__ not in FIELDS_CACHE:
+            all_fields = super(
                 WithDynamicSerializerMixin,
                 self
             ).get_fields()
-            for k, field in six.iteritems(self._all_fields):
-                field.field_name = k
-                field.parent = self
+
+            FIELDS_CACHE[self.__class__] = all_fields
+        else:
+            all_fields = copy.deepcopy(FIELDS_CACHE[self.__class__])
+
+        for k, field in six.iteritems(all_fields):
+            field.field_name = k
+            field.parent = self
+
+        return all_fields
+
+    def get_all_fields(self):
+        if not hasattr(self, '_all_fields'):
+            self._all_fields = self._get_all_fields()
+
         return self._all_fields
 
     def _get_flagged_field_names(self, fields, attr, meta_attr=None):
