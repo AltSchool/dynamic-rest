@@ -183,17 +183,18 @@ class WithDynamicViewSetMixin(object):
         return super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
         '''
 
+        import gevent
         import datetime
         from dynamic_rest.utils import profiling as prof
         s = prof.get_cpu_usage()
         if self.request.query_params.get('enable_profiling'):
-            file_name = '/tmp/profiling/%s' % datetime.datetime.now().isoformat()
-            with prof.Profiling(
-                out_file_path=file_name,
-                num_rows=100,
-                time_func=prof.get_cpu_usage,
-            ):
-                r = super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
+            file_name = '/tmp/profiling/%s.txt' % (
+                datetime.datetime.now().isoformat()
+            )
+            p = prof.Profiler(file_name, greenlet=gevent.getcurrent())
+            p.start()
+            r = super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
+            p.end()
         else:
             r = super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
         e = prof.get_cpu_usage()
