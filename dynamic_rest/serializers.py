@@ -290,9 +290,15 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             )
         return cls.Meta.plural_name
 
-    def get_request_method(self):
+    def get_request_attribute(self, attribute, default=None):
         return getattr(
             self.context.get('request'),
+            attribute,
+            default
+        )
+
+    def get_request_method(self):
+        return self.get_request_attribute(
             'method',
             ''
         ).upper()
@@ -406,22 +412,26 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
     def get_link_fields(self):
         """Construct dict of name:field for linkable fields."""
         if not hasattr(self, '_link_fields'):
-            all_fields = self.get_all_fields()
-            self._link_fields = {
-                name: field for name, field in six.iteritems(all_fields)
-                if isinstance(field, DynamicRelationField) and
-                getattr(field, 'link', True) and
-                not (
-                    # Skip sideloaded fields
-                    name in self.fields and
-                    not field.serializer.id_only()
-                ) and not (
-                    # Skip included single relations
-                    # TODO: Use links, when we can generate canonical URLs
-                    name in self.fields and
-                    not getattr(field.serializer, 'many', False)
-                )
-            }
+            query_params = self.get_request_attribute('query_params', {})
+            if 'exclude_links' in query_params:
+                self._link_fields = {}
+            else:
+                all_fields = self.get_all_fields()
+                self._link_fields = {
+                    name: field for name, field in six.iteritems(all_fields)
+                    if isinstance(field, DynamicRelationField) and
+                    getattr(field, 'link', True) and
+                    not (
+                        # Skip sideloaded fields
+                        name in self.fields and
+                        not field.serializer.id_only()
+                    ) and not (
+                        # Skip included single relations
+                        # TODO: Use links, when we can generate canonical URLs
+                        name in self.fields and
+                        not getattr(field.serializer, 'many', False)
+                    )
+                }
 
         return self._link_fields
 

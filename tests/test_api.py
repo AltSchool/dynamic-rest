@@ -1127,6 +1127,14 @@ class TestLinks(APITestCase):
         # a 404 since a matching Profile object isn't found.
         self.assertEquals(201, response.status_code)
 
+    def test_no_links_when_excluded(self):
+        r = self.client.get('/v2/cats/1/?exclude_links')
+        self.assertEqual(200, r.status_code)
+        content = json.loads(r.content.decode('utf-8'))
+
+        cat = content['cat']
+        self.assertFalse('links' in cat)
+
     @override_settings(
         DYNAMIC_REST={
             'ENABLE_LINKS': True,
