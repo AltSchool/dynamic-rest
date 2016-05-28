@@ -409,6 +409,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
 
         return serializer_fields
 
+    def is_field_sideloaded(self, field_name):
+        if not isinstance(self.request_fields, dict):
+            return False
+        return isinstance(self.request_fields.get(field_name), dict)
+
     def get_link_fields(self):
         """Construct dict of name:field for linkable fields."""
         if not hasattr(self, '_link_fields'):
@@ -424,12 +429,12 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
                     not (
                         # Skip sideloaded fields
                         name in self.fields and
-                        not field.serializer.id_only()
+                        self.is_field_sideloaded(name)
                     ) and not (
                         # Skip included single relations
                         # TODO: Use links, when we can generate canonical URLs
                         name in self.fields and
-                        not getattr(field.serializer, 'many', False)
+                        not getattr(field, 'many', False)
                     )
                 }
 
