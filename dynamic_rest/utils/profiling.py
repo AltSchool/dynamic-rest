@@ -1,5 +1,8 @@
 import cProfile
-import gevent
+try:
+    import gevent
+except:
+    pass
 import json
 import pstats
 import resource
@@ -95,6 +98,19 @@ class Node(json.JSONEncoder):
             'children': children
         }
 
+    def adjust(self, overhead):
+        # Adjust `.dur` by removing the specified overhead for each
+        # descendant node.
+
+        if self.dur is not None:
+            self.dur = self.dur - (overhead * self.len())
+        for c in self.children:
+            c.adjust(overhead)
+
+    def len(self):
+        c = len(self.children)
+        return c + sum([child.len() for child in self.children])
+
     @classmethod
     def from_frame(cls, frame):
         return cls(
@@ -104,13 +120,14 @@ class Node(json.JSONEncoder):
         )
 
 class Profiler(object):
-    def __init__(self, outfile_path, greenlet=None):
+    def __init__(self, outfile_path=None, greenlet=None):
         self.ref = None
         self.root = None
         self.outfile_path = outfile_path
         self.original_profiler = sys.getprofile()
         self.frames = []
         self.greenlet_id = id(greenlet) if greenlet else None
+        self.overhead = None  # set in calibrate()
 
     def profiler(self, frame, event, arg):
         if self.greenlet_id and id(gevent.getcurrent()) != self.greenlet_id:
@@ -124,7 +141,30 @@ class Profiler(object):
             "%s:%s" % (frame.f_code.co_filename, frame.f_lineno),
         ))
 
+    def calibrate(self, n=10000):
+        func = lambda: None
+
+        start = get_cpu_usage()
+        for i in range(n):
+            func()  # noqa
+        end = get_cpu_usage()
+        calibration_overhead = end - start
+
+        original_profiler = sys.getprofile()
+        sys.setprofile(self.profiler)
+        start = get_cpu_usage()
+        for i in range(n):
+            func()  # noqa
+        end = get_cpu_usage()
+
+        total_overhead = end - start
+        self.overhead = (total_overhead - calibration_overhead) / float(n)
+
+        sys.setprofile(original_profiler)
+        return self.overhead
+
     def build_tree(self):
+        self.root = Node('root', None, get_cpu_usage())
         stack = []
 
         for i, frame in enumerate(self.frames):
@@ -144,10 +184,14 @@ class Profiler(object):
                 assert node.func == frame[1]
                 node.end(frame[2])
 
+        self.root.dur = sum([c.dur for c in self.root.children])
+
+        if self.overhead is not None:
+            self.root.adjust(self.overhead)
+
         return self.root
 
     def start(self):
-        self.root = Node('root', None, get_cpu_usage())
         sys.setprofile(self.profiler)
 
     def end(self):
