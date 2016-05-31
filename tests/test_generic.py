@@ -4,7 +4,8 @@ from rest_framework.test import APITestCase
 
 from dynamic_rest.fields import DynamicGenericRelationField
 from dynamic_rest.routers import DynamicRouter
-from tests.models import Zebra
+from tests.models import User, Zebra
+from tests.serializers import UserSerializer
 from tests.setup import create_fixture
 
 
@@ -152,3 +153,29 @@ class TestGenericRelationFieldAPI(APITestCase):
         self.assertFalse('cats' in content)
         self.assertTrue('dogs' in content)
         self.assertEqual(1, content['dogs'][0]['id'])
+
+    def test_non_deferred_generic_field(self):
+        class FooUserSerializer(UserSerializer):
+
+            class Meta:
+                model = User
+                name = 'user'
+                fields = (
+                    'id',
+                    'favorite_pet',
+                )
+
+        user = User.objects.filter(
+            favorite_pet_id__isnull=False
+        ).prefetch_related(
+            'favorite_pet'
+        ).first()
+
+        data = FooUserSerializer(user).data
+        self.assertIsNotNone(data)
+        self.assertTrue('favorite_pet' in data)
+        self.assertTrue(isinstance(data['favorite_pet'], dict))
+        self.assertEqual(
+            set(['id', 'type']),
+            set(data['favorite_pet'].keys())
+        )

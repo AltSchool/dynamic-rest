@@ -55,8 +55,7 @@ class DynamicGenericRelationField(
         # but for generic relations, we want IDs to be represented differently
         # and that is a field-level concern, not an object-level concern,
         # so we handle it here.
-        request_fields = self.request_fields
-        return request_fields is True
+        return not self.parent.is_field_sideloaded(self.field_name)
 
     def get_pk_object(self, type_key, id_value):
         return {
