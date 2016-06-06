@@ -1491,3 +1491,15 @@ class TestCatsAPI(APITestCase):
         # ... and it should not have changed:
         self.assertEqual(data['cat']['parent'], parent_id)
         self.assertEqual(data['cat']['name'], kitten_name)
+
+
+class TestFilters(APITestCase):
+
+    """
+    Tests for filters.
+    """
+
+    def testUnparseableInt(self):
+        url = '/users/?filter{pk}=123x'
+        response = self.client.get(url)
+        self.assertEqual(400, response.status_code)

@@ -527,6 +527,11 @@ class DynamicFilterBackend(BaseFilterBackend):
                 raise ValidationError(
                     dict(e) if hasattr(e, 'error_dict') else list(e)
                 )
+            except Exception as e:
+                # Some other Django error in parsing the filter. Very likely
+                # a bad query, so throw a ValidationError.
+                err_msg = getattr(e, 'message', '')
+                raise ValidationError(err_msg)
 
         # A serializer can have this optional function
         # to dynamically apply additional filters on
