@@ -6,7 +6,7 @@ from rest_framework import exceptions, status
 from rest_framework.request import Request
 
 from dynamic_rest.filters import DynamicFilterBackend, FilterNode
-from tests.models import Dog, Group
+from tests.models import Dog, Group, User
 from tests.serializers import GroupSerializer
 from tests.setup import create_fixture
 from tests.viewsets import (
@@ -293,3 +293,34 @@ class BulkCreationTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(1, Group.objects.all().count())
         self.assertTrue('errors' in response.data)
+
+    def test_post_bulk_with_sideloaded_results(self):
+        u1 = User.objects.create(name='foo', last_name='bar')
+        u2 = User.objects.create(name='foo', last_name='baz')
+        data = [
+            {
+                'name': 'foo',
+                'members': [u1.pk],
+            }, {
+                'name': 'bar',
+                'members': [u2.pk],
+            }
+        ]
+        request = self.rf.post(
+            '/groups/?include[]=members.',
+            json.dumps(data),
+            content_type='application/json'
+        )
+        response = self.view(request)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        resp_data = response.data
+
+        # Check top-level keys
+        self.assertEqual(
+            set(['users', 'groups']),
+            set(resp_data.keys())
+        )
+
+        # Should be 2 of each
+        self.assertEqual(2, len(resp_data['users']))
+        self.assertEqual(2, len(resp_data['groups']))

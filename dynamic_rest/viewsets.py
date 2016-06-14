@@ -11,6 +11,7 @@ from dynamic_rest.conf import settings
 from dynamic_rest.filters import DynamicFilterBackend, DynamicSortingFilter
 from dynamic_rest.metadata import DynamicMetadata
 from dynamic_rest.pagination import DynamicPageNumberPagination
+from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.renderers import DynamicBrowsableAPIRenderer
 
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
@@ -415,8 +416,10 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
                     serializer.to_representation(serializer.instance))
 
         # Populate serialized data to the result.
-        plural_name = self.get_serializer_class().get_plural_name()
-        result[plural_name] = items
+        result = SideloadingProcessor(
+            self.get_serializer(),
+            items
+        ).data
 
         # Include errors if any.
         if errors:
