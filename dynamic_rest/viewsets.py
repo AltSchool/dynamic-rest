@@ -170,6 +170,7 @@ class WithDynamicViewSetMixin(object):
                 datetime.datetime.now().isoformat()
             )
             p = prof.Profiler(file_name, greenlet=gevent.getcurrent())
+            p.calibrate()
             p.start()
             r = super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
             p.end()
