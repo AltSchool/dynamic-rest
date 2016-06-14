@@ -141,26 +141,31 @@ class Profiler(object):
             "%s:%s" % (frame.f_code.co_filename, frame.f_lineno),
         ))
 
-    def calibrate(self, n=10000):
+    def calibrate(self, n=10000, reset=True):
         func = lambda: None
 
+        # Try to measure overhead calibration code
         start = get_cpu_usage()
         for i in range(n):
-            func()  # noqa
+            func()
         end = get_cpu_usage()
         calibration_overhead = end - start
 
+        # Measure over head of profiling + calibration
         original_profiler = sys.getprofile()
         sys.setprofile(self.profiler)
         start = get_cpu_usage()
         for i in range(n):
-            func()  # noqa
+            func()
         end = get_cpu_usage()
+        sys.setprofile(original_profiler)
 
+        # Overhead is total - calibration... in theory.
         total_overhead = end - start
         self.overhead = (total_overhead - calibration_overhead) / float(n)
 
-        sys.setprofile(original_profiler)
+        if reset:
+            self.frames = []
         return self.overhead
 
     def build_tree(self):
@@ -184,7 +189,9 @@ class Profiler(object):
                 assert node.func == frame[1]
                 node.end(frame[2])
 
-        self.root.dur = sum([c.dur for c in self.root.children])
+        self.root.dur = sum(
+            [c.dur for c in self.root.children if c.dur is not None]
+        )
 
         if self.overhead is not None:
             self.root.adjust(self.overhead)
