@@ -121,6 +121,17 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
     """Base class for DREST serializers.
 
     This class provides support for dynamic field inclusions/exclusions.
+
+    Like DRF, DREST serializers support a few Meta class options:
+        - model - class
+        - name - string
+        - plural_name - string
+        - defer_many_relations - bool
+        - fields - list of strings
+        - deferred_fields - list of strings
+        - immutable_fields - list of strings
+        - read_only_fields - list of strings
+        - untrimmed_fields - list of strings
     """
     def __new__(cls, *args, **kwargs):
         """
@@ -393,6 +404,14 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         ro_fields = getattr(self.Meta, 'read_only_fields', [])
         self.flag_fields(serializer_fields, ro_fields, 'read_only', True)
 
+        pw_fields = getattr(self.Meta, 'untrimmed_fields', [])
+        self.flag_fields(
+            serializer_fields,
+            pw_fields,
+            'trim_whitespace',
+            False,
+        )
+
         # Toggle read_only flags for immutable fields.
         # Note: This overrides `read_only` if both are set, to allow
         #       inferred DRF fields to be made immutable.
@@ -549,7 +568,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         return instance
 
     def id_only(self):
-        """Check whether the serializer should return an ID instead of an object.
+        """Whether the serializer should return an ID instead of an object.
 
         Returns:
             True if and only if `request_fields` is True.

@@ -1455,6 +1455,22 @@ class TestCatsAPI(APITestCase):
         self.assertEquals(content['cat']['name'], 'Kitten')
         self.assertEquals(content['+cats'][0]['name'], 'Parent')
 
+    def test_allows_whitespace(self):
+        data = {
+            'name': '  Zahaklu  ',
+            'home': self.kitten.home_id,
+            'backup_home': self.kitten.backup_home_id,
+            'parent': self.kitten.parent_id,
+        }
+        response = self.client.post(
+            '/cats/',
+            json.dumps(data),
+            content_type='application/json',
+        )
+        self.assertEqual(201, response.status_code)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['cat']['name'], '  Zahaklu  ')
+
     def test_immutable_field(self):
         """ Make sure immutable 'parent' field can be set on POST """
         parent_id = self.kitten.parent_id
