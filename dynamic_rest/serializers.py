@@ -393,6 +393,14 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         ro_fields = getattr(self.Meta, 'read_only_fields', [])
         self.flag_fields(serializer_fields, ro_fields, 'read_only', True)
 
+        pw_fields = getattr(self.Meta, 'preserve_whitespace', [])
+        self.flag_fields(
+            serializer_fields,
+            pw_fields,
+            'trim_whitespace',
+            False,
+        )
+
         # Toggle read_only flags for immutable fields.
         # Note: This overrides `read_only` if both are set, to allow
         #       inferred DRF fields to be made immutable.
@@ -549,7 +557,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         return instance
 
     def id_only(self):
-        """Check whether the serializer should return an ID instead of an object.
+        """Whether the serializer should return an ID instead of an object.
 
         Returns:
             True if and only if `request_fields` is True.
