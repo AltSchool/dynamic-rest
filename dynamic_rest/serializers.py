@@ -24,7 +24,6 @@ from dynamic_rest.meta import get_model_table
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.tagged import tag_dict
 
-
 ENABLE_FIELDS_CACHE = os.environ.get('ENABLE_FIELDS_CACHE', False)
 FIELDS_CACHE = {}
 

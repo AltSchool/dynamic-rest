@@ -1,15 +1,14 @@
 """Module containing Django meta helpers."""
 from itertools import chain
 
+from django.db.models import ManyToOneRel  # tested in 1.9
+from django.db.models import OneToOneRel  # tested in 1.9
 from django.db.models import (
     ForeignKey,
-    OneToOneField,
-    OneToOneRel,  # tested in 1.9
     ManyToManyField,
-    ManyToOneRel,  # tested in 1.9
     ManyToManyRel,
+    OneToOneField
 )
-# from django.utils import six
 
 from dynamic_rest.related import RelatedObject
 
