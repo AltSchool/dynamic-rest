@@ -1,13 +1,14 @@
 import cProfile
-try:
-    import gevent
-except:
-    pass
 import json
 import pstats
 import resource
 import StringIO
 import sys
+
+try:
+    import gevent
+except:
+    pass
 
 
 class Profiling(object):

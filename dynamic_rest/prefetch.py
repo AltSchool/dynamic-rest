@@ -1,6 +1,7 @@
 from collections import defaultdict
+
 from django.db import connection, models
-from django.db.models import QuerySet, Prefetch
+from django.db.models import Prefetch, QuerySet
 
 from dynamic_rest.meta import (
     get_model_field_and_type,

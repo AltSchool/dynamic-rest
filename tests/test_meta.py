@@ -6,12 +6,7 @@ from dynamic_rest.meta import (
     get_remote_model,
     reverse_m2m_field_name
 )
-from tests.models import (
-    Group,
-    Location,
-    Profile,
-    User
-)
+from tests.models import Group, Location, Profile, User
 
 
 class TestMeta(TestCase):
