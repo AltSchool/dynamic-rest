@@ -119,6 +119,7 @@ class Node(json.JSONEncoder):
             starting_cpu=frame[2]
         )
 
+
 class Profiler(object):
     def __init__(self, outfile_path=None, greenlet=None):
         self.ref = None
@@ -210,6 +211,7 @@ class Profiler(object):
             fp = open(self.outfile_path, 'w')
             fp.write(json.dumps(root.to_dict()))
             fp.close()
+
 
 def run_test():
     from tests.serializers import UserSerializer
