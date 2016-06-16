@@ -10,13 +10,17 @@ from rest_framework.exceptions import NotFound, ParseError
 from rest_framework.serializers import SerializerMethodField
 
 from dynamic_rest import prefetch
-from dynamic_rest.bases import DynamicSerializerBase
+from dynamic_rest.bases import (
+    CacheableFieldMixin,
+    DynamicSerializerBase,
+    resettable_cached_property
+)
 from dynamic_rest.conf import settings
 from dynamic_rest.fields.common import WithRelationalFieldMixin
 from dynamic_rest.meta import is_field_remote, get_model_field
 
 
-class DynamicField(fields.Field):
+class DynamicField(CacheableFieldMixin, fields.Field):
 
     """
     Generic field base to capture additional custom field attributes.
@@ -150,12 +154,9 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
 
         self.model_field = model_field
 
-    @property
+    @resettable_cached_property
     def root_serializer(self):
         """Return the root serializer (serializer for the primary resource)."""
-        if hasattr(self, '_root_serializer'):
-            return self._root_serializer
-
         if not self.parent:
             # Don't cache, so that we'd recompute if parent is set.
             return None
@@ -169,10 +170,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
                 if node in seen:
                     return None
             else:
-                self._root_serializer = node
-                break
-
-        return self._root_serializer
+                return node
 
     def _get_cached_serializer(self, args, init_args):
         enabled = settings.ENABLE_SERIALIZER_CACHE
@@ -203,6 +201,8 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
                 **init_args
             )
             root._descendant_serializer_cache[cache_key] = szr
+        else:
+            root._descendant_serializer_cache[cache_key].reset()
 
         return root._descendant_serializer_cache[cache_key]
 
@@ -250,14 +250,10 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
 
         return self._get_cached_serializer(args, init_args)
 
-    @property
+    @resettable_cached_property
     def serializer(self):
-        if hasattr(self, '_serializer'):
-            return self._serializer
-
         serializer = self.get_serializer()
         serializer.parent = self
-        self._serializer = serializer
         return serializer
 
     @cached_property

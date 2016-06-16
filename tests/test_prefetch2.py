@@ -179,18 +179,16 @@ class TestPrefetch(APITestCase):
 
         s1 = get_cpu_usage()
         for i in range(0, 100):
-            self.client.get(url)
+            r1 = self.client.get(url)
         e1 = get_cpu_usage()
         u1 = e1 - s1
 
         s2 = get_cpu_usage()
         url = url + '&make_fast=1'
         for i in range(0, 100):
-            self.client.get(url)
+            r2 = self.client.get(url)
         e2 = get_cpu_usage()
         u2 = e2 - s2
 
-        self.assertEquals(
-            u1, u2,
-            "Slow: %.4f Fast: %.4f" % (u1, u2)
-        )
+        self.assertTrue(u1 > u2)
+        self.assertEquals(r1.content, r2.content)
