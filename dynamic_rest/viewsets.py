@@ -167,7 +167,6 @@ class WithDynamicViewSetMixin(object):
         return r
         '''
 
-
         '''
         def profiler(frame, event, arg):
             if event not in ('call', 'return',):
@@ -183,7 +182,10 @@ class WithDynamicViewSetMixin(object):
         return super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
         '''
 
-        import gevent
+        try:
+            import gevent
+        except:
+            pass
         import datetime
         from dynamic_rest.utils import profiling as prof
         s = prof.get_cpu_usage()

@@ -30,7 +30,8 @@ class FastObject(dict):
         elif name == '*':
             return self
         else:
-            raise AttributeError
+            return None
+            raise AttributeError(name)
 
     def __getattr__(self, name):
         try:
@@ -38,7 +39,6 @@ class FastObject(dict):
         except KeyError:
             # Fast approach failed, fall back on slower logic.
             return self._slow_getattr(name)
-            raise AttributeError
 
 
 class FastList(list):
@@ -123,7 +123,7 @@ class FastQueryCompatMixin(object):
                         "Prefetch for field '%s' already exists."
                     )
                 self.prefetches[arg.field] = arg
-        except:
+        except Exception as e:  # noqa
             import pdb
             pdb.set_trace()
 

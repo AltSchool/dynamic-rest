@@ -1,6 +1,7 @@
 """This module contains custom serializer classes."""
 import copy
 import inspect
+import os
 
 import inflection
 from django.db import models
@@ -11,7 +12,11 @@ from rest_framework.fields import SkipField
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 
 from dynamic_rest import prefetch
-from dynamic_rest.bases import DynamicSerializerBase
+from dynamic_rest.bases import (
+    CacheableFieldMixin,
+    DynamicSerializerBase,
+    resettable_cached_property
+)
 from dynamic_rest.conf import settings
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.links import merge_link_object
@@ -20,6 +25,7 @@ from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.tagged import tag_dict
 
 
+ENABLE_FIELDS_CACHE = os.environ.get('ENABLE_FIELDS_CACHE', False)
 FIELDS_CACHE = {}
 
 
@@ -67,19 +73,18 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         """Get the child's rendering mode."""
         return self.child.id_only()
 
-    @property
+    @resettable_cached_property
     def data(self):
         """Get the data, after performing post-processing if necessary."""
-        if not hasattr(self, '_processed_data'):
-            data = super(DynamicListSerializer, self).data
-            self._processed_data = ReturnDict(
-                SideloadingProcessor(self, data).data,
-                serializer=self
-            ) if self.child.envelope else ReturnList(
-                data,
-                serializer=self
-            )
-        return self._processed_data
+        data = super(DynamicListSerializer, self).data
+        self._processed_data = ReturnDict(
+            SideloadingProcessor(self, data).data,
+            serializer=self
+        ) if self.child.envelope else ReturnList(
+            data,
+            serializer=self
+        )
+        return data
 
     def update(self, queryset, validated_data):
         lookup_attr = getattr(self.child.Meta, 'update_lookup_field', 'id')
@@ -118,7 +123,11 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         return updated_objects
 
 
-class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
+class WithDynamicSerializerMixin(
+    CacheableFieldMixin,
+    WithResourceKeyMixin,
+    DynamicSerializerBase
+):
     """Base class for DREST serializers.
 
     This class provides support for dynamic field inclusions/exclusions.
@@ -337,12 +346,13 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             ''
         ).upper()
 
-    def _get_all_fields(self):
+    @resettable_cached_property
+    def _all_fields(self):
         """Returns the entire serializer field set.
 
         Does not respect dynamic field inclusions/exclusions.
         """
-        if self.__class__ not in FIELDS_CACHE:
+        if not ENABLE_FIELDS_CACHE or self.__class__ not in FIELDS_CACHE:
             all_fields = super(
                 WithDynamicSerializerMixin,
                 self
@@ -350,7 +360,10 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
 
             FIELDS_CACHE[self.__class__] = all_fields
         else:
-            all_fields = copy.deepcopy(FIELDS_CACHE[self.__class__])
+            all_fields = copy.copy(FIELDS_CACHE[self.__class__])
+            for k, field in six.iteritems(all_fields):
+                if hasattr(field, 'reset'):
+                    field.reset()
 
         for k, field in six.iteritems(all_fields):
             field.field_name = k
@@ -359,9 +372,6 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         return all_fields
 
     def get_all_fields(self):
-        if not hasattr(self, '_all_fields'):
-            self._all_fields = self._get_all_fields()
-
         return self._all_fields
 
     def _get_flagged_field_names(self, fields, attr, meta_attr=None):
@@ -470,30 +480,31 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         return isinstance(self.request_fields.get(field_name), dict)
 
     def get_link_fields(self):
-        """Construct dict of name:field for linkable fields."""
-        if not hasattr(self, '_link_fields'):
-            query_params = self.get_request_attribute('query_params', {})
-            if 'exclude_links' in query_params:
-                self._link_fields = {}
-            else:
-                all_fields = self.get_all_fields()
-                self._link_fields = {
-                    name: field for name, field in six.iteritems(all_fields)
-                    if isinstance(field, DynamicRelationField) and
-                    getattr(field, 'link', True) and
-                    not (
-                        # Skip sideloaded fields
-                        name in self.fields and
-                        self.is_field_sideloaded(name)
-                    ) and not (
-                        # Skip included single relations
-                        # TODO: Use links, when we can generate canonical URLs
-                        name in self.fields and
-                        not getattr(field, 'many', False)
-                    )
-                }
-
         return self._link_fields
+
+    @resettable_cached_property
+    def _link_fields(self):
+        """Construct dict of name:field for linkable fields."""
+        query_params = self.get_request_attribute('query_params', {})
+        if 'exclude_links' in query_params:
+            return {}
+        else:
+            all_fields = self.get_all_fields()
+            return {
+                name: field for name, field in six.iteritems(all_fields)
+                if isinstance(field, DynamicRelationField) and
+                getattr(field, 'link', True) and
+                not (
+                    # Skip sideloaded fields
+                    name in self.fields and
+                    self.is_field_sideloaded(name)
+                ) and not (
+                    # Skip included single relations
+                    # TODO: Use links, when we can generate canonical URLs
+                    name in self.fields and
+                    not getattr(field, 'many', False)
+                )
+            }
 
     @cached_property
     def _readable_fields(self):
@@ -646,7 +657,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         """
         return self.dynamic and self.request_fields is True
 
-    @property
+    @resettable_cached_property
     def data(self):
         if not hasattr(self, '_processed_data'):
             data = super(WithDynamicSerializerMixin, self).data
