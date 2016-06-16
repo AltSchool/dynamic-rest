@@ -1,13 +1,8 @@
 from rest_framework.test import APITestCase
 
-from dynamic_rest.prefetch import FastQuery, FastPrefetch
+from dynamic_rest.prefetch import FastPrefetch, FastQuery
 from dynamic_rest.utils.profiling import get_cpu_usage
-from tests.models import (
-    Group,
-    Location,
-    Profile,
-    User
-)
+from tests.models import Group, Location, Profile, User
 from tests.setup import create_fixture
 
 
