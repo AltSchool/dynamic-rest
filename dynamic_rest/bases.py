@@ -26,6 +26,11 @@ def resettable_cached_property(func):
 
 
 def cacheable_object(cls):
+    """Decorator to add a reset() method that clears data cached by
+    the @resettable_cached_property decorator. Technically this could
+    be a mixin...
+    """
+
     def reset(self):
         if hasattr(self, '_resettable_cached_properties'):
             self._resettable_cached_properties = {}
