@@ -334,6 +334,22 @@ class WithDynamicViewSetMixin(object):
 
         return Response(serializer.data)
 
+    def list(self, request, *args, **kwargs):
+        import resource
+        def get_cpu_usage():
+            utime = resource.getrusage(resource.RUSAGE_SELF).ru_utime
+            stime = resource.getrusage(resource.RUSAGE_SELF).ru_stime
+            return utime + stime
+
+        start = get_cpu_usage()
+        r = super(WithDynamicViewSetMixin, self).list(
+            request, *args, **kwargs
+        )
+        end = get_cpu_usage()
+
+        r['X-Cpu-Usage'] = "%.4f" % (end - start)
+        return r
+
 
 class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
 
