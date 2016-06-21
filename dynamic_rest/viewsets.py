@@ -149,7 +149,7 @@ class WithDynamicViewSetMixin(object):
         else:
             return renderers
 
-    def list(self, *args, **kwargs):
+    def list(self, request, *args, **kwargs):
 
         '''
         # Using custom profiler
@@ -182,6 +182,11 @@ class WithDynamicViewSetMixin(object):
         return super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
         '''
 
+        from dynamic_rest import serializers
+        serializers.OPTS['ENABLE_FIELDS_CACHE'] = request.query_params.get(
+            'enable_fields_cache', False
+        )
+        print serializers.OPTS
         try:
             import gevent
         except:
@@ -196,10 +201,14 @@ class WithDynamicViewSetMixin(object):
             p = prof.Profiler(file_name, greenlet=gevent.getcurrent())
             p.calibrate()
             p.start()
-            r = super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
+            r = super(WithDynamicViewSetMixin, self).list(
+                request, *args, **kwargs
+            )
             p.end()
         else:
-            r = super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
+            r = super(WithDynamicViewSetMixin, self).list(
+                request, *args, **kwargs
+            )
         e = prof.get_cpu_usage()
         r['X-CPU-Usage'] = "%.4f" % (e - s)
         print "CPU Usage: %.4f" % (e - s)

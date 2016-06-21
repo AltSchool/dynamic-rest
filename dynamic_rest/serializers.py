@@ -24,7 +24,9 @@ from dynamic_rest.meta import get_model_table
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.tagged import tag_dict
 
-ENABLE_FIELDS_CACHE = os.environ.get('ENABLE_FIELDS_CACHE', False)
+OPTS = {
+    'ENABLE_FIELDS_CACHE': os.environ.get('ENABLE_FIELDS_CACHE', False)
+}
 FIELDS_CACHE = {}
 
 
@@ -351,7 +353,7 @@ class WithDynamicSerializerMixin(
 
         Does not respect dynamic field inclusions/exclusions.
         """
-        if not ENABLE_FIELDS_CACHE or self.__class__ not in FIELDS_CACHE:
+        if not OPTS['ENABLE_FIELDS_CACHE'] or self.__class__ not in FIELDS_CACHE:
             all_fields = super(
                 WithDynamicSerializerMixin,
                 self
