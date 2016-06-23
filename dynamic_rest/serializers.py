@@ -335,7 +335,10 @@ class WithDynamicSerializerMixin(
 
         Does not respect dynamic field inclusions/exclusions.
         """
-        if not OPTS['ENABLE_FIELDS_CACHE'] or self.__class__ not in FIELDS_CACHE:
+        if (
+            not OPTS['ENABLE_FIELDS_CACHE']
+            or self.__class__ not in FIELDS_CACHE
+        ):
             all_fields = super(
                 WithDynamicSerializerMixin,
                 self
@@ -408,7 +411,7 @@ class WithDynamicSerializerMixin(
         if self.id_only():
             return {}
 
-        serializer_fields = copy.deepcopy(all_fields)
+        serializer_fields = all_fields  # copy.deepcopy(all_fields)
         request_fields = self.request_fields
         deferred = self._get_deferred_field_names(serializer_fields)
 
