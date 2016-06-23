@@ -429,7 +429,7 @@ class WithDynamicSerializerMixin(
         if self.id_only():
             return {}
 
-        serializer_fields = all_fields  # copy.deepcopy(all_fields)
+        serializer_fields = copy.copy(all_fields)
         request_fields = self.request_fields
         deferred = self._get_deferred_field_names(serializer_fields)
 

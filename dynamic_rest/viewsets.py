@@ -186,7 +186,6 @@ class WithDynamicViewSetMixin(object):
         serializers.OPTS['ENABLE_FIELDS_CACHE'] = request.query_params.get(
             'enable_fields_cache', False
         )
-        print serializers.OPTS
         try:
             import gevent
         except:
@@ -211,7 +210,7 @@ class WithDynamicViewSetMixin(object):
             )
         e = prof.get_cpu_usage()
         r['X-CPU-Usage'] = "%.4f" % (e - s)
-        print "CPU Usage: %.4f" % (e - s)
+        print("CPU Usage: %.4f" % (e - s))
 
         '''
         import datetime
