@@ -579,7 +579,8 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         # add prefetches and remove duplicates if necessary
         prefetch = prefetches.values()
-        queryset = queryset.prefetch_related(*prefetch)
+        if prefetch:
+            queryset = queryset.prefetch_related(*prefetch)
         if has_joins(queryset) or not is_root_level:
             queryset = queryset.distinct()
 
