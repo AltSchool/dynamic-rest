@@ -1,4 +1,5 @@
 from collections import defaultdict
+import copy
 
 from django.db import connection, models
 from django.db.models import Prefetch, QuerySet
@@ -164,6 +165,15 @@ class FastQueryCompatMixin(object):
     @property
     def query(self):
         return self.queryset.query
+
+    def _clone(self):
+        new = copy.copy(self)
+        new.queryset = new.queryset._clone()
+        return new
+
+    def annotate(self, *args, **kwargs):
+        self.queryset = self.queryset.annotate(*args, **kwargs)
+        return self
 
 
 class FastQuery(FastQueryCompatMixin, object):
