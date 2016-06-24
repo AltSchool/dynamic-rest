@@ -549,7 +549,8 @@ class DynamicFilterBackend(BaseFilterBackend):
             queryset = serializer.filter_queryset(queryset)
 
         prefetch = prefetches.values()
-        queryset = queryset.prefetch_related(*prefetch)
+        if prefetch:
+            queryset = queryset.prefetch_related(*prefetch)
         if has_joins(queryset) or not is_root_level:
             queryset = queryset.distinct()
 
