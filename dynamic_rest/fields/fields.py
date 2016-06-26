@@ -62,7 +62,11 @@ class DynamicComputedField(DynamicField):
 
 
 class DynamicMethodField(SerializerMethodField, DynamicField):
-    pass
+
+    def reset(self):
+        super(DynamicMethodField, self).reset()
+        if self.method_name == 'get_' + self.field_name:
+            self.method_name = None
 
 
 class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
