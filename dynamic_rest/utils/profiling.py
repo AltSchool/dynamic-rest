@@ -2,7 +2,6 @@ import cProfile
 import json
 import pstats
 import resource
-import StringIO
 import sys
 
 try:
@@ -10,6 +9,13 @@ try:
 except:
     pass
 
+try:
+    import StringIO  # Python 2.x
+except:
+    try:
+        import io as StringIO  # Python 3.x
+    except:
+        pass
 
 class Profiling(object):
 
