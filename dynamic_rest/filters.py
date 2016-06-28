@@ -2,7 +2,7 @@
 
 from django.core.exceptions import ValidationError as InternalValidationError
 from django.core.exceptions import ImproperlyConfigured
-from django.db.models import Q, Prefetch
+from django.db.models import Q, Prefetch, Manager
 from django.utils import six
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -581,6 +581,8 @@ class DynamicFilterBackend(BaseFilterBackend):
         prefetch = prefetches.values()
         if prefetch:
             queryset = queryset.prefetch_related(*prefetch)
+        elif isinstance(queryset, Manager):
+            queryset = queryset.all()
         if has_joins(queryset) or not is_root_level:
             queryset = queryset.distinct()
 
