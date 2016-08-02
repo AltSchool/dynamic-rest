@@ -610,43 +610,56 @@ Not all versions of Python, Django, and DRF are compatible. Here are the combina
 | 2.7    | 1.7    | 3.1 | YES |
 | 2.7    | 1.7    | 3.2 | YES |
 | 2.7    | 1.7    | 3.3 | YES |
+| 2.7    | 1.7    | 3.4 | NO<sup>4</sup> |
 | 2.7    | 1.8    | 3.1 | YES |
 | 2.7    | 1.8    | 3.2 | YES |
 | 2.7    | 1.8    | 3.3 | YES |
+| 2.7    | 1.8    | 3.4 | YES |
 | 2.7    | 1.9    | 3.1 | NO<sup>1</sup> |
 | 2.7    | 1.9    | 3.2 | YES |
 | 2.7    | 1.9    | 3.3 | YES |
+| 2.7    | 1.9    | 3.4 | YES |
 | 3.3    | 1.7    | 3.1 | YES |
 | 3.3    | 1.7    | 3.2 | YES |
 | 3.3    | 1.7    | 3.3 | YES |
+| 3.3    | 1.7    | 3.3 | NO<sup>4</sup> |
 | 3.3    | 1.8    | 3.1 | YES |
 | 3.3    | 1.8    | 3.2 | YES |
 | 3.3    | 1.8    | 3.3 | YES |
+| 3.3    | 1.8    | 3.4 | YES |
 | 3.3    | 1.9    | 3.1 | NO<sup>1,2</sup> |
 | 3.3    | 1.9    | 3.2 | NO<sup>2</sup> |
 | 3.3    | 1.9    | 3.3 | NO<sup>2</sup> |
+| 3.3    | 1.9    | 3.4 | NO<sup>2,4</sup> |
 | 3.4    | 1.7    | 3.1 | YES |
 | 3.4    | 1.7    | 3.2 | YES |
 | 3.4    | 1.7    | 3.3 | YES |
+| 3.4    | 1.7    | 3.3 | NO<sup>4</sup> |
 | 3.4    | 1.8    | 3.1 | YES |
 | 3.4    | 1.8    | 3.2 | YES |
 | 3.4    | 1.8    | 3.3 | YES |
+| 3.4    | 1.8    | 3.4 | YES |
 | 3.4    | 1.9    | 3.1 | NO<sup>1</sup> |
 | 3.4    | 1.9    | 3.2 | YES |
 | 3.4    | 1.9    | 3.3 | YES |
+| 3.4    | 1.9    | 3.4 | YES |
 | 3.5    | 1.7    | 3.1 | NO<sup>3</sup> |
 | 3.5    | 1.7    | 3.2 | NO<sup>3</sup> |
 | 3.5    | 1.7    | 3.3 | NO<sup>3</sup> |
+| 3.5    | 1.7    | 3.4 | NO<sup>3,4</sup> |
 | 3.5    | 1.8    | 3.1 | YES |
 | 3.5    | 1.8    | 3.2 | YES |
 | 3.5    | 1.8    | 3.3 | YES |
+| 3.5    | 1.8    | 3.4 | YES |
 | 3.5    | 1.9    | 3.1 | NO<sup>1</sup> |
 | 3.5    | 1.9    | 3.2 | YES |
 | 3.5    | 1.9    | 3.3 | YES |
+| 3.5    | 1.9    | 3.4 | YES |
 
 * 1: Django 1.9 is not compatible with DRF 3.1
 * 2: Django 1.9 is not compatible with Python 3.3
 * 3: Django 1.7 is not compatible with Python 3.5
+* 4: Django 1.7 is not compatible with DRF 3.4
 
 # Contributing
 
