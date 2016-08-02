@@ -23,8 +23,6 @@ PYTEST_ARGS = {
 
 FLAKE8_ARGS = [APP_NAME, TESTS]
 
-ISORT_ARGS = ['--recursive', '--check-only', APP_NAME, TESTS]
-
 sys.path.append(os.path.dirname(__file__))
 
 
@@ -37,21 +35,6 @@ def flake8_main(args):
     print('Running flake8 code linting')
     ret = subprocess.call(['flake8'] + args)
     print('flake8 failed' if ret else 'flake8 passed')
-    return ret
-
-
-def isort_main(args):
-    print('Running isort code checking')
-    ret = subprocess.call(['isort'] + args)
-
-    if ret:
-        print(
-            'isort failed: Some modules have incorrectly ordered imports. '
-            'Fix by running `isort --recursive .`'
-        )
-    else:
-        print('isort passed')
-
     return ret
 
 
@@ -75,10 +58,8 @@ if __name__ == "__main__":
         sys.argv.remove('--nolint')
     except ValueError:
         run_flake8 = True
-        run_isort = True
     else:
         run_flake8 = False
-        run_isort = False
 
     try:
         sys.argv.remove('--lintonly')
@@ -101,7 +82,6 @@ if __name__ == "__main__":
     else:
         style = 'fast'
         run_flake8 = False
-        run_isort = False
 
     if len(sys.argv) > 1:
         pytest_args = sys.argv[1:]
@@ -142,6 +122,3 @@ if __name__ == "__main__":
 
     if run_flake8:
         exit_on_failure(flake8_main(FLAKE8_ARGS))
-
-    if run_isort:
-        exit_on_failure(isort_main(ISORT_ARGS))
