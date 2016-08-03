@@ -64,3 +64,6 @@ db.sqlite3
 
 # pypi
 .pypirc
+
+# PyCharm
+.idea/
