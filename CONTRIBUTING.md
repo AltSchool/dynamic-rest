@@ -42,7 +42,7 @@ Any related issues in Dynamic REST, Django REST Framework, or Django should incl
 
 Before releasing:
 
-- Check/update the version in `constants.py`
+- Check/update the version in `dynamic_rest/constants.py`
 - Commit changes and tag the commit with the version, prefixed by "v"
 - Run `make pypi_upload_test` to upload a new version to PyPiTest. Check the contents at https://pypitest.python.org/pypi/dynamic-rest
 - Run `make pypi_upload` to upload a new version to PyPi. Check the contents at https://pypi.python.org/pypi/dynamic-rest
