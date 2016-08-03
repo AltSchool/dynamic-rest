@@ -1,9 +1,12 @@
 """Module containing Django meta helpers."""
 from itertools import chain
 
+from django import VERSION
 from django.db.models import ManyToManyField
 
 from dynamic_rest.related import RelatedObject
+
+DJANGO110 = VERSION >= (1, 10)
 
 
 def is_model_field(model, field_name):
@@ -36,15 +39,30 @@ def get_model_field(model, field_name):
     """
     meta = model._meta
     try:
-        return meta.get_field_by_name(field_name)[0]
+        if DJANGO110:
+            field = meta.get_field(field_name)
+        else:
+            field = meta.get_field_by_name(field_name)[0]
+        return field
     except:
+        if DJANGO110:
+            related_objs = (
+                f for f in meta.get_fields()
+                if (f.one_to_many or f.one_to_one)
+                   and f.auto_created and not f.concrete
+            )
+            related_m2m_objs = (
+                f for f in meta.get_fields(include_hidden=True)
+                if f.many_to_many and f.auto_created
+            )
+        else:
+            related_objs = meta.get_all_related_objects()
+            related_m2m_objs = meta.get_all_related_many_to_many_objects()
+
         related_objects = {
             o.get_accessor_name(): o
-            for o in chain(
-                meta.get_all_related_objects(),
-                meta.get_all_related_many_to_many_objects()
-            )
-        }
+            for o in chain(related_objs, related_m2m_objs)
+            }
         if field_name in related_objects:
             return related_objects[field_name]
         else:
