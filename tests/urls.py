@@ -20,6 +20,6 @@ router.register(r'user_locations', viewsets.UserLocationViewSet)
 router.register_resource(viewsets.CatViewSet, namespace='v2')  # canonical
 router.register(r'v1/user_locations', viewsets.UserLocationViewSet)
 
-urlpatterns = (
-    url(r'^', include(router.urls)),
-)
+urlpatterns = [
+    url(r'^', include(router.urls))
+]
