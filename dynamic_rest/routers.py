@@ -65,7 +65,7 @@ class DynamicRouter(DefaultRouter):
         if optional_trailing_slash:
             self.trailing_slash = '/?'
 
-    def get_api_root_view(self):
+    def get_api_root_view(self, **kwargs):
         """Return API root view, using the global directory."""
         class API(views.APIView):
             _ignore_model_permissions = True
