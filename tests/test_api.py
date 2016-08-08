@@ -29,7 +29,7 @@ class TestUsersAPI(APITestCase):
     def _get_json(self, url, expected_status=200):
         response = self.client.get(url)
         self.assertEquals(expected_status, response.status_code)
-        return json.loads(response.content)
+        return json.loads(response.content.decode('utf-8'))
 
     def test_get(self):
         with self.assertNumQueries(1):
