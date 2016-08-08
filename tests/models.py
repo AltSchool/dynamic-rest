@@ -17,6 +17,7 @@ class User(models.Model):
         'favorite_pet_type',
         'favorite_pet_id',
     )
+    is_dead = models.NullBooleanField(default=False)
 
 
 class Profile(models.Model):

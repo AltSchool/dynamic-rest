@@ -6,6 +6,7 @@ from django.db.models import Q, Prefetch
 from django.utils import six
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.fields import BooleanField, NullBooleanField
 from rest_framework.filters import BaseFilterBackend, OrderingFilter
 
 from dynamic_rest.conf import settings
@@ -81,6 +82,7 @@ class FilterNode(object):
         rewritten = []
         last = len(self.field) - 1
         s = serializer
+        field = None
         for i, field_name in enumerate(self.field):
             # Note: .fields can be empty for related serializers that aren't
             # sideloaded. Fields that are deferred also won't be present.
@@ -128,7 +130,7 @@ class FilterNode(object):
         if self.operator:
             rewritten.append(self.operator)
 
-        return '__'.join(rewritten)
+        return ('__'.join(rewritten), field)
 
 
 class DynamicFilterBackend(BaseFilterBackend):
@@ -283,7 +285,9 @@ class DynamicFilterBackend(BaseFilterBackend):
         def rewrite_filters(filters, serializer):
             out = {}
             for k, node in six.iteritems(filters):
-                filter_key = node.generate_query_key(serializer)
+                filter_key, field = node.generate_query_key(serializer)
+                if isinstance(field, (BooleanField, NullBooleanField)):
+                    node.value = node.value.lower() not in self.FALSEY_STRINGS
                 out[filter_key] = node.value
 
             return out
