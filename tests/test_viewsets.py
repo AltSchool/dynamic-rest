@@ -123,7 +123,7 @@ class TestUserViewSet(TestCase):
     def test_nested_filter_rewrite(self):
         node = FilterNode(['members', 'id'], 'in', [1])
         gs = GroupSerializer(include_fields='*')
-        filter_key = node.generate_query_key(gs)
+        filter_key, field = node.generate_query_key(gs)
         self.assertEqual(filter_key, 'users__id__in')
 
 
