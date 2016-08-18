@@ -35,6 +35,7 @@ INSTALLED_APPS = (
     'django.contrib.auth',
     'django.contrib.sites',
     'debug_toolbar',
+    'dynamic_rest',
     'tests',
 )
 
@@ -45,16 +46,25 @@ REST_FRAMEWORK = {
         'dynamic_rest.renderers.DynamicBrowsableAPIRenderer'
     )
 }
+
 ROOT_URLCONF = 'tests.urls'
 
 
 TEMPLATE_DIRS = (
-    os.path.join(BASE_DIR, '../dynamic_rest/templates'),
+    os.path.abspath(os.path.join(BASE_DIR, '../dynamic_rest/templates')),
 )
 
 STATICFILES_DIRS = (
-    os.path.join(BASE_DIR, '../dynamic_rest/static'),
+    os.path.abspath(os.path.join(BASE_DIR, '../dynamic_rest/static')),
 )
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': TEMPLATE_DIRS,
+        'APP_DIRS': True
+    }
+]
 
 DYNAMIC_REST = {
     'ENABLE_LINKS': True,
