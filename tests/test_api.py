@@ -26,6 +26,11 @@ class TestUsersAPI(APITestCase):
         self.fixture = create_fixture()
         self.maxDiff = None
 
+    def _get_json(self, url, expected_status=200):
+        response = self.client.get(url)
+        self.assertEquals(expected_status, response.status_code)
+        return json.loads(response.content.decode('utf-8'))
+
     def test_get(self):
         with self.assertNumQueries(1):
             # 1 for User, 0 for Location
@@ -487,7 +492,8 @@ class TestUsersAPI(APITestCase):
                     "thumbnail_url": None,
                     "number_of_cats": 1,
                     "profile": None,
-                    "date_of_birth": None
+                    "date_of_birth": None,
+                    "is_dead": False,
                 }
             })
 
@@ -782,6 +788,37 @@ class TestUsersAPI(APITestCase):
                     'number_of_cats': 0,
                 }]
             }, json.loads(response.content.decode('utf-8')))
+
+    def test_boolean_filters_on_boolean_field(self):
+        # create one dead user
+        User.objects.create(name='Dead', last_name='Mort', is_dead=True)
+
+        # set up test specs
+        tests = {
+            True: ['true', 'True', '1', 'okies'],
+            False: ['false', 'False', '0', '']
+        }
+
+        # run through test scenarios
+        for expected_value, test_values in tests.items():
+            for test_value in test_values:
+                url = (
+                    '/users/?include[]=is_dead&filter{is_dead}=%s' % test_value
+                )
+                data = self._get_json(url)
+
+                expected = set([expected_value])
+                actual = set([o['is_dead'] for o in data['users']])
+                self.assertEqual(
+                    expected,
+                    actual,
+                    "Boolean filter '%s' failed. Expected=%s Actual=%s" % (
+                        test_value,
+                        expected,
+                        actual,
+                    )
+
+                )
 
 
 @override_settings(

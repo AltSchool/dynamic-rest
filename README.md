@@ -619,8 +619,8 @@ Not all versions of Python, Django, and DRF are compatible. Here are the combina
 | 2.7    | 1.9    | 3.2 | YES |
 | 2.7    | 1.9    | 3.3 | YES |
 | 2.7    | 1.9    | 3.4 | YES |
-| 2.7    | 1.10   | 3.2 | YES |
-| 2.7    | 1.10   | 3.3 | YES |
+| 2.7    | 1.10   | 3.2 | NO<sup>5</sup> |
+| 2.7    | 1.10   | 3.3 | NO<sup>5</sup> |
 | 2.7    | 1.10   | 3.4 | YES |
 | 3.3    | 1.7    | 3.1 | YES |
 | 3.3    | 1.7    | 3.2 | YES |
@@ -646,8 +646,8 @@ Not all versions of Python, Django, and DRF are compatible. Here are the combina
 | 3.4    | 1.9    | 3.2 | YES |
 | 3.4    | 1.9    | 3.3 | YES |
 | 3.4    | 1.9    | 3.4 | YES |
-| 3.4    | 1.10   | 3.2 | YES |
-| 3.4    | 1.10   | 3.3 | YES |
+| 3.4    | 1.10   | 3.2 | NO<sup>5</sup> |
+| 3.4    | 1.10   | 3.3 | NO<sup>5</sup> |
 | 3.4    | 1.10   | 3.4 | YES |
 | 3.5    | 1.7    | 3.1 | NO<sup>3</sup> |
 | 3.5    | 1.7    | 3.2 | NO<sup>3</sup> |
@@ -661,14 +661,15 @@ Not all versions of Python, Django, and DRF are compatible. Here are the combina
 | 3.5    | 1.9    | 3.2 | YES |
 | 3.5    | 1.9    | 3.3 | YES |
 | 3.5    | 1.9    | 3.4 | YES |
-| 3.5    | 1.10   | 3.2 | YES |
-| 3.5    | 1.10   | 3.3 | YES |
+| 3.5    | 1.10   | 3.2 | NO<sup>5</sup> |
+| 3.5    | 1.10   | 3.3 | NO<sup>5</sup> |
 | 3.5    | 1.10   | 3.4 | YES |
 
 * 1: Django 1.9 is not compatible with DRF 3.1
 * 2: Django 1.9 is not compatible with Python 3.3
 * 3: Django 1.7 is not compatible with Python 3.5
 * 4: Django 1.7 is not compatible with DRF 3.4
+* 5: Django 1.10 is only compatible with DRF 3.4+
 
 # Contributing
 
