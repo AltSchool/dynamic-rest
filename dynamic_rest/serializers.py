@@ -509,7 +509,10 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             Otherwise, a tagged data dict representation.
         """
         if self.id_only():
-            return instance.pk
+            return {
+                'id': instance.pk,
+                'type': self.get_plural_name()
+            }
         else:
             if self.enable_optimization:
                 representation = self._faster_to_representation(instance)

@@ -269,7 +269,10 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             # from the current instance rather than from the related object
             source_id = '%s_id' % source
             if hasattr(instance, source_id):
-                return getattr(instance, source_id)
+                return {
+                    'type': serializer.get_plural_name(),
+                    'id': getattr(instance, source_id)
+                }
 
         if model is None:
             related = getattr(instance, source)

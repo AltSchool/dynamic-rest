@@ -120,4 +120,7 @@ class SideloadingProcessor(object):
 
                 # replace the object with a reference
                 if parent is not None and parent_key is not None:
-                    parent[parent_key] = pk
+                    parent[parent_key] = {
+                        'type': name,
+                        'id': pk
+                    }
