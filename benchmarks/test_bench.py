@@ -11,6 +11,13 @@ from rest_framework.test import APITestCase
 
 from .models import Group, Permission, User
 
+
+# Python 3 compatibility
+try:
+    xrange
+except NameError:
+    xrange = range
+
 DREST_VERSION = pkg_resources.require('dynamic-rest')[0].version
 DRF_VERSION = pkg_resources.require('djangorestframework')[0].version
 AVERAGE_TYPE = 'median'
