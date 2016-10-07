@@ -57,7 +57,16 @@ def get_directory(request):
     return directory_list
 
 
+def add_patch_to_list_route(routes):
+    # Identify the list route, add PATCH so we can
+    # have bulk PATCH requests
+    list_route = next(i for i in routes if i.name == '{basename}-list')
+    list_route.mapping['patch'] = 'partial_update'
+
+
 class DynamicRouter(DefaultRouter):
+    routes = list(DefaultRouter.routes)
+    add_patch_to_list_route(routes)
 
     def __init__(self, *args, **kwargs):
         optional_trailing_slash = kwargs.pop('optional_trailing_slash', True)
