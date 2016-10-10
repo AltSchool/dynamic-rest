@@ -10,9 +10,7 @@ from tests.models import Dog, Group, User
 from tests.serializers import GroupSerializer
 from tests.setup import create_fixture
 from tests.viewsets import (
-    DogViewSet,
     GroupNoMergeDictViewSet,
-    GroupViewSet,
     UserViewSet
 )
 
@@ -159,20 +157,17 @@ class BulkUpdateTestCase(TestCase):
 
     def setUp(self):
         self.fixture = create_fixture()
-        self.rf = RequestFactory()
-        self.view = DogViewSet.as_view({'patch': 'partial_update'})
 
     def test_bulk_update_default_style(self):
         '''
         Test that PATCH request partially updates all submitted resources.
         '''
         data = [{'id': 1, 'fur': 'grey'}, {'id': 2, 'fur': 'grey'}]
-        request = self.rf.patch(
+        response = self.client.patch(
             '/dogs/',
             json.dumps(data),
             content_type='application/json'
         )
-        response = self.view(request)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue('dogs' in response.data)
         self.assertTrue(2, len(response.data['dogs']))
@@ -182,12 +177,11 @@ class BulkUpdateTestCase(TestCase):
 
     def test_bulk_update_drest_style(self):
         data = {'dogs': [{'id': 1, 'fur': 'grey'}, {'id': 2, 'fur': 'grey'}]}
-        request = self.rf.patch(
+        response = self.client.patch(
             '/dogs/',
             json.dumps(data),
             content_type='application/json'
         )
-        response = self.view(request)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue('dogs' in response.data)
 
@@ -196,12 +190,11 @@ class BulkUpdateTestCase(TestCase):
         Test that you can patch inside of the filtered queryset.
         '''
         data = [{'id': 3, 'fur': 'gold'}]
-        request = self.rf.patch(
+        response = self.client.patch(
             '/dogs/?filter{fur.contains}=brown',
             json.dumps(data),
             content_type='application/json'
         )
-        response = self.view(request)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(Dog.objects.get(id=3).fur_color == 'gold')
 
@@ -210,20 +203,15 @@ class BulkUpdateTestCase(TestCase):
         Test that PATCH request will fail if lookup attribute wasn't provided.
         '''
         data = [{'fur': 'grey'}]
-        request = self.rf.patch(
+        response = self.client.patch(
             '/dogs/?filter{fur.contains}=brown',
             json.dumps(data),
             content_type='application/json'
         )
-        response = self.view(request)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
 
 class BulkCreationTestCase(TestCase):
-
-    def setUp(self):
-        self.rf = RequestFactory()
-        self.view = GroupViewSet.as_view({'post': 'create'})
 
     def test_post_single(self):
         """
@@ -231,9 +219,8 @@ class BulkCreationTestCase(TestCase):
         resource.
         """
         data = {'name': 'foo', 'random_input': [1, 2, 3]}
-        request = self.rf.post(
-            '/group/', json.dumps(data), content_type='application/json')
-        response = self.view(request)
+        response = self.client.post(
+            '/groups/', json.dumps(data), content_type='application/json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(1, Group.objects.all().count())
 
@@ -244,12 +231,11 @@ class BulkCreationTestCase(TestCase):
                 {'name': 'bar', 'random_input': [4, 5, 6]},
             ]
         }
-        request = self.rf.post(
+        response = self.client.post(
             '/groups/',
             json.dumps(data),
             content_type='application/json'
         )
-        response = self.view(request)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(2, Group.objects.all().count())
 
@@ -268,12 +254,11 @@ class BulkCreationTestCase(TestCase):
                 'random_input': [4, 5, 6],
             }
         ]
-        request = self.rf.post(
+        response = self.client.post(
             '/groups/',
             json.dumps(data),
             content_type='application/json'
         )
-        response = self.view(request)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(2, Group.objects.all().count())
         self.assertEqual(
@@ -284,12 +269,11 @@ class BulkCreationTestCase(TestCase):
     def test_post_bulk_with_existing_items_and_disabled_partial_creation(self):
         data = [{'name': 'foo'}, {'name': 'bar'}]
         Group.objects.create(name='foo')
-        request = self.rf.post(
+        response = self.client.post(
             '/groups/',
             json.dumps(data),
             content_type='application/json'
         )
-        response = self.view(request)
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(1, Group.objects.all().count())
         self.assertTrue('errors' in response.data)
@@ -306,12 +290,11 @@ class BulkCreationTestCase(TestCase):
                 'members': [u2.pk],
             }
         ]
-        request = self.rf.post(
+        response = self.client.post(
             '/groups/?include[]=members.',
             json.dumps(data),
             content_type='application/json'
         )
-        response = self.view(request)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         resp_data = response.data
 
