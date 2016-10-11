@@ -1,3 +1,5 @@
+from django.urls import set_script_prefix, clear_script_prefix
+
 from rest_framework.test import APITestCase
 
 from dynamic_rest.meta import get_model_table
@@ -15,6 +17,15 @@ class TestDynamicRouter(APITestCase):
             '/dogs',
             DynamicRouter.get_canonical_path(rsrc_key)
         )
+
+    def test_get_canonical_path_with_prefix(self):
+        set_script_prefix('/v2/')
+        rsrc_key = DogSerializer().get_resource_key()
+        self.assertEqual(
+            '/v2/dogs',
+            DynamicRouter.get_canonical_path(rsrc_key)
+        )
+        clear_script_prefix()
 
     def test_get_canonical_path_with_pk(self):
         rsrc_key = DogSerializer().get_resource_key()
