@@ -1,6 +1,7 @@
 """This module contains custom router classes."""
 from collections import OrderedDict
 
+from django.urls import get_script_prefix
 from django.utils import six
 from rest_framework import views
 from rest_framework.response import Response
@@ -228,7 +229,7 @@ class DynamicRouter(DefaultRouter):
             # Note: Maybe raise?
             return None
 
-        base_path = '/' + resource_map[resource_key]['path']
+        base_path = get_script_prefix() + resource_map[resource_key]['path']
         if pk:
             return '%s/%s/' % (base_path, pk)
         else:
