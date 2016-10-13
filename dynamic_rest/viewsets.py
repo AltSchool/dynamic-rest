@@ -15,6 +15,7 @@ from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.renderers import DynamicBrowsableAPIRenderer
 
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
+DELETE_REQUEST_METHOD = 'DELETE'
 
 
 class QueryParams(QueryDict):
@@ -235,6 +236,15 @@ class WithDynamicViewSetMixin(object):
         if (
             self.request and
             self.request.method.upper() in UPDATE_REQUEST_METHODS
+        ):
+            return True
+        else:
+            return False
+
+    def is_delete(self):
+        if (
+            self.request and
+            self.request.method.upper() == DELETE_REQUEST_METHOD
         ):
             return True
         else:
