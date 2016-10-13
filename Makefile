@@ -80,6 +80,10 @@ test: install lint
 	$(call header,"Running unit tests")
 	@$(INSTALL_DIR)/bin/py.test --cov=$(APP_NAME) tests/$(TEST)
 
+test_just: install lint
+	$(call header,"Running unit tests")
+	@$(INSTALL_DIR)/bin/py.test --cov=$(APP_NAME) -k $(TEST)
+
 # Run all tests (tox)
 tox: install
 	$(call header,"Running multi-version tests")
