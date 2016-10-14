@@ -519,12 +519,9 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         bulk_payload = self._get_bulk_payload(request)
         if bulk_payload:
             return self._destroy_many(bulk_payload)
-        try:
-            # check if the request is formatted in such a way that
-            # we can get the object
-            self.get_object()
-        except:
-            # if not, assume that it is a poorly formatted bulk request
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        if lookup_url_kwarg not in kwargs:
+            # assume that it is a poorly formatted bulk request
             return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
         return super(DynamicModelViewSet, self).destroy(
             request, *args, **kwargs)
