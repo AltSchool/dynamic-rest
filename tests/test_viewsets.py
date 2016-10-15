@@ -371,3 +371,12 @@ class BulkDeletionTestCase(TestCase):
             response.status_code,
             status.HTTP_405_METHOD_NOT_ALLOWED
         )
+
+    def test_delete_on_nonexistent_raises_404(self):
+        response = self.client.delete(
+            '/dogs/31415'
+        )
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_404_NOT_FOUND
+        )
