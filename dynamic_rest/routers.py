@@ -14,6 +14,7 @@ from rest_framework.reverse import reverse
 from rest_framework.routers import DefaultRouter, Route, replace_methodname
 
 from dynamic_rest.meta import get_model_table
+from dynamic_rest.conf import settings
 
 directory = {}
 resource_map = {}
@@ -63,7 +64,19 @@ def get_directory(request):
     return directory_list
 
 
+def modify_list_route(routes):
+    # Identify the list route, add PATCH so we can
+    # have bulk PATCH requests
+    if not settings.ENABLE_BULK_UPDATE:
+        return
+    list_route = next(i for i in routes if i.name == '{basename}-list')
+    list_route.mapping['patch'] = 'partial_update'
+    list_route.mapping['delete'] = 'destroy'
+
+
 class DynamicRouter(DefaultRouter):
+    routes = list(DefaultRouter.routes)
+    modify_list_route(routes)
 
     def __init__(self, *args, **kwargs):
         optional_trailing_slash = kwargs.pop('optional_trailing_slash', True)

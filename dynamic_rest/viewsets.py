@@ -15,6 +15,7 @@ from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.renderers import DynamicBrowsableAPIRenderer
 
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
+DELETE_REQUEST_METHOD = 'DELETE'
 
 
 class QueryParams(QueryDict):
@@ -240,6 +241,15 @@ class WithDynamicViewSetMixin(object):
         else:
             return False
 
+    def is_delete(self):
+        if (
+            self.request and
+            self.request.method.upper() == DELETE_REQUEST_METHOD
+        ):
+            return True
+        else:
+            return False
+
     def get_serializer(self, *args, **kwargs):
         if 'request_fields' not in kwargs:
             kwargs['request_fields'] = self.get_request_fields()
@@ -340,6 +350,14 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
     ENABLE_BULK_PARTIAL_CREATION = settings.ENABLE_BULK_PARTIAL_CREATION
     ENABLE_BULK_UPDATE = settings.ENABLE_BULK_UPDATE
 
+    def _get_bulk_payload(self, request):
+        plural_name = self.get_serializer_class().get_plural_name()
+        if isinstance(request.data, list):
+            return request.data
+        elif plural_name in request.data and len(request.data) == 1:
+            return request.data[plural_name]
+        return None
+
     def _bulk_update(self, data, partial=False):
         # Restrict the update to the filtered queryset.
         serializer = self.get_serializer(
@@ -378,12 +396,10 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         ]
         """
         if self.ENABLE_BULK_UPDATE:
-            plural_name = self.get_serializer_class().get_plural_name()
             partial = 'partial' in kwargs
-            if isinstance(request.data, list):
-                return self._bulk_update(request.data, partial)
-            elif plural_name in request.data and len(request.data) == 1:
-                return self._bulk_update(request.data[plural_name], partial)
+            bulk_payload = self._get_bulk_payload(request)
+            if bulk_payload:
+                return self._bulk_update(bulk_payload, partial)
         return super(DynamicModelViewSet, self).update(request, *args,
                                                        **kwargs)
 
@@ -468,10 +484,44 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
             {"name": "Lucky", "age": 3}
         ]
         """
-        plural_name = self.get_serializer_class().get_plural_name()
-        if isinstance(request.data, list):
-            return self._create_many(request.data)
-        elif plural_name in request.data and len(request.data) == 1:
-            return self._create_many(request.data[plural_name])
+        bulk_payload = self._get_bulk_payload(request)
+        if bulk_payload:
+            return self._create_many(bulk_payload)
         return super(DynamicModelViewSet, self).create(
+            request, *args, **kwargs)
+
+    def _destroy_many(self, data):
+        for instance in self.get_queryset().filter(
+            id__in=[d['id'] for d in data]
+        ):
+            self.check_object_permissions(self.request, instance)
+            self.perform_destroy(instance)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    def destroy(self, request, *args, **kwargs):
+        """
+        Either delete a single or many model instances in bulk
+
+        DELETE /dogs/
+        {
+            "dogs": [
+                {"id": 1},
+                {"id": 2}
+            ]
+        }
+
+        DELETE /dogs/
+        [
+            {"id": 1},
+            {"id": 2}
+        ]
+        """
+        bulk_payload = self._get_bulk_payload(request)
+        if bulk_payload:
+            return self._destroy_many(bulk_payload)
+        lookup_url_kwarg = self.lookup_url_kwarg or self.lookup_field
+        if lookup_url_kwarg not in kwargs:
+            # assume that it is a poorly formatted bulk request
+            return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return super(DynamicModelViewSet, self).destroy(
             request, *args, **kwargs)
