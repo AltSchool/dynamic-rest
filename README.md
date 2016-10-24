@@ -494,7 +494,7 @@ You can filter a user by his name (exact match):
 
 ```
 -->
-    GET /users/?include[]=groups.*&filter{groups.name.icontains}=h
+    GET /users/?include[]=groups.*&filter{groups|name.icontains}=h
 <--
     200 OK
 ```
