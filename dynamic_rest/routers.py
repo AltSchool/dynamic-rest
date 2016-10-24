@@ -1,7 +1,12 @@
 """This module contains custom router classes."""
 from collections import OrderedDict
 
-from django.urls import get_script_prefix
+# Backwards compatability for django < 1.10.x
+try:
+    from django.urls import get_script_prefix
+except ImportError:
+    from django.core.urlresolvers import get_script_prefix
+
 from django.utils import six
 from rest_framework import views
 from rest_framework.response import Response
