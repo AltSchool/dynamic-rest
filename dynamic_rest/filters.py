@@ -589,7 +589,7 @@ class DynamicSortingFilter(OrderingFilter):
         if params:
             fields = [param.strip() for param in params]
             valid_ordering, invalid_ordering = self.remove_invalid_fields(
-                queryset, fields, view
+                queryset, fields, view, request
             )
 
             # if any of the sort fields are invalid, throw an error.
@@ -604,7 +604,7 @@ class DynamicSortingFilter(OrderingFilter):
         # No sorting was included
         return self.get_default_ordering(view)
 
-    def remove_invalid_fields(self, queryset, fields, view):
+    def remove_invalid_fields(self, queryset, fields, view, request):
         """Remove invalid fields from an ordering.
 
         Overwrites the DRF default remove_invalid_fields method to return
@@ -613,7 +613,7 @@ class DynamicSortingFilter(OrderingFilter):
         # get valid field names for sorting
         valid_fields_map = {
             name: source for name, label, source in self.get_valid_fields(
-                queryset, view)
+                queryset, view, {})
         }
 
         valid_orderings = []
@@ -633,7 +633,7 @@ class DynamicSortingFilter(OrderingFilter):
 
         return valid_orderings, invalid_orderings
 
-    def get_valid_fields(self, queryset, view):
+    def get_valid_fields(self, queryset, view, context={}):
         """Return valid fields for ordering.
 
         Overwrites DRF's get_valid_fields method so that valid_fields returns
