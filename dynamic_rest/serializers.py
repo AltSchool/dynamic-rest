@@ -160,6 +160,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             include_fields=None,
             exclude_fields=None,
             request_fields=None,
+            hyperlink=False,
             sideload=False,
             dynamic=True,
             embed=False,
@@ -175,6 +176,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             exclude_fields: List of field names to exclude.
             request_fields: map of field names that supports
                 inclusions, exclusions, and nested sideloads.
+            hyperlink: if True, return the hyperlink rather than ID
             sideload: If False, do not perform any sideloading at this level.
             embed: If True, force the current representation to be embedded.
             dynamic: If False, ignore deferred rules and
@@ -201,6 +203,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         kwargs['data'] = data
         super(WithDynamicSerializerMixin, self).__init__(**kwargs)
 
+        self.hyperlink = hyperlink
         self.sideload = sideload
         self.dynamic = dynamic
         self.request_fields = request_fields or {}
@@ -509,7 +512,9 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             Otherwise, a tagged data dict representation.
         """
         if self.id_only():
-            return instance.pk
+            return (
+                instance.get_absolute_url() if self.hyperlink else instance.pk
+            )
         else:
             if self.enable_optimization:
                 representation = self._faster_to_representation(instance)

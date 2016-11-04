@@ -74,13 +74,15 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             to the child serializer.
     """
 
-    SERIALIZER_KWARGS = set(('many', 'source'))
+    SERIALIZER_KWARGS = set(('many', 'source', 'hyperlink'))
 
     def __init__(
             self,
             serializer_class,
             many=False,
+            url=False,
             queryset=None,
+            hyperlink=False,
             embed=False,
             **kwargs
     ):
@@ -91,6 +93,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             many: Boolean, if relation is to-many.
             queryset: Default queryset to apply when filtering for related
                 objects.
+            hyperlink: if True, represent as a hyperlink
             embed: If True, always embed related object(s). Will not sideload,
                 and will include the full object unless specifically excluded.
         """
@@ -98,6 +101,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         self.bound = False
         self.queryset = queryset
         self.embed = embed
+        self.hyperlink = hyperlink
         if '.' in kwargs.get('source', ''):
             raise Exception('Nested relationships are not supported')
         if 'link' in kwargs:
