@@ -8,6 +8,7 @@ from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import exceptions, fields, serializers
 from rest_framework.fields import SkipField
+from rest_framework.relations import Hyperlink
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 
 from dynamic_rest.bases import DynamicSerializerBase
@@ -20,6 +21,7 @@ from dynamic_rest.tagged import tag_dict
 
 
 class WithResourceKeyMixin(object):
+
     def get_resource_key(self):
         """Return canonical resource key, usually the DB table name."""
         model = self.get_model()
@@ -30,6 +32,7 @@ class WithResourceKeyMixin(object):
 
 
 class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
+
     """Custom ListSerializer class.
 
     This implementation delegates DREST-specific methods to
@@ -118,6 +121,7 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
 
 
 class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
+
     """Base class for DREST serializers.
 
     This class provides support for dynamic field inclusions/exclusions.
@@ -502,6 +506,15 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
 
         return ret
 
+    def to_representation_id(self, instance):
+        if self.hyperlink:
+            return Hyperlink(
+                instance.get_absolute_url(),
+                instance.natural_key()
+            )
+        else:
+            return instance.pk
+
     def to_representation(self, instance):
         """Modified to_representation method.
 
@@ -512,9 +525,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             Otherwise, a tagged data dict representation.
         """
         if self.id_only():
-            return (
-                instance.get_absolute_url() if self.hyperlink else instance.pk
-            )
+            return self.to_representation_id(instance)
         else:
             if self.enable_optimization:
                 representation = self._faster_to_representation(instance)
