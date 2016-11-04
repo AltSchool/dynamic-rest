@@ -101,12 +101,12 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         self.bound = False
         self.queryset = queryset
         self.embed = embed
-        self.hyperlink = hyperlink
         if '.' in kwargs.get('source', ''):
             raise Exception('Nested relationships are not supported')
         if 'link' in kwargs:
             self.link = kwargs.pop('link')
         super(DynamicRelationField, self).__init__(**kwargs)
+        self.kwargs['hyperlink'] = self.hyperlink = hyperlink
         self.kwargs['many'] = self.many = many
 
     def get_model(self):
