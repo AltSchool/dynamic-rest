@@ -268,7 +268,11 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         serializer = self.serializer
         model = serializer.get_model()
         source = self.source
-        if not self.kwargs['many'] and serializer.id_only():
+        if (
+            not self.kwargs['many']
+            and serializer.id_only()
+            and not serializer.hyperlink
+        ):
             # attempt to optimize by reading the related ID directly
             # from the current instance rather than from the related object
             source_id = '%s_id' % source
