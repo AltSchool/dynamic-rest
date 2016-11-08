@@ -39,7 +39,8 @@ class Cat(models.Model):
         'Cat',
         null=True,
         blank=True,
-        related_name='kittens')
+        related_name='kittens'
+    )
 
 
 class Dog(models.Model):

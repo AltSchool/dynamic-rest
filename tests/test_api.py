@@ -1545,6 +1545,20 @@ class TestCatsAPI(APITestCase):
         self.assertEqual(data['cat']['parent'], parent_id)
         self.assertEqual(data['cat']['name'], kitten_name)
 
+    def test_embedded_parent(self):
+        response = self.client.get(
+            '/cats/%s/?include[]=embed_parent.*' % self.kitten.id
+        )
+        print response.content
+        self.assertEquals(response.status_code, 200)
+
+        parent = self.kitten.parent.id
+        response = self.client.get(
+            '/cats/%s/?include[]=embed_kittens.*' % parent
+        )
+        print response.content
+        self.assertEquals(response.status_code, 200)
+
 
 class TestFilters(APITestCase):
 

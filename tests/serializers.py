@@ -35,11 +35,35 @@ class CatSerializer(DynamicModelSerializer):
     foobar = DynamicRelationField(
         'LocationSerializer', source='hunting_grounds', many=True)
     parent = DynamicRelationField('CatSerializer', immutable=True)
+    embed_kittens = DynamicRelationField(
+        'CatSerializer',
+        source='kittens',
+        deferred=True,
+        many=True,
+        embed=True,
+        read_only=True,
+    )
+    embed_parent = DynamicRelationField(
+        'CatSerializer',
+        source='parent',
+        deferred=True,
+        embed=True,
+        read_only=True,
+    )
 
     class Meta:
         model = Cat
         name = 'cat'
-        fields = ('id', 'name', 'home', 'backup_home', 'foobar', 'parent')
+        fields = (
+            'id',
+            'name',
+            'home',
+            'backup_home',
+            'foobar',
+            'parent',
+            'embed_kittens',
+            'embed_parent',
+        )
         deferred_fields = ('home', 'backup_home', 'foobar', 'parent')
         immutable_fields = ('name',)
         untrimmed_fields = ('name',)
@@ -216,6 +240,7 @@ class LocationGroupSerializer(DynamicEphemeralSerializer):
 
 
 class CountsSerializer(DynamicEphemeralSerializer):
+
     class Meta:
         name = 'counts'
 
@@ -225,6 +250,7 @@ class CountsSerializer(DynamicEphemeralSerializer):
 
 
 class NestedEphemeralSerializer(DynamicEphemeralSerializer):
+
     class Meta:
         name = 'nested'
 
@@ -232,6 +258,7 @@ class NestedEphemeralSerializer(DynamicEphemeralSerializer):
 
 
 class UserLocationSerializer(UserSerializer):
+
     """ Serializer to test embedded fields """
     class Meta:
         model = User
