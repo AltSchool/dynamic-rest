@@ -19,7 +19,7 @@ class SideloadingProcessor(object):
 
     prefix = settings.ADDITIONAL_PRIMARY_RESOURCE_PREFIX
 
-    def __init__(self, serializer, data):
+    def __init__(self, serializer, data, nest_children=True):
         """Initializes and runs the processor.
 
         Arguments:
@@ -33,6 +33,7 @@ class SideloadingProcessor(object):
         self.seen = defaultdict(set)
         self.plural_name = serializer.get_plural_name()
         self.name = serializer.get_name()
+        self.nest_children = nest_children
 
         # process the data, optionally sideloading
         self.process(data)
@@ -50,7 +51,7 @@ class SideloadingProcessor(object):
         Arguments:
             data: A dictionary representation of a DRF serializer.
         """
-        return isinstance(data, TaggedDict)
+        return not self.nest_children and isinstance(data, TaggedDict)
 
     def process(self, obj, parent=None, parent_key=None, depth=0):
         """Recursively process the data for sideloading.
