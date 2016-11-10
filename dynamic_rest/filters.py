@@ -612,7 +612,7 @@ class DynamicSortingFilter(OrderingFilter):
         """
         # get valid field names for sorting
         valid_fields_map = {
-            name: source for name, label, source in self.get_valid_fields(
+            name: source for name, source in self.get_valid_fields(
                 queryset, view)
         }
 
@@ -651,7 +651,7 @@ class DynamicSortingFilter(OrderingFilter):
                 )
                 raise ImproperlyConfigured(msg % self.__class__.__name__)
             valid_fields = [
-                (field_name, field.label, field.source or field_name)
+                (field_name, field.source or field_name)
                 for field_name, field in serializer_class().fields.items()
                 if not getattr(
                     field, 'write_only', False
@@ -660,7 +660,7 @@ class DynamicSortingFilter(OrderingFilter):
         else:
             serializer_class = getattr(view, 'serializer_class')
             valid_fields = [
-                (field_name, field.label, field.source or field_name)
+                (field_name, field.source or field_name)
                 for field_name, field in serializer_class().fields.items()
                 if not getattr(field, 'write_only', False) and
                 not field.source == '*' and field_name in valid_fields
