@@ -137,7 +137,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             model_field = None
 
         # Infer `required` and `allow_null`
-
         if 'required' not in self.kwargs and (
                 remote or (
                     model_field and (
