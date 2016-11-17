@@ -3,6 +3,8 @@
 import importlib
 import pickle
 
+from django import VERSION
+
 from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import fields
@@ -13,6 +15,8 @@ from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
 from dynamic_rest.fields.common import WithRelationalFieldMixin
 from dynamic_rest.meta import is_field_remote
+
+DJANGO110 = VERSION >= (1, 10)
 
 
 class DynamicField(fields.Field):
@@ -118,14 +122,22 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         parent_model = getattr(self.parent.Meta, 'model', None)
 
         remote = is_field_remote(parent_model, self.source)
+
+        def get_model_field():
+            if DJANGO110:
+                return parent_model._meta.get_field(self.source)
+            else:
+                return parent_model._meta.get_field_by_name(self.source)[0]
+
         try:
-            model_field = parent_model._meta.get_field_by_name(self.source)[0]
+            model_field = get_model_field()
         except:
             # model field may not be available for m2o fields with no
             # related_name
             model_field = None
 
         # Infer `required` and `allow_null`
+
         if 'required' not in self.kwargs and (
                 remote or (
                     model_field and (
