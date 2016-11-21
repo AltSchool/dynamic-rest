@@ -1,5 +1,7 @@
 # Dynamic REST
 
+[![Join the chat at https://gitter.im/dynamic-rest/Lobby](https://badges.gitter.im/dynamic-rest/Lobby.svg)](https://gitter.im/dynamic-rest/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 [![Circle CI](https://circleci.com/gh/AltSchool/dynamic-rest.svg?style=svg)](https://circleci.com/gh/AltSchool/dynamic-rest)
 [![PyPi](https://img.shields.io/pypi/v/dynamic-rest.svg)](https://pypi.python.org/pypi/dynamic-rest)
 
