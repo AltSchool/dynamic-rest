@@ -3,8 +3,6 @@
 import importlib
 import pickle
 
-from django import VERSION
-
 from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import fields
@@ -14,9 +12,7 @@ from rest_framework.serializers import SerializerMethodField
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
 from dynamic_rest.fields.common import WithRelationalFieldMixin
-from dynamic_rest.meta import is_field_remote
-
-DJANGO110 = VERSION >= (1, 10)
+from dynamic_rest.meta import is_field_remote, get_model_field
 
 
 class DynamicField(fields.Field):
@@ -122,12 +118,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         parent_model = getattr(self.parent.Meta, 'model', None)
 
         remote = is_field_remote(parent_model, self.source)
-
-        def get_model_field():
-            if DJANGO110:
-                return parent_model._meta.get_field(self.source)
-            else:
-                return parent_model._meta.get_field_by_name(self.source)[0]
 
         try:
             model_field = get_model_field()
