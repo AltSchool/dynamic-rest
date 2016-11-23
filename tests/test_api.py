@@ -884,7 +884,7 @@ class TestLocationsAPI(APITestCase):
                     'default': None,
                     'immutable': False,
                     'label': 'Users',
-                    'nullable': False,
+                    'nullable': True,
                     'read_only': False,
                     'related_to': 'users',
                     'required': False,
@@ -894,7 +894,7 @@ class TestLocationsAPI(APITestCase):
                     'default': None,
                     'immutable': False,
                     'label': 'Cats',
-                    'nullable': False,
+                    'nullable': True,
                     'read_only': False,
                     'related_to': 'cats',
                     'required': False,
@@ -904,7 +904,7 @@ class TestLocationsAPI(APITestCase):
                     'default': None,
                     'immutable': False,
                     'label': 'Bad cats',
-                    'nullable': False,
+                    'nullable': True,
                     'read_only': False,
                     'related_to': 'cats',
                     'required': False,
@@ -928,8 +928,9 @@ class TestLocationsAPI(APITestCase):
         # Django 1.7 and 1.9 differ in their interpretation of
         # "nullable" when it comes to inverse relationship fields.
         # Ignore the values for the purposes of this comparison.
-        del actual['properties']['friendly_cats']['nullable']
-        del expected['properties']['friendly_cats']['nullable']
+        for field in ['cats', 'friendly_cats', 'bad_cats']:
+            del actual['properties'][field]['nullable']
+            del expected['properties'][field]['nullable']
         self.assertEquals(
             json.loads(json.dumps(expected)),
             json.loads(json.dumps(actual))
