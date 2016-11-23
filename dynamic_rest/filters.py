@@ -12,11 +12,18 @@ from rest_framework.filters import BaseFilterBackend, OrderingFilter
 from dynamic_rest.conf import settings
 from dynamic_rest.datastructures import TreeMap
 from dynamic_rest.fields import DynamicRelationField
-from dynamic_rest.meta import get_model_field, is_field_remote, is_model_field
-from dynamic_rest.patches import patch_prefetch_one_level
+from dynamic_rest.meta import (
+    get_model_field,
+    is_field_remote,
+    is_model_field,
+    DJANGO110
+)
 from dynamic_rest.related import RelatedObject
 
-patch_prefetch_one_level()
+if not DJANGO110:
+    # prefetch issue fixed in 1.10
+    from dynamic_rest.patches import patch_prefetch_one_level
+    patch_prefetch_one_level()
 
 
 def has_joins(queryset):
