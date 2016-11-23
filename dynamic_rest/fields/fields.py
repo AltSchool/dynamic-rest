@@ -135,7 +135,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
                 )
         ):
             self.required = False
-        if 'allow_null' in self.kwargs and getattr(
+        if 'allow_null' not in self.kwargs and getattr(
                 model_field, 'null', False
         ):
             self.allow_null = True
