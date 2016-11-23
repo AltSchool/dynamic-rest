@@ -120,7 +120,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         remote = is_field_remote(parent_model, self.source)
 
         try:
-            model_field = get_model_field()
+            model_field = get_model_field(parent_model, self.source)
         except:
             # model field may not be available for m2o fields with no
             # related_name
