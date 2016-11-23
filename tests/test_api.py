@@ -928,7 +928,7 @@ class TestLocationsAPI(APITestCase):
         # Django 1.7 and 1.9 differ in their interpretation of
         # "nullable" when it comes to inverse relationship fields.
         # Ignore the values for the purposes of this comparison.
-        for field in ['cats', 'friendly_cats', 'bad_cats']:
+        for field in ['cats', 'friendly_cats', 'bad_cats', 'users']:
             del actual['properties'][field]['nullable']
             del expected['properties'][field]['nullable']
         self.assertEquals(
