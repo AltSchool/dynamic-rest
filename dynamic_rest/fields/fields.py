@@ -12,7 +12,7 @@ from rest_framework.serializers import SerializerMethodField
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
 from dynamic_rest.fields.common import WithRelationalFieldMixin
-from dynamic_rest.meta import is_field_remote
+from dynamic_rest.meta import is_field_remote, get_model_field
 
 
 class DynamicField(fields.Field):
@@ -118,8 +118,9 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         parent_model = getattr(self.parent.Meta, 'model', None)
 
         remote = is_field_remote(parent_model, self.source)
+
         try:
-            model_field = parent_model._meta.get_field_by_name(self.source)[0]
+            model_field = get_model_field()
         except:
             # model field may not be available for m2o fields with no
             # related_name
