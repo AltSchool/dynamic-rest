@@ -365,7 +365,15 @@ class DynamicFilterBackend(BaseFilterBackend):
                 # GenericForeignKey has no related_model
                 # in this case, prefetch the generic relationship itself
                 prefetches[source] = source
+                if self.DEBUG:
+                    self._prefetches[source] = source
                 continue
+
+            if self.DEBUG:
+                # push prefetches
+                pfs = self._prefetches
+                self._prefetches[source] = {}
+                self._prefetches = self._prefetches[source]
 
             queryset = self._filter_queryset(
                 serializer=None,
@@ -374,6 +382,11 @@ class DynamicFilterBackend(BaseFilterBackend):
                 queryset=None,
                 requirements=remainder
             )
+
+            if self.DEBUG:
+                # pop back
+                self._prefetches = pfs
+
             prefetches[source] = Prefetch(
                 source,
                 queryset=queryset
