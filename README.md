@@ -22,10 +22,10 @@ See http://dynamic-rest.readthedocs.org for full documentation.
   - [Linked relationships](#linked-relationships)
   - [Sideloaded relationships](#sideloaded-relationships)
   - [Embedded relationships](#embedded-relationships)
-  - [Field inclusions](#field-inclusions)
-  - [Field exclusions](#field-exclusions)
-  - [Field-based filtering](#field-based-filtering)
-  - [Field-based ordering](#field-based-ordering)
+  - [Inclusions](#inclusions)
+  - [Exclusions](#exclusions)
+  - [Filtering](#filtering)
+  - [Ordering](#ordering)
   - [Directory panel](#directory-panel)
   - [Optimizations](#optimizations)
 - [Settings](#settings)
@@ -45,10 +45,10 @@ DREST classes can be used as a drop-in replacement for DRF classes, which offer 
 * Linked relationships
 * Sideloaded relationships
 * Embedded relationships 
-* Field inclusions
-* Field exclusions
-* Field-based filtering
-* Field-based sorting
+* Inclusions
+* Exclusions
+* Filtering
+* Sorting
 * Directory panel for your Browsable API
 * Optimizations
 
@@ -316,7 +316,7 @@ In DREST, sideloading is the default because it can produce much smaller payload
 
 For example, if you requested a list of 10 users along with their groups, and those users all happened to be in the same groups, the embedded variant would represent each group 10 times. The sideloaded variant would only represent a particular group once, regardless of the number of times that group is referenced.
 
-## Field inclusions 
+## Inclusions 
 
 You can use the `include[]` feature not only to sideload relationships, but also to load basic fields that are marked "deferred".
 
@@ -364,7 +364,7 @@ Note that `include[]=personal_statement` does not have a `.` following the field
 
 For example, if the user had a deferred "events" relationship, passing `include[]=events` would return an "events" field populated by event IDs, passing `include[]=events.` would sideload or embed the events themselves, and by default, only a link to the events would be returned. This can be useful for large has-many relationships.
 
-## Field exclusions
+## Exclusions
 
 Just as deferred fields can be included on demand with the `include[]` feature, fields that are not deferred can be excluded with the `exclude[]` feature. Like `include[]`, `exclude[]` also supports multiple values and dot notation to allow you to exclude fields on sideloaded relationships.
 
@@ -423,7 +423,7 @@ For example, to obtain only the user's name:
 
 Note that `links` will always be returned for relationships that are deferred.
 
-## Field-based filtering
+## Filtering
 
 Tired of writing custom filters for all of your fields? DREST has your back with the `filter{}` feature.
 
@@ -513,7 +513,7 @@ The sky is the limit! DREST supports just about every basic filtering scenario a
 
 See the [full list here](dynamic_rest/filters.py#L133).
 
-## Field-based ordering
+## Ordering
 
 You can use the `sort[]` feature to order your response by one or more fields. Dot notation is supported for sorting by nested properties:
 
