@@ -633,7 +633,7 @@ class DynamicSortingFilter(OrderingFilter):
 
         return valid_orderings, invalid_orderings
 
-    def get_valid_fields(self, queryset, view):
+    def get_valid_fields(self, queryset, view, context={}):
         """Return valid fields for ordering.
 
         Overwrites DRF's get_valid_fields method so that valid_fields returns
@@ -665,4 +665,5 @@ class DynamicSortingFilter(OrderingFilter):
                 if not getattr(field, 'write_only', False) and
                 not field.source == '*' and field_name in valid_fields
             ]
+
         return valid_fields
