@@ -322,16 +322,10 @@ class DynamicFilterBackend(BaseFilterBackend):
             related_field = get_model_field(model, source)
             related_model = get_related_model(related_field)
 
-            if related_model is None:
-                # GenericForeignKey has no related_model
-                # in this case, prefetch the generic relationship itself
-                prefetches[source] = source
-                continue
-
             queryset = self._build_internal_queryset(
                 related_model,
                 remainder
-            )
+            ) if related_model else None
 
             prefetches[source] = Prefetch(
                 source,
