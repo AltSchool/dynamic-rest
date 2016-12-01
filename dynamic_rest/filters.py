@@ -192,15 +192,15 @@ class DynamicFilterBackend(BaseFilterBackend):
         self.view = view
 
         self.DEBUG = settings.DEBUG
-        return self._filter_queryset(queryset=queryset)
+        return self._build_queryset(queryset=queryset)
 
-    def _extract_filters(self, **kwargs):
+    def _get_filters(self, **kwargs):
         """
         Convert 'filters' query params into a dict that can be passed
         to Q. Returns a dict with two fields, 'include' and 'exclude',
         which can be used like:
 
-          result = self._extract_filters()
+          result = self._get_filters()
           q = Q(**result['include'] & ~Q(**result['exclude'])
 
         """
@@ -306,13 +306,13 @@ class DynamicFilterBackend(BaseFilterBackend):
                 q &= ~Q(**{k: v})
         return q
 
-    def _add_internal_prefetches(
+    def _build_internal_prefetches(
         self,
         model,
         prefetches,
         requirements
     ):
-        """Add internal (required) prefetches to a prefetch dictionary."""
+        """Build a prefetch dictionary based on internal requirements."""
 
         for source, remainder in six.iteritems(requirements):
             if not remainder or isinstance(remainder, six.string_types):
@@ -332,11 +332,14 @@ class DynamicFilterBackend(BaseFilterBackend):
                 queryset=queryset
             )
 
+        return prefetches
+
     def _build_internal_queryset(self, model, requirements):
-        # add remaining model-level requirements as prefetches
+        """Build a queryset based on internal requirements."""
+
         queryset = model.objects.all()
         prefetches = {}
-        self._add_internal_prefetches(
+        self._build_internal_prefetches(
             model,
             prefetches,
             requirements
@@ -347,7 +350,7 @@ class DynamicFilterBackend(BaseFilterBackend):
             queryset._using_prefetches = prefetches
         return queryset
 
-    def _add_request_prefetches(
+    def _build_external_prefetches(
         self,
         prefetches,
         requirements,
@@ -355,7 +358,8 @@ class DynamicFilterBackend(BaseFilterBackend):
         fields,
         filters
     ):
-        """Add external (requested) prefetches to a prefetch dictionary."""
+        """Build a prefetch dictionary based on request requirements."""
+
         for name, field in six.iteritems(fields):
             original_field = field
             if isinstance(field, DynamicRelationField):
@@ -381,12 +385,22 @@ class DynamicFilterBackend(BaseFilterBackend):
             if is_id_only and not is_remote:
                 continue
 
-            prefetch_queryset = self._build_request_queryset(
-                name,
-                original_field,
-                field,
-                filters,
-                requirements
+            related_queryset = getattr(original_field, 'queryset', None)
+
+            if callable(related_queryset):
+                related_queryset = related_queryset(field)
+
+            source = field.source or name
+            # Popping the source here (during explicit prefetch construction)
+            # guarantees that implicitly required prefetches that follow will
+            # not conflict.
+            required = requirements.pop(source, None)
+
+            prefetch_queryset = self._build_queryset(
+                serializer=field,
+                filters=filters.get(name, {}),
+                queryset=related_queryset,
+                requirements=required
             )
 
             # Note: There can only be one prefetch per source, even
@@ -399,36 +413,9 @@ class DynamicFilterBackend(BaseFilterBackend):
                 queryset=prefetch_queryset
             )
 
-    def _build_request_queryset(
-        self,
-        name,
-        original_field,
-        field,
-        filters,
-        requirements
-    ):
-        """Applies prefetches to a queryset."""
-        related_queryset = getattr(original_field, 'queryset', None)
+        return prefetches
 
-        if callable(related_queryset):
-            related_queryset = related_queryset(field)
-
-        source = field.source or name
-        # Popping the source here (during explicit prefetch construction)
-        # guarantees that implicitly required prefetches that follow will
-        # not conflict.
-        required = requirements.pop(source, None)
-
-        queryset = self._filter_queryset(
-            serializer=field,
-            filters=filters.get(name, {}),
-            queryset=related_queryset,
-            requirements=required
-        )
-
-        return queryset
-
-    def _extract_requirements(
+    def _get_internal_requirements(
         self,
         fields,
         requirements
@@ -451,14 +438,14 @@ class DynamicFilterBackend(BaseFilterBackend):
                     requirement[-1] = '*'
                 requirements.insert(requirement, TreeMap(), update=True)
 
-    def _filter_queryset(
+    def _build_queryset(
         self,
         serializer=None,
         filters=None,
         queryset=None,
         requirements=None
     ):
-        """Recursive queryset builder.
+        """Build a queryset that pulls in all data required by this request.
 
         Handles nested prefetching of related data and deferring fields
         at the queryset level.
@@ -494,16 +481,16 @@ class DynamicFilterBackend(BaseFilterBackend):
         if requirements is None:
             requirements = TreeMap()
 
-        self._extract_requirements(
+        self._get_internal_requirements(
             fields,
             requirements
         )
 
         if filters is None:
-            filters = self._extract_filters()
+            filters = self._get_filters()
 
         # build nested Prefetch queryset
-        self._add_request_prefetches(
+        self._build_external_prefetches(
             prefetches,
             requirements,
             model,
@@ -511,8 +498,9 @@ class DynamicFilterBackend(BaseFilterBackend):
             filters
         )
 
-        # add remaining model-level requirements as prefetches
-        self._add_internal_prefetches(
+        # build remaining prefetches out of internal requirements
+        # that are not already covered by request requirements
+        self._build_internal_prefetches(
             model,
             prefetches,
             requirements
