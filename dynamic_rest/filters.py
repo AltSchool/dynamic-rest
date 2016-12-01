@@ -12,7 +12,12 @@ from rest_framework.filters import BaseFilterBackend, OrderingFilter
 from dynamic_rest.conf import settings
 from dynamic_rest.datastructures import TreeMap
 from dynamic_rest.fields import DynamicRelationField
-from dynamic_rest.meta import get_model_field, is_field_remote, is_model_field
+from dynamic_rest.meta import (
+    get_model_field,
+    is_field_remote,
+    is_model_field,
+    get_related_model
+)
 from dynamic_rest.patches import patch_prefetch_one_level
 from dynamic_rest.related import RelatedObject
 
@@ -134,6 +139,7 @@ class FilterNode(object):
 
 
 class DynamicFilterBackend(BaseFilterBackend):
+
     """A DRF filter backend that constructs DREST querysets.
 
     This backend is responsible for interpretting and applying
@@ -186,12 +192,6 @@ class DynamicFilterBackend(BaseFilterBackend):
         self.view = view
 
         self.DEBUG = settings.DEBUG
-
-        if self.DEBUG:
-            # in DEBUG mode, save a representation of the prefetch tree
-            # on the viewset
-            self.view._prefetches = self._prefetches = {}
-
         return self._filter_queryset(queryset=queryset)
 
     def _extract_filters(self, **kwargs):
@@ -306,45 +306,6 @@ class DynamicFilterBackend(BaseFilterBackend):
                 q &= ~Q(**{k: v})
         return q
 
-    def _build_prefetch_queryset(
-        self,
-        name,
-        original_field,
-        field,
-        filters,
-        requirements
-    ):
-        """Applies prefetches to a queryset."""
-        related_queryset = getattr(original_field, 'queryset', None)
-
-        if callable(related_queryset):
-            related_queryset = related_queryset(field)
-
-        source = field.source or name
-        # Popping the source here (during explicit prefetch construction)
-        # guarantees that implicitly required prefetches that follow will
-        # not conflict.
-        required = requirements.pop(source, None)
-
-        if self.DEBUG:
-            # push prefetches
-            prefetches = self._prefetches
-            self._prefetches[source] = {}
-            self._prefetches = self._prefetches[source]
-
-        queryset = self._filter_queryset(
-            serializer=field,
-            filters=filters.get(name, {}),
-            queryset=related_queryset,
-            requirements=required
-        )
-
-        if self.DEBUG:
-            # pop back
-            self._prefetches = prefetches
-
-        return queryset
-
     def _add_internal_prefetches(
         self,
         model,
@@ -359,38 +320,38 @@ class DynamicFilterBackend(BaseFilterBackend):
                 continue
 
             related_field = get_model_field(model, source)
-            related_model = related_field.related_model
+            related_model = get_related_model(related_field)
 
             if related_model is None:
                 # GenericForeignKey has no related_model
                 # in this case, prefetch the generic relationship itself
                 prefetches[source] = source
-                if self.DEBUG:
-                    self._prefetches[source] = source
                 continue
 
-            if self.DEBUG:
-                # push prefetches
-                pfs = self._prefetches
-                self._prefetches[source] = {}
-                self._prefetches = self._prefetches[source]
-
-            queryset = self._filter_queryset(
-                serializer=None,
-                model=related_model,
-                filters={},
-                queryset=None,
-                requirements=remainder
+            queryset = self._build_internal_queryset(
+                related_model,
+                remainder
             )
-
-            if self.DEBUG:
-                # pop back
-                self._prefetches = pfs
 
             prefetches[source] = Prefetch(
                 source,
                 queryset=queryset
             )
+
+    def _build_internal_queryset(self, model, requirements):
+        # add remaining model-level requirements as prefetches
+        queryset = model.objects.all()
+        prefetches = {}
+        self._add_internal_prefetches(
+            model,
+            prefetches,
+            requirements
+        )
+        prefetch = prefetches.values()
+        queryset = queryset.prefetch_related(*prefetch).distinct()
+        if self.DEBUG:
+            queryset._prefetches = prefetches.keys()
+        return queryset
 
     def _add_request_prefetches(
         self,
@@ -426,7 +387,7 @@ class DynamicFilterBackend(BaseFilterBackend):
             if is_id_only and not is_remote:
                 continue
 
-            prefetch_queryset = self._build_prefetch_queryset(
+            prefetch_queryset = self._build_request_queryset(
                 name,
                 original_field,
                 field,
@@ -443,6 +404,35 @@ class DynamicFilterBackend(BaseFilterBackend):
                 source,
                 queryset=prefetch_queryset
             )
+
+    def _build_request_queryset(
+        self,
+        name,
+        original_field,
+        field,
+        filters,
+        requirements
+    ):
+        """Applies prefetches to a queryset."""
+        related_queryset = getattr(original_field, 'queryset', None)
+
+        if callable(related_queryset):
+            related_queryset = related_queryset(field)
+
+        source = field.source or name
+        # Popping the source here (during explicit prefetch construction)
+        # guarantees that implicitly required prefetches that follow will
+        # not conflict.
+        required = requirements.pop(source, None)
+
+        queryset = self._filter_queryset(
+            serializer=field,
+            filters=filters.get(name, {}),
+            queryset=related_queryset,
+            requirements=required
+        )
+
+        return queryset
 
     def _extract_requirements(
         self,
@@ -469,7 +459,6 @@ class DynamicFilterBackend(BaseFilterBackend):
 
     def _filter_queryset(
         self,
-        model=None,
         serializer=None,
         filters=None,
         queryset=None,
@@ -481,9 +470,6 @@ class DynamicFilterBackend(BaseFilterBackend):
         at the queryset level.
 
         Arguments:
-            model: An optional model. If specified, this method will
-                return a queryset based on model-level requirements only,
-                ignoring request parameters / serializer values
             serializer: An optional serializer to use a base for the queryset.
                 If no serializer is passed, the `get_serializer` method will
                 be used to initialize the base serializer for the viewset.
@@ -493,48 +479,43 @@ class DynamicFilterBackend(BaseFilterBackend):
         """
 
         is_root_level = False
-        if model:
-            serializer = None
-            queryset = model.objects
+        if serializer:
+            if queryset is None:
+                queryset = serializer.Meta.model.objects
         else:
-            if serializer:
-                if queryset is None:
-                    queryset = serializer.Meta.model.objects
-            else:
-                serializer = self.view.get_serializer()
-                is_root_level = True
+            serializer = self.view.get_serializer()
+            is_root_level = True
 
-            model = getattr(serializer.Meta, 'model', None)
+        model = getattr(serializer.Meta, 'model', None)
 
         if not model:
             return queryset
 
         prefetches = {}
 
-        if serializer:
-            # build a nested Prefetch queryset
-            # based on request parameters and serializer fields
-            fields = serializer.fields
+        # build a nested Prefetch queryset
+        # based on request parameters and serializer fields
+        fields = serializer.fields
 
-            if requirements is None:
-                requirements = TreeMap()
+        if requirements is None:
+            requirements = TreeMap()
 
-            self._extract_requirements(
-                fields,
-                requirements
-            )
+        self._extract_requirements(
+            fields,
+            requirements
+        )
 
-            if filters is None:
-                filters = self._extract_filters()
+        if filters is None:
+            filters = self._extract_filters()
 
-            # build nested Prefetch queryset
-            self._add_request_prefetches(
-                prefetches,
-                requirements,
-                model,
-                fields,
-                filters
-            )
+        # build nested Prefetch queryset
+        self._add_request_prefetches(
+            prefetches,
+            requirements,
+            model,
+            fields,
+            filters
+        )
 
         # add remaining model-level requirements as prefetches
         self._add_internal_prefetches(
@@ -543,57 +524,55 @@ class DynamicFilterBackend(BaseFilterBackend):
             requirements
         )
 
-        if serializer:
-            # use requirements at this level to limit fields selected
+        # use requirements at this level to limit fields selected
+        # only do this for GET requests where we are not requesting the
+        # entire fieldset
+        if (
+            '*' not in requirements and
+            not self.view.is_update() and
+            not self.view.is_delete()
+        ):
+            id_fields = getattr(serializer, 'get_id_fields', lambda: [])()
+            # only include local model fields
+            only = [
+                field for field in set(
+                    id_fields + list(requirements.keys())
+                ) if is_model_field(model, field) and
+                not is_field_remote(model, field)
+            ]
+            queryset = queryset.only(*only)
 
-            # only do this for GET requests where we are not requesting the
-            # entire fieldset
-            if (
-                '*' not in requirements and
-                not self.view.is_update() and
-                not self.view.is_delete()
-            ):
-                id_fields = getattr(serializer, 'get_id_fields', lambda: [])()
-                # only include local model fields
-                only = [
-                    field for field in set(
-                        id_fields + list(requirements.keys())
-                    ) if is_model_field(model, field) and
-                    not is_field_remote(model, field)
-                ]
-                queryset = queryset.only(*only)
+        # add request filters
+        query = self._filters_to_query(
+            includes=filters.get('_include'),
+            excludes=filters.get('_exclude'),
+            serializer=serializer
+        )
 
-            # add request filters
-            query = self._filters_to_query(
-                includes=filters.get('_include'),
-                excludes=filters.get('_exclude'),
-                serializer=serializer
-            )
+        if query:
+            # Convert internal django ValidationError to
+            # APIException-based one in order to resolve validation error
+            # from 500 status code to 400.
+            try:
+                queryset = queryset.filter(query)
+            except InternalValidationError as e:
+                raise ValidationError(
+                    dict(e) if hasattr(e, 'error_dict') else list(e)
+                )
+            except Exception as e:
+                # Some other Django error in parsing the filter.
+                # Very likely a bad query, so throw a ValidationError.
+                err_msg = getattr(e, 'message', '')
+                raise ValidationError(err_msg)
 
-            if query:
-                # Convert internal django ValidationError to
-                # APIException-based one in order to resolve validation error
-                # from 500 status code to 400.
-                try:
-                    queryset = queryset.filter(query)
-                except InternalValidationError as e:
-                    raise ValidationError(
-                        dict(e) if hasattr(e, 'error_dict') else list(e)
-                    )
-                except Exception as e:
-                    # Some other Django error in parsing the filter.
-                    # Very likely a bad query, so throw a ValidationError.
-                    err_msg = getattr(e, 'message', '')
-                    raise ValidationError(err_msg)
-
-            # A serializer can have this optional function
-            # to dynamically apply additional filters on
-            # any queries that will use that serializer
-            # You could use this to have (for example) different
-            # serializers for different subsets of a model or to
-            # implement permissions which work even in sideloads
-            if hasattr(serializer, 'filter_queryset'):
-                queryset = serializer.filter_queryset(queryset)
+        # A serializer can have this optional function
+        # to dynamically apply additional filters on
+        # any queries that will use that serializer
+        # You could use this to have (for example) different
+        # serializers for different subsets of a model or to
+        # implement permissions which work even in sideloads
+        if hasattr(serializer, 'filter_queryset'):
+            queryset = serializer.filter_queryset(queryset)
 
         # add prefetches and remove duplicates if necessary
         prefetch = prefetches.values()
@@ -601,10 +580,13 @@ class DynamicFilterBackend(BaseFilterBackend):
         if has_joins(queryset) or not is_root_level:
             queryset = queryset.distinct()
 
+        if self.DEBUG:
+            queryset._prefetches = prefetches.keys()
         return queryset
 
 
 class DynamicSortingFilter(OrderingFilter):
+
     """Subclass of DRF's OrderingFilter.
 
     This class adds support for multi-field ordering and rewritten fields.
