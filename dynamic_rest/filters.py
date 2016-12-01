@@ -350,7 +350,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         prefetch = prefetches.values()
         queryset = queryset.prefetch_related(*prefetch).distinct()
         if self.DEBUG:
-            queryset._prefetches = prefetches.keys()
+            queryset._using_prefetches = prefetches
         return queryset
 
     def _add_request_prefetches(
@@ -581,7 +581,7 @@ class DynamicFilterBackend(BaseFilterBackend):
             queryset = queryset.distinct()
 
         if self.DEBUG:
-            queryset._prefetches = prefetches.keys()
+            queryset._using_prefetches = prefetches
         return queryset
 
 
