@@ -62,10 +62,16 @@ def get_model_field(model, field_name):
         related_objects = {
             o.get_accessor_name(): o
             for o in chain(related_objs, related_m2m_objs)
-            }
+        }
         if field_name in related_objects:
             return related_objects[field_name]
         else:
+            # check virtual fields (1.7)
+            if hasattr(meta, 'virtual_fields'):
+                for field in meta.virtual_fields:
+                    if field.name == field_name:
+                        return field
+
             raise AttributeError(
                 '%s is not a valid field for %s' % (field_name, model)
             )
@@ -90,6 +96,22 @@ def is_field_remote(model, field_name):
 
     model_field = get_model_field(model, field_name)
     return isinstance(model_field, (ManyToManyField, RelatedObject))
+
+
+def get_related_model(field):
+    try:
+        # django 1.8+
+        return field.related_model
+    except AttributeError:
+        # django 1.7
+        if hasattr(field, 'field'):
+            return field.field.model
+        elif hasattr(field, 'rel'):
+            return field.rel.to
+        elif field.__class__.__name__ == 'GenericForeignKey':
+            return None
+        else:
+            raise
 
 
 def get_model_table(model):
