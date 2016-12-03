@@ -74,7 +74,7 @@ class TestUserViewSet(TestCase):
         }
 
         backend = DynamicFilterBackend()
-        out = backend._extract_filters(filters_map=filters_map)
+        out = backend._get_requested_filters(filters_map=filters_map)
         self.assertEqual(out['_include']['attr'].value, 'bar')
         self.assertEqual(out['_include']['attr2'].value, 'bar')
         self.assertEqual(out['_exclude']['attr3'].value, 'bar')
@@ -102,7 +102,7 @@ class TestUserViewSet(TestCase):
         }
 
         backend = DynamicFilterBackend()
-        out = backend._extract_filters(filters_map=filters_map)
+        out = backend._get_requested_filters(filters_map=filters_map)
 
         self.assertEqual(out['_include']['f1__isnull'].value, True)
         self.assertEqual(out['_include']['f2__isnull'].value, ['a'])
