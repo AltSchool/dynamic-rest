@@ -49,7 +49,7 @@ class APIClient(object):
         if value:
             self.session.headers.update({
                 'Authorization': '%s %s' % (
-                    self.AUTHORIZATION_TYPE,
+                    self.authorization_type,
                     self._token
                 )
             })
