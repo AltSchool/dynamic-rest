@@ -24,6 +24,7 @@ class APIClient(object):
         authorization_type='JWT',
         scheme='https'
     ):
+        self.authorization_type = authorization_type
         self.host = host
         self.version = version
         self.session = session or requests.session()
@@ -31,12 +32,12 @@ class APIClient(object):
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         })
-        self.sessionid = sessionid
         self.username = username
         self.password = password
-        self.token = token
         self.scheme = scheme
-        self.authorization_type = authorization_type
+
+        self.sessionid = sessionid
+        self.token = token
 
     @property
     def token(self):
