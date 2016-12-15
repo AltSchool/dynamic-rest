@@ -21,7 +21,8 @@ class APIClient(object):
         username=None,
         password=None,
         token=None,
-        authorization_type='JWT'
+        authorization_type='JWT',
+        scheme='https'
     ):
         self.host = host
         self.version = version
@@ -34,6 +35,7 @@ class APIClient(object):
         self.username = username
         self.password = password
         self.token = token
+        self.scheme = scheme
         self.authorization_type = authorization_type
 
     @property
@@ -98,7 +100,7 @@ class APIClient(object):
                 prefix = '/%s' % prefix
 
             url = '%s%s' % (prefix, url)
-        return 'https://%s%s' % (self.host, url)
+        return '%s://%s%s' % (self.scheme, self.host, url)
 
     def save(
         self,
