@@ -194,6 +194,13 @@ class DynamicFilterBackend(BaseFilterBackend):
         self.DEBUG = settings.DEBUG
         return self._build_queryset(queryset=queryset)
 
+    """
+    This function was renamed and broke downstream dependencies that haven't
+    been updated to use the new naming convention.
+    """
+    def _extract_filters(self, **kwargs):
+        return self._get_requested_filters(**kwargs)
+
     def _get_requested_filters(self, **kwargs):
         """
         Convert 'filters' query params into a dict that can be passed
