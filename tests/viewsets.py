@@ -29,7 +29,8 @@ from tests.serializers import (
 class UserViewSet(DynamicModelViewSet):
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
-        DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT
+        DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT,
+        DynamicModelViewSet.SIDELOADING
     )
     model = User
     serializer_class = UserSerializer

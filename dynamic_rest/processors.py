@@ -77,7 +77,9 @@ class SideloadingProcessor(object):
                             1
                         )
 
-                if not dynamic or getattr(obj, 'embed', False):
+                if (
+                    not dynamic or getattr(obj, 'embed', False)
+                ):
                     return
 
                 name = obj.serializer.get_plural_name()

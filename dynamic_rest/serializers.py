@@ -8,7 +8,7 @@ from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import exceptions, fields, serializers
 from rest_framework.fields import SkipField
-from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
+from rest_framework.utils.serializer_helpers import ReturnDict
 
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
@@ -64,21 +64,24 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         return self.child.id_only()
 
     @property
+    def data_no_envelope(self):
+        """For compatability with DRF's .data"""
+        data = self.data
+        return data.values()[0]
+
+    @property
     def data(self):
         """Get the data, after performing post-processing if necessary."""
-        if not hasattr(self, '_sideloaded_data'):
+        if not hasattr(self, '_processed_data'):
             data = super(DynamicListSerializer, self).data
-            if self.child.sideload:
-                self._sideloaded_data = ReturnDict(
-                    SideloadingProcessor(
-                        self,
-                        data
-                    ).data,
-                    serializer=self
-                )
-            else:
-                self._sideloaded_data = ReturnList(data, serializer=self)
-        return self._sideloaded_data
+            self._processed_data = ReturnDict(
+                SideloadingProcessor(
+                    self,
+                    data
+                ).data,
+                serializer=self
+            )
+        return self._processed_data
 
     def update(self, queryset, validated_data):
         lookup_attr = getattr(self.child.Meta, 'update_lookup_field', 'id')
@@ -160,7 +163,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             include_fields=None,
             exclude_fields=None,
             request_fields=None,
-            sideload=False,
+            sideloading=None,
             dynamic=True,
             embed=False,
             **kwargs
@@ -175,8 +178,10 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             exclude_fields: List of field names to exclude.
             request_fields: map of field names that supports
                 inclusions, exclusions, and nested sideloads.
-            sideload: If False, do not perform any sideloading at this level.
             embed: If True, force the current representation to be embedded.
+            sideloading: if False, force embedding for all descendants
+                If True, force sideloading for all descendants
+                If None (default), respect individual embed parameters
             dynamic: If False, ignore deferred rules and
                 revert to standard DRF `.fields` behavior.
         """
@@ -201,10 +206,10 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         kwargs['data'] = data
         super(WithDynamicSerializerMixin, self).__init__(**kwargs)
 
-        self.sideload = sideload
+        self.sideloading = sideloading
         self.dynamic = dynamic
         self.request_fields = request_fields or {}
-        self.embed = embed
+        self.embed = embed if sideloading is None else not sideloading
 
         self._dynamic_init(only_fields, include_fields, exclude_fields)
         self.enable_optimization = settings.ENABLE_SERIALIZER_OPTIMIZATIONS
@@ -576,17 +581,23 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         return self.dynamic and self.request_fields is True
 
     @property
+    def data_no_envelope(self):
+        """For compatability with DRF's .data"""
+        data = self.data
+        return data.values()[0]
+
+    @property
     def data(self):
-        if not hasattr(self, '_sideloaded_data'):
+        if not hasattr(self, '_processed_data'):
             data = super(WithDynamicSerializerMixin, self).data
-            self._sideloaded_data = ReturnDict(
+            self._processed_data = ReturnDict(
                 SideloadingProcessor(
                     self,
                     data
-                ).data if self.sideload else data,
+                ).data,
                 serializer=self
             )
-        return self._sideloaded_data
+        return self._processed_data
 
 
 class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):

@@ -63,6 +63,7 @@ class WithDynamicViewSetMixin(object):
       meta: Extra data that is added to the response by the DynamicRenderer.
     """
 
+    SIDELOADING = 'sideloading'
     INCLUDE = 'include[]'
     EXCLUDE = 'exclude[]'
     FILTER = 'filter{}'
@@ -74,8 +75,7 @@ class WithDynamicViewSetMixin(object):
     pagination_class = DynamicPageNumberPagination
     metadata_class = DynamicMetadata
     renderer_classes = (JSONRenderer, DynamicBrowsableAPIRenderer)
-    features = (INCLUDE, EXCLUDE, FILTER, PAGE, PER_PAGE, SORT)
-    sideload = True
+    features = (INCLUDE, EXCLUDE, FILTER, PAGE, PER_PAGE, SORT, SIDELOADING)
     meta = None
     filter_backends = (DynamicFilterBackend, DynamicSortingFilter)
 
@@ -190,7 +190,7 @@ class WithDynamicViewSetMixin(object):
         return getattr(self, 'queryset', serializer.Meta.model.objects.all())
 
     def get_request_fields(self):
-        """Parses the `include[]` and `exclude[]` features.
+        """Parses the INCLUDE and EXCLUDE features.
 
         Extracts the dynamic field features from the request parameters
         into a field map that can be passed to a serializer.
@@ -202,8 +202,8 @@ class WithDynamicViewSetMixin(object):
         if hasattr(self, '_request_fields'):
             return self._request_fields
 
-        include_fields = self.get_request_feature('include[]')
-        exclude_fields = self.get_request_feature('exclude[]')
+        include_fields = self.get_request_feature(self.INCLUDE)
+        exclude_fields = self.get_request_feature(self.EXCLUDE)
         request_fields = {}
         for fields, include in(
                 (include_fields, True),
@@ -232,6 +232,16 @@ class WithDynamicViewSetMixin(object):
         self._request_fields = request_fields
         return request_fields
 
+    def get_request_sideloading(self):
+        sideloading = self.get_request_feature(self.SIDELOADING)
+        if sideloading:
+            sideloading = sideloading.lower()
+            if sideloading == 'true':
+                sideloading = True
+            else:
+                sideloading = False
+        return sideloading
+
     def is_update(self):
         if (
             self.request and
@@ -253,8 +263,8 @@ class WithDynamicViewSetMixin(object):
     def get_serializer(self, *args, **kwargs):
         if 'request_fields' not in kwargs:
             kwargs['request_fields'] = self.get_request_fields()
-        if 'sideload' not in kwargs:
-            kwargs['sideload'] = self.sideload
+        if 'sideloading' not in kwargs:
+            kwargs['sideloading'] = self.get_request_sideloading()
         if self.is_update():
             kwargs['include_fields'] = '*'
         return super(
@@ -312,7 +322,7 @@ class WithDynamicViewSetMixin(object):
 
         # Filter for parent object, include related field.
         self.request.query_params.add('filter{pk}', pk)
-        self.request.query_params.add('include[]', field_prefix)
+        self.request.query_params.add(self.INCLUDE, field_prefix)
 
         # Get serializer and field.
         serializer = self.get_serializer()

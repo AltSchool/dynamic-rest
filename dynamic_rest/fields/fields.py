@@ -82,6 +82,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             many=False,
             queryset=None,
             embed=False,
+            sideloading=None,
             **kwargs
     ):
         """
@@ -97,7 +98,8 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         self._serializer_class = serializer_class
         self.bound = False
         self.queryset = queryset
-        self.embed = embed
+        self.sideloading = sideloading
+        self.embed = embed if sideloading is None else not sideloading
         if '.' in kwargs.get('source', ''):
             raise Exception('Nested relationships are not supported')
         if 'link' in kwargs:
@@ -219,8 +221,8 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             # If 'embed' then make sure we fetch the full object.
             kwargs['request_fields'] = {}
 
-        if hasattr(self.parent, 'sideload'):
-            kwargs['sideload'] = self.parent.sideload
+        if hasattr(self.parent, 'sideloading'):
+            kwargs['sideloading'] = self.parent.sideloading
 
         return kwargs
 
