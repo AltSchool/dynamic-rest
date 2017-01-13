@@ -86,7 +86,7 @@ class APIRecordSet(object):
                 not isinstance(new_value, basestring)
             ):
                 if value != new_value:
-                    new_value = list(set(new_value + value))
+                    new_value = list(set(new_value + list(value)))
             new_data[key] = new_value
         return APIRecordSet(**new_data)
 
