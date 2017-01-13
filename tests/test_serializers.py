@@ -54,24 +54,6 @@ class TestDynamicSerializer(TestCase):
             ]
         })
 
-    def test_data_no_envelope(self):
-        serializer = UserSerializer(
-            self.fixture.users,
-            many=True,
-        )
-        self.assertEqual(
-            serializer.data_no_envelope, [
-                OrderedDict(
-                    [('id', 1), ('name', '0'), ('location', 1)]),
-                OrderedDict(
-                    [('id', 2), ('name', '1'), ('location', 1)]),
-                OrderedDict(
-                    [('id', 3), ('name', '2'), ('location', 2)]),
-                OrderedDict(
-                    [('id', 4), ('name', '3'), ('location', 3)])
-            ]
-        )
-
     def test_data_with_included_field(self):
         request_fields = {
             'last_name': True

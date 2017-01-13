@@ -64,12 +64,6 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         return self.child.id_only()
 
     @property
-    def data_no_envelope(self):
-        """For compatability with DRF's .data"""
-        data = self.data
-        return data.values()[0]
-
-    @property
     def data(self):
         """Get the data, after performing post-processing if necessary."""
         if not hasattr(self, '_processed_data'):

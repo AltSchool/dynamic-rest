@@ -59,7 +59,6 @@ class WithDynamicViewSetMixin(object):
 
     Attributes:
       features: A list of features supported by the viewset.
-      sideload: Whether or not to enable sideloading in the DynamicRenderer.
       meta: Extra data that is added to the response by the DynamicRenderer.
     """
 
