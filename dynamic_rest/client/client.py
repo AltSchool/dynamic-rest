@@ -1,6 +1,5 @@
 import json
 import requests
-import inflection
 from .exceptions import AuthenticationFailed
 from .resource import APIResource
 
