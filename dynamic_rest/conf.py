@@ -6,7 +6,13 @@ DYNAMIC_REST = {
     'DEBUG': False,
 
     # AUTH_ENDPOINT: authentication endpoint (used by DREST client)
-    'AUTH_ENDPOINT': '/accounts/login/',
+    'AUTH_LOGIN_ENDPOINT': '/accounts/login/',
+
+    # AUTH_COOKIE_NAME: sessionid cookie
+    'AUTH_COOKIE_NAME': 'sessionid',
+
+    # AUTH_TYPE: authentication type
+    'AUTH_TYPE': 'JWT',
 
     # ENABLE_BROWSABLE_API: enable/disable the browsable API.
     # It can be useful to disable it in production.

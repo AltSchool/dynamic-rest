@@ -16,7 +16,14 @@ class DRESTClient(object):
         version: version (defaults to no version)
         client: HTTP client (defaults to requests.session)
         scheme: defaults to https
-        authentication: provides credentials
+        authentication: if unset, authentication is disabled.
+            If set, provides credentials: {
+                usename: login username,
+                password: login password,
+                token: authorization token,
+                cookie: session cookie
+            }
+            Either username/password, token, or cookie should be provided.
 
     Examples:
 
@@ -90,11 +97,11 @@ class DRESTClient(object):
         if authentication:
             self._authenticated = False
             token = authentication.get('token')
-            sessionid = authentication.get('sessionid')
+            cookie = authentication.get('cookie')
             if token:
                 self._use_token(token)
-            if sessionid:
-                self._use_sessionid(sessionid)
+            if cookie:
+                self._use_cookie(cookie)
 
     def __repr__(self):
         return '%s%s' % (
@@ -106,14 +113,16 @@ class DRESTClient(object):
         self._token = value
         self._authenticated = bool(value)
         self._client.headers.update({
-            'Authorization': self._token if value else ''
+            'Authorization': '%s %s' % (
+                settings.AUTH_TYPE, self._token if value else ''
+            )
         })
 
-    def _use_sessionid(self, value):
-        self._sessionid = value
+    def _use_cookie(self, value):
+        self._cookie = value
         self._authenticated = bool(value)
         self._client.headers.update({
-            'Cookie': 'sessionid=%s' % value if value else ''
+            'Cookie': '%s=%s' % (settings.AUTH_COOKIE_NAME, value)
         })
 
     def __getattr__(self, key):
@@ -124,7 +133,7 @@ class DRESTClient(object):
         username = self._username
         password = self._password
         response = requests.post(
-            self._build_url(settings.AUTH_ENDPOINT),
+            self._build_url(settings.AUTH_LOGIN_ENDPOINT),
             data={
                 'login': username,
                 'password': password
@@ -134,7 +143,7 @@ class DRESTClient(object):
         if raise_exception:
             response.raise_for_status()
 
-        self._use_sessionid(response.cookies.get('sessionid'))
+        self._use_cookie(response.cookies.get(settings.AUTH_COOKIE_NAME))
 
     def _authenticate(self, raise_exception=True):
         response = None

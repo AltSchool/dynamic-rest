@@ -12,7 +12,6 @@ class MockSession(object):
     def __init__(self, client):
         self._client = client or APIClient()
         self.headers = {}
-        self.status_code = 200
 
     def request(self, method, url, params=None, data=None):
         def make_params(params):
@@ -30,7 +29,6 @@ class MockSession(object):
             url,
             ('?%s' % make_params(params)) if params else ''
         )
-        url = url.replace('https://test', '')
         response = getattr(self._client, method)(url, data=data)
         return response
 
@@ -39,10 +37,7 @@ class ClientTestCase(APITestCase):
 
     def setUp(self):
         self.fixture = create_fixture()
-        self.drest = DRESTClient(
-            'test',
-            client=MockSession(self.client)
-        )
+        self.drest = DRESTClient('test', client=MockSession(self.client))
 
     def test_get_all(self):
         users = self.drest.Users.all().list()
