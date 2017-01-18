@@ -125,3 +125,13 @@ class ClientTestCase(APITestCase):
     def test_get_invalid_data(self):
         with self.assertRaises(DoesNotExist):
             self.drest.Users.get('does-not-exist')
+
+    def test_extra_pagination(self):
+        users = list(self.drest.Users.all().extra(per_page=1))
+        users2 = list(self.drest.Users.all())
+        self.assertEquals(users, users2)
+
+        name = users[0].name
+        users_named = list(self.drest.Users.extra(name=name))
+        self.assertTrue(len(users_named), 1)
+        self.assertTrue(users_named[0].name, name)
