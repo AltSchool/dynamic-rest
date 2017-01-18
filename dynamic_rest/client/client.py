@@ -13,8 +13,8 @@ class DRESTClient(object):
 
     Arguments:
         host: hostname to a DREST API
-        version: version (defaults to no version),
-        client: HTTP client (defaults to requests.session),
+        version: version (defaults to no version)
+        client: HTTP client (defaults to requests.session)
         scheme: defaults to https
         authentication: provides credentials
 
