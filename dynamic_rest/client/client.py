@@ -24,48 +24,48 @@ class DRESTClient(object):
 
         client = DRESTClient('my.api.io', authentication={'token': 'secret'})
 
-    Working wiht a resource:
+    Working with a resource:
 
-        User = client.users
+        Users = client.Users
 
     Getting a single resource:
 
-        User.get('123')
+        Users.get('123')
 
     Getting all resources (auto-paging):
 
-        User.all()
+        Users.all()
 
     Getting filtered resources:
 
-        User.filter(name__icontains='john')
+        Users.filter(name__icontains='john')
         other_users = client.users.exclude(name__icontains='john')
 
     Including / excluding fields:
 
-        users = User.all()
+        users = Users.all()
         .excluding('birthday')
         .including('events.*')
         .get('123')
 
     Mapping by field:
 
-        users_by_id = User.map()
-        users_by_name = User.map('name')
+        users_by_id = Users.map()
+        users_by_name = Users.map('name')
 
     Ordering results:
 
-        users = User.order_by('-name')
+        users = Users.order_by('-name')
 
     Updating records:
 
-        user = User.first()
+        user = Users.first()
         user.name = 'john'
         user.save()
 
     Creating resources:
 
-        user = User.create(name='john')
+        user = Users.create(name='john')
     """
     def __init__(
         self,
