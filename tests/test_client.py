@@ -1,5 +1,8 @@
 from rest_framework.test import APITestCase, APIClient
 from dynamic_rest.client import DRESTClient
+from dynamic_rest.client.exceptions import (
+    BadRequest, DoesNotExist
+)
 from tests.setup import create_fixture
 import urllib
 
@@ -106,3 +109,19 @@ class ClientTestCase(APITestCase):
             last_name='bar'
         )
         self.assertIsNotNone(user.id)
+
+    def test_invalid_resource(self):
+        with self.assertRaises(DoesNotExist):
+            self.drest.Foo.create(name='foo')
+        with self.assertRaises(DoesNotExist):
+            self.drest.Foo.filter(name='foo').list()
+
+    def test_save_invalid_data(self):
+        user = self.drest.Users.first()
+        user.name = ''
+        with self.assertRaises(BadRequest):
+            user.save()
+
+    def test_get_invalid_data(self):
+        with self.assertRaises(DoesNotExist):
+            self.drest.Users.get('does-not-exist')

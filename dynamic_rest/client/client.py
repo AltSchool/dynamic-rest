@@ -1,6 +1,6 @@
 import json
 import requests
-from .exceptions import AuthenticationFailed, BadRequest
+from .exceptions import AuthenticationFailed, BadRequest, DoesNotExist
 from .resource import DRESTResource
 
 AUTH_ENDPOINT = '/accounts/login/'
@@ -109,6 +109,9 @@ class DRESTClient(object):
 
         if response.status_code == 401:
             raise AuthenticationFailed()
+
+        if response.status_code == 404:
+            raise DoesNotExist()
 
         if response.status_code >= 400:
             raise BadRequest()
