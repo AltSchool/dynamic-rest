@@ -1,107 +1,86 @@
 import json
 import requests
-from .exceptions import AuthenticationFailed
-from .resource import APIResource
+from .exceptions import AuthenticationFailed, BadRequest
+from .resource import DRESTResource
 
-API_AUTH_ENDPOINT = '/accounts/login/'
+AUTH_ENDPOINT = '/accounts/login/'
 
 
-class APIClient(object):
+class DRESTClient(object):
 
     def __init__(
         self,
         host,
         version=None,
-        session=None,
-        sessionid=None,
-        username=None,
-        password=None,
-        token=None,
-        authorization_type='JWT',
-        scheme='https'
+        client=None,
+        scheme='https',
+        authentication=None
     ):
-        self._authorization_type = authorization_type
         self._host = host
         self._version = version
-        self._session = session or requests.session()
-        self._session.headers.update({
+        self._client = client or requests.session()
+        self._client.headers.update({
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         })
-        self._username = username
-        self._password = password
-        self._scheme = scheme
-        self._authenticated = False
         self._resources = {}
+        self._scheme = scheme
+        self._authenticated = True
+        self._authentication = authentication
 
-        if token:
-            self.token = token
-        if sessionid:
-            self.sessionid = sessionid
+        if authentication:
+            self._authenticated = False
+            token = authentication.get('token')
+            sessionid = authentication.get('sessionid')
+            if token:
+                self._use_token(token)
+            if sessionid:
+                self._use_sessionid(sessionid)
 
-    @property
-    def token(self):
-        return self._token
+    def __repr__(self):
+        return '%s%s' % (
+            self._host,
+            '/%s/' % self._version if self._version else ''
+        )
 
-    @token.setter
-    def token(self, value):
+    def _use_token(self, value):
         self._token = value
         self._authenticated = bool(value)
-        if value:
-            self._session.headers.update({
-                'Authorization': '%s %s' % (
-                    self._authorization_type,
-                    self._token
-                )
-            })
+        self._client.headers.update({
+            'Authorization': self._token if value else ''
+        })
 
-    @property
-    def sessionid(self):
-        return self._sessionid
-
-    @sessionid.setter
-    def sessionid(self, value):
+    def _use_sessionid(self, value):
         self._sessionid = value
         self._authenticated = bool(value)
-        if value:
-            self._session.headers.update({
-                'Cookie': 'sessionid=%s' % value
-            })
-
-    def post(self, url, params=None, data=None):
-        return self._request('POST', url, params, data)
-
-    def get(self, url, params=None, data=None):
-        return self._request('GET', url, params, data)
-
-    def put(self, url, params=None, data=None):
-        return self._request('PUT', url, params, data)
-
-    def delete(self, url, params=None, data=None):
-        return self._request('DELETE', url, params, data)
+        self._client.headers.update({
+            'Cookie': 'sessionid=%s' % value if value else ''
+        })
 
     def __getattr__(self, key):
         key = key.lower()
-        return self._resources.get(key, APIResource(self, key))
+        return self._resources.get(key, DRESTResource(self, key))
+
+    def _login(self, raise_exception=True):
+        username = self._username
+        password = self._password
+        response = requests.post(
+            self._build_url(AUTH_ENDPOINT),
+            data={
+                'login': username,
+                'password': password
+            },
+            allow_redirects=False
+        )
+        if raise_exception:
+            response.raise_for_status()
+
+        self._use_sessionid(response.cookies.get('sessionid'))
 
     def _authenticate(self, raise_exception=True):
         response = None
         if not self._authenticated:
-            username = self._username
-            password = self._password
-            response = requests.post(
-                self._build_url(API_AUTH_ENDPOINT),
-                data={
-                    'login': username,
-                    'password': password
-                },
-                allow_redirects=False
-            )
-            if raise_exception:
-                response.raise_for_status()
-
-            self.sessionid = response.cookies.get('sessionid')
-
+            self._login(self._username, self._password, raise_exception)
         if raise_exception and not self._authenticated:
             raise AuthenticationFailed(
                 response.text if response else 'Unknown error'
@@ -119,16 +98,19 @@ class APIClient(object):
             url = '%s%s' % (prefix, url)
         return '%s://%s%s' % (self._scheme, self._host, url)
 
-    def _request(self, method, url, params=None, data=None):
+    def request(self, method, url, params=None, data=None):
         self._authenticate()
-        response = self._session.request(
+        response = self._client.request(
             method,
             self._build_url(url, prefix=self._version),
             params=params,
             data=data
         )
+
         if response.status_code == 401:
             raise AuthenticationFailed()
 
-        response.raise_for_status()
+        if response.status_code >= 400:
+            raise BadRequest()
+
         return json.loads(response.content)

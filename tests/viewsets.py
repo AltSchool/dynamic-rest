@@ -30,7 +30,7 @@ class UserViewSet(DynamicModelViewSet):
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
         DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT,
-        DynamicModelViewSet.SIDELOADING
+        DynamicModelViewSet.SIDELOADING, DynamicModelViewSet.DEBUG
     )
     model = User
     serializer_class = UserSerializer
@@ -93,7 +93,8 @@ class GroupViewSet(DynamicModelViewSet):
 class LocationViewSet(DynamicModelViewSet):
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
-        DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT
+        DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT,
+        DynamicModelViewSet.DEBUG, DynamicModelViewSet.SIDELOADING
     )
     model = Location
     serializer_class = LocationSerializer

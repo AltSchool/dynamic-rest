@@ -190,7 +190,8 @@ class UserSerializer(DynamicModelSerializer):
     favorite_pet = DynamicGenericRelationField(required=False)
 
     def get_number_of_cats(self, user):
-        return len(user.location.cat_set.all())
+        location = user.location
+        return len(location.cat_set.all()) if location else 0
 
 
 class ProfileSerializer(DynamicModelSerializer):

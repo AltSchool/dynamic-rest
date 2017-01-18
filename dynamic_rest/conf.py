@@ -5,6 +5,9 @@ DYNAMIC_REST = {
     # DEBUG: enable/disable internal debugging
     'DEBUG': False,
 
+    # AUTH_ENDPOINT: authentication endpoint (used by DREST client)
+    'AUTH_ENDPOINT': '/accounts/login/',
+
     # ENABLE_BROWSABLE_API: enable/disable the browsable API.
     # It can be useful to disable it in production.
     'ENABLE_BROWSABLE_API': True,

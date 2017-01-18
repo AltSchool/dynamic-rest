@@ -31,6 +31,7 @@ class SideloadingProcessor(object):
             serializer = serializer.child
         self.data = {}
         self.seen = defaultdict(set)
+        self.debug = serializer.debug
         self.plural_name = serializer.get_plural_name()
         self.name = serializer.get_name()
 
@@ -77,13 +78,23 @@ class SideloadingProcessor(object):
                             1
                         )
 
-                if (
-                    not dynamic or getattr(obj, 'embed', False)
-                ):
+                serializer = obj.serializer
+                name = serializer.get_plural_name()
+                instance = getattr(obj, 'instance', serializer.instance)
+                if not instance:
                     return
 
-                name = obj.serializer.get_plural_name()
-                pk = obj.pk_value or obj.instance.pk
+                pk = getattr(obj, 'pk_value', instance.pk) or instance.pk
+
+                if self.debug:
+                    obj['_id'] = pk
+                    obj['_type'] = name
+
+                if not dynamic:
+                    return
+
+                if getattr(obj, 'embed', False):
+                    return
 
                 # For polymorphic relations, `pk` can be a dict, so use the
                 # string representation (dict isn't hashable).

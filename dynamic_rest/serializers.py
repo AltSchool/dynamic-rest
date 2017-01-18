@@ -158,6 +158,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             exclude_fields=None,
             request_fields=None,
             sideloading=None,
+            debug=False,
             dynamic=True,
             embed=False,
             **kwargs
@@ -201,6 +202,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         super(WithDynamicSerializerMixin, self).__init__(**kwargs)
 
         self.sideloading = sideloading
+        self.debug = debug
         self.dynamic = dynamic
         self.request_fields = request_fields or {}
         self.embed = embed if sideloading is None else not sideloading

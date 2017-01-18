@@ -83,6 +83,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             queryset=None,
             embed=False,
             sideloading=None,
+            debug=False,
             **kwargs
     ):
         """
@@ -99,6 +100,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         self.bound = False
         self.queryset = queryset
         self.sideloading = sideloading
+        self.debug = debug
         self.embed = embed if sideloading is None else not sideloading
         if '.' in kwargs.get('source', ''):
             raise Exception('Nested relationships are not supported')
@@ -224,6 +226,9 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         if hasattr(self.parent, 'sideloading'):
             kwargs['sideloading'] = self.parent.sideloading
 
+        if hasattr(self.parent, 'debug'):
+            kwargs['debug'] = self.parent.debug
+
         return kwargs
 
     def get_serializer(self, *args, **kwargs):
@@ -288,7 +293,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             return serializer.to_representation(related)
         except Exception as e:
             # Provide more context to help debug these cases
-            if settings.DEBUG:
+            if serializer.debug:
                 import traceback
                 traceback.print_exc()
             raise Exception(

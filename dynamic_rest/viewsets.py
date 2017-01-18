@@ -62,6 +62,7 @@ class WithDynamicViewSetMixin(object):
       meta: Extra data that is added to the response by the DynamicRenderer.
     """
 
+    DEBUG = 'debug'
     SIDELOADING = 'sideloading'
     INCLUDE = 'include[]'
     EXCLUDE = 'exclude[]'
@@ -231,6 +232,16 @@ class WithDynamicViewSetMixin(object):
         self._request_fields = request_fields
         return request_fields
 
+    def get_request_debug(self):
+        debug = self.get_request_feature(self.DEBUG)
+        if debug:
+            debug = debug .lower()
+            if debug == 'true':
+                debug = True
+            else:
+                debug = False
+        return debug
+
     def get_request_sideloading(self):
         sideloading = self.get_request_feature(self.SIDELOADING)
         if sideloading:
@@ -264,6 +275,8 @@ class WithDynamicViewSetMixin(object):
             kwargs['request_fields'] = self.get_request_fields()
         if 'sideloading' not in kwargs:
             kwargs['sideloading'] = self.get_request_sideloading()
+        if 'debug' not in kwargs:
+            kwargs['debug'] = self.get_request_debug()
         if self.is_update():
             kwargs['include_fields'] = '*'
         return super(
