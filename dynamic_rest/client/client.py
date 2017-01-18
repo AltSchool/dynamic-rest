@@ -6,7 +6,67 @@ from dynamic_rest.conf import settings
 
 
 class DRESTClient(object):
+    """DREST Python client.
 
+    Exposes a DREST API to Python using a Django-esque interface.
+    Resources are available on the client through access-by-name.
+
+    Arguments:
+        host: hostname to a DREST API
+        version: version (defaults to no version),
+        client: HTTP client (defaults to requests.session),
+        scheme: defaults to https
+        authentication: provides credentials
+
+    Examples:
+
+    Getting a client:
+
+        client = DRESTClient('my.api.io', authentication={'token': 'secret'})
+
+    Working wiht a resource:
+
+        User = client.users
+
+    Getting a single resource:
+
+        User.get('123')
+
+    Getting all resources (auto-paging):
+
+        User.all()
+
+    Getting filtered resources:
+
+        User.filter(name__icontains='john')
+        other_users = client.users.exclude(name__icontains='john')
+
+    Including / excluding fields:
+
+        users = User.all()
+        .excluding('birthday')
+        .including('events.*')
+        .get('123')
+
+    Mapping by field:
+
+        users_by_id = User.map()
+        users_by_name = User.map('name')
+
+    Ordering results:
+
+        users = User.order_by('-name')
+
+    Updating records:
+
+        user = User.first()
+        user.name = 'john'
+        user.save()
+
+    Creating resources:
+
+        user = User.create(name='john')
+    """
     def __init__(
         self,
         host,
