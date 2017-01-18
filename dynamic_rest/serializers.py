@@ -583,12 +583,6 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         return self.dynamic and self.request_fields is True
 
     @property
-    def data_no_envelope(self):
-        """For compatability with DRF's .data"""
-        data = self.data
-        return data.values()[0]
-
-    @property
     def data(self):
         if not hasattr(self, '_processed_data'):
             data = super(WithDynamicSerializerMixin, self).data
