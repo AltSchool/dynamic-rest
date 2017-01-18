@@ -3,17 +3,28 @@ from .exceptions import DoesNotExist
 
 
 class DRESTRecord(object):
+    # TODO: use metadata to figure out which fields to ignore
     FIELD_BLACKLIST = {'links'}
 
     def __init__(self, resource, **data):
         self._resource = resource
         self._load(data)
 
-    def _get_data(self):
+    @property
+    def _data(self):
         return {
             k: v for k, v in self.__dict__.items()
             if not k.startswith('_') and k not in self.FIELD_BLACKLIST
         }
+
+    @property
+    def _diff(self):
+        data = self._data
+        for key, value in data.items():
+            if key in self._clean and value == self._clean[key]:
+                data.pop(key)
+
+        return data
 
     def _load(self, data):
         for key, value in data.items():
@@ -21,6 +32,7 @@ class DRESTRecord(object):
                 data.pop(key)
             setattr(self, key, value)
 
+        self._clean = self._data
         self.id = data.get('_meta', {}).get('id', data.get('id', None))
 
     def __repr__(self):
@@ -28,13 +40,14 @@ class DRESTRecord(object):
 
     def save(self):
         id = self.id
-        response = self._resource.request(
-            'patch' if id else 'post',
-            id=self.id,
-            data=self._get_data()
-        )
-        self._load(unpack(response))
-        return response
+        data = self._diff if id else self._data
+        if data:
+            response = self._resource.request(
+                'patch' if id else 'post',
+                id=id,
+                data=data
+            )
+            self._load(unpack(response))
 
     def reload(self):
         id = self.id
