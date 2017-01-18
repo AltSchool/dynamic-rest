@@ -7,7 +7,7 @@ from tests.setup import create_fixture
 import urllib
 
 
-class IntegrationTestClient(object):
+class MockSession(object):
     """requests.session compatiability adapter for DRESTClient."""
     def __init__(self, client):
         self._client = client or APIClient()
@@ -41,7 +41,7 @@ class ClientTestCase(APITestCase):
         self.fixture = create_fixture()
         self.drest = DRESTClient(
             'test',
-            client=IntegrationTestClient(self.client)
+            client=MockSession(self.client)
         )
 
     def test_get_all(self):
