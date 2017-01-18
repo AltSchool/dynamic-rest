@@ -45,7 +45,7 @@ class ClientTestCase(APITestCase):
         )
 
     def test_get_all(self):
-        users = list(self.drest.Users.all())
+        users = self.drest.Users.all().list()
         self.assertEquals(len(users), len(self.fixture.users))
         self.assertEquals(
             {user.name for user in users},
@@ -135,3 +135,11 @@ class ClientTestCase(APITestCase):
         users_named = list(self.drest.Users.extra(name=name))
         self.assertTrue(len(users_named), 1)
         self.assertTrue(users_named[0].name, name)
+
+    def test_save_deferred(self):
+        user = self.drest.Users.excluding('*').list()[0]
+        user.name = 'foo'
+        user.save()
+
+        user2 = self.drest.Users.first()
+        self.assertEquals(user2.name, user.name)
