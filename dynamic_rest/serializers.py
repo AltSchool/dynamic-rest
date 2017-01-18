@@ -527,6 +527,10 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
                     self, representation, instance
                 )
 
+        if self.debug:
+            representation['_id'] = instance.pk
+            representation['_type'] = self.get_plural_name()
+
         # tag the representation with the serializer and instance
         return tag_dict(
             representation,
