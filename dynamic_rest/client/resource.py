@@ -42,8 +42,9 @@ class DRESTResource(object):
             Array of DRESTRecord or single DRESTRecord.
         """
         if isinstance(data, dict):
-            name = data.get('_type')
-            pk = data.get('_id') or data.get('id')
+            meta = data.get('_meta', {})
+            name = meta.get('type')
+            pk = meta.get('id')
             if name and pk:
                 # load from dict
                 data['id'] = pk

@@ -21,7 +21,7 @@ class DRESTRecord(object):
                 data.pop(key)
             setattr(self, key, value)
 
-        self.id = data.get('id', data.get('_id', None))
+        self.id = data.get('_meta', {}).get('id', data.get('id', None))
 
     def __repr__(self):
         return '%s.%s' % (self._resource.name, self.id if self.id else '')
