@@ -2,8 +2,7 @@ import json
 import requests
 from .exceptions import AuthenticationFailed, BadRequest, DoesNotExist
 from .resource import DRESTResource
-
-AUTH_ENDPOINT = '/accounts/login/'
+from dynamic_rest.conf import settings
 
 
 class DRESTClient(object):
@@ -65,7 +64,7 @@ class DRESTClient(object):
         username = self._username
         password = self._password
         response = requests.post(
-            self._build_url(AUTH_ENDPOINT),
+            self._build_url(settings.AUTH_ENDPOINT),
             data={
                 'login': username,
                 'password': password

@@ -876,7 +876,6 @@ class TestLocationsAPI(APITestCase):
         actual = json.loads(response.content.decode('utf-8'))
         expected = {
             'description': '',
-            'features': ['include[]', 'exclude[]', 'filter{}', 'sort[]'],
             'name': 'Location List',
             'parses': [
                 'application/json',
@@ -969,6 +968,7 @@ class TestLocationsAPI(APITestCase):
         for field in ['cats', 'friendly_cats', 'bad_cats', 'users']:
             del actual['properties'][field]['nullable']
             del expected['properties'][field]['nullable']
+        actual.pop('features')
         self.assertEquals(
             json.loads(json.dumps(expected)),
             json.loads(json.dumps(actual))
