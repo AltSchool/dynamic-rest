@@ -83,11 +83,9 @@ class SideloadingProcessor(object):
                 serializer = obj.serializer
                 name = serializer.get_plural_name()
                 instance = getattr(obj, 'instance', serializer.instance)
+                instance_pk = instance.pk if instance else None
+                pk = getattr(obj, 'pk_value', instance_pk) or instance_pk
 
-                if not instance:
-                    return
-
-                pk = getattr(obj, 'pk_value', instance.pk) or instance.pk
                 # For polymorphic relations, `pk` can be a dict, so use the
                 # string representation (dict isn't hashable).
                 pk_key = repr(pk)
