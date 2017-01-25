@@ -18,7 +18,7 @@ class MockSession(object):
             list_params = []
             for key, value in params.items():
                 if isinstance(
-                    value, basestring
+                    value, str
                 ) or not isinstance(value, list):
                     value = [value]
                 for v in value:

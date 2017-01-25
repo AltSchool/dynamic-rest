@@ -126,7 +126,7 @@ class DRESTQuery(object):
                     new_value.update(value)
             elif (
                 isinstance(new_value, (list, tuple)) and
-                not isinstance(new_value, basestring)
+                not isinstance(new_value, str)
             ):
                 if value != new_value:
                     new_value = list(set(new_value + list(value)))

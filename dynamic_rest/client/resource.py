@@ -60,7 +60,7 @@ class DRESTResource(object):
             else:
                 # plain dict
                 return data
-        elif isinstance(data, list) and not isinstance(data, basestring):
+        elif isinstance(data, list) and not isinstance(data, str):
             for i, value in enumerate(data):
                 # load from list
                 _value = self.load(value)
