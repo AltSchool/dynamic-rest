@@ -27,52 +27,50 @@ class DRESTClient(object):
 
     Examples:
 
+    Assume there is a DREST resource at my.api.io/v0/users.
+
     Getting a client:
 
-        client = DRESTClient('my.api.io', authentication={'token': 'secret'})
+        client = DRESTClient('my.api.io', version='v0', authentication={'token': 'secret'})
 
-    Working with a resource:
+    Getting a single record of the Users resource
 
-        Users = client.Users
+        client.Users.get('123')
 
-    Getting a single resource:
+    Getting all records (automatic pagination):
 
-        Users.get('123')
+        client.Users.all()
 
-    Getting all resources (auto-paging):
+    Filtering records:
 
-        Users.all()
+        client.Users.filter(name__icontains='john')
+        other_users = client.Users.exclude(name__icontains='john')
 
-    Getting filtered resources:
+    Ordering records:
 
-        Users.filter(name__icontains='john')
-        other_users = client.users.exclude(name__icontains='john')
+        users = client.Users.sort('-name')
 
     Including / excluding fields:
 
-        users = Users.all()
+        users = client.Users.all()
         .excluding('birthday')
         .including('events.*')
         .get('123')
 
     Mapping by field:
 
-        users_by_id = Users.map()
-        users_by_name = Users.map('name')
-
-    Ordering results:
-
-        users = Users.sort('-name')
+        users_by_id = client.Users.map()
+        users_by_name = client.Users.map('name')
 
     Updating records:
 
-        user = Users.first()
+        user = client.Users.first()
         user.name = 'john'
         user.save()
 
-    Creating resources:
+    Creating records:
 
-        user = Users.create(name='john')
+        user = client.Users.create(name='john')
     """
     def __init__(
         self,
