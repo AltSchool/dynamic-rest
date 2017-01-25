@@ -27,11 +27,16 @@ class DRESTClient(object):
 
     Examples:
 
-    Assume there is a DREST resource at my.api.io/v0/users.
+    Assume there is a DREST resource at "https://my.api.io/v0/users",
+    and that we can access this resource with an auth token "secret".
 
     Getting a client:
 
-        client = DRESTClient('my.api.io', version='v0', authentication={'token': 'secret'})
+        client = DRESTClient(
+            'my.api.io',
+            version='v0',
+            authentication={'token': 'secret'}
+        )
 
     Getting a single record of the Users resource
 
