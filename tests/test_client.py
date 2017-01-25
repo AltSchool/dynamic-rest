@@ -123,7 +123,7 @@ class ClientTestCase(APITestCase):
 
     def test_save_invalid_data(self):
         user = self.drest.Users.first()
-        user.name = ''
+        user.date_of_birth = 'foo'
         with self.assertRaises(BadRequest):
             user.save()
 
