@@ -157,6 +157,7 @@ class DRESTQuery(object):
         return self.resource.load(unpack(data))
 
     def __iter__(self):
+        # TODO: implement __getitem__ for random access
         params = self._get_params()
         self._get_page(params)
         while True:
