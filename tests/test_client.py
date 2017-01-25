@@ -1,14 +1,22 @@
 from rest_framework.test import APITestCase, APIClient
 from dynamic_rest.client import DRESTClient
+from six import string_types
 from dynamic_rest.client.exceptions import (
     BadRequest, DoesNotExist
 )
 from tests.setup import create_fixture
 import urllib
+try:
+    urlencode = urllib.urlencode
+except:
+    # Py3
+    urlencode = urllib.parse.urlencode
 
 
 class MockSession(object):
+
     """requests.session compatiability adapter for DRESTClient."""
+
     def __init__(self, client):
         self._client = client or APIClient()
         self.headers = {}
@@ -18,18 +26,20 @@ class MockSession(object):
             list_params = []
             for key, value in params.items():
                 if isinstance(
-                    value, str
+                    value, string_types
                 ) or not isinstance(value, list):
                     value = [value]
                 for v in value:
                     list_params.append((key, v))
-            return urllib.urlencode(list_params)
+            return urlencode(list_params)
 
         url = '%s%s' % (
             url,
             ('?%s' % make_params(params)) if params else ''
         )
         response = getattr(self._client, method)(url, data=data)
+        content = response.content.decode('utf-8')
+        response.content = content
         return response
 
 
@@ -132,9 +142,10 @@ class ClientTestCase(APITestCase):
         self.assertTrue(users_named[0].name, name)
 
     def test_save_deferred(self):
-        user = self.drest.Users.excluding('*').list()[0]
+        user = self.drest.Users.excluding('*').first()
         user.name = 'foo'
         user.save()
 
-        user2 = self.drest.Users.first()
-        self.assertEquals(user2.name, user.name)
+        user2 = self.drest.Users.filter(name='foo').first()
+        self.assertIsNotNone(user2)
+        self.assertEquals(user2.id, user.id)

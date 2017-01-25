@@ -8,7 +8,9 @@ class DRESTRecord(object):
         self._load(data)
 
     def __eq__(self, other):
-        return self._data == other._data
+        if hasattr(other, '_data'):
+            other = other._data
+        return self._data == other
 
     @property
     def _data(self):
@@ -19,16 +21,14 @@ class DRESTRecord(object):
 
     @property
     def _diff(self):
-        data = self._data
-        for key, value in data.items():
-            if key in self._clean and value == self._clean[key]:
-                data.pop(key)
-        return data
+        diff = {}
+        for key, value in self._data.items():
+            if key not in self._clean or value != self._clean[key]:
+                diff[key] = value
+        return diff
 
     def _load(self, data):
         for key, value in data.items():
-            if key.startswith('_'):
-                data.pop(key)
             setattr(self, key, value)
 
         self._clean = self._data
@@ -50,10 +50,11 @@ class DRESTRecord(object):
 
     def save(self):
         id = self.id
-        data = self._serialize(self._diff if id else self._data)
+        new = not id
+        data = self._data if new else self._serialize(self._diff)
         if data:
             response = self._resource.request(
-                'patch' if id else 'post',
+                'post' if new else 'patch',
                 id=id,
                 data=data
             )

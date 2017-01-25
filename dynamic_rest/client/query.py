@@ -1,5 +1,6 @@
 from copy import copy
 from .utils import unpack
+from six import string_types
 
 
 class DRESTQuery(object):
@@ -126,7 +127,7 @@ class DRESTQuery(object):
                     new_value.update(value)
             elif (
                 isinstance(new_value, (list, tuple)) and
-                not isinstance(new_value, str)
+                not isinstance(new_value, string_types)
             ):
                 if value != new_value:
                     new_value = list(set(new_value + list(value)))

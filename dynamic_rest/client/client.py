@@ -184,4 +184,4 @@ class DRESTClient(object):
         if response.status_code >= 400:
             raise BadRequest()
 
-        return json.loads(response.content)
+        return json.loads(response.content.decode('utf-8'))
