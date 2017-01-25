@@ -62,7 +62,7 @@ class DRESTClient(object):
 
     Ordering results:
 
-        users = Users.order_by('-name')
+        users = Users.sort('-name')
 
     Updating records:
 

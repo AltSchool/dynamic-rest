@@ -74,8 +74,11 @@ class DRESTQuery(object):
     def extra(self, **kwargs):
         return self._copy(extras=kwargs)
 
-    def order_by(self, *args):
+    def sort(self, *args):
         return self._copy(orders=args)
+
+    def order_by(self, *args):
+        return self.sort(*args)
 
     def _get_params(self):
         filters = self.filters

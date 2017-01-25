@@ -149,3 +149,10 @@ class ClientTestCase(APITestCase):
         user2 = self.drest.Users.filter(name='foo').first()
         self.assertIsNotNone(user2)
         self.assertEquals(user2.id, user.id)
+
+    def test_sort(self):
+        users = self.drest.Users.sort('name').list()
+        self.assertEquals(
+            users,
+            list(sorted(users, key=lambda x: x.name))
+        )
