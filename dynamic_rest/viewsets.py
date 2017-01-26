@@ -13,6 +13,7 @@ from dynamic_rest.metadata import DynamicMetadata
 from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.renderers import DynamicBrowsableAPIRenderer
+from dynamic_rest.utils import is_truthy
 
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
 DELETE_REQUEST_METHOD = 'DELETE'
@@ -234,23 +235,11 @@ class WithDynamicViewSetMixin(object):
 
     def get_request_debug(self):
         debug = self.get_request_feature(self.DEBUG)
-        if debug:
-            debug = debug .lower()
-            if debug == 'true':
-                debug = True
-            else:
-                debug = False
-        return debug
+        return is_truthy(debug) if debug is not None else None
 
     def get_request_sideloading(self):
         sideloading = self.get_request_feature(self.SIDELOADING)
-        if sideloading:
-            sideloading = sideloading.lower()
-            if sideloading == 'true':
-                sideloading = True
-            else:
-                sideloading = False
-        return sideloading
+        return is_truthy(sideloading) if sideloading is not None else None
 
     def is_update(self):
         if (

@@ -199,6 +199,12 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
 
         kwargs['instance'] = instance
         kwargs['data'] = data
+
+        # "sideload" argument is now deprecated
+        # pop it instead of breaking for backwards compatibility
+        # TODO: remove in DREST 2
+        kwargs.pop('sideload', None)
+
         super(WithDynamicSerializerMixin, self).__init__(**kwargs)
 
         self.sideloading = sideloading
