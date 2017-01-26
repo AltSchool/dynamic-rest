@@ -1,5 +1,6 @@
 from copy import copy
 from .utils import unpack
+from six import string_types
 
 
 class DRESTQuery(object):
@@ -73,8 +74,11 @@ class DRESTQuery(object):
     def extra(self, **kwargs):
         return self._copy(extras=kwargs)
 
-    def order_by(self, *args):
+    def sort(self, *args):
         return self._copy(orders=args)
+
+    def order_by(self, *args):
+        return self.sort(*args)
 
     def _get_params(self):
         filters = self.filters
@@ -126,7 +130,7 @@ class DRESTQuery(object):
                     new_value.update(value)
             elif (
                 isinstance(new_value, (list, tuple)) and
-                not isinstance(new_value, basestring)
+                not isinstance(new_value, string_types)
             ):
                 if value != new_value:
                     new_value = list(set(new_value + list(value)))
@@ -153,6 +157,7 @@ class DRESTQuery(object):
         return self.resource.load(unpack(data))
 
     def __iter__(self):
+        # TODO: implement __getitem__ for random access
         params = self._get_params()
         self._get_page(params)
         while True:

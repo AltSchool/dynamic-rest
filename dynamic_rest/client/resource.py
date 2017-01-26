@@ -50,9 +50,9 @@ class DRESTResource(object):
                 data['id'] = pk
                 if name == self.name:
                     for key, value in data.items():
-                        _value = self.load(value)
-                        if value != _value:
-                            data[key] = _value
+                        loaded = self.load(value)
+                        if value != loaded:
+                            data[key] = loaded
                     return DRESTRecord(resource=self, **data)
                 else:
                     resource = getattr(self._client, name)
@@ -60,7 +60,7 @@ class DRESTResource(object):
             else:
                 # plain dict
                 return data
-        elif isinstance(data, list) and not isinstance(data, basestring):
+        elif isinstance(data, list) and not isinstance(data, str):
             for i, value in enumerate(data):
                 # load from list
                 _value = self.load(value)
