@@ -17,8 +17,6 @@ class SideloadingProcessor(object):
     typically smaller than their nested equivalent.
     """
 
-    prefix = settings.ADDITIONAL_PRIMARY_RESOURCE_PREFIX
-
     def __init__(self, serializer, data):
         """Initializes and runs the processor.
 
@@ -107,7 +105,7 @@ class SideloadingProcessor(object):
                 # if the primary resource is embedded, add it to a prefixed key
                 if name == self.plural_name:
                     name = '%s%s' % (
-                        self.prefix,
+                        settings.ADDITIONAL_PRIMARY_RESOURCE_PREFIX,
                         name
                     )
 

@@ -317,7 +317,7 @@ class TestUsersAPI(APITestCase):
             response = self.client.get('/users/1/?include[]=groups.')
         self.assertEquals(200, response.status_code)
         data = json.loads(response.content.decode('utf-8'))
-        self.assertEquals(len(data['groups']), 2)
+        self.assertEquals(len(data.get('groups', [])), 2)
 
     def test_get_with_filter(self):
         with self.assertNumQueries(1):

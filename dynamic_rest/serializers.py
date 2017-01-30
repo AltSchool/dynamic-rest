@@ -10,7 +10,6 @@ from rest_framework import exceptions, fields, serializers
 from rest_framework.fields import SkipField
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 
-from dynamic_rest.utils import unpack
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
 from dynamic_rest.fields import DynamicRelationField
@@ -69,12 +68,11 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         """Get the data, after performing post-processing if necessary."""
         if not hasattr(self, '_processed_data'):
             data = super(DynamicListSerializer, self).data
-            data = SideloadingProcessor(self, data).data
             self._processed_data = ReturnDict(
-                data,
+                SideloadingProcessor(self, data).data,
                 serializer=self
             ) if self.child.envelope else ReturnList(
-                unpack(data),
+                data,
                 serializer=self
             )
         return self._processed_data
@@ -163,27 +161,29 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             debug=False,
             dynamic=True,
             embed=False,
-            envelope=False,
+            envelope=None,
             **kwargs
     ):
         """
         Custom initializer that builds `request_fields`.
 
         Arguments:
-            instance: Instance to be managed by the serializer.
+            instance: Initial instance, used by updates.
+            data: Initial data, used by updates / creates.
             only_fields: List of field names to render.
             include_fields: List of field names to include.
             exclude_fields: List of field names to exclude.
-            request_fields: map of field names that supports
-                inclusions, exclusions, and nested sideloads.
-            embed: If True, force the current representation to be embedded.
-            sideloading: if False, force embedding for all descendants
-                If True, force sideloading for all descendants
-                If None (default), respect individual embed parameters
-            dynamic: If False, ignore deferred rules and
-                revert to standard DRF `.fields` behavior.
-            envelope: if True, wrap `.data` in envelope.
-                if False, do not use an envelope.
+            request_fields: Map of field names that supports
+                nested inclusions / exclusions.
+            embed: If True, embed the current representation.
+                If False, sideload the current representation.
+            sideloading: If True, force sideloading for all descendents.
+                If False, force embedding for all descendents.
+                If None (default), respect descendents' embed parameters.
+            dynamic: If False, disable inclusion / exclusion features.
+            envelope: If True, wrap `.data` in an envelope.
+                If False, do not use an envelope and disable sideloading.
+                If None, do not use an envelope.
         """
         name = self.get_name()
         if data is not fields.empty and name in data and len(data) == 1:
@@ -213,11 +213,20 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         super(WithDynamicSerializerMixin, self).__init__(**kwargs)
 
         self.envelope = envelope
-        self.sideloading = sideloading
         self.debug = debug
         self.dynamic = dynamic
         self.request_fields = request_fields or {}
-        self.embed = embed if sideloading is None else not sideloading
+
+        # sideloading modifies top-level response keys,
+        # so it requires an envelope
+        if envelope is False:
+            sideloading = False
+
+        # `embed` is overriden by `sideloading`
+        embed = embed if sideloading is None else not sideloading
+
+        self.sideloading = sideloading
+        self.embed = embed
 
         self._dynamic_init(only_fields, include_fields, exclude_fields)
         self.enable_optimization = settings.ENABLE_SERIALIZER_OPTIMIZATIONS
@@ -599,9 +608,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
     def data(self):
         if not hasattr(self, '_processed_data'):
             data = super(WithDynamicSerializerMixin, self).data
-            data = SideloadingProcessor(self, data).data
+            data = SideloadingProcessor(
+                self, data
+            ).data if self.envelope else data
             self._processed_data = ReturnDict(
-                data if self.envelope else unpack(data),
+                data,
                 serializer=self
             )
         return self._processed_data
