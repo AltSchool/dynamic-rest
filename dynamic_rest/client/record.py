@@ -1,4 +1,4 @@
-from .utils import unpack
+from dynamic_rest.utils import unpack
 from .exceptions import DoesNotExist
 
 

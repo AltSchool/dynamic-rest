@@ -1,5 +1,5 @@
 from copy import copy
-from .utils import unpack
+from dynamic_rest.utils import unpack
 from six import string_types
 
 

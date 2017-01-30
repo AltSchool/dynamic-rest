@@ -172,7 +172,7 @@ class WithDynamicViewSetMixin(object):
                     # malformed argument like:
                     # filter{foo=bar
                     raise exceptions.ParseError(
-                        "'%s' is not a well-formed filter key" % name
+                        '"%s" is not a well-formed filter key.' % name
                     )
             else:
                 continue
@@ -227,8 +227,9 @@ class WithDynamicViewSetMixin(object):
                     elif not last:
                         # empty segment must be the last segment
                         raise exceptions.ParseError(
-                            "'%s' is not a valid field" %
-                            field)
+                            '"%s" is not a valid field.' %
+                            field
+                        )
 
         self._request_fields = request_fields
         return request_fields
@@ -266,22 +267,30 @@ class WithDynamicViewSetMixin(object):
             kwargs['sideloading'] = self.get_request_sideloading()
         if 'debug' not in kwargs:
             kwargs['debug'] = self.get_request_debug()
+        if 'envelope' not in kwargs:
+            kwargs['envelope'] = True
         if self.is_update():
             kwargs['include_fields'] = '*'
         return super(
-            WithDynamicViewSetMixin, self).get_serializer(
-            *args, **kwargs)
+            WithDynamicViewSetMixin, self
+        ).get_serializer(
+            *args, **kwargs
+        )
 
     def paginate_queryset(self, *args, **kwargs):
         if self.PAGE in self.features:
             # make sure pagination is enabled
-            if self.PER_PAGE not in self.features and \
-                    self.PER_PAGE in self.request.query_params:
+            if (
+                self.PER_PAGE not in self.features and
+                self.PER_PAGE in self.request.query_params
+            ):
                 # remove per_page if it is disabled
                 self.request.query_params[self.PER_PAGE] = None
             return super(
-                WithDynamicViewSetMixin, self).paginate_queryset(
-                *args, **kwargs)
+                WithDynamicViewSetMixin, self
+            ).paginate_queryset(
+                *args, **kwargs
+            )
         return None
 
     def _prefix_inex_params(self, request, feature, prefix):
@@ -312,7 +321,7 @@ class WithDynamicViewSetMixin(object):
         # can have unintended consequences when applied asynchronously.
         if self.get_request_feature(self.FILTER):
             raise ValidationError(
-                "Filtering is not enabled on relation endpoints."
+                'Filtering is not enabled on relation endpoints.'
             )
 
         # Prefix include/exclude filters with field_name so it's scoped to
@@ -329,7 +338,7 @@ class WithDynamicViewSetMixin(object):
         serializer = self.get_serializer()
         field = serializer.fields.get(field_name)
         if field is None:
-            raise ValidationError("Unknown field: %s" % field_name)
+            raise ValidationError('Unknown field: "%s".' % field_name)
 
         # Query for root object, with related field prefetched
         queryset = self.get_queryset()
@@ -341,7 +350,7 @@ class WithDynamicViewSetMixin(object):
 
         # Serialize the related data. Use the field's serializer to ensure
         # it's configured identically to the sideload case.
-        serializer = field.serializer
+        serializer = field.get_serializer(envelope=True)
         try:
             # TODO(ryo): Probably should use field.get_attribute() but that
             #            seems to break a bunch of things. Investigate later.
@@ -535,4 +544,5 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
             # assume that it is a poorly formatted bulk request
             return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
         return super(DynamicModelViewSet, self).destroy(
-            request, *args, **kwargs)
+            request, *args, **kwargs
+        )

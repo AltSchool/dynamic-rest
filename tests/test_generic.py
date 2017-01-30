@@ -171,7 +171,7 @@ class TestGenericRelationFieldAPI(APITestCase):
             'favorite_pet'
         ).first()
 
-        data = FooUserSerializer(user).data['user']
+        data = FooUserSerializer(user, envelope=True).data['user']
         self.assertIsNotNone(data)
         self.assertTrue('favorite_pet' in data)
         self.assertTrue(isinstance(data['favorite_pet'], dict))

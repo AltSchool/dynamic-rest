@@ -8,8 +8,9 @@ from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import exceptions, fields, serializers
 from rest_framework.fields import SkipField
-from rest_framework.utils.serializer_helpers import ReturnDict
+from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 
+from dynamic_rest.utils import unpack
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
 from dynamic_rest.fields import DynamicRelationField
@@ -68,11 +69,12 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         """Get the data, after performing post-processing if necessary."""
         if not hasattr(self, '_processed_data'):
             data = super(DynamicListSerializer, self).data
+            data = SideloadingProcessor(self, data).data
             self._processed_data = ReturnDict(
-                SideloadingProcessor(
-                    self,
-                    data
-                ).data,
+                data,
+                serializer=self
+            ) if self.child.envelope else ReturnList(
+                unpack(data),
                 serializer=self
             )
         return self._processed_data
@@ -88,7 +90,7 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         lookup_keys = lookup_objects.keys()
 
         if not all((bool(_) and not inspect.isclass(_) for _ in lookup_keys)):
-            raise exceptions.ValidationError('Invalid lookup key value')
+            raise exceptions.ValidationError('Invalid lookup key value.')
 
         # Since this method is given a queryset which can have many
         # model instances, first find all objects to update
@@ -99,7 +101,7 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
 
         if len(lookup_keys) != objects_to_update.count():
             raise exceptions.ValidationError(
-                'Could not find all objects to update: {} != {}'
+                'Could not find all objects to update: {} != {}.'
                 .format(len(lookup_keys), objects_to_update.count())
             )
 
@@ -161,6 +163,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             debug=False,
             dynamic=True,
             embed=False,
+            envelope=False,
             **kwargs
     ):
         """
@@ -179,6 +182,8 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
                 If None (default), respect individual embed parameters
             dynamic: If False, ignore deferred rules and
                 revert to standard DRF `.fields` behavior.
+            envelope: if True, wrap `.data` in envelope.
+                if False, do not use an envelope.
         """
         name = self.get_name()
         if data is not fields.empty and name in data and len(data) == 1:
@@ -200,13 +205,14 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         kwargs['instance'] = instance
         kwargs['data'] = data
 
-        # "sideload" argument is now deprecated
-        # pop it instead of breaking for backwards compatibility
-        # TODO: remove in DREST 2
-        kwargs.pop('sideload', None)
+        # "sideload" argument is pending deprecation as of 1.6
+        if kwargs.pop('sideload', False):
+            # if "sideload=True" is passed, turn on the envelope
+            envelope = True
 
         super(WithDynamicSerializerMixin, self).__init__(**kwargs)
 
+        self.envelope = envelope
         self.sideloading = sideloading
         self.debug = debug
         self.dynamic = dynamic
@@ -396,8 +402,9 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             for name, include in six.iteritems(request_fields):
                 if name not in serializer_fields:
                     raise exceptions.ParseError(
-                        "'%s' is not a valid field name for '%s'" %
-                        (name, self.get_name()))
+                        '"%s" is not a valid field name for "%s".' %
+                        (name, self.get_name())
+                    )
                 if include is not False and name in deferred:
                     deferred.remove(name)
                 elif include is False:
@@ -592,11 +599,9 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
     def data(self):
         if not hasattr(self, '_processed_data'):
             data = super(WithDynamicSerializerMixin, self).data
+            data = SideloadingProcessor(self, data).data
             self._processed_data = ReturnDict(
-                SideloadingProcessor(
-                    self,
-                    data
-                ).data,
+                data if self.envelope else unpack(data),
                 serializer=self
             )
         return self._processed_data
@@ -652,7 +657,7 @@ class EphemeralObject(object):
 
     def __init__(self, values_dict):
         if 'pk' not in values_dict:
-            raise Exception("'pk' key is required")
+            raise Exception('"pk" key is required')
         self.__dict__.update(values_dict)
 
 

@@ -93,6 +93,9 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             many: Boolean, if relation is to-many.
             queryset: Default queryset to apply when filtering for related
                 objects.
+            sideloading: if True, force sideloading all the way down.
+                if False, force embedding all the way down.
+                This overrides the "embed" option if set.
             embed: If True, always embed related object(s). Will not sideload,
                 and will include the full object unless specifically excluded.
         """
