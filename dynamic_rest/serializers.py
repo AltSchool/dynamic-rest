@@ -161,7 +161,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             debug=False,
             dynamic=True,
             embed=False,
-            envelope=None,
+            envelope=False,
             **kwargs
     ):
         """
@@ -182,8 +182,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
                 If None (default), respect descendents' embed parameters.
             dynamic: If False, disable inclusion / exclusion features.
             envelope: If True, wrap `.data` in an envelope.
-                If False, do not use an envelope and disable sideloading.
-                If None, do not use an envelope.
+                If False, do not use an envelope.
         """
         name = self.get_name()
         if data is not fields.empty and name in data and len(data) == 1:
@@ -213,19 +212,13 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         super(WithDynamicSerializerMixin, self).__init__(**kwargs)
 
         self.envelope = envelope
+        self.sideloading = sideloading
         self.debug = debug
         self.dynamic = dynamic
         self.request_fields = request_fields or {}
 
-        # sideloading modifies top-level response keys,
-        # so it requires an envelope
-        if envelope is False:
-            sideloading = False
-
         # `embed` is overriden by `sideloading`
         embed = embed if sideloading is None else not sideloading
-
-        self.sideloading = sideloading
         self.embed = embed
 
         self._dynamic_init(only_fields, include_fields, exclude_fields)
