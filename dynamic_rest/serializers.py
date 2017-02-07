@@ -66,19 +66,16 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     @property
     def data(self):
         """Get the data, after performing post-processing if necessary."""
-        if not hasattr(self, '_sideloaded_data'):
+        if not hasattr(self, '_processed_data'):
             data = super(DynamicListSerializer, self).data
-            if self.child.sideload:
-                self._sideloaded_data = ReturnDict(
-                    SideloadingProcessor(
-                        self,
-                        data
-                    ).data,
-                    serializer=self
-                )
-            else:
-                self._sideloaded_data = ReturnList(data, serializer=self)
-        return self._sideloaded_data
+            self._processed_data = ReturnDict(
+                SideloadingProcessor(self, data).data,
+                serializer=self
+            ) if self.child.envelope else ReturnList(
+                data,
+                serializer=self
+            )
+        return self._processed_data
 
     def update(self, queryset, validated_data):
         lookup_attr = getattr(self.child.Meta, 'update_lookup_field', 'id')
@@ -91,7 +88,7 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         lookup_keys = lookup_objects.keys()
 
         if not all((bool(_) and not inspect.isclass(_) for _ in lookup_keys)):
-            raise exceptions.ValidationError('Invalid lookup key value')
+            raise exceptions.ValidationError('Invalid lookup key value.')
 
         # Since this method is given a queryset which can have many
         # model instances, first find all objects to update
@@ -102,7 +99,7 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
 
         if len(lookup_keys) != objects_to_update.count():
             raise exceptions.ValidationError(
-                'Could not find all objects to update: {} != {}'
+                'Could not find all objects to update: {} != {}.'
                 .format(len(lookup_keys), objects_to_update.count())
             )
 
@@ -160,25 +157,32 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             include_fields=None,
             exclude_fields=None,
             request_fields=None,
-            sideload=False,
+            sideloading=None,
+            debug=False,
             dynamic=True,
             embed=False,
+            envelope=False,
             **kwargs
     ):
         """
         Custom initializer that builds `request_fields`.
 
         Arguments:
-            instance: Instance to be managed by the serializer.
+            instance: Initial instance, used by updates.
+            data: Initial data, used by updates / creates.
             only_fields: List of field names to render.
             include_fields: List of field names to include.
             exclude_fields: List of field names to exclude.
-            request_fields: map of field names that supports
-                inclusions, exclusions, and nested sideloads.
-            sideload: If False, do not perform any sideloading at this level.
-            embed: If True, force the current representation to be embedded.
-            dynamic: If False, ignore deferred rules and
-                revert to standard DRF `.fields` behavior.
+            request_fields: Map of field names that supports
+                nested inclusions / exclusions.
+            embed: If True, embed the current representation.
+                If False, sideload the current representation.
+            sideloading: If True, force sideloading for all descendents.
+                If False, force embedding for all descendents.
+                If None (default), respect descendents' embed parameters.
+            dynamic: If False, disable inclusion / exclusion features.
+            envelope: If True, wrap `.data` in an envelope.
+                If False, do not use an envelope.
         """
         name = self.get_name()
         if data is not fields.empty and name in data and len(data) == 1:
@@ -199,11 +203,22 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
 
         kwargs['instance'] = instance
         kwargs['data'] = data
+
+        # "sideload" argument is pending deprecation as of 1.6
+        if kwargs.pop('sideload', False):
+            # if "sideload=True" is passed, turn on the envelope
+            envelope = True
+
         super(WithDynamicSerializerMixin, self).__init__(**kwargs)
 
-        self.sideload = sideload
+        self.envelope = envelope
+        self.sideloading = sideloading
+        self.debug = debug
         self.dynamic = dynamic
         self.request_fields = request_fields or {}
+
+        # `embed` is overriden by `sideloading`
+        embed = embed if sideloading is None else not sideloading
         self.embed = embed
 
         self._dynamic_init(only_fields, include_fields, exclude_fields)
@@ -389,8 +404,9 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             for name, include in six.iteritems(request_fields):
                 if name not in serializer_fields:
                     raise exceptions.ParseError(
-                        "'%s' is not a valid field name for '%s'" %
-                        (name, self.get_name()))
+                        '"%s" is not a valid field name for "%s".' %
+                        (name, self.get_name())
+                    )
                 if include is not False and name in deferred:
                     deferred.remove(name)
                 elif include is False:
@@ -526,6 +542,12 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
                     self, representation, instance
                 )
 
+        if self.debug:
+            representation['_meta'] = {
+                'id': instance.pk,
+                'type': self.get_plural_name()
+            }
+
         # tag the representation with the serializer and instance
         return tag_dict(
             representation,
@@ -577,16 +599,16 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
 
     @property
     def data(self):
-        if not hasattr(self, '_sideloaded_data'):
+        if not hasattr(self, '_processed_data'):
             data = super(WithDynamicSerializerMixin, self).data
-            self._sideloaded_data = ReturnDict(
-                SideloadingProcessor(
-                    self,
-                    data
-                ).data if self.sideload else data,
+            data = SideloadingProcessor(
+                self, data
+            ).data if self.envelope else data
+            self._processed_data = ReturnDict(
+                data,
                 serializer=self
             )
-        return self._sideloaded_data
+        return self._processed_data
 
 
 class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
@@ -639,7 +661,7 @@ class EphemeralObject(object):
 
     def __init__(self, values_dict):
         if 'pk' not in values_dict:
-            raise Exception("'pk' key is required")
+            raise Exception('"pk" key is required')
         self.__dict__.update(values_dict)
 
 

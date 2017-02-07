@@ -9,6 +9,7 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.fields import BooleanField, NullBooleanField
 from rest_framework.filters import BaseFilterBackend, OrderingFilter
 
+from dynamic_rest.utils import is_truthy
 from dynamic_rest.conf import settings
 from dynamic_rest.datastructures import TreeMap
 from dynamic_rest.fields import DynamicRelationField
@@ -147,8 +148,6 @@ class DynamicFilterBackend(BaseFilterBackend):
 
     Attributes:
         VALID_FILTER_OPERATORS: A list of filter operators.
-        FALSEY_STRINGS: A list of strings that are interpretted as
-            False by the isnull operator.
     """
 
     VALID_FILTER_OPERATORS = (
@@ -176,12 +175,6 @@ class DynamicFilterBackend(BaseFilterBackend):
         None,
     )
 
-    FALSEY_STRINGS = (
-        '0',
-        'false',
-        '',
-    )
-
     def filter_queryset(self, request, queryset, view):
         """Filter the queryset.
 
@@ -193,6 +186,13 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         self.DEBUG = settings.DEBUG
         return self._build_queryset(queryset=queryset)
+
+    """
+    This function was renamed and broke downstream dependencies that haven't
+    been updated to use the new naming convention.
+    """
+    def _extract_filters(self, **kwargs):
+        return self._get_requested_filters(**kwargs)
 
     def _get_requested_filters(self, **kwargs):
         """
@@ -248,7 +248,7 @@ class DynamicFilterBackend(BaseFilterBackend):
                     operator == 'isnull' and
                     isinstance(value, six.string_types)
                 ):
-                    value = value.lower() not in self.FALSEY_STRINGS
+                    value = is_truthy(value)
                 elif operator == 'eq':
                     operator = None
 
@@ -287,7 +287,7 @@ class DynamicFilterBackend(BaseFilterBackend):
             for k, node in six.iteritems(filters):
                 filter_key, field = node.generate_query_key(serializer)
                 if isinstance(field, (BooleanField, NullBooleanField)):
-                    node.value = node.value.lower() not in self.FALSEY_STRINGS
+                    node.value = is_truthy(node.value)
                 out[filter_key] = node.value
 
             return out

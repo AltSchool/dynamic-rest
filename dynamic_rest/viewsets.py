@@ -13,6 +13,7 @@ from dynamic_rest.metadata import DynamicMetadata
 from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.renderers import DynamicBrowsableAPIRenderer
+from dynamic_rest.utils import is_truthy
 
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
 DELETE_REQUEST_METHOD = 'DELETE'
@@ -59,10 +60,11 @@ class WithDynamicViewSetMixin(object):
 
     Attributes:
       features: A list of features supported by the viewset.
-      sideload: Whether or not to enable sideloading in the DynamicRenderer.
       meta: Extra data that is added to the response by the DynamicRenderer.
     """
 
+    DEBUG = 'debug'
+    SIDELOADING = 'sideloading'
     INCLUDE = 'include[]'
     EXCLUDE = 'exclude[]'
     FILTER = 'filter{}'
@@ -74,8 +76,7 @@ class WithDynamicViewSetMixin(object):
     pagination_class = DynamicPageNumberPagination
     metadata_class = DynamicMetadata
     renderer_classes = (JSONRenderer, DynamicBrowsableAPIRenderer)
-    features = (INCLUDE, EXCLUDE, FILTER, PAGE, PER_PAGE, SORT)
-    sideload = True
+    features = (INCLUDE, EXCLUDE, FILTER, PAGE, PER_PAGE, SORT, SIDELOADING)
     meta = None
     filter_backends = (DynamicFilterBackend, DynamicSortingFilter)
 
@@ -171,7 +172,7 @@ class WithDynamicViewSetMixin(object):
                     # malformed argument like:
                     # filter{foo=bar
                     raise exceptions.ParseError(
-                        "'%s' is not a well-formed filter key" % name
+                        '"%s" is not a well-formed filter key.' % name
                     )
             else:
                 continue
@@ -190,7 +191,7 @@ class WithDynamicViewSetMixin(object):
         return getattr(self, 'queryset', serializer.Meta.model.objects.all())
 
     def get_request_fields(self):
-        """Parses the `include[]` and `exclude[]` features.
+        """Parses the INCLUDE and EXCLUDE features.
 
         Extracts the dynamic field features from the request parameters
         into a field map that can be passed to a serializer.
@@ -202,8 +203,8 @@ class WithDynamicViewSetMixin(object):
         if hasattr(self, '_request_fields'):
             return self._request_fields
 
-        include_fields = self.get_request_feature('include[]')
-        exclude_fields = self.get_request_feature('exclude[]')
+        include_fields = self.get_request_feature(self.INCLUDE)
+        exclude_fields = self.get_request_feature(self.EXCLUDE)
         request_fields = {}
         for fields, include in(
                 (include_fields, True),
@@ -226,11 +227,20 @@ class WithDynamicViewSetMixin(object):
                     elif not last:
                         # empty segment must be the last segment
                         raise exceptions.ParseError(
-                            "'%s' is not a valid field" %
-                            field)
+                            '"%s" is not a valid field.' %
+                            field
+                        )
 
         self._request_fields = request_fields
         return request_fields
+
+    def get_request_debug(self):
+        debug = self.get_request_feature(self.DEBUG)
+        return is_truthy(debug) if debug is not None else None
+
+    def get_request_sideloading(self):
+        sideloading = self.get_request_feature(self.SIDELOADING)
+        return is_truthy(sideloading) if sideloading is not None else None
 
     def is_update(self):
         if (
@@ -253,24 +263,34 @@ class WithDynamicViewSetMixin(object):
     def get_serializer(self, *args, **kwargs):
         if 'request_fields' not in kwargs:
             kwargs['request_fields'] = self.get_request_fields()
-        if 'sideload' not in kwargs:
-            kwargs['sideload'] = self.sideload
+        if 'sideloading' not in kwargs:
+            kwargs['sideloading'] = self.get_request_sideloading()
+        if 'debug' not in kwargs:
+            kwargs['debug'] = self.get_request_debug()
+        if 'envelope' not in kwargs:
+            kwargs['envelope'] = True
         if self.is_update():
             kwargs['include_fields'] = '*'
         return super(
-            WithDynamicViewSetMixin, self).get_serializer(
-            *args, **kwargs)
+            WithDynamicViewSetMixin, self
+        ).get_serializer(
+            *args, **kwargs
+        )
 
     def paginate_queryset(self, *args, **kwargs):
         if self.PAGE in self.features:
             # make sure pagination is enabled
-            if self.PER_PAGE not in self.features and \
-                    self.PER_PAGE in self.request.query_params:
+            if (
+                self.PER_PAGE not in self.features and
+                self.PER_PAGE in self.request.query_params
+            ):
                 # remove per_page if it is disabled
                 self.request.query_params[self.PER_PAGE] = None
             return super(
-                WithDynamicViewSetMixin, self).paginate_queryset(
-                *args, **kwargs)
+                WithDynamicViewSetMixin, self
+            ).paginate_queryset(
+                *args, **kwargs
+            )
         return None
 
     def _prefix_inex_params(self, request, feature, prefix):
@@ -301,7 +321,7 @@ class WithDynamicViewSetMixin(object):
         # can have unintended consequences when applied asynchronously.
         if self.get_request_feature(self.FILTER):
             raise ValidationError(
-                "Filtering is not enabled on relation endpoints."
+                'Filtering is not enabled on relation endpoints.'
             )
 
         # Prefix include/exclude filters with field_name so it's scoped to
@@ -312,13 +332,13 @@ class WithDynamicViewSetMixin(object):
 
         # Filter for parent object, include related field.
         self.request.query_params.add('filter{pk}', pk)
-        self.request.query_params.add('include[]', field_prefix)
+        self.request.query_params.add(self.INCLUDE, field_prefix)
 
         # Get serializer and field.
         serializer = self.get_serializer()
         field = serializer.fields.get(field_name)
         if field is None:
-            raise ValidationError("Unknown field: %s" % field_name)
+            raise ValidationError('Unknown field: "%s".' % field_name)
 
         # Query for root object, with related field prefetched
         queryset = self.get_queryset()
@@ -330,7 +350,7 @@ class WithDynamicViewSetMixin(object):
 
         # Serialize the related data. Use the field's serializer to ensure
         # it's configured identically to the sideload case.
-        serializer = field.serializer
+        serializer = field.get_serializer(envelope=True)
         try:
             # TODO(ryo): Probably should use field.get_attribute() but that
             #            seems to break a bunch of things. Investigate later.
@@ -524,4 +544,5 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
             # assume that it is a poorly formatted bulk request
             return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
         return super(DynamicModelViewSet, self).destroy(
-            request, *args, **kwargs)
+            request, *args, **kwargs
+        )

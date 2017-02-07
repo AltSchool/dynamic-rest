@@ -130,6 +130,44 @@ class TestUsersAPI(APITestCase):
             }]
         }, json.loads(response.content.decode('utf-8')))
 
+    def test_get_with_nested_has_one_sideloading_disabled(self):
+        with self.assertNumQueries(2):
+            response = self.client.get(
+                '/users/?include[]=location.&sideloading=false'
+            )
+        self.assertEquals(200, response.status_code)
+        self.assertEquals({
+            'users': [{
+                'id': 1,
+                'location': {
+                    'id': 1,
+                    'name': '0'
+                },
+                'name': '0'
+            }, {
+                'id': 2,
+                'location': {
+                    'id': 1,
+                    'name': '0'
+                },
+                'name': '1'
+            }, {
+                'id': 3,
+                'location': {
+                    'id': 2,
+                    'name': '1'
+                },
+                'name': '2'
+            }, {
+                'id': 4,
+                'location': {
+                    'id': 3,
+                    'name': '2'
+                },
+                'name': '3'
+            }]
+        }, json.loads(response.content.decode('utf-8')))
+
     def test_get_with_nested_has_one(self):
         with self.assertNumQueries(2):
             response = self.client.get('/users/?include[]=location.')
@@ -279,7 +317,7 @@ class TestUsersAPI(APITestCase):
             response = self.client.get('/users/1/?include[]=groups.')
         self.assertEquals(200, response.status_code)
         data = json.loads(response.content.decode('utf-8'))
-        self.assertEquals(len(data['groups']), 2)
+        self.assertEquals(len(data.get('groups', [])), 2)
 
     def test_get_with_filter(self):
         with self.assertNumQueries(1):
@@ -838,7 +876,6 @@ class TestLocationsAPI(APITestCase):
         actual = json.loads(response.content.decode('utf-8'))
         expected = {
             'description': '',
-            'features': ['include[]', 'exclude[]', 'filter{}', 'sort[]'],
             'name': 'Location List',
             'parses': [
                 'application/json',
@@ -931,6 +968,7 @@ class TestLocationsAPI(APITestCase):
         for field in ['cats', 'friendly_cats', 'bad_cats', 'users']:
             del actual['properties'][field]['nullable']
             del expected['properties'][field]['nullable']
+        actual.pop('features')
         self.assertEquals(
             json.loads(json.dumps(expected)),
             json.loads(json.dumps(actual))
@@ -1030,6 +1068,19 @@ class TestUserLocationsAPI(APITestCase):
         self.assertEqual(content['user_location']['location']['name'], '0')
         self.assertTrue(isinstance(groups[0], dict))
         self.assertTrue(isinstance(location, dict))
+
+    def test_get_embedded_force_sideloading(self):
+        with self.assertNumQueries(3):
+            url = '/v1/user_locations/1/?sideloading=true'
+            response = self.client.get(url)
+
+        self.assertEqual(200, response.status_code)
+        content = json.loads(response.content.decode('utf-8'))
+        groups = content['user_location']['groups']
+        location = content['user_location']['location']
+        self.assertEqual(content['locations'][0]['name'], '0')
+        self.assertFalse(isinstance(groups[0], dict))
+        self.assertFalse(isinstance(location, dict))
 
 
 class TestLinks(APITestCase):

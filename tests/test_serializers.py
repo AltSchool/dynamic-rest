@@ -36,11 +36,28 @@ class TestDynamicSerializer(TestCase):
         self.fixture = create_fixture()
         self.maxDiff = None
 
-    def test_data(self):
+    def test_data_without_envelope(self):
         serializer = UserSerializer(
             self.fixture.users,
             many=True,
-            sideload=True)
+        )
+        self.assertEqual(serializer.data, [
+            OrderedDict(
+                [('id', 1), ('name', '0'), ('location', 1)]),
+            OrderedDict(
+                [('id', 2), ('name', '1'), ('location', 1)]),
+            OrderedDict(
+                [('id', 3), ('name', '2'), ('location', 2)]),
+            OrderedDict(
+                [('id', 4), ('name', '3'), ('location', 3)])
+        ])
+
+    def test_data_with_envelope(self):
+        serializer = UserSerializer(
+            self.fixture.users,
+            many=True,
+            envelope=True
+        )
         self.assertEqual(serializer.data, {
             'users': [
                 OrderedDict(
@@ -61,8 +78,9 @@ class TestDynamicSerializer(TestCase):
         serializer = UserSerializer(
             self.fixture.users,
             many=True,
+            sideload=True,   # pending deprecation 1.6
             request_fields=request_fields,
-            sideload=True)
+        )
         self.assertEqual(serializer.data, {
             'users': [
                 OrderedDict(
@@ -87,8 +105,9 @@ class TestDynamicSerializer(TestCase):
         serializer = UserSerializer(
             self.fixture.users,
             many=True,
+            envelope=True,
             request_fields=request_fields,
-            sideload=True)
+        )
         self.assertEqual(serializer.data, {
             'users': [
                 OrderedDict(
@@ -109,8 +128,9 @@ class TestDynamicSerializer(TestCase):
         serializer = UserSerializer(
             self.fixture.users,
             many=True,
+            envelope=True,
             request_fields=request_fields,
-            sideload=True)
+        )
         self.assertEqual(serializer.data, {
             'locations': [{
                 'id': 1,
@@ -143,8 +163,9 @@ class TestDynamicSerializer(TestCase):
 
         serializer = UserSerializer(
             self.fixture.users[0],
+            envelope=True,
             request_fields=request_fields,
-            sideload=True)
+        )
         self.assertEqual(serializer.data, {
             'locations': [{
                 'id': 1,
@@ -214,8 +235,9 @@ class TestDynamicSerializer(TestCase):
         serializer = UserSerializer(
             self.fixture.users,
             many=True,
+            envelope=True,
             request_fields=request_fields,
-            sideload=True)
+        )
         self.assertEqual(serializer.data, expected)
 
         request_fields = {
@@ -271,8 +293,9 @@ class TestDynamicSerializer(TestCase):
         serializer = GroupSerializer(
             self.fixture.groups,
             many=True,
+            envelope=True,
             request_fields=request_fields,
-            sideload=True)
+        )
         self.assertEqual(serializer.data, expected)
 
     def test_data_with_nested_include(self):
@@ -285,8 +308,9 @@ class TestDynamicSerializer(TestCase):
         serializer = UserSerializer(
             self.fixture.users,
             many=True,
+            envelope=True,
             request_fields=request_fields,
-            sideload=True)
+        )
         expected = {
             'users': [
                 {
@@ -354,8 +378,9 @@ class TestDynamicSerializer(TestCase):
         serializer = UserSerializer(
             self.fixture.users,
             many=True,
+            envelope=True,
             request_fields=request_fields,
-            sideload=True)
+        )
         self.assertEqual(serializer.data, {
             'groups': [{
                 'id': 1
@@ -506,21 +531,23 @@ class TestEphemeralSerializer(TestCase):
         data['location'] = location
         data['groups'] = self.fixture.groups
         instance = EphemeralObject(data)
-        data = LocationGroupSerializer(instance).data
+        data = LocationGroupSerializer(
+            instance, envelope=True
+        ).data['locationgroup']
         self.assertEqual(
             data, {'id': 1, 'groups': [1, 2], 'location': 1}
         )
 
     def test_data_count_field(self):
         eo = EphemeralObject({'pk': 1, 'values': [1, 1, 2]})
-        data = CountsSerializer(eo).data
+        data = CountsSerializer(eo, envelope=True).data['counts']
 
         self.assertEqual(data['count'], 3)
         self.assertEqual(data['unique_count'], 2)
 
     def test_data_count_field_returns_none_if_null_values(self):
         eo = EphemeralObject({'pk': 1, 'values': None})
-        data = CountsSerializer(eo).data
+        data = CountsSerializer(eo, envelope=True).data['counts']
 
         self.assertEqual(data['count'], None)
         self.assertEqual(data['unique_count'], None)
@@ -528,7 +555,7 @@ class TestEphemeralSerializer(TestCase):
     def test_data_count_raises_exception_if_wrong_type(self):
         eo = EphemeralObject({'pk': 1, 'values': {}})
         with self.assertRaises(TypeError):
-            CountsSerializer(eo).data
+            CountsSerializer(eo, envelope=True).data
 
     def test_to_representation_if_id_only(self):
         ''' Test EphemeralSerializer.to_representation() in id_only mode '''
@@ -557,7 +584,9 @@ class TestUserLocationSerializer(TestCase):
 
     def test_data_with_embed(self):
         data = UserLocationSerializer(
-            self.fixture.users[0], sideload=True).data
+            self.fixture.users[0],
+            envelope=True
+        ).data
         self.assertEqual(data['user_location']['location']['name'], '0')
         self.assertEqual(
             ['0', '1'],
@@ -572,10 +601,13 @@ class TestUserLocationSerializer(TestCase):
                 model = User
                 name = 'user_deferred_location'
             location = DynamicRelationField(
-                LocationSerializer, embed=True, deferred=True)
+                LocationSerializer, embed=True, deferred=True
+            )
 
         data = UserDeferredLocationSerializer(
-            self.fixture.users[0]).data
+            self.fixture.users[0],
+            envelope=True
+        ).data
         self.assertFalse('location' in data)
 
         # Now include deferred embedded field
@@ -585,7 +617,9 @@ class TestUserLocationSerializer(TestCase):
                 'id': True,
                 'name': True,
                 'location': True
-            }).data
+            },
+            envelope=True
+        ).data['user_deferred_location']
         self.assertTrue('location' in data)
         self.assertEqual(data['location']['name'], '0')
 
@@ -614,7 +648,9 @@ class TestUserLocationSerializer(TestCase):
                 'id': True,
                 'name': True,
                 'groups': True
-            }).data
+            },
+            envelope=True
+        ).data['user_deferred_location']
         self.assertTrue('groups' in data)
 
     @override_settings(
@@ -632,7 +668,9 @@ class TestUserLocationSerializer(TestCase):
             groups = DynamicRelationField('GroupSerializer', many=True)
 
         data = UserDeferredLocationSerializer(
-            self.fixture.users[0]).data
+            self.fixture.users[0],
+            envelope=True
+        ).data['user_deferred_location']
         self.assertTrue('groups' in data)
 
 

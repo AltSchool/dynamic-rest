@@ -82,6 +82,8 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             many=False,
             queryset=None,
             embed=False,
+            sideloading=None,
+            debug=False,
             **kwargs
     ):
         """
@@ -91,13 +93,18 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             many: Boolean, if relation is to-many.
             queryset: Default queryset to apply when filtering for related
                 objects.
+            sideloading: if True, force sideloading all the way down.
+                if False, force embedding all the way down.
+                This overrides the "embed" option if set.
             embed: If True, always embed related object(s). Will not sideload,
                 and will include the full object unless specifically excluded.
         """
         self._serializer_class = serializer_class
         self.bound = False
         self.queryset = queryset
-        self.embed = embed
+        self.sideloading = sideloading
+        self.debug = debug
+        self.embed = embed if sideloading is None else not sideloading
         if '.' in kwargs.get('source', ''):
             raise Exception('Nested relationships are not supported')
         if 'link' in kwargs:
@@ -219,8 +226,11 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             # If 'embed' then make sure we fetch the full object.
             kwargs['request_fields'] = {}
 
-        if hasattr(self.parent, 'sideload'):
-            kwargs['sideload'] = self.parent.sideload
+        if hasattr(self.parent, 'sideloading'):
+            kwargs['sideloading'] = self.parent.sideloading
+
+        if hasattr(self.parent, 'debug'):
+            kwargs['debug'] = self.parent.debug
 
         return kwargs
 
@@ -286,7 +296,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             return serializer.to_representation(related)
         except Exception as e:
             # Provide more context to help debug these cases
-            if settings.DEBUG:
+            if serializer.debug:
                 import traceback
                 traceback.print_exc()
             raise Exception(
