@@ -1,0 +1,8 @@
+from ..serializers import {{serializer_class_name}}
+from .base import ViewSet
+from {{app}}.models import {{model_class_name}}
+
+class {{viewset_class_name}}(ViewSet):
+    serializer_class = {{serializer_class_name}}
+    model = {{model_class_name}}
+    queryset = {{model_class_name}}.objects.all()
