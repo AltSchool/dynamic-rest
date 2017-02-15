@@ -36,7 +36,7 @@ docs: install
 # Runs on every command
 install: $(INSTALL_DIR)
 	$(call header,"Installing")
-	@$(INSTALL_DIR)/bin/python setup.py -q install
+	@$(INSTALL_DIR)/bin/python setup.py -q develop
 
 # Install/update dependencies
 # Runs whenever the requirements.txt file changes
