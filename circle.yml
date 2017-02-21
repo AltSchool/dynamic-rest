@@ -1,7 +1,7 @@
 dependencies:
     override:
         - python setup.py install
-        - pip install tox tox-pyenv pytest
+        - pip install -r requirements.txt
         - pyenv local 2.7.10 3.3.3 3.4.3 3.5.0
 
 test:
