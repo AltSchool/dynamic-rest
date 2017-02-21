@@ -1,9 +1,10 @@
 dependencies:
     override:
-        - make install
+        - pip install -r requirements.txt
+        - python setup.py develop
         - pyenv local 2.7.10 3.3.3 3.4.3 3.5.0
 
 test:
     override:
-        - make integration
+        - ENABLE_INTEGRATION_TESTS=True py.test tests/integration
         - tox
