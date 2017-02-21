@@ -69,6 +69,11 @@ test: install lint
 	$(call header,"Running unit tests")
 	@$(INSTALL_DIR)/bin/py.test --cov=$(APP_NAME) tests/$(TEST)
 
+# Run tests
+integration: install lint
+	$(call header,"Running integration tests")
+	@ENABLE_INTEGRATION_TESTS=True $(INSTALL_DIR)/bin/py.test tests/integration/$(TEST)
+
 test_just: install lint
 	$(call header,"Running unit tests")
 	@$(INSTALL_DIR)/bin/py.test --cov=$(APP_NAME) -k $(TEST)

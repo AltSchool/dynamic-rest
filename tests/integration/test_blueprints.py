@@ -2,6 +2,7 @@ from unittest import TestCase
 from dj.test import TemporaryApplication
 from django.conf import settings
 import requests
+import time
 import json
 import os
 
@@ -9,20 +10,27 @@ if settings.ENABLE_INTEGRATION_TESTS:
     class DJBlueprintsTestCase(TestCase):
 
         def test_blueprints(self):
+            # generate a test application
             application = TemporaryApplication()
+            # add a model
+            application.execute('generate model foo --not-interactive')
+            # create and apply migrations
+            application.execute('migrate')
+            # add this project as a dependency
             # this file is ROOT/tests/integration/test_blueprints.py
             root = os.path.abspath(os.path.join(__file__, '../../..'))
-            print root
-
-            application.execute('generate model foo')
-            application.execute('add ' + root + ' --dev')
-            application.execute('generate api v0 foo')
-            application.execute('migrate')
+            application.execute('add %s --dev --not-interactive' % root)
+            # generate an API endpoint for the generated model
+            application.execute('generate api v0 foo --not-interactive')
+            # start the server
             server = application.execute('serve 9123', async=True)
+            time.sleep(2)
 
-            response = requests.post('localhost:9123/v0/foos/')
+            # verify a simple POST flow for the "foo" resource
+            response = requests.post('http://localhost:9123/v0/foos/')
             self.assertTrue(response.status_code, 201)
             content = json.loads(response.content)
             self.assertEquals(content, {'foo': {'id': 1}})
 
+            # stop the server
             server.terminate()

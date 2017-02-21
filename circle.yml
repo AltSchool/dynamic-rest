@@ -1,9 +1,10 @@
 dependencies:
     override:
         - python setup.py install
-        - pip install tox tox-pyenv
+        - pip install tox tox-pyenv pytest
         - pyenv local 2.7.10 3.3.3 3.4.3 3.5.0
 
 test:
     override:
+        - ENABLE_INTEGRATION_TESTS=True py.test tests/integration
         - tox
