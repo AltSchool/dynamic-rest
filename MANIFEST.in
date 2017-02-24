@@ -1,5 +1,7 @@
 recursive-include dynamic_rest/templates *
 recursive-include dynamic_rest/static *
+recursive-include dynamic_rest/blueprints *
+include *.j2
 include *.txt
 include *.md
 include *.ini

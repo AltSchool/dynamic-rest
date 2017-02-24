@@ -1,0 +1,9 @@
+from .base import Serializer
+from {{app}}.models import {{model_class_name}}
+
+class {{serializer_class_name}}(Serializer):
+    class Meta:
+        model = {{model_class_name}}
+        name = '{{name}}'
+        plural_name = '{{plural_name}}'
+        fields = ('id', )

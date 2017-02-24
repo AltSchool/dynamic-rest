@@ -1,16 +1,5 @@
-QUOTE := [\"]
-WORD := [A-Z_]+
-WHITESPACE := [ ]*
-EXTRACT_REGEX := 's~^$(WHITESPACE)$(WORD)$(WHITESPACE)=$(WHITESPACE)$(QUOTE)(.*)$(QUOTE)$$~\1~'
-ORG_NAME := $(shell grep ORG_NAME dynamic_rest/constants.py | sed -E $(EXTRACT_REGEX))
-REPO_NAME := $(shell grep REPO_NAME dynamic_rest/constants.py | sed -E $(EXTRACT_REGEX))
-APP_NAME := $(shell grep APP_NAME dynamic_rest/constants.py | sed -E $(EXTRACT_REGEX))
-PROJECT_NAME := $(shell grep PROJECT_NAME dynamic_rest/constants.py | sed -E $(EXTRACT_REGEX))
-AUTHOR_EMAIL := $(shell grep AUTHOR_EMAIL dynamic_rest/constants.py | sed -E $(EXTRACT_REGEX))
-VERSION := $(shell grep VERSION dynamic_rest/constants.py | sed -E $(EXTRACT_REGEX))
-
-INSTALL_PREFIX := /usr/local
-INSTALL_DIR  ?= $(INSTALL_PREFIX)/$(ORG_NAME)/$(REPO_NAME)
+APP_NAME := 'dynamic_rest'
+INSTALL_DIR  ?= ./build
 PORT         ?= 9002
 
 define header
@@ -47,7 +36,7 @@ docs: install
 # Runs on every command
 install: $(INSTALL_DIR)
 	$(call header,"Installing")
-	@$(INSTALL_DIR)/bin/python setup.py -q install
+	@$(INSTALL_DIR)/bin/python setup.py -q develop
 
 # Install/update dependencies
 # Runs whenever the requirements.txt file changes
@@ -55,7 +44,7 @@ $(INSTALL_DIR): $(INSTALL_DIR)/bin/activate
 $(INSTALL_DIR)/bin/activate: requirements.txt install_requires.txt dependency_links.txt
 	$(call header,"Updating dependencies")
 	@test -d $(INSTALL_DIR) || virtualenv $(INSTALL_DIR)
-	@$(INSTALL_DIR)/bin/pip install -q --upgrade pip
+	@$(INSTALL_DIR)/bin/pip install -q --upgrade pip setuptools flake8==2.4.0
 	@$(INSTALL_DIR)/bin/pip install --process-dependency-links -Ur requirements.txt
 	@touch $(INSTALL_DIR)/bin/activate
 
@@ -67,7 +56,7 @@ fixtures: install
 # Removes build files in working directory
 clean_working_directory:
 	$(call header,"Cleaning working directory")
-	@rm -rf ./.tox ./build ./dist ./$(APP_NAME).egg-info;
+	@rm -rf ./.tox ./dist ./$(APP_NAME).egg-info;
 	@find . -name '*.pyc' -type f -exec rm -rf {} \;
 
 # Full clean
@@ -79,6 +68,11 @@ clean: clean_working_directory
 test: install lint
 	$(call header,"Running unit tests")
 	@$(INSTALL_DIR)/bin/py.test --cov=$(APP_NAME) tests/$(TEST)
+
+# Run tests
+integration: install lint
+	$(call header,"Running integration tests")
+	@ENABLE_INTEGRATION_TESTS=True $(INSTALL_DIR)/bin/py.test tests/integration/$(TEST)
 
 test_just: install lint
 	$(call header,"Running unit tests")
@@ -121,7 +115,7 @@ start: install
 # Lint the project
 lint: clean_working_directory
 	$(call header,"Linting code")
-	@find . -type f -name '*.py' -not -path '$(INSTALL_DIR)/*' -not -path './docs/*' -not -path './build/*' | xargs $(INSTALL_DIR)/bin/flake8
+	@find . -type f -name '*.py' -not -path '$(INSTALL_DIR)/*' -not -path './docs/*' -not -path '$(INSTALL_DIR)/*' | xargs $(INSTALL_DIR)/bin/flake8
 
 # Auto-format the project
 format: clean_working_directory
