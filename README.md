@@ -549,6 +549,95 @@ Quadratic benchmark: rendering a list of lists
 Cubic benchmark: rendering a list of lists of lists
 ![Cubic Benchmark][benchmark-cubic]
 
+## Client
+
+To support service-to-service communication, DREST provides a Python API client with a Django-like interface.
+
+For example, assume there is a DREST resource at "https://my.api.io/v0/users",
+and that we can access this resource with an auth token "secret". We can then do the following:
+
+### Creating a client
+
+```
+    client = DRESTClient(
+        'my.api.io',
+        version='v0',
+        authentication={'token': 'secret'}
+    )
+```
+
+### Getting a single User record 
+
+```
+    client.Users.get('123')
+```
+
+This will hit the `my.api.io/v0/users/123/` endpoint.
+
+### Getting all records
+
+```
+        client.Users.all()
+```
+
+This will hit `my.api.io/v0/users/` and automatically paginate, similar to a Django queryet.
+
+
+### Filtering records
+
+```
+    client.Users.filter(name__icontains='john')
+    other_users = client.Users.exclude(name__icontains='john')
+```
+
+### Ordering records
+
+```
+    users = client.Users.sort('-name')
+```
+
+### Including / excluding fields:
+
+```
+    users = client.Users.all()
+    .excluding('birthday')
+    .including('events.*')
+    .get('123')
+```
+This is similar to Django prefetching.
+
+### Mapping by field
+
+```
+    users_by_id = client.Users.map()
+    users_by_name = client.Users.map('name')
+```
+
+### Updating records
+
+```
+    user = client.Users.first()
+    user.name = 'john'
+    user.save()
+```
+This will PUT to the user detail endpoint.
+
+
+### Creating records:
+
+```
+    user = client.Users.create(name='john')
+```
+This will POST to the user collection endpoint.
+
+## Blueprints
+
+DREST provides a set of [dj](https://github.com/AltSchool/dj) blueprints that can be used to speed up starter-code generation, provided that your project
+was created with the `dj` tool or is compatible with its structure (uses the `dj` URL loading conventions). For example, you can add a new, versioned API endpoint
+to an existing model with `dj generate api v0 foo`. See the following recording for a complete demo:
+
+<a href="https://asciinema.org/a/0ai8r5n3zh6jh6utbjxn72p6f" target="_blank"><img src="https://asciinema.org/a/0ai8r5n3zh6jh6utbjxn72p6f.png" /></a>
+
 # Settings
 
 DREST is configurable, and all settings should be nested under a single block in your `settings.py` file.
@@ -602,6 +691,7 @@ DYNAMIC_REST = {
     'ENABLE_HOST_RELATIVE_LINKS': True
 }
 ```
+
 
 # Compatibility table
 
