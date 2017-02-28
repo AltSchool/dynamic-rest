@@ -36,7 +36,7 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.auth',
     'django.contrib.sites',
-    'debug_toolbar',
+    # 'debug_toolbar',
     'dynamic_rest',
     'tests',
 )
@@ -45,6 +45,7 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 50,
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
+        'dynamic_rest.renderers.DynamicAdminRenderer',
         'dynamic_rest.renderers.DynamicBrowsableAPIRenderer'
     )
 }

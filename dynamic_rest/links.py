@@ -20,6 +20,16 @@ def merge_link_object(serializer, data, instance):
         # This generally only affectes Ephemeral Objects.
         return data
 
+    base_url = ''
+    if settings.ENABLE_HOST_RELATIVE_LINKS:
+        # if the resource isn't registered, this will default back to
+        # using resource-relative urls for links.
+        base_url = DynamicRouter.get_canonical_path(
+            serializer.get_resource_key(),
+            instance.pk
+        ) or ''
+        link_object['self'] = base_url
+
     link_fields = serializer.get_link_fields()
     for name, field in six.iteritems(link_fields):
         # For included fields, omit link if there's no data.
@@ -28,14 +38,6 @@ def merge_link_object(serializer, data, instance):
 
         link = getattr(field, 'link', None)
         if link is None:
-            base_url = ''
-            if settings.ENABLE_HOST_RELATIVE_LINKS:
-                # if the resource isn't registered, this will default back to
-                # using resource-relative urls for links.
-                base_url = DynamicRouter.get_canonical_path(
-                    serializer.get_resource_key(),
-                    instance.pk
-                ) or ''
             link = '%s%s/' % (base_url, name)
         # Default to DREST-generated relation endpoints.
         elif callable(link):
