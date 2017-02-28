@@ -20,4 +20,6 @@ def unpack(content):
 
     keys = [k for k in content.keys() if k != 'meta']
     unpacked = content[keys[0]]
+    if hasattr(content, 'serializer'):
+        unpacked.serializer = content.serializer
     return unpacked

@@ -275,6 +275,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
                 # not sideloading this field
                 self.request_fields[name] = True
 
+    def disable_envelope(self):
+        self.envelope = False
+        if hasattr(self, '_processed_data'):
+            del self._procesed_data
+
     @classmethod
     def get_model(cls):
         """Get the model, if the serializer has one.

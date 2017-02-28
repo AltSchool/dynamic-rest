@@ -27,13 +27,15 @@ class DynamicBrowsableAPIRenderer(BrowsableAPIRenderer):
 class DynamicAdminRenderer(AdminRenderer):
     """Admin renderer override."""
 
-    COLUMN_BLACKLIST = ('id', 'links', 'url')
     template = 'dynamic_rest/admin.html'
+    COLUMN_BLACKLIST = ('id', 'links')
 
     def get_context(self, data, media_type, context):
-        def add_url(result):
+        def process(result):
             if result.get('links', {}).get('self'):
                 result['url'] = result['links']['self']
+
+        data = unpack(data)
 
         context = super(DynamicAdminRenderer, self).get_context(
             data,
@@ -43,31 +45,21 @@ class DynamicAdminRenderer(AdminRenderer):
 
         # to account for the DREST envelope
         # (data is stored one level deeper than expected in the response)
-        results = unpack(context['results'])
-        if results is None:
-            style = 'detail'
-            header = {}
-        elif isinstance(results, list):
+        results = context['results']
+        if isinstance(results, list):
             for result in results:
-                add_url(result)
-            header = results[0] if results else {}
-            style = 'list'
+                process(result)
         else:
-            add_url(results)
-            header = results
-            style = 'detail'
+            process(results)
 
-        columns = [
-            key for key in header.keys() if key not in self.COLUMN_BLACKLIST
+        context['columns'] = [
+            c for c in context['columns'] if c not in self.COLUMN_BLACKLIST
         ]
-        context['results'] = results
-        context['columns'] = columns
-        context['details'] = columns
-        context['style'] = style
+        context['details'] = context['columns']
         return context
 
-    def get_raw_data_form(self, data, view, method, request):
-        print unpack(data)
+    def render_form_for_serializer(self, serializer):
+        serializer.disable_envelope()
         return super(
             DynamicAdminRenderer, self
-        ).get_raw_data_form(unpack(data), view, method, request)
+        ).render_form_for_serializer(serializer)
