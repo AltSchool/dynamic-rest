@@ -199,6 +199,7 @@ class ProfileSerializer(DynamicModelSerializer):
     class Meta:
         model = Profile
         name = 'profile'
+        fields = '__all__'
 
     user = DynamicRelationField('UserSerializer')
     user_location_name = DynamicField(
@@ -257,6 +258,7 @@ class HorseSerializer(DynamicModelSerializer):
     class Meta:
         model = Horse
         name = 'horse'
+        fields = '__all__'
 
 
 class ZebraSerializer(DynamicModelSerializer):
@@ -264,3 +266,4 @@ class ZebraSerializer(DynamicModelSerializer):
     class Meta:
         model = Zebra
         name = 'zebra'
+        fields = '__all__'
