@@ -93,8 +93,9 @@ class WithDynamicViewSetMixin(object):
             # WSGIRequest does not support Unicode values in the query string.
             # Deal with this here to avoid 500s, code adapted from:
             # https://github.com/django/django/blob/1.7.9/django/core/handlers/wsgi.py#L130 # noqa
-            d = request.environ.get('QUERY_STRING', '').decode('utf-8')
-            request.GET = QueryParams(d.encode('utf-8'))
+            request.GET = QueryParams(
+                request.environ.get('QUERY_STRING', '').encode('utf-8')
+            )
 
         request = super(WithDynamicViewSetMixin, self).initialize_request(
             request, *args, **kargs
