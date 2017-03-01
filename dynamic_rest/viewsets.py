@@ -87,16 +87,29 @@ class WithDynamicViewSetMixin(object):
         of QueryParams, and to convert request MergeDict to a subclass of dict
         for consistency (MergeDict is not a subclass of dict)
         """
-        try:
-            request.GET = QueryParams(request.GET)
-        except UnicodeEncodeError:
-            # WSGIRequest does not support Unicode values in the query string.
-            # Deal with this here to avoid 500s, code adapted from:
-            # https://github.com/django/django/blob/1.7.9/django/core/handlers/wsgi.py#L130 # noqa
-            request.GET = QueryParams(
-                request.environ.get('QUERY_STRING', '').encode('utf-8')
-            )
 
+        def handle_encodings(request):
+            """
+            WSGIRequest does not support Unicode values in the query string.
+            WSGIRequest handling has a history of drifting behavior between
+            combinations of Python versions, Django versions and DRF versions.
+            Django changed its QUERY_STRING handling here:
+            https://goo.gl/WThXo6. DRF 3.4.7 changed its behavior here:
+            https://goo.gl/0ojIIO.
+            """
+            try:
+                return QueryParams(request.GET)
+            except UnicodeEncodeError:
+                pass
+
+            s = request.environ.get('QUERY_STRING', '')
+            try:
+                s = s.encode('utf-8')
+            except UnicodeDecodeError:
+                pass
+            return QueryParams(s)
+
+        request.GET = handle_encodings(request)
         request = super(WithDynamicViewSetMixin, self).initialize_request(
             request, *args, **kargs
         )
