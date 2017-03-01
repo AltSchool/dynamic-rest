@@ -600,6 +600,11 @@ class TestUserLocationSerializer(TestCase):
             class Meta:
                 model = User
                 name = 'user_deferred_location'
+                fields = (
+                    'id',
+                    'name',
+                    'location',
+                )
             location = DynamicRelationField(
                 LocationSerializer, embed=True, deferred=True
             )
@@ -635,6 +640,11 @@ class TestUserLocationSerializer(TestCase):
                 defer_many_relations = True
                 model = User
                 name = 'user_deferred_location'
+                fields = (
+                    'id',
+                    'name',
+                    'groups',
+                )
             groups = DynamicRelationField('GroupSerializer', many=True)
 
         data = UserDeferredLocationSerializer(
@@ -665,6 +675,9 @@ class TestUserLocationSerializer(TestCase):
                 defer_many_relations = False
                 model = User
                 name = 'user_deferred_location'
+                fields = (
+                    'groups',
+                )
             groups = DynamicRelationField('GroupSerializer', many=True)
 
         data = UserDeferredLocationSerializer(

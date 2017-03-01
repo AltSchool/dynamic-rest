@@ -958,7 +958,6 @@ class TestLocationsAPI(APITestCase):
                     'type': 'many'
                 }
             },
-            'renders': ['application/json', 'text/html'],
             'resource_name': 'location',
             'resource_name_plural': 'locations'
         }
@@ -968,6 +967,7 @@ class TestLocationsAPI(APITestCase):
         for field in ['cats', 'friendly_cats', 'bad_cats', 'users']:
             del actual['properties'][field]['nullable']
             del expected['properties'][field]['nullable']
+        actual.pop('renders')
         actual.pop('features')
         self.assertEquals(
             json.loads(json.dumps(expected)),

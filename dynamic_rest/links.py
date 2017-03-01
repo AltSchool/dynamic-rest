@@ -28,7 +28,8 @@ def merge_link_object(serializer, data, instance):
             serializer.get_resource_key(),
             instance.pk
         ) or ''
-        link_object['self'] = base_url
+        if settings.ENABLE_SELF_LINKS:
+            link_object['self'] = base_url
 
     link_fields = serializer.get_link_fields()
     for name, field in six.iteritems(link_fields):

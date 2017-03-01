@@ -34,8 +34,9 @@ class DynamicAdminRenderer(AdminRenderer):
         def process(result):
             if result.get('links', {}).get('self'):
                 result['url'] = result['links']['self']
-
-        data = unpack(data)
+        path = context.get('request').path
+        if path != '/':
+            data = unpack(data)
 
         context = super(DynamicAdminRenderer, self).get_context(
             data,
