@@ -66,7 +66,7 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     @property
     def data(self):
         """Get the data, after performing post-processing if necessary."""
-        if not hasattr(self, '_processed_data'):
+        if getattr(self, '_processed_data', None) is None:
             data = super(DynamicListSerializer, self).data
             self._processed_data = ReturnDict(
                 SideloadingProcessor(self, data).data,
@@ -277,8 +277,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
 
     def disable_envelope(self):
         self.envelope = False
-        if hasattr(self, '_processed_data'):
-            del self._procesed_data
+        self._processed_data = None
 
     @classmethod
     def get_model(cls):
@@ -604,7 +603,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
 
     @property
     def data(self):
-        if not hasattr(self, '_processed_data'):
+        if getattr(self, '_processed_data', None) is None:
             data = super(WithDynamicSerializerMixin, self).data
             data = SideloadingProcessor(
                 self, data
