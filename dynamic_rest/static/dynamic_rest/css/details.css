@@ -1,0 +1,57 @@
+/*temporary css. remove once we decide whether to use flexbox*/
+.display-flex {
+  display: flex;
+  justify-content: space-between;
+}
+
+/**/
+
+/*move to global css file*/
+
+a {
+  cursor: pointer;
+}
+
+.breadcrumb>li+li:before {
+  content: "\003e" !important;
+}
+
+.navbar-brand {
+  height: auto;
+  padding: 0;
+}
+
+.logo {
+  height: 60px;
+  padding: 15px;
+}
+
+.breadcrumb {
+  background-color: transparent;
+  display: inline-block;
+  margin: 12px auto 0 !important;
+  width: auto;
+}
+
+#content {
+  display: flex;
+  margin-top: 100px;
+}
+
+.sidebar-actions {
+  align-items: stretch;
+  display: flex;
+  flex-wrap: wrap;
+  height: 100%;
+  justify-content: space-between;
+  padding-top: 10px;
+  width: 110px;
+}
+
+.content-main {
+  width: calc(100% - 100px);
+}
+
+.sidebar-action {
+  margin-bottom: 20px;
+}
