@@ -103,6 +103,12 @@
                 </button>
               {% endif %}
 
+              {% if style == 'list' %}
+                <button type="button" class="button-form btn btn-primary sidebar-action" data-toggle="modal" data-target="#importModal">
+                  <span class="glyphicon glyphicon-plus" aria-hidden="true"></span> Import
+                </button>
+              {% endif %}
+
               {% if put_form %}
                 <button type="button" class="button-form btn btn-primary sidebar-action" data-toggle="modal" data-target="#editModal">
                   <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span> Edit
@@ -174,6 +180,32 @@
                 <fieldset>
                   {% csrf_token %}
                   {{ post_form }}
+                </fieldset>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary">Save</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- Import Modal -->
+      <div class="modal fade" id="importModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+              <h4 class="modal-title" id="myModalLabel">Import</h4>
+            </div>
+            <form action="{{ request.get_full_path }}" method="POST" enctype="multipart/form-data" class="form-horizontal" novalidate>
+              <div class="modal-body">
+                <fieldset>
+                  {% csrf_token %}
+                  <label class="control-label">Drag and Drop File</label>
+                  <br><br>
+                  <input id="input-1" type="file" class="file">
                 </fieldset>
               </div>
               <div class="modal-footer">
