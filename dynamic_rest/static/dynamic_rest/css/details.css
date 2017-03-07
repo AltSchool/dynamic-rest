@@ -1,4 +1,4 @@
-/*temporary css. remove once we decide whether to use flexbox*/
+/*temporary css. remove/refactor once we decide whether to use flexbox*/
 .display-flex {
   display: flex;
   justify-content: space-between;
@@ -54,4 +54,17 @@ a {
 
 .sidebar-action {
   margin-bottom: 20px;
+  width: 85px;
+}
+
+.btn:active:focus, .btn:focus {
+  outline: transparent;
+}
+
+body {
+  background: initial !important;
+}
+
+.btn-label {
+  margin: 0;
 }
