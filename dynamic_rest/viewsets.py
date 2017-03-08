@@ -1,4 +1,5 @@
 """This module contains custom viewset classes."""
+import csv
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import QueryDict
 from django.utils import six
@@ -9,7 +10,7 @@ from rest_framework.renderers import (
     JSONRenderer,
 )
 from rest_framework.response import Response
-
+from rest_framework.request import is_form_media_type
 from dynamic_rest.conf import settings
 from dynamic_rest.filters import DynamicFilterBackend, DynamicSortingFilter
 from dynamic_rest.metadata import DynamicMetadata
@@ -394,6 +395,26 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
     ENABLE_BULK_UPDATE = settings.ENABLE_BULK_UPDATE
 
     def _get_bulk_payload(self, request):
+        if self._is_csv_upload(request):
+            return self._get_bulk_payload_csv(request)
+        else:
+            return self._get_bulk_payload_json(request)
+
+    def _is_csv_upload(self, request):
+        if is_form_media_type(request.content_type):
+            if (
+                'file' in request.data and
+                request.data['file'].name.endswith('.csv')
+            ):
+                return True
+        return False
+
+    def _get_bulk_payload_csv(self, request):
+        file = request.data['file']
+        reader = csv.DictReader(file)
+        return [r for r in reader]
+
+    def _get_bulk_payload_json(self, request):
         plural_name = self.get_serializer_class().get_plural_name()
         if isinstance(request.data, list):
             return request.data
