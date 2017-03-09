@@ -43,6 +43,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         super(DynamicListSerializer, self).__init__(*args, **kwargs)
         self.child.parent = self
 
+    def disable_envelope(self):
+        self.child.disable_envelope()
+
     def to_representation(self, data):
         iterable = data.all() if isinstance(data, models.Manager) else data
         return [self.child.to_representation(item) for item in iterable]
