@@ -10,3 +10,4 @@ psycopg2==2.5.1
 tox-pyenv==1.0.2
 tox==2.3.1
 djay==0.0.3
+-e .
