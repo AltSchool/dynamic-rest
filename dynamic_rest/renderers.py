@@ -52,7 +52,7 @@ class DynamicAdminRenderer(AdminRenderer):
 
         # to account for the DREST envelope
         # (data is stored one level deeper than expected in the response)
-        results = context['results']
+        results = context.get('results')
         if isinstance(results, list):
             for result in results:
                 process(result)
