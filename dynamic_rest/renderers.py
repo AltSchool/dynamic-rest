@@ -2,6 +2,8 @@
 from copy import copy
 from rest_framework.renderers import (
     BrowsableAPIRenderer,
+    HTMLFormRenderer,
+    ClassLookupDict
 )
 try:
     from rest_framework.renderers import AdminRenderer
@@ -10,7 +12,6 @@ except:
     class AdminRenderer(BrowsableAPIRenderer):
         format = 'admin'
 
-from rest_framework.renderers import HTMLFormRenderer, ClassLookupDict
 from dynamic_rest.utils import unpack
 from dynamic_rest.fields import DynamicRelationField
 
