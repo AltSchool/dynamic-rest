@@ -84,8 +84,8 @@ class WithDynamicViewSetMixin(object):
     metadata_class = DynamicMetadata
     renderer_classes = (
         JSONRenderer,
-        DynamicAdminRenderer,
-        DynamicBrowsableAPIRenderer
+        DynamicBrowsableAPIRenderer,
+        DynamicAdminRenderer
     )
     features = (INCLUDE, EXCLUDE, FILTER, PAGE, PER_PAGE, SORT, SIDELOADING)
     meta = None
