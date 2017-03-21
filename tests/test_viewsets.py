@@ -227,23 +227,23 @@ class BulkCreationTestCase(TestCase):
 
     def test_csv_upload(self):
         with open('tests/groups.csv') as infile:
-            content = infile.read()
             file = SimpleUploadedFile(
-                'groups.csv',
-                content,
-                'text/csv'
+                infile.name,
+                infile.read(),
             )
 
-        response = self.client.post(
-            '/groups/',
-            data={
-                'file': file
-            }
-        )
-        self.assertEqual(
-            response.status_code, status.HTTP_201_CREATED, response.content
-        )
-        self.assertEqual(2, Group.objects.count())
+            response = self.client.post(
+                '/groups/',
+                data={
+                    'file': file
+                }
+            )
+            self.assertEqual(
+                response.status_code,
+                status.HTTP_201_CREATED,
+                response.content
+            )
+            self.assertEqual(2, Group.objects.count())
 
     def test_post_bulk_from_resource_plural_name(self):
         data = {
