@@ -535,6 +535,21 @@ class TestUsersAPI(APITestCase):
                 }
             })
 
+    def test_post_with_related_setter(self):
+        data = {
+            'name': 'test',
+            'loc1usersGetter': [1]
+        }
+        response = self.client.post(
+            '/groups/', json.dumps(data), content_type='application/json'
+        )
+        self.assertEqual(201, response.status_code)
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(
+            [1],
+            content['group']['loc1usersGetter']
+        )
+
     def test_put(self):
         group = Group.objects.create(name='test group')
         data = {
@@ -544,7 +559,7 @@ class TestUsersAPI(APITestCase):
             '/groups/%s/' % group.pk,
             json.dumps(data),
             content_type='application/json')
-        self.assertEquals(200, response.status_code)
+        self.assertEquals(200, response.status_code, response.content)
         updated_group = Group.objects.get(pk=group.pk)
         self.assertEquals(updated_group.name, data['name'])
 
@@ -563,6 +578,20 @@ class TestUsersAPI(APITestCase):
         self.assertEqual(
             sorted([1, 2]),
             content['groups'][0]['loc1usersLambda']
+        )
+
+    def test_get_with_related_getter(self):
+        url = '/groups/?filter{id}=1&include[]=loc1usersGetter.location.*'
+        response = self.client.get(url)
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            [1, 2],
+            content['groups'][0]['loc1usersGetter']
+        )
+        self.assertEqual(
+            1,
+            content['locations'][0]['id']
         )
 
     def test_get_with_default_queryset_filtered(self):

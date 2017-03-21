@@ -579,6 +579,17 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
 
         return value
 
+    def add_post_save(self, fn):
+        if not hasattr(self, '_post_save'):
+            self._post_save = []
+        self._post_save.append(fn)
+
+    def do_post_save(self, instance):
+        if hasattr(self, '_post_save'):
+            for fn in self._post_save:
+                fn(instance)
+            self._post_save = []
+
     def save(self, *args, **kwargs):
         """Serializer save that address prefetch issues."""
         update = getattr(self, 'instance', None) is not None
@@ -589,6 +600,8 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             *args,
             **kwargs
         )
+        self.do_post_save(instance)
+
         view = self._context.get('view')
         if update and view:
             # Reload the object on update

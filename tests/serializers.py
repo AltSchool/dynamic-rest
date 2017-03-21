@@ -96,39 +96,60 @@ class GroupSerializer(DynamicModelSerializer):
             'members',
             'users',
             'loc1users',
-            'loc1usersLambda'
+            'loc1usersLambda',
+            'loc1usersGetter',
         )
 
     permissions = DynamicRelationField(
         'PermissionSerializer',
         many=True,
         deferred=True)
+
+    # Infer serializer from source
     members = DynamicRelationField(
-        'UserSerializer',
         source='users',
         many=True,
-        deferred=True)
+        deferred=True
+    )
 
     # Intentional duplicate of 'users':
     users = DynamicRelationField(
-        'UserSerializer',
         many=True,
-        deferred=True)
+        deferred=True
+    )
 
-    # For testing default queryset on relations:
+    # Queryset for get filter
     loc1users = DynamicRelationField(
         'UserSerializer',
         source='users',
         many=True,
         queryset=User.objects.filter(location_id=1),
-        deferred=True)
+        deferred=True
+    )
 
+    # Dynamic queryset through lambda
     loc1usersLambda = DynamicRelationField(
         'UserSerializer',
         source='users',
         many=True,
         queryset=lambda srlzr: User.objects.filter(location_id=1),
         deferred=True)
+
+    # Custom getter/setter
+    loc1usersGetter = DynamicRelationField(
+        'UserSerializer',
+        source='*',
+        requires=['users.*'],
+        required=False,
+        deferred=True,
+        many=True
+    )
+
+    def get_loc1usersGetter(self, instance):
+        return [u for u in instance.users.all() if u.location_id == 1]
+
+    def set_loc1usersGetter(self, instance, user_ids):
+        instance.users = user_ids
 
 
 class UserSerializer(DynamicModelSerializer):

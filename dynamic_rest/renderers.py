@@ -1,8 +1,13 @@
 """This module contains custom renderer classes."""
 from rest_framework.renderers import (
     BrowsableAPIRenderer,
-    AdminRenderer
 )
+try:
+    from rest_framework.renderers import AdminRenderer
+except:
+    class AdminRenderer(BrowsableAPIRenderer):
+        pass
+
 from dynamic_rest.utils import unpack
 
 
