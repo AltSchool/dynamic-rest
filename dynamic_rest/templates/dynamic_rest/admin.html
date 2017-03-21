@@ -74,29 +74,6 @@
           <div id="content">
 
             <div class="sidebar-actions">
-              {% if 'GET' in allowed_methods %}
-                <form id="get-form">
-                  <fieldset>
-                    <div class="btn-group format-selection">
-                      <button class="btn btn-primary dropdown-toggle sidebar-action" data-toggle="dropdown">
-                        Format <span class="caret"></span>
-                      </button>
-                      <ul class="dropdown-menu">
-                        {% for format in available_formats %}
-                          <li>
-                            <a class="format-option"
-                                href='{% add_query_param request api_settings.URL_FORMAT_OVERRIDE format %}'
-                                 rel="nofollow">
-                                {{ format }}
-                            </a>
-                          </li>
-                        {% endfor %}
-                      </ul>
-                    </div>
-                  </fieldset>
-                </form>
-              {% endif %}
-
               {% if post_form %}
                 <button type="button" class="button-form btn btn-primary sidebar-action" data-toggle="modal" data-target="#createModal">
                   <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
@@ -125,7 +102,7 @@
                 </button>
               {% endif %}
 
-              {% if delete_form %}
+              {% if style == 'detail' %}
                 <form class="button-form" action="{{ request.get_full_path }}" data-method="DELETE">
                   <button class="btn btn-danger sidebar-action">
                     <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
@@ -227,17 +204,14 @@
               <div class="import-example">
                 <div class="modal-body">
                   <table style="width:100%">
-                    <tr>
-                      <th>Origin</th>
-                      <th>Fur</th>
-                      <th>Name</th>
-                    </tr>
+                    <tr>{% for column in columns%}<th>{{ column|capfirst }}</th>{% endfor %}<th></th></tr>
+
                   </table>
                 </div>
               </div>
               <div class="modal-footer">
                 <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                <input type="submit" class="btn btn-primary" value="Upload"/>
+                <button type="submit" class="btn btn-primary" value="Upload">Upload</button>
               </div>
             </form>
           </div>
