@@ -22,7 +22,7 @@ DYNAMIC_REST = {
     'ENABLE_LINKS': True,
 
     # ENABLE_SELF_LINKS: enable/disable links to self
-    'ENABLE_SELF_LINKS': True,
+    'ENABLE_SELF_LINKS': False,
 
     # ENABLE_SERIALIZER_CACHE: enable/disable caching of related serializers
     'ENABLE_SERIALIZER_CACHE': True,
