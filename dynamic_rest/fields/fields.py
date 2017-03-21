@@ -11,7 +11,6 @@ from rest_framework.serializers import SerializerMethodField
 
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
-from dynamic_rest.routers import DynamicRouter
 from dynamic_rest.fields.common import WithRelationalFieldMixin
 from dynamic_rest.meta import (
     is_field_remote, get_model_field, get_related_model
@@ -397,6 +396,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
 
         Resolves string imports.
         """
+        from dynamic_rest.routers import DynamicRouter
         serializer_class = self._serializer_class
         if serializer_class is None:
             serializer_class = DynamicRouter.get_canonical_serializer(
