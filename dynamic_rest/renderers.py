@@ -5,6 +5,7 @@ from rest_framework.renderers import (
 try:
     from rest_framework.renderers import AdminRenderer
 except:
+    # DRF < 3.3
     class AdminRenderer(BrowsableAPIRenderer):
         pass
 
@@ -30,7 +31,7 @@ class DynamicBrowsableAPIRenderer(BrowsableAPIRenderer):
 
 
 class DynamicAdminRenderer(AdminRenderer):
-    """Admin renderer override."""
+    """Admin renderer."""
 
     template = 'dynamic_rest/admin.html'
     COLUMN_BLACKLIST = ('id', 'links')

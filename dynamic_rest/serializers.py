@@ -542,9 +542,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
                     self
                 ).to_representation(instance)
 
-            if settings.ENABLE_LINKS:
-                # TODO: Make this function configurable to support other
-                #       formats like JSON API link objects.
+            query_params = self.get_request_attribute('query_params', {})
+            if (
+                settings.ENABLE_LINKS and
+                'exclude_links' not in query_params
+            ):
                 representation = merge_link_object(
                     self, representation, instance
                 )

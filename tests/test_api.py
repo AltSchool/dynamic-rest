@@ -1291,7 +1291,7 @@ class TestDogsAPI(APITestCase):
         self.fixture = create_fixture()
 
     def test_sort(self):
-        url = '/dogs/?sort[]=name'
+        url = '/dogs/?sort[]=name&exclude_links'
         # 2 queries - one for getting dogs, one for the meta (count)
         with self.assertNumQueries(2):
             response = self.client.get(url)
@@ -1327,7 +1327,7 @@ class TestDogsAPI(APITestCase):
         self.assertEquals(expected_response, actual_response)
 
     def test_sort_reverse(self):
-        url = '/dogs/?sort[]=-name'
+        url = '/dogs/?sort[]=-name&exclude_links'
         # 2 queries - one for getting dogs, one for the meta (count)
         with self.assertNumQueries(2):
             response = self.client.get(url)
@@ -1363,7 +1363,7 @@ class TestDogsAPI(APITestCase):
         self.assertEquals(expected_response, actual_response)
 
     def test_sort_multiple(self):
-        url = '/dogs/?sort[]=-name&sort[]=-origin'
+        url = '/dogs/?sort[]=-name&sort[]=-origin&exclude_links'
         # 2 queries - one for getting dogs, one for the meta (count)
         with self.assertNumQueries(2):
             response = self.client.get(url)
@@ -1399,7 +1399,7 @@ class TestDogsAPI(APITestCase):
         self.assertEquals(expected_response, actual_response)
 
     def test_sort_rewrite(self):
-        url = '/dogs/?sort[]=fur'
+        url = '/dogs/?sort[]=fur&exclude_links'
         # 2 queries - one for getting dogs, one for the meta (count)
         with self.assertNumQueries(2):
             response = self.client.get(url)
@@ -1453,7 +1453,7 @@ class TestHorsesAPI(APITestCase):
         self.fixture = create_fixture()
 
     def test_sort(self):
-        url = '/horses'
+        url = '/horses?exclude_links'
         # 1 query - one for getting horses
         # (the viewset as features specified, so no meta is returned)
         with self.assertNumQueries(1):
@@ -1495,7 +1495,7 @@ class TestZebrasAPI(APITestCase):
         self.fixture = create_fixture()
 
     def test_sort(self):
-        url = '/zebras?sort[]=-name'
+        url = '/zebras?sort[]=-name&exclude_links'
         # 1 query - one for getting zebras
         # (the viewset as features specified, so no meta is returned)
         with self.assertNumQueries(1):
