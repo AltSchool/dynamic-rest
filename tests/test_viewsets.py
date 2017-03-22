@@ -4,7 +4,6 @@ from django.test import TestCase
 from django.test.client import RequestFactory
 from rest_framework import exceptions, status
 from rest_framework.request import Request
-from django.core.files.uploadedfile import SimpleUploadedFile
 
 from dynamic_rest.filters import DynamicFilterBackend, FilterNode
 from tests.models import Dog, Group, User
@@ -226,12 +225,7 @@ class BulkCreationTestCase(TestCase):
         self.assertEqual(1, Group.objects.all().count())
 
     def test_csv_upload(self):
-        with open('tests/groups.csv') as infile:
-            file = SimpleUploadedFile(
-                infile.name,
-                infile.read(),
-            )
-
+        with open('tests/groups.csv', 'rb') as file:
             response = self.client.post(
                 '/groups/',
                 data={

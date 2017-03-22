@@ -1,5 +1,6 @@
 """This module contains custom viewset classes."""
 import csv
+from io import StringIO
 import inflection
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import QueryDict
@@ -413,14 +414,16 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         if is_form_media_type(request.content_type):
             if (
                 'file' in request.data and
-                request.data['file'].name.endswith('.csv')
+                request.data['file'].name.lower().endswith('.csv')
             ):
                 return True
         return False
 
     def _get_bulk_payload_csv(self, request):
         file = request.data['file']
-        reader = csv.DictReader(file)
+        reader = csv.DictReader(
+            StringIO(file.read().decode('utf-8'))
+        )
         return [r for r in reader]
 
     def _get_bulk_payload_json(self, request):
