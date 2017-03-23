@@ -375,6 +375,9 @@ class DynamicFilterBackend(BaseFilterBackend):
                     'nested relationship values '
                     'are not supported'
                 )
+            if source == '*':
+                # ignore custom getter/setter
+                continue
 
             if source in prefetches:
                 # ignore duplicated sources
