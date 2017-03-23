@@ -542,9 +542,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
                     self
                 ).to_representation(instance)
 
-            if settings.ENABLE_LINKS:
-                # TODO: Make this function configurable to support other
-                #       formats like JSON API link objects.
+            query_params = self.get_request_attribute('query_params', {})
+            if (
+                settings.ENABLE_LINKS and
+                'exclude_links' not in query_params
+            ):
                 representation = merge_link_object(
                     self, representation, instance
                 )
@@ -579,6 +581,17 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
 
         return value
 
+    def add_post_save(self, fn):
+        if not hasattr(self, '_post_save'):
+            self._post_save = []
+        self._post_save.append(fn)
+
+    def do_post_save(self, instance):
+        if hasattr(self, '_post_save'):
+            for fn in self._post_save:
+                fn(instance)
+            self._post_save = []
+
     def save(self, *args, **kwargs):
         """Serializer save that address prefetch issues."""
         update = getattr(self, 'instance', None) is not None
@@ -589,6 +602,8 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             *args,
             **kwargs
         )
+        self.do_post_save(instance)
+
         view = self._context.get('view')
         if update and view:
             # Reload the object on update

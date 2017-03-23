@@ -1,5 +1,7 @@
 """This module contains custom viewset classes."""
 import csv
+from io import StringIO
+import inflection
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import QueryDict
 from django.utils import six
@@ -7,7 +9,6 @@ from rest_framework import exceptions, status, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.renderers import (
     BrowsableAPIRenderer,
-    JSONRenderer,
 )
 from rest_framework.response import Response
 from rest_framework.request import is_form_media_type
@@ -16,14 +17,28 @@ from dynamic_rest.filters import DynamicFilterBackend, DynamicSortingFilter
 from dynamic_rest.metadata import DynamicMetadata
 from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.processors import SideloadingProcessor
-from dynamic_rest.renderers import (
-    DynamicBrowsableAPIRenderer,
-    DynamicAdminRenderer
-)
 from dynamic_rest.utils import is_truthy
 
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
 DELETE_REQUEST_METHOD = 'DELETE'
+
+
+def get_view_name(view_cls, suffix=None):
+    serializer_class = getattr(view_cls, 'serializer_class', None)
+    suffix = suffix or ''
+    if serializer_class:
+        serializer = view_cls.serializer_class()
+        if suffix.lower() == 'list':
+            name = serializer.get_plural_name()
+        else:
+            name = serializer.get_name()
+    else:
+        name = view_cls.__name__
+        name = (
+            inflection.pluralize(name)
+            if suffix.lower() == 'list' else name
+        )
+    return name.title()
 
 
 class QueryParams(QueryDict):
@@ -82,11 +97,6 @@ class WithDynamicViewSetMixin(object):
     # TODO: add support for `sort{}`
     pagination_class = DynamicPageNumberPagination
     metadata_class = DynamicMetadata
-    renderer_classes = (
-        JSONRenderer,
-        DynamicAdminRenderer,
-        DynamicBrowsableAPIRenderer
-    )
     features = (INCLUDE, EXCLUDE, FILTER, PAGE, PER_PAGE, SORT, SIDELOADING)
     meta = None
     filter_backends = (DynamicFilterBackend, DynamicSortingFilter)
@@ -404,14 +414,16 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         if is_form_media_type(request.content_type):
             if (
                 'file' in request.data and
-                request.data['file'].name.endswith('.csv')
+                request.data['file'].name.lower().endswith('.csv')
             ):
                 return True
         return False
 
     def _get_bulk_payload_csv(self, request):
         file = request.data['file']
-        reader = csv.DictReader(file)
+        reader = csv.DictReader(
+            StringIO(file.read().decode('utf-8'))
+        )
         return [r for r in reader]
 
     def _get_bulk_payload_json(self, request):
