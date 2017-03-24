@@ -22,22 +22,6 @@ from dynamic_rest.utils import is_truthy
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
 DELETE_REQUEST_METHOD = 'DELETE'
 
-def get_view_name(view_cls, suffix=None):
-    serializer_class = getattr(view_cls, 'serializer_class', None)
-    suffix = suffix or ''
-    if serializer_class:
-        serializer = view_cls.serializer_class()
-        if suffix.lower() == 'list':
-            name = serializer.get_plural_name()
-        else:
-            name = serializer.get_name()
-    else:
-        name = view_cls.__name__
-        name = (
-            inflection.pluralize(name)
-            if suffix.lower() == 'list' else name
-        )
-    return name.title()
 
 def get_view_name(view_cls, suffix=None):
     serializer_class = getattr(view_cls, 'serializer_class', None)
