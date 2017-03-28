@@ -144,9 +144,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         super(DynamicRelationField, self).bind(*args, **kwargs)
         self.bound = True
 
-        if callable(self.queryset):
-            self.queryset = self.queryset(self)
-
         if self.source == '*':
             if self.getter == '*':
                 self.getter = 'get_%s' % self.field_name
