@@ -149,7 +149,17 @@ class GroupSerializer(DynamicModelSerializer):
         return [u for u in instance.users.all() if u.location_id == 1]
 
     def set_loc1usersGetter(self, instance, user_ids):
-        instance.users = user_ids
+        users = instance.users.all()
+        user_ids = set(user_ids)
+        for user in users:
+            if user.location_id == 1:
+                if user.id in user_ids:
+                    user_ids.remove(user.id)
+                else:
+                    instance.users.remove(user)
+        new_users = User.objects.filter(pk__in=user_ids)
+        for user in new_users:
+            instance.users.add(user)
 
 
 class UserSerializer(DynamicModelSerializer):
@@ -189,6 +199,7 @@ class UserSerializer(DynamicModelSerializer):
     permissions = DynamicRelationField(
         'PermissionSerializer',
         many=True,
+        help_text='Permissions for this user',
         deferred=True
     )
     groups = DynamicRelationField('GroupSerializer', many=True, deferred=True)

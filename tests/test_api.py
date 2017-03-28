@@ -942,7 +942,7 @@ class TestLocationsAPI(APITestCase):
                     'immutable': False,
                     'label': 'User count',
                     'nullable': False,
-                    'read_only': False,
+                    'read_only': True,
                     'required': False,
                     'type': 'field'
                 },

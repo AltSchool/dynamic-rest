@@ -1,12 +1,19 @@
+{% load i18n %}
+{% load rest_framework %}
+{% load dynamic_rest %}
+
+{% trans "No items to select." as no_items %}
+
 <div class="form-group {% if field.errors %}has-error{% endif %}">
   {% if field.label %}
     <label class="col-sm-2 control-label {% if style.hide_label %}sr-only{% endif %}">
       {{ field.label }}
     </label>
   {% endif %}
-    hi there
+
   <div class="col-sm-10">
-    <input name="{{ field.name }}" {% if style.input_type != "file" %}class="form-control"{% endif %} type="{{ style.input_type }}" {% if style.placeholder %}placeholder="{{ style.placeholder }}"{% endif %} {% if field.value %}value="{{ field.value }}"{% endif %} {% if style.autofocus and style.input_type != "hidden" %}autofocus{% endif %}>
+    <select style="width: 100%" {% if field.many %}multiple="multiple"{% endif %} class="form-control" name="{{ field.name }}">
+    </select>
 
     {% if field.errors %}
       {% for error in field.errors %}
@@ -19,3 +26,55 @@
     {% endif %}
   </div>
 </div>
+
+<script>
+    $(document).ready(function() {
+        var per_page = 25;
+        // set initial values
+        var values = {{field.value | as_id_to_name}};
+        var selected = [];
+        var initials = [];
+        for (var s in values) {
+            initials.push({id: s, name: values[s]});
+            selected.push(s);
+        }
+        $("select[name='{{ field.name }}']").select2({
+            data: initials,
+            ajax: {
+                url: "{{ field.get_url }}",
+                dataType: "json",
+                delay: 250,
+                data: function(params) {
+                  var name = '{{field.get_natural_key}}';
+                  var filterName = 'filter{' + name + '.icontains}';
+                  var result = {
+                    page: params.page,
+                    per_page: per_page,
+                  };
+                  result[filterName] = params.term;
+                  return result;
+                },
+                processResults: function(data, params) {
+                  params.page = params.page || 1;
+                  var meta = data.meta;
+                  return {
+                    results: data.{{ field.get_plural_name }},
+                    pagination: {
+                      more: meta ? meta.page < meta.total_pages : false
+                    }
+                  };
+                }
+            },
+            escapeMarkup: function(markup) {
+                return markup;
+            },
+            templateResult: function(item) {
+                return item.{{ field.get_natural_key }};
+            },
+            templateSelection: function(item) {
+                return item.{{ field.get_natural_key }};
+            },
+            minimumInputLength: 1,
+        }).val(selected).trigger('change');
+    });
+</script>

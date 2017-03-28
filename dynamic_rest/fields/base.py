@@ -40,7 +40,9 @@ class DynamicField(fields.Field):
 
 
 class DynamicComputedField(DynamicField):
-    pass
+    def __init__(self, *args, **kwargs):
+        kwargs['read_only'] = True
+        super(DynamicComputedField, self).__init__(*args, **kwargs)
 
 
 class DynamicMethodField(SerializerMethodField, DynamicField):
