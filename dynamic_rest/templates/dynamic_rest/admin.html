@@ -241,7 +241,7 @@
         </div>
       </div>
 
-      {% if error_form %}
+      {% if error_form and not errors %}
         <!-- Errors Modal -->
         <div class="modal" id="errorModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
           <div class="modal-dialog">
@@ -259,6 +259,42 @@
                 <div class="modal-footer">
                   <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
                   <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      {% endif %}
+
+      {% if errors %}
+        <!-- Bulk Import Errors Modal -->
+        <<div class="modal" id="errorModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title" id="myModalLabel">Uh oh! Import Error:</h4>
+              </div>
+              <form action="{{ request.get_full_path }}" data-method="{{ request.method }}" enctype="multipart/form-data" class="form-horizontal" novalidate>
+                <div class="modal-body">
+                  <div class="import-example">
+                    <table style="width:100%">
+                      <tr>
+                        <th>Origin</th><th>Fur</th><th>Name</th><th>Error</th>
+                      </tr>
+                      {% for error in errors %}
+                      <tr>
+                          <td>{{ error.source.origin }}</td>
+                          <td>{{ error.source.fur }}</td>
+                          <td>{{ error.source.name }}</td>
+                          <td>{{ error.detail }}</td>
+                      </tr>
+                      {% endfor %}
+                    </table>
+                  </div>
+                </div>
+                <div class="modal-footer">
+                  <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
                 </div>
               </form>
             </div>
