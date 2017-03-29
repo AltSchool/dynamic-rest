@@ -91,6 +91,9 @@ class DynamicAdminRenderer(AdminRenderer):
             c for c in context['columns'] if c not in self.COLUMN_BLACKLIST
         ]
         context['details'] = context['columns']
+        context['error_form'] = context['error_form']
+        if context['error_form']:
+            context['errors'] = context['response'].data.get('errors')
         return context
 
     def render_form_for_serializer(self, serializer):
