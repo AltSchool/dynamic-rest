@@ -1,6 +1,5 @@
 import importlib
 import pickle
-import os
 
 from django.utils import six
 from django.utils.functional import cached_property
@@ -89,9 +88,9 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         super(DynamicRelationField, self).__init__(**kwargs)
         self.kwargs['many'] = self.many = many
 
-    def get_url(self):
+    def get_url(self, pk=None):
         """Get the serializer's endpoint."""
-        return self.serializer_class.get_url()
+        return self.serializer_class.get_url(pk=pk)
 
     def get_plural_name(self):
         """Get the serializer's plural name."""
@@ -298,7 +297,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
 
     def as_hyperlink(self, instance):
         natural_key = self.get_natural_key()
-        url = os.path.join(self.get_url(), str(instance.pk))
+        url = self.get_url(instance.pk)
         label = (
             getattr(instance, natural_key)
             if natural_key else instance
