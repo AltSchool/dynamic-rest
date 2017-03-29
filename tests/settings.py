@@ -46,7 +46,10 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
         'dynamic_rest.renderers.DynamicAdminRenderer',
-        'dynamic_rest.renderers.DynamicBrowsableAPIRenderer',
+        'dynamic_rest.renderers.DynamicBrowsableAPIRenderer'
+    ),
+    'VIEW_NAME_FUNCTION': (
+        'dynamic_rest.viewsets.get_view_name'
     )
 }
 

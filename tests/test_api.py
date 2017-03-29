@@ -905,7 +905,7 @@ class TestLocationsAPI(APITestCase):
         actual = json.loads(response.content.decode('utf-8'))
         expected = {
             'description': '',
-            'name': 'Location List',
+            'name': 'Locations',
             'parses': [
                 'application/json',
                 'application/x-www-form-urlencoded',
