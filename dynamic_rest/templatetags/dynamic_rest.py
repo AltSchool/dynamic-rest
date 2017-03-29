@@ -14,6 +14,13 @@ def as_id_to_name(value):
     for v in value:
         if v:
             name = six.text_type(v.obj)
-            pk = v.split('/')[-1]
+            splits = v.split('/')
+            if splits[-1]:
+                # no trailing slash: /foo/1
+                pk = splits[-1]
+            else:
+                # trailing slash: /foo/1/
+                pk = splits[-2]
             result[pk] = name
+
     return mark_safe(json.dumps(result))

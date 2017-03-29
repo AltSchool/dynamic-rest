@@ -5,7 +5,7 @@ from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework.exceptions import NotFound, ParseError
 from rest_framework import fields
-from rest_framework.relations import Hyperlink
+from dynamic_rest.hyperlink import Hyperlink
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
 from dynamic_rest.meta import (
