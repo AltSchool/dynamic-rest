@@ -8,6 +8,7 @@ from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import exceptions, fields, serializers
 from rest_framework.fields import SkipField
+from rest_framework.reverse import reverse
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 
 from dynamic_rest.bases import DynamicSerializerBase
@@ -20,6 +21,7 @@ from dynamic_rest.tagged import tag_dict
 
 
 class WithResourceKeyMixin(object):
+    @classmethod
     def get_resource_key(self):
         """Return canonical resource key, usually the DB table name."""
         model = self.get_model()
@@ -49,6 +51,13 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def to_representation(self, data):
         iterable = data.all() if isinstance(data, models.Manager) else data
         return [self.child.to_representation(item) for item in iterable]
+
+    def get_natural_key(self):
+        """Get the child's natural key."""
+        return self.child.get_natural_key()
+
+    def get_url(self, pk=None):
+        return self.child.get_url(pk=pk)
 
     def get_model(self):
         """Get the child's model."""
@@ -306,6 +315,29 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             )
 
         return cls.Meta.name
+
+    @classmethod
+    def get_url(self, pk=None):
+        # if associated with a registered viewset, use its URL
+        url = getattr(self, '_url', None)
+        if url:
+            # use URL key to get endpoint
+            url = reverse(url)
+        if not url:
+            # otherwise, return canonical URL for this model
+            from dynamic_rest.routers import DynamicRouter
+            url = DynamicRouter.get_canonical_path(
+                self.get_resource_key()
+            )
+        if pk:
+            return '%s/%s/' % (url, pk)
+        return url
+
+    @classmethod
+    def get_natural_key(cls):
+        if not hasattr(cls.Meta, 'natural_key'):
+            return 'name'
+        return cls.Meta.natural_key
 
     @classmethod
     def get_plural_name(cls):

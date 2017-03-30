@@ -491,7 +491,7 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
                 serializer.is_valid(raise_exception=True)
             except exceptions.ValidationError as e:
                 errors.append({
-                    'detail': str(e),
+                    'detail': e.detail,
                     'source': entry
                 })
             else:

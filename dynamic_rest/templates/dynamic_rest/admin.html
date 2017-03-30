@@ -22,9 +22,11 @@
         {% endblock %}
         <link rel="stylesheet" type="text/css" href="{% static "rest_framework/css/prettify.css" %}"/>
         <link rel="stylesheet" type="text/css" href="{% static "rest_framework/css/default.css" %}"/>
+        <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css"/>
         <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/details.css" %}"/>
       {% endblock %}
 
+        <script src="{% static "rest_framework/js/jquery-1.12.4.min.js" %}"></script>
     {% endblock %}
   </head>
 
@@ -337,15 +339,21 @@
             csrfCookieName: "{{ csrf_cookie_name|default:'csrftoken' }}"
           };
         </script>
-        <script src="{% static "rest_framework/js/jquery-1.12.4.min.js" %}"></script>
+
         <script src="{% static "rest_framework/js/ajax-form.js" %}"></script>
         <script src="{% static "rest_framework/js/csrf.js" %}"></script>
         <script src="{% static "rest_framework/js/bootstrap.min.js" %}"></script>
         <script src="{% static "rest_framework/js/prettify-min.js" %}"></script>
         <script src="{% static "rest_framework/js/default.js" %}"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.full.min.js"></script>
+
         <script>
           $(document).ready(function() {
+            // initialize the form
             $('form').ajaxForm();
+            // fix select2 + modal interaction
+            // see http://stackoverflow.com/questions/18487056/select2-doesnt-work-when-embedded-in-a-bootstrap-modal
+            $.fn.modal.Constructor.prototype.enforceFocus = function() {};
           });
         </script>
       {% endblock %}

@@ -94,7 +94,7 @@ class LocationViewSet(DynamicModelViewSet):
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
         DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT,
-        DynamicModelViewSet.DEBUG, DynamicModelViewSet.SIDELOADING
+        DynamicModelViewSet.DEBUG, DynamicModelViewSet.SIDELOADING,
     )
     model = Location
     serializer_class = LocationSerializer

@@ -2,7 +2,6 @@
 from django.utils import six
 
 from dynamic_rest.conf import settings
-from dynamic_rest.routers import DynamicRouter
 
 
 def merge_link_object(serializer, data, instance):
@@ -24,10 +23,7 @@ def merge_link_object(serializer, data, instance):
     if settings.ENABLE_HOST_RELATIVE_LINKS:
         # if the resource isn't registered, this will default back to
         # using resource-relative urls for links.
-        base_url = DynamicRouter.get_canonical_path(
-            serializer.get_resource_key(),
-            instance.pk
-        ) or ''
+        base_url = serializer.get_url(instance.pk)
         if settings.ENABLE_SELF_LINKS:
             link_object['self'] = base_url
 

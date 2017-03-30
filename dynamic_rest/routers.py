@@ -5,7 +5,9 @@ from collections import OrderedDict
 try:
     from django.urls import get_script_prefix
 except ImportError:
-    from django.core.urlresolvers import get_script_prefix
+    from django.core.urlresolvers import (
+        get_script_prefix
+    )
 
 from django.utils import six
 from rest_framework import views
@@ -150,6 +152,16 @@ class DynamicRouter(DefaultRouter):
         if endpoint not in current:
             current[endpoint] = {}
         current[endpoint]['_url'] = url_name
+
+        serializer_class = getattr(viewset, 'serializer_class', None)
+        if serializer_class:
+            # Set URL on the serializer class so that it can determine its
+            # endpoint URL.
+            # If a serializer class is associated with multiple views,
+            # it will take on the URL of the last view.
+            # TODO: is this a problem?
+            serializer_class._url = url_name
+
         current[endpoint]['_viewset'] = viewset
 
     def register_resource(self, viewset, namespace=None):
