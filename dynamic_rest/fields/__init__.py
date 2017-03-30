@@ -1,4 +1,6 @@
 # flake8: noqa
-from .base import DynamicField, DynamicMethodField, CountField
+from .base import (
+    DynamicField, DynamicMethodField, CountField, DynamicComputedField
+)
 from .relation import DynamicRelationField
 from .generic import DynamicGenericRelationField
