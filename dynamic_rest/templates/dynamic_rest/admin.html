@@ -145,7 +145,8 @@
                 {% if style == 'list' %}
                   {% include "rest_framework/admin/list.html" %}
                 {% else %}
-                  {% include "rest_framework/admin/detail.html" %}
+                  {% include "dynamic_rest/directory.html" with results=results %}
+
                 {% endif %}
               </div>
 
