@@ -524,9 +524,10 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
             request, *args, **kwargs)
 
     def _destroy_many(self, data):
-        for instance in self.get_queryset().filter(
+        instances = self.get_queryset().filter(
             id__in=[d['id'] for d in data]
-        ):
+        ).distinct()
+        for instance in instances:
             self.check_object_permissions(self.request, instance)
             self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
