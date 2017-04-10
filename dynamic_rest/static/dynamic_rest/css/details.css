@@ -52,7 +52,6 @@ body a:hover {
 }
 
 #content {
-  display: flex;
   margin-top: 120px;
 }
 
@@ -61,17 +60,13 @@ body a:hover {
   display: flex;
   flex-wrap: wrap;
   height: 100%;
-  justify-content: space-between;
-  margin-right: 20px;
-  width: 110px;
-}
-
-.content-main {
-  width: calc(100% - 100px);
+  justify-content: center;
+  margin-bottom: 20px;
 }
 
 .sidebar-action {
-  margin-bottom: 20px;
+  margin-bottom: 10px;
+  margin-right: 1em;
   width: 85px;
 }
 
@@ -94,6 +89,8 @@ body a:hover {
 .btn-export { background-color: #744D98; }
 
 .btn-export:hover { background-color: #AB80D4; }
+
+.btn-delete { margin-right: 0; }
 
 .btn-filters, .btn-filters:active, .btn-filters:focus, .btn-filters:visited {
   background-color: #F09648;
