@@ -28,7 +28,9 @@ else:
         'PORT': ''
     }
 
-MIDDLEWARE_CLASSES = ()
+MIDDLEWARE = [
+    'debug_toolbar.middleware.DebugToolbarMiddleware'
+]
 
 INSTALLED_APPS = (
     'rest_framework',
