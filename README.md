@@ -63,8 +63,8 @@ but it can be used to provide fast and flexible CRUD operations to any consumer 
 # Requirements
 
 * Python (2.7, 3.3, 3.4, 3.5)
-* Django (1.7, 1.8, 1.9, 1.10)
-* Django REST Framework (3.1, 3.2, 3.3, 3.4, 3.5)
+* Django (1.8, 1.9, 1.10, 1.11)
+* Django REST Framework (3.1, 3.2, 3.3, 3.4, 3.5, 3.6)
 
 # Installation
 
@@ -609,10 +609,6 @@ Not all versions of Python, Django, and DRF are compatible. Here are the combina
 
 | Python | Django | DRF | OK  |
 | ------ | ------ | --- | --- |
-| 2.7    | 1.7    | 3.1 | YES |
-| 2.7    | 1.7    | 3.2 | YES |
-| 2.7    | 1.7    | 3.3 | YES |
-| 2.7    | 1.7    | 3.4 | NO<sup>4</sup> |
 | 2.7    | 1.8    | 3.1 | YES |
 | 2.7    | 1.8    | 3.2 | YES |
 | 2.7    | 1.8    | 3.3 | YES |
@@ -621,26 +617,21 @@ Not all versions of Python, Django, and DRF are compatible. Here are the combina
 | 2.7    | 1.9    | 3.2 | YES |
 | 2.7    | 1.9    | 3.3 | YES |
 | 2.7    | 1.9    | 3.4 | YES |
-| 2.7    | 1.10   | 3.2 | NO<sup>5</sup> |
-| 2.7    | 1.10   | 3.3 | NO<sup>5</sup> |
+| 2.7    | 1.10   | 3.2 | NO<sup>3</sup> |
+| 2.7    | 1.10   | 3.3 | NO<sup>3</sup> |
 | 2.7    | 1.10   | 3.4 | YES |
 | 2.7    | 1.10   | 3.5 | YES |
-| 3.3    | 1.7    | 3.1 | YES |
-| 3.3    | 1.7    | 3.2 | YES |
-| 3.3    | 1.7    | 3.3 | YES |
-| 3.3    | 1.7    | 3.3 | NO<sup>4</sup> |
+| 2.7    | 1.10   | 3.6 | YES |
+| 2.7    | 1.11   | 3.4 | YES |
+| 2.7    | 1.11   | 3.5 | YES |
+| 2.7    | 1.11   | 3.6 | YES |
 | 3.3    | 1.8    | 3.1 | YES |
 | 3.3    | 1.8    | 3.2 | YES |
 | 3.3    | 1.8    | 3.3 | YES |
 | 3.3    | 1.8    | 3.4 | YES |
-| 3.3    | 1.9    | 3.1 | NO<sup>1,2</sup> |
-| 3.3    | 1.9    | 3.2 | NO<sup>2</sup> |
-| 3.3    | 1.9    | 3.3 | NO<sup>2</sup> |
-| 3.3    | 1.9    | 3.4 | NO<sup>2,4</sup> |
-| 3.4    | 1.7    | 3.1 | YES |
-| 3.4    | 1.7    | 3.2 | YES |
-| 3.4    | 1.7    | 3.3 | YES |
-| 3.4    | 1.7    | 3.3 | NO<sup>4</sup> |
+| 3.3    | 1.9    | x.x | NO<sup>2</sup> |
+| 3.3    | 1.10   | x.x | NO<sup>4</sup> |
+| 3.3    | 1.11   | x.x | NO<sup>5</sup> |
 | 3.4    | 1.8    | 3.1 | YES |
 | 3.4    | 1.8    | 3.2 | YES |
 | 3.4    | 1.8    | 3.3 | YES |
@@ -649,14 +640,14 @@ Not all versions of Python, Django, and DRF are compatible. Here are the combina
 | 3.4    | 1.9    | 3.2 | YES |
 | 3.4    | 1.9    | 3.3 | YES |
 | 3.4    | 1.9    | 3.4 | YES |
-| 3.4    | 1.10   | 3.2 | NO<sup>5</sup> |
-| 3.4    | 1.10   | 3.3 | NO<sup>5</sup> |
+| 3.4    | 1.10   | 3.2 | NO<sup>3</sup> |
+| 3.4    | 1.10   | 3.3 | NO<sup>3</sup> |
 | 3.4    | 1.10   | 3.4 | YES |
 | 3.4    | 1.10   | 3.5 | YES |
-| 3.5    | 1.7    | 3.1 | NO<sup>3</sup> |
-| 3.5    | 1.7    | 3.2 | NO<sup>3</sup> |
-| 3.5    | 1.7    | 3.3 | NO<sup>3</sup> |
-| 3.5    | 1.7    | 3.4 | NO<sup>3,4</sup> |
+| 3.4    | 1.10   | 3.6 | YES |
+| 3.4    | 1.11   | 3.3 | NO<sup>3</sup> |
+| 3.4    | 1.11   | 3.4 | YES |
+| 3.4    | 1.11   | 3.5 | YES |
 | 3.5    | 1.8    | 3.1 | YES |
 | 3.5    | 1.8    | 3.2 | YES |
 | 3.5    | 1.8    | 3.3 | YES |
@@ -665,17 +656,20 @@ Not all versions of Python, Django, and DRF are compatible. Here are the combina
 | 3.5    | 1.9    | 3.2 | YES |
 | 3.5    | 1.9    | 3.3 | YES |
 | 3.5    | 1.9    | 3.4 | YES |
-| 3.5    | 1.10   | 3.2 | NO<sup>5</sup> |
-| 3.5    | 1.10   | 3.3 | NO<sup>5</sup> |
+| 3.5    | 1.10   | 3.2 | NO<sup>3</sup> |
+| 3.5    | 1.10   | 3.3 | NO<sup>3</sup> |
 | 3.5    | 1.10   | 3.4 | YES |
 | 3.5    | 1.10   | 3.5 | YES |
+| 3.5    | 1.10   | 3.6 | YES |
+| 3.5    | 1.11   | 3.4 | YES |
+| 3.5    | 1.11   | 3.5 | YES |
+| 3.5    | 1.11   | 3.6 | YES |
 
 * 1: Django 1.9 is not compatible with DRF 3.1
 * 2: Django 1.9 is not compatible with Python 3.3
-* 3: Django 1.7 is not compatible with Python 3.5
-* 4: Django 1.7 is not compatible with DRF 3.4
-* 5: Django 1.10 is only compatible with DRF 3.4+
-
+* 3: Django 1.10 is only compatible with DRF 3.4+
+* 4: Django 1.10 is requires Python 2.7, 3.4, 3.5
+* 5: Django 1.11 is requires Python 2.7, 3.4, 3.5, 3.6
 # Contributing
 
 See [Contributing](CONTRIBUTING.md).
