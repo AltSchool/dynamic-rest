@@ -154,7 +154,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         if not meta:
             meta = type('Meta', (), {})
             cls.Meta = meta
-        meta.list_serializer_class = DynamicListSerializer
+        list_serializer_class = getattr(
+            meta, 'list_serializer_class', DynamicListSerializer)
+        if not issubclass(list_serializer_class, DynamicListSerializer):
+            list_serializer_class = DynamicListSerializer
+        meta.list_serializer_class = list_serializer_class
         return super(
             WithDynamicSerializerMixin, cls
         ).__new__(
