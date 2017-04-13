@@ -15,9 +15,12 @@ from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.links import merge_link_object
-from dynamic_rest.meta import get_model_table
+from dynamic_rest.meta import get_model_table, get_model_field
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.tagged import tag_dict
+
+
+NATURAL_KEY_FIELD_NAMES = ('name', 'title', 'slug', 'key')
 
 
 class WithResourceKeyMixin(object):
@@ -340,7 +343,16 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
     @classmethod
     def get_natural_key(cls):
         if not hasattr(cls.Meta, 'natural_key'):
-            return 'name'
+            model = cls.get_model()
+            for name in NATURAL_KEY_FIELD_NAMES:
+                # try several common natural key field names
+                try:
+                    get_model_field(model, name)
+                    return name
+                except AttributeError:
+                    pass
+            # fallback to primary key
+            return 'pk'
         return cls.Meta.natural_key
 
     @classmethod
