@@ -668,8 +668,8 @@ Not all versions of Python, Django, and DRF are compatible. Here are the combina
 * 1: Django 1.9 is not compatible with DRF 3.1
 * 2: Django 1.9 is not compatible with Python 3.3
 * 3: Django 1.10 is only compatible with DRF 3.4+
-* 4: Django 1.10 is requires Python 2.7, 3.4, 3.5
-* 5: Django 1.11 is requires Python 2.7, 3.4, 3.5, 3.6
+* 4: Django 1.10 requires Python 2.7, 3.4, 3.5
+* 5: Django 1.11 requires Python 2.7, 3.4, 3.5, 3.6
 # Contributing
 
 See [Contributing](CONTRIBUTING.md).
