@@ -13,8 +13,6 @@ body a:hover {
 }
 
 .navbar .container {
-  display: flex;
-  justify-content: space-between;
 }
 
 .breadcrumb>li+li:before {

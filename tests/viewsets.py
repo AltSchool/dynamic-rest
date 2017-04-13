@@ -27,6 +27,8 @@ from tests.serializers import (
 
 
 class UserViewSet(DynamicModelViewSet):
+    """Represents a User"""
+
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
         DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT,
