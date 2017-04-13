@@ -91,6 +91,9 @@ class DynamicRouter(DefaultRouter):
         class API(views.APIView):
             _ignore_model_permissions = True
 
+            def get_view_name(self, *args, **kwargs):
+                return 'API'
+
             def get(self, request, *args, **kwargs):
                 directory_list = get_directory(request)
                 result = OrderedDict()
@@ -98,10 +101,8 @@ class DynamicRouter(DefaultRouter):
                     if url:
                         result[group_name] = url
                     else:
-                        group = OrderedDict()
                         for endpoint_name, url, _, _ in endpoints:
-                            group[endpoint_name] = url
-                        result[group_name] = group
+                            result['%s/%s' % (group_name, endpoint_name)] = url
                 return Response(result)
 
         return API.as_view()

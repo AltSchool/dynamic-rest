@@ -23,24 +23,6 @@ UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
 DELETE_REQUEST_METHOD = 'DELETE'
 
 
-def get_view_name(view_cls, suffix=None):
-    serializer_class = getattr(view_cls, 'serializer_class', None)
-    suffix = suffix or ''
-    if serializer_class:
-        serializer = view_cls.serializer_class()
-        if suffix.lower() == 'list':
-            name = serializer.get_plural_name()
-        else:
-            name = serializer.get_name()
-    else:
-        name = view_cls.__name__
-        name = (
-            inflection.pluralize(name)
-            if suffix.lower() == 'list' else name
-        )
-    return name.title()
-
-
 class QueryParams(QueryDict):
     """
     Extension of Django's QueryDict. Instantiated from a DRF Request
@@ -162,6 +144,28 @@ class WithDynamicViewSetMixin(object):
             ]
         else:
             return renderers
+
+    def get_view_name(self):
+        serializer_class = getattr(self, 'serializer_class', None)
+        suffix = self.suffix or ''
+        if serializer_class:
+            serializer = self.serializer_class()
+            if suffix.lower() == 'list':
+                name = serializer.get_plural_name()
+            else:
+                try:
+                    obj = self.get_object()
+                    natural_key = serializer.get_natural_key()
+                    name = getattr(obj, natural_key)
+                except:
+                    name = serializer.get_name()
+        else:
+            name = self.__class__.__name__
+            name = (
+                inflection.pluralize(name)
+                if suffix.lower() == 'list' else name
+            )
+        return name.title()
 
     def get_request_feature(self, name):
         """Parses the request for a particular feature.

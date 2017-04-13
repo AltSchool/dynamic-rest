@@ -48,9 +48,6 @@ REST_FRAMEWORK = {
         'dynamic_rest.renderers.DynamicAdminRenderer',
         'dynamic_rest.renderers.DynamicBrowsableAPIRenderer'
     ),
-    'VIEW_NAME_FUNCTION': (
-        'dynamic_rest.viewsets.get_view_name'
-    )
 }
 
 ROOT_URLCONF = 'tests.urls'

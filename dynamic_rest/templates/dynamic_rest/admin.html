@@ -13,7 +13,7 @@
         <meta name="robots" content="NONE,NOARCHIVE" />
       {% endblock %}
 
-      <title>{% block title %}Django REST framework{% endblock %}</title>
+      <title>{% block title %}Admin API{% endblock %}</title>
 
       {% block style %}
         {% block bootstrap_theme %}
@@ -38,9 +38,9 @@
               <div class="container">
                 <span>
                   {% block branding %}
-                    <a class='navbar-brand' rel="nofollow" href='http://www.django-rest-framework.org'>
+                    <a class='navbar-brand' rel="nofollow" href='/'>
                       {% load static %}
-                      <img class="logo" src="{% static "images/logo-white.svg" %}" alt="Logo" />
+                      <img class="logo" src="{% static "images/logo.svg" %}" alt="Logo" />
                     </a>
                   {% endblock %}
                 </span>
@@ -145,10 +145,13 @@
 
               <div class="request-info" style="clear: both" >
                 {% if style == 'list' %}
-                  {% include "rest_framework/admin/list.html" %}
+                  {% include "dynamic_rest/admin/list.html" %}
                 {% else %}
-                  {% include "dynamic_rest/directory.html" with results=results %}
-
+                  {% if style == 'root' %}
+                      {% include "dynamic_rest/directory.html" %}
+                  {% else %}
+                      {% include "dynamic_rest/admin/detail.html" %}
+                  {% endif %}
                 {% endif %}
               </div>
 
