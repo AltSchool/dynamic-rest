@@ -63,13 +63,16 @@ class DynamicGenericRelationField(
             'id': id_value
         }
 
+    def get_serializer_class_for_instance(self, instance):
+        return DynamicRouter.get_canonical_serializer(
+            resource_key=None,
+            instance=instance
+        )
+
     def to_representation(self, instance):
         try:
             # Find serializer for the instance
-            serializer_class = DynamicRouter.get_canonical_serializer(
-                resource_key=None,
-                instance=instance
-            )
+            serializer_class = self.get_serializer_class_for_instance(instance)
             if not serializer_class:
                 # Can't find canonical serializer! For now, just return
                 # object name and ID, and hope the client knows what to do
