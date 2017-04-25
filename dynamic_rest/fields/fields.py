@@ -296,9 +296,8 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             return serializer.to_representation(related)
         except Exception as e:
             # Provide more context to help debug these cases
-            if serializer.debug:
-                import traceback
-                traceback.print_exc()
+            import traceback
+            traceback.print_exc()
             raise Exception(
                 "Failed to serialize %s.%s: %s\nObj: %s" %
                 (
