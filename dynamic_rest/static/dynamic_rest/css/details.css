@@ -2,6 +2,14 @@ body {
   background: initial !important;
 }
 
+.left {
+    float: left;
+}
+
+.container {
+    width: auto !important;
+}
+
 body a {
   color: #2789d8;
   cursor: pointer;
@@ -12,7 +20,8 @@ body a:hover {
   text-decoration: none;
 }
 
-.navbar .container {
+#content {
+  margin-top: 100px !important;
 }
 
 .breadcrumb>li+li:before {
@@ -54,12 +63,7 @@ body a:hover {
 }
 
 .sidebar-actions {
-  align-items: stretch;
-  display: flex;
-  flex-wrap: wrap;
-  height: 100%;
-  justify-content: center;
-  margin-bottom: 20px;
+    float: right;
 }
 
 .sidebar-action {

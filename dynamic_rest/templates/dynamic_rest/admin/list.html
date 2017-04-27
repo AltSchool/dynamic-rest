@@ -1,21 +1,26 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
-<table class="table table-striped">
-  <thead>
-    <tr>{% for column in columns%}<th>{{ column|format_key }}</th>{% endfor %}<th></th></tr>
-  </thead>
-  <tbody>
-    {% for row in results %}
-      <tr>
-        {% for key in columns %}
-            <td {{ row|get_value_from_dict:key | add_nested_class }} >
-              {{ row|get_value_from_dict:key | format_value }}
-            </td>
-        {% endfor %}
-        <td>
-          <a href="{{ row.url }}"><span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span></a>
-        </td>
-      </tr>
-    {% endfor %}
-  </tbody>
-</table>
+{% if results %}
+    <table class="table table-striped">
+      <thead>
+        <tr>{% for column in columns%}<th>{{ column|format_key }}</th>{% endfor %}<th></th></tr>
+      </thead>
+      <tbody>
+            {% for row in results %}
+              <tr>
+                {% for key in columns %}
+                    <td {{ row|get_value_from_dict:key | add_nested_class }} >
+                      {{ row|get_value_from_dict:key | format_value }}
+                    </td>
+                {% endfor %}
+                <td>
+                  <a href="{{ row.url }}"><span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span></a>
+                </td>
+
+              </tr>
+            {% endfor %}
+      </tbody>
+    </table>
+{% else %}
+    <div class="no-results">No results, try creating a new record.</div>
+{% endif %}
