@@ -73,6 +73,7 @@ class DynamicAdminRenderer(AdminRenderer):
                 result['url'] = result['links']['self']
         path = context.get('request').path
         view = context.get('view')
+        response = context.get('response')
 
         if view and view.__class__.__name__ == 'API':
             # root view
@@ -80,7 +81,9 @@ class DynamicAdminRenderer(AdminRenderer):
         else:
             # data view
             is_root = False
-            data = unpack(data)
+            if response.status_code < 400:
+                # remove envelope for successful responses
+                data = unpack(data)
 
         context = super(DynamicAdminRenderer, self).get_context(
             data,
