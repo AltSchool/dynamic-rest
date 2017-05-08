@@ -8,6 +8,8 @@ from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import exceptions, fields, serializers
 from rest_framework.fields import SkipField
+from rest_framework.serializers import ModelSerializer
+from rest_framework.utils import model_meta
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 
 from dynamic_rest.bases import DynamicSerializerBase
@@ -147,6 +149,18 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         if not issubclass(list_serializer_class, DynamicListSerializer):
             list_serializer_class = DynamicListSerializer
         meta.list_serializer_class = list_serializer_class
+
+        # If a lookup field has been defined in the serializer that
+        # field becomes the ID field for the serializer
+        lookup_field = getattr(meta, 'lookup_field', None)
+        if lookup_field is not None:
+            model = getattr(cls.Meta, 'model')
+            info = model_meta.get_field_info(model)
+            # XXX: This might not be the way to correctly solve this
+            cls._declared_fields['id'] = \
+                ModelSerializer.serializer_field_mapping[
+                    type(info.fields[lookup_field])](source=lookup_field)
+
         return super(
             WithDynamicSerializerMixin, cls
         ).__new__(
