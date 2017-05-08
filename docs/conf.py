@@ -15,6 +15,9 @@
 import os
 import sys
 
+# Add dynamic-rest project dir to python path for DJANGO_SETTINGS_MODULE="tests.settings" to work
+sys.path.insert(0, os.path.abspath('../'))
+
 import django
 
 django.setup()
