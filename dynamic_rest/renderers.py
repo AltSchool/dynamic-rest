@@ -63,6 +63,10 @@ class DynamicAdminRenderer(AdminRenderer):
     template = 'dynamic_rest/admin.html'
     COLUMN_BLACKLIST = ('id', 'links')
 
+    def get_breadcrumbs(self, request):
+        from rest_framework.utils.breadcrumbs import get_breadcrumbs
+        return get_breadcrumbs(request)
+
     def get_context(self, data, media_type, context):
         def process(result):
             if result.get('links', {}).get('self'):
