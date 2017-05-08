@@ -197,9 +197,12 @@ class UserSerializer(DynamicModelSerializer):
 class UserSerializerWithLookup(UserSerializer):
     class Meta(UserSerializer.Meta):
         lookup_field = 'name'
+        fields = UserSerializer.Meta.fields + ('preferred_group', )
 
     groups = DynamicRelationField(
         'GroupSerializerWithLookup', many=True, deferred=True)
+    preferred_group = DynamicRelationField(
+        'GroupSerializerWithLookup', deferred=True)
 
 
 class GroupSerializerWithLookup(GroupSerializer):

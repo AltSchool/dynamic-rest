@@ -7,6 +7,7 @@ class User(models.Model):
     name = models.TextField(unique=True)
     last_name = models.TextField()
     groups = models.ManyToManyField('Group', related_name='users')
+    preferred_group = models.ForeignKey('Group', null=True)
     permissions = models.ManyToManyField('Permission', related_name='users')
     date_of_birth = models.DateField(null=True, blank=True)
     # 'related_name' intentionally left unset in location field below:

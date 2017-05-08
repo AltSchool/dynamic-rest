@@ -109,7 +109,27 @@ class TestUsersAPI(APITestCase):
             }]
         }, json.loads(response.content.decode('utf-8')))
 
-    def test_get_with_include_with_lookup(self):
+    def test_get_with_lookup(self):
+        User.objects.all().update(name=Concat(Value('user-'), F('name')))
+        Group.objects.all().update(name=Concat(Value('group-'), F('name')))
+        user = User.objects.get(name='user-0')
+        user.preferred_group = Group.objects.get(name='group-0')
+        user.save()
+        with self.assertNumQueries(2):
+            # 2 queries: 1 for User, 1 for Group, 0 for Location
+            response = self.client.get(
+                '/users_with_lookup/user-0/?include[]=preferred_group')
+        self.assertEquals(200, response.status_code)
+        self.assertEquals({
+            'user': {
+                'id': 'user-0',
+                'location': 1,
+                'name': 'user-0',
+                'preferred_group': 'group-0'
+            }
+        }, json.loads(response.content.decode('utf-8')))
+
+    def test_get_with_lookup_many(self):
         User.objects.all().update(name=Concat(Value('user-'), F('name')))
         Group.objects.all().update(name=Concat(Value('group-'), F('name')))
         with self.assertNumQueries(2):

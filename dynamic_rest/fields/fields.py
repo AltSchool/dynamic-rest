@@ -275,9 +275,17 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         serializer = self.serializer
         model = serializer.get_model()
         source = self.source
-        if not self.kwargs['many'] and serializer.id_only():
+        try:
+            lookup_field = serializer.Meta.lookup_field
+        except AttributeError:
+            lookup_field = None
+
+        if not self.kwargs['many'] and serializer.id_only() \
+                and lookup_field is None:
             # attempt to optimize by reading the related ID directly
             # from the current instance rather than from the related object
+            # if a lookup field has been defined we have to wait until
+            # related model is loaded
             source_id = '%s_id' % source
             if hasattr(instance, source_id):
                 return getattr(instance, source_id)
@@ -293,7 +301,12 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         if related is None:
             return None
         try:
-            return serializer.to_representation(related)
+            if not self.kwargs['many'] and serializer.id_only() \
+                    and lookup_field is not None:
+                # Do an id lookup based on lookup_field
+                return getattr(related, lookup_field)
+            else:
+                return serializer.to_representation(related)
         except Exception as e:
             # Provide more context to help debug these cases
             if serializer.debug:
