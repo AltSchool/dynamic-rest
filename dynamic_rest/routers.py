@@ -29,7 +29,7 @@ def get_directory(request, show_all=True):
     def get_url(url):
         return reverse(url, request=request) if url else url
 
-    def is_active_url(path, url):
+    def is_prefix_of(path, url):
         return path.startswith(url) if url and path else False
 
     directory_list = []
@@ -53,15 +53,17 @@ def get_directory(request, show_all=True):
             if endpoint_name[:1] == '_':
                 continue
             endpoint_url = get_url(endpoint.get('_url', None))
-            active = is_active_url(path, endpoint_url)
-            if active or show_all:
+            active = is_prefix_of(path, endpoint_url)
+            relevant = is_prefix_of(endpoint_url, path)
+            if relevant or show_all:
                 endpoints_list.append(
                     (endpoint_name, endpoint_url, [], active)
                 )
 
         url = get_url(endpoints.get('_url', None))
-        active = is_active_url(path, url)
-        if active or show_all:
+        active = is_prefix_of(path, url)
+        relevant = is_prefix_of(url, path)
+        if relevant or show_all:
             directory_list.append(
                 (group_name, url, endpoints_list, active)
             )
