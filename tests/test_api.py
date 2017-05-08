@@ -2,6 +2,9 @@ import datetime
 import json
 
 from django.db import connection
+from django.db.models import F
+from django.db.models import Value
+from django.db.models.functions import Concat
 from django.test import override_settings
 from django.utils import six
 from rest_framework.test import APITestCase
@@ -103,6 +106,69 @@ class TestUsersAPI(APITestCase):
                 'members': [1, 2, 3, 4],
                 'name':
                 '1'
+            }]
+        }, json.loads(response.content.decode('utf-8')))
+
+    def test_get_with_include_with_lookup(self):
+        User.objects.all().update(name=Concat(Value('user-'), F('name')))
+        Group.objects.all().update(name=Concat(Value('group-'), F('name')))
+        with self.assertNumQueries(2):
+            # 2 queries: 1 for User, 1 for Group, 0 for Location
+            response = self.client.get('/users_with_lookup/?include[]=groups')
+        self.assertEquals(200, response.status_code)
+        self.assertEquals({
+            'users': [{
+                'id': 'user-0',
+                'groups': ['group-0', 'group-1'],
+                'location': 1,
+                'name': 'user-0'
+            }, {
+                'id': 'user-1',
+                'groups': ['group-0', 'group-1'],
+                'location': 1,
+                'name': 'user-1'
+            }, {
+                'id': 'user-2',
+                'groups': ['group-0', 'group-1'],
+                'location': 2,
+                'name': 'user-2'
+            }, {
+                'id': 'user-3',
+                'groups': ['group-0', 'group-1'],
+                'location': 3,
+                'name': 'user-3'
+            }]
+        }, json.loads(response.content.decode('utf-8')))
+
+        with self.assertNumQueries(2):
+            # 2 queries: 1 for User, 1 for Group, 0 for Location
+            response = self.client.get('/users_with_lookup/?include[]=groups.*')
+        self.assertEquals(200, response.status_code)
+        self.assertEquals({
+            'groups': [
+                {'id': 'group-0', 'name': 'group-0'},
+                {'id': 'group-1', 'name': 'group-1'}
+            ],
+            'users': [{
+                'id': 'user-0',
+                'groups': ['group-0', 'group-1'],
+                'location': 1,
+                'name': 'user-0'
+            }, {
+                'id': 'user-1',
+                'groups': ['group-0', 'group-1'],
+                'location': 1,
+                'name': 'user-1'
+            }, {
+                'id': 'user-2',
+                'groups': ['group-0', 'group-1'],
+                'location': 2,
+                'name': 'user-2'
+            }, {
+                'id': 'user-3',
+                'groups': ['group-0', 'group-1'],
+                'location': 3,
+                'name': 'user-3'
             }]
         }, json.loads(response.content.decode('utf-8')))
 
@@ -1016,6 +1082,17 @@ class TestRelationsAPI(APITestCase):
         # Not a relation field
         r = self.client.get('/users/1/name/')
         self.assertEqual(404, r.status_code)
+
+    def test_generated_relation_fields_with_lookup(self):
+        User.objects.all().update(name=Concat(Value('user-'), F('name')))
+        # Don't allow lookup on pk when lookup_field is defined
+        r = self.client.get('/users_with_lookup/1/permissions/')
+        self.assertEqual(404, r.status_code)
+
+        # Lookup with slug should work
+        r = self.client.get('/users_with_lookup/user-0/permissions/')
+        self.assertFalse('groups' in r.data['permissions'][0])
+        self.assertEqual(200, r.status_code)
 
     def test_location_users_relations_identical_to_sideload(self):
         r1 = self.client.get('/locations/1/?include[]=users.')
