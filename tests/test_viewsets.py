@@ -280,7 +280,7 @@ class BulkCreationTestCase(TestCase):
 
     def test_post_bulk_with_sideloaded_results(self):
         u1 = User.objects.create(name='foo', last_name='bar')
-        u2 = User.objects.create(name='foo', last_name='baz')
+        u2 = User.objects.create(name='foo2', last_name='baz')
         data = [
             {
                 'name': 'foo',
