@@ -454,5 +454,46 @@ To address this issue, DREST fields like DynamicField and DynamicMethodField sup
                 user.profile.preferred_last_name
             )
 
+Following relations using a slug instead of an id
+-------------------------------------------------
 
+DREST auto-generates an endpoint to return just the related data (useful as link objects). By default
+this uses the primary key of the model in the URL: `http://localhost:9002/events/5/users/`. You can define a custom
+`lookup_field` in your Serializer and Viewset to change this behavior so that you can use a slug instead. This way
+your API becomes more descriptive.
+
+To do this for our events, change the model to contain a SlugField::
+
+    class Event(models.Model):
+        name = models.TextField()
+        slug = models.SlugField(unique=True)
+        status = models.TextField()
+        location = models.ForeignKey('Location', null=True, blank=True)
+        users = models.ManyToManyField('User')
+
+Now update the Serializer to add the lookup_field in its Meta options::
+
+    class EventSerializer(DynamicModelSerializer):
+        location = DynamicRelationField('LocationSerializer', deferred=False)
+        users = DynamicRelationField(
+            'UserSerializer', many=True, deferred=True)
+
+        class Meta:
+            model = Event
+            name = 'event'
+            fields = ('id', 'slug', 'name', 'status', 'location', 'users')
+            lookup_field = 'slug'
+
+Update the ViewSet to also use this lookup_field::
+
+    class EventViewSet(DynamicModelViewSet):
+        """
+        Events API.
+        """
+        queryset = Event.objects.all()
+        serializer_class = EventSerializer
+        lookup_field = 'slug'
+
+If the slug of our test event is `new-event`, you can now use that slug in the URL:
+`http://localhost:9002/events/new-event/users/`
 
