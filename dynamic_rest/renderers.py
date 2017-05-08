@@ -65,7 +65,7 @@ class DynamicAdminRenderer(AdminRenderer):
 
     def get_breadcrumbs(self, request):
         from rest_framework.utils.breadcrumbs import get_breadcrumbs
-        return get_breadcrumbs(request)
+        return get_breadcrumbs(request.path)
 
     def get_context(self, data, media_type, context):
         def process(result):
