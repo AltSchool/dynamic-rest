@@ -26,7 +26,7 @@ resource_name_map = {}
 
 def get_directory(request, show_all=True):
     """Get API directory as a nested list of lists."""
-    def get_url(url):
+    def get_url(url, request=None):
         return reverse(url, request=request) if url else url
 
     def is_prefix_of(path, url):
