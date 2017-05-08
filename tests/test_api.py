@@ -142,7 +142,8 @@ class TestUsersAPI(APITestCase):
 
         with self.assertNumQueries(2):
             # 2 queries: 1 for User, 1 for Group, 0 for Location
-            response = self.client.get('/users_with_lookup/?include[]=groups.*')
+            response = self.client.get(
+                '/users_with_lookup/?include[]=groups.*')
         self.assertEquals(200, response.status_code)
         self.assertEquals({
             'groups': [
