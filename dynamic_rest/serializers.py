@@ -529,7 +529,9 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             Otherwise, a tagged data dict representation.
         """
         if self.id_only():
-            return instance.pk
+            meta = getattr(self, 'Meta')
+            lookup_field = getattr(meta, 'lookup_field', 'pk')
+            return getattr(instance, lookup_field)
         else:
             if self.enable_optimization:
                 representation = self._faster_to_representation(instance)

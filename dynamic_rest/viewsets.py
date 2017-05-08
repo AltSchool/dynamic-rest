@@ -316,12 +316,12 @@ class WithDynamicViewSetMixin(object):
             [prefix + val for val in values]
         )
 
-    def list_related(self, request, pk=None, field_name=None):
+    def list_related(self, request, field_name=None, **kwargs):
         """Fetch related object(s), as if sideloaded (used to support
         link objects).
 
-        This method gets mapped to `/<resource>/<pk>/<field_name>/` by
-        DynamicRouter for all DynamicRelationField fields. Generally,
+        This method gets mapped to `/<resource>/<lookup_field>/<field_name>/`
+        by DynamicRouter for all DynamicRelationField fields. Generally,
         this method probably shouldn't be overridden.
 
         An alternative implementation would be to generate reverse queries.
@@ -344,7 +344,10 @@ class WithDynamicViewSetMixin(object):
         self._prefix_inex_params(request, self.EXCLUDE, field_prefix)
 
         # Filter for parent object, include related field.
-        self.request.query_params.add('filter{pk}', pk)
+        lookup_field = getattr(self, 'lookup_field', 'pk')
+        self.request.query_params.add(
+            'filter{%s}' % lookup_field, kwargs.get(lookup_field)
+        )
         self.request.query_params.add(self.INCLUDE, field_prefix)
 
         # Get serializer and field.
