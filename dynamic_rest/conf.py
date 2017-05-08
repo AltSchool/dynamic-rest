@@ -64,6 +64,9 @@ DYNAMIC_REST = {
     # through the dynamic router.  If a resource doesn't have a canonical
     # path registered, links will default back to being resource-relative urls
     'ENABLE_HOST_RELATIVE_LINKS': True,
+
+    # Whether or not the root API view requires authentication
+    'ROOT_REQUIRES_AUTHENTICATION': False
 }
 
 

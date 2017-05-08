@@ -10,6 +10,7 @@ except ImportError:
     )
 
 from django.utils import six
+from django.shortcuts import redirect
 from rest_framework import views
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
@@ -95,6 +96,11 @@ class DynamicRouter(DefaultRouter):
                 return 'API'
 
             def get(self, request, *args, **kwargs):
+                if (
+                    settings.ROOT_REQUIRES_AUTHENTICATION and
+                    not request.user.is_authenticated()
+                ):
+                    return redirect('/login/?next=%s' % request.path)
                 directory_list = get_directory(request)
                 result = OrderedDict()
                 for group_name, url, endpoints, _ in directory_list:
