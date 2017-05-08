@@ -4,7 +4,7 @@ from django.db import models
 
 
 class User(models.Model):
-    name = models.TextField()
+    name = models.TextField(unique=True)
     last_name = models.TextField()
     groups = models.ManyToManyField('Group', related_name='users')
     permissions = models.ManyToManyField('Permission', related_name='users')
