@@ -22,8 +22,8 @@ from tests.serializers import (
     ProfileSerializer,
     UserLocationSerializer,
     UserSerializer,
-    ZebraSerializer
-)
+    ZebraSerializer,
+    UserSerializerWithLookup)
 
 
 class UserViewSet(DynamicModelViewSet):
@@ -49,6 +49,11 @@ class UserViewSet(DynamicModelViewSet):
         if query_params.get('name'):
             query_params.add('filter{name}', query_params.get('name'))
         return super(UserViewSet, self).list(request, *args, **kwargs)
+
+
+class UserViewSetWithLookup(UserViewSet):
+    serializer_class = UserSerializerWithLookup
+    lookup_field = 'name'
 
 
 class GroupNoMergeDictViewSet(DynamicModelViewSet):
