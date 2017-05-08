@@ -528,10 +528,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             Instance ID if the serializer is meant to represent its ID.
             Otherwise, a tagged data dict representation.
         """
+        lookup_field = getattr(self.Meta, 'lookup_field', 'pk')
+        pk_value = getattr(instance, lookup_field, None)
+
         if self.id_only():
-            meta = getattr(self, 'Meta')
-            lookup_field = getattr(meta, 'lookup_field', 'pk')
-            return getattr(instance, lookup_field)
+            return pk_value
         else:
             if self.enable_optimization:
                 representation = self._faster_to_representation(instance)
@@ -559,7 +560,8 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             representation,
             serializer=self,
             instance=instance,
-            embed=self.embed
+            embed=self.embed,
+            pk_value=pk_value
         )
 
     def to_internal_value(self, data):
