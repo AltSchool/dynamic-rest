@@ -61,6 +61,7 @@ def get_directory(request, show_all=True):
                 )
 
         url = get_url(endpoints.get('_url', None))
+        print path, url
         active = is_prefix_of(path, url)
         relevant = is_prefix_of(url, path)
         if relevant or show_all:
