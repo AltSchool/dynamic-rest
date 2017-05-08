@@ -24,17 +24,16 @@ resource_map = {}
 resource_name_map = {}
 
 
-def get_directory(request):
+def get_directory(request, show_all=True):
     """Get API directory as a nested list of lists."""
-
     def get_url(url):
         return reverse(url, request=request) if url else url
 
     def is_active_url(path, url):
         return path.startswith(url) if url and path else False
 
-    path = request.path
     directory_list = []
+    path = request.path
 
     def sort_key(r):
         return r[0]
@@ -55,15 +54,17 @@ def get_directory(request):
                 continue
             endpoint_url = get_url(endpoint.get('_url', None))
             active = is_active_url(path, endpoint_url)
-            endpoints_list.append(
-                (endpoint_name, endpoint_url, [], active)
-            )
+            if active or show_all:
+                endpoints_list.append(
+                    (endpoint_name, endpoint_url, [], active)
+                )
 
         url = get_url(endpoints.get('_url', None))
         active = is_active_url(path, url)
-        directory_list.append(
-            (group_name, url, endpoints_list, active)
-        )
+        if active or show_all:
+            directory_list.append(
+                (group_name, url, endpoints_list, active)
+            )
     return directory_list
 
 
@@ -101,7 +102,7 @@ class DynamicRouter(DefaultRouter):
                     not request.user.is_authenticated()
                 ):
                     return redirect('/login/?next=%s' % request.path)
-                directory_list = get_directory(request)
+                directory_list = get_directory(request, show_all=False)
                 result = OrderedDict()
                 for group_name, url, endpoints, _ in directory_list:
                     if url:
@@ -142,7 +143,10 @@ class DynamicRouter(DefaultRouter):
         super(DynamicRouter, self).register(prefix, viewset, base_name)
 
         prefix_parts = prefix.split('/')
+        if base_name:
+            prefix_parts = [base_name] + prefix_parts
         if len(prefix_parts) > 1:
+
             prefix = prefix_parts[0]
             endpoint = '/'.join(prefix_parts[1:])
         else:
