@@ -639,6 +639,12 @@ class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
 
         out = [model._meta.pk.name]  # get PK field name
 
+        # If a lookup field has been defined add it to id fields
+        # so it will be prefetched
+        lookup_field = getattr(self.Meta, 'lookup_field', None)
+        if lookup_field is not None:
+            out.append(lookup_field)
+
         # If this is being called, it means it
         # is a many-relation  to its parent.
         # Django wants the FK to the parent,
