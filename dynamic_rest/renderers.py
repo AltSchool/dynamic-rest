@@ -72,9 +72,10 @@ class DynamicAdminRenderer(AdminRenderer):
 
         if view and view.__class__.__name__ == 'API':
             # root view
-            context['style'] = 'root'
+            is_root = True
         else:
             # data view
+            is_root = False
             data = unpack(data)
 
         context = super(DynamicAdminRenderer, self).get_context(
@@ -82,6 +83,9 @@ class DynamicAdminRenderer(AdminRenderer):
             media_type,
             context
         )
+
+        if is_root:
+            context['style'] = 'root'
 
         # to account for the DREST envelope
         # (data is stored one level deeper than expected in the response)
