@@ -12,7 +12,7 @@ except:
     class AdminRenderer(BrowsableAPIRenderer):
         format = 'admin'
 
-from dynamic_rest.utils import unpack
+from dynamic_rest.utils import unpack, get_breadcrumbs
 from dynamic_rest.fields import DynamicRelationField
 
 
@@ -63,16 +63,16 @@ class DynamicAdminRenderer(AdminRenderer):
     template = 'dynamic_rest/admin.html'
     COLUMN_BLACKLIST = ('id', 'links')
 
-    def get_breadcrumbs(self, request):
-        from rest_framework.utils.breadcrumbs import get_breadcrumbs
-        return get_breadcrumbs(request.path)
+    def get_breadcrumbs(self, request, view=None):
+        return get_breadcrumbs(request.path, view=view)
 
     def get_context(self, data, media_type, context):
         def process(result):
             if result.get('links', {}).get('self'):
                 result['url'] = result['links']['self']
-        path = context.get('request').path
         view = context.get('view')
+        request = context.get('request')
+        path = request.path
         response = context.get('response')
 
         if view and view.__class__.__name__ == 'API':
@@ -89,6 +89,12 @@ class DynamicAdminRenderer(AdminRenderer):
             data,
             media_type,
             context
+        )
+
+        # modify context
+        context['breadcrumblist'] = self.get_breadcrumbs(
+            request,
+            view=view
         )
 
         if is_root:

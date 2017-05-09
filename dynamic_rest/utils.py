@@ -1,4 +1,5 @@
 from six import string_types
+from django.core.urlresolvers import get_script_prefix
 
 FALSEY_STRINGS = (
     '0',
@@ -23,3 +24,37 @@ def unpack(content):
     if hasattr(content, 'serializer'):
         unpacked.serializer = content.serializer
     return unpacked
+
+def get_breadcrumbs(request, view=None):
+    from rest_framework.utils.breadcrumbs import (
+        get_breadcrumbs as _get_breadcrumbs
+    )
+    if view:
+        breadcrumbs = []
+        try:
+            instance = view.get_object()
+        except:
+            instance = None
+
+        serializer_class = getattr(view, 'serializer_class', None)
+        if not serializer_class:
+            return _get_breadcrumbs(request)
+        serializer = serializer_class(instance)
+        plural_name = serializer.get_plural_name()
+        url = serializer.get_url()
+        breadcrumbs.append(('', get_script_prefix()))
+        breadcrumbs.append((
+            plural_name.title(),
+            url
+        ))
+
+        if instance:
+            url = serializer.get_url(pk=instance.pk)
+            breadcrumbs.append((
+                getattr(instance, serializer.get_natural_key()),
+                url
+            ))
+
+        return breadcrumbs
+    else:
+        return _get_breadcrumbs(request)

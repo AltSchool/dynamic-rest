@@ -5,13 +5,7 @@
     {% for key, value in results.items %}
       {% if key in details %}
         <tr>
-          {% if value|add_nested_class %}
-            {% for name, link in value.items %}
-              <th>{{ key|capfirst }}</th><td><a href="{{ link }}">{{ name|format_value }}</a></td>
-            {% endfor %}
-          {% else %}
-            <th><a href="{{ value }}">{{ key|capfirst }}</a></th><td></td>
-          {% endif %}
+          <th><a href="{{ value }}">{{ key|capfirst }}</a></th><td></td>
         </tr>
       {% endif %}
     {% endfor %}

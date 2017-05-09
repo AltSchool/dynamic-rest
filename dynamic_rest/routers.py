@@ -1,5 +1,6 @@
 """This module contains custom router classes."""
 from collections import OrderedDict
+import re
 
 # Backwards compatability for django < 1.10.x
 try:
@@ -26,11 +27,20 @@ resource_name_map = {}
 
 def get_directory(request, show_all=True):
     """Get API directory as a nested list of lists."""
-    def get_url(url, request=None):
+    def get_url(url):
         return reverse(url, request=request) if url else url
 
     def is_prefix_of(path, url):
         return path.startswith(url) if url and path else False
+
+    def get_relative_url(url):
+        if url is None:
+            return url
+        match = re.match(r'(?:https?://[^/]+)/?(.*)', url)
+        if match:
+            return '/' + match.group(1)
+        else:
+            return url
 
     directory_list = []
     path = request.path
@@ -53,18 +63,19 @@ def get_directory(request, show_all=True):
             if endpoint_name[:1] == '_':
                 continue
             endpoint_url = get_url(endpoint.get('_url', None))
-            active = is_prefix_of(path, endpoint_url)
-            relevant = is_prefix_of(endpoint_url, path)
+            relative_url = get_relative_url(endpoint_url)
+            active = is_prefix_of(path, relative_url)
+            relevant = is_prefix_of(relative_url, path)
             if relevant or show_all:
                 endpoints_list.append(
                     (endpoint_name, endpoint_url, [], active)
                 )
 
         url = get_url(endpoints.get('_url', None))
-        print path, url
-        active = is_prefix_of(path, url)
-        relevant = is_prefix_of(url, path)
-        if relevant or show_all:
+        relative_url = get_relative_url(url)
+        active = is_prefix_of(path, relative_url)
+        relevant = is_prefix_of(relative_url, path)
+        if url is None or relevant or show_all:
             directory_list.append(
                 (group_name, url, endpoints_list, active)
             )
@@ -97,7 +108,7 @@ class DynamicRouter(DefaultRouter):
             _ignore_model_permissions = True
 
             def get_view_name(self, *args, **kwargs):
-                return 'API'
+                return settings.ROOT_VIEW_NAME
 
             def get(self, request, *args, **kwargs):
                 if (
@@ -112,12 +123,12 @@ class DynamicRouter(DefaultRouter):
                         result[group_name] = url
                     else:
                         for endpoint_name, url, _, _ in endpoints:
-                            result['%s/%s' % (group_name, endpoint_name)] = url
+                            result[endpoint_name.title()] = url
                 return Response(result)
 
         return API.as_view()
 
-    def register(self, prefix, viewset, base_name=None):
+    def register(self, prefix, viewset, base_name=None, namespace=None):
         """Add any registered route into a global API directory.
 
         If the prefix includes a path separator,
@@ -140,16 +151,16 @@ class DynamicRouter(DefaultRouter):
             }
         }
         """
+        prefix_parts = prefix.split('/')
         if base_name is None:
             base_name = prefix
+        if namespace:
+            prefix_parts = [namespace] + prefix_parts
+            base_name = '%s-%s' % (namespace, base_name)
 
         super(DynamicRouter, self).register(prefix, viewset, base_name)
 
-        prefix_parts = prefix.split('/')
-        if base_name:
-            prefix_parts = [base_name] + prefix_parts
         if len(prefix_parts) > 1:
-
             prefix = prefix_parts[0]
             endpoint = '/'.join(prefix_parts[1:])
         else:

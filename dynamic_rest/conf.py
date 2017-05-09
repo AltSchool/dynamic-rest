@@ -66,7 +66,10 @@ DYNAMIC_REST = {
     'ENABLE_HOST_RELATIVE_LINKS': True,
 
     # Whether or not the root API view requires authentication
-    'ROOT_REQUIRES_AUTHENTICATION': False
+    'ROOT_REQUIRES_AUTHENTICATION': False,
+
+    # Name of the root API view
+    'ROOT_VIEW_NAME': 'API'
 }
 
 
