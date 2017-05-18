@@ -122,7 +122,7 @@ class TestUsersAPI(APITestCase):
         self.assertEquals(200, response.status_code)
         self.assertEquals({
             'user': {
-                'id': 'user-0',
+                'id': 1,
                 'location': 1,
                 'name': 'user-0',
                 'preferred_group': 'group-0'
@@ -138,22 +138,22 @@ class TestUsersAPI(APITestCase):
         self.assertEquals(200, response.status_code)
         self.assertEquals({
             'users': [{
-                'id': 'user-0',
+                'id': 1,
                 'groups': ['group-0', 'group-1'],
                 'location': 1,
                 'name': 'user-0'
             }, {
-                'id': 'user-1',
+                'id': 2,
                 'groups': ['group-0', 'group-1'],
                 'location': 1,
                 'name': 'user-1'
             }, {
-                'id': 'user-2',
+                'id': 3,
                 'groups': ['group-0', 'group-1'],
                 'location': 2,
                 'name': 'user-2'
             }, {
-                'id': 'user-3',
+                'id': 4,
                 'groups': ['group-0', 'group-1'],
                 'location': 3,
                 'name': 'user-3'
@@ -167,26 +167,26 @@ class TestUsersAPI(APITestCase):
         self.assertEquals(200, response.status_code)
         self.assertEquals({
             'groups': [
-                {'id': 'group-0', 'name': 'group-0'},
-                {'id': 'group-1', 'name': 'group-1'}
+                {'id': 1, 'name': 'group-0'},
+                {'id': 2, 'name': 'group-1'}
             ],
             'users': [{
-                'id': 'user-0',
+                'id': 1,
                 'groups': ['group-0', 'group-1'],
                 'location': 1,
                 'name': 'user-0'
             }, {
-                'id': 'user-1',
+                'id': 2,
                 'groups': ['group-0', 'group-1'],
                 'location': 1,
                 'name': 'user-1'
             }, {
-                'id': 'user-2',
+                'id': 3,
                 'groups': ['group-0', 'group-1'],
                 'location': 2,
                 'name': 'user-2'
             }, {
-                'id': 'user-3',
+                'id': 4,
                 'groups': ['group-0', 'group-1'],
                 'location': 3,
                 'name': 'user-3'

@@ -156,10 +156,6 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         if lookup_field is not None:
             model = getattr(cls.Meta, 'model')
             info = model_meta.get_field_info(model)
-            # XXX: This might not be the way to correctly solve this
-            cls._declared_fields['id'] = \
-                ModelSerializer.serializer_field_mapping[
-                    type(info.fields[lookup_field])](source=lookup_field)
 
         return super(
             WithDynamicSerializerMixin, cls
