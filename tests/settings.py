@@ -21,14 +21,16 @@ else:
     # local sqlite database file
     DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': INSTALL_DIR + 'db.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
         'USER': '',
         'PASSWORD': '',
         'HOST': '',
         'PORT': ''
     }
 
-MIDDLEWARE_CLASSES = ()
+MIDDLEWARE = [
+    'debug_toolbar.middleware.DebugToolbarMiddleware'
+]
 
 INSTALLED_APPS = (
     'rest_framework',
@@ -52,11 +54,6 @@ REST_FRAMEWORK = {
 
 ROOT_URLCONF = 'tests.urls'
 
-
-TEMPLATE_DIRS = (
-    os.path.abspath(os.path.join(BASE_DIR, '../dynamic_rest/templates')),
-)
-
 STATICFILES_DIRS = (
     os.path.abspath(os.path.join(BASE_DIR, '../dynamic_rest/static')),
 )
@@ -64,8 +61,9 @@ STATICFILES_DIRS = (
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': TEMPLATE_DIRS,
-        'APP_DIRS': True
+        'DIRS': os.path.abspath(os.path.join(BASE_DIR,
+                                '../dynamic_rest/templates')),
+        'APP_DIRS': True,
     }
 ]
 
