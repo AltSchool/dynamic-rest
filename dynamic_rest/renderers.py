@@ -1,4 +1,5 @@
 """This module contains custom renderer classes."""
+from django.utils import six
 from copy import copy
 from rest_framework.renderers import (
     BrowsableAPIRenderer,
@@ -110,13 +111,33 @@ class DynamicAdminRenderer(AdminRenderer):
             else:
                 process(results)
 
+        columns = context['columns']
+        if hasattr(view, 'serializer_class'):
+            fields = view.serializer_class.Meta.fields
+            if not isinstance(fields, six.string_types):
+                # respect serializer field ordering
+                columns = [
+                    f for f in fields if f in columns
+                ]
+        # remove blacklisted columns
         context['columns'] = [
-            c for c in context['columns'] if c not in self.COLUMN_BLACKLIST
+            c for c in columns if c not in self.COLUMN_BLACKLIST
         ]
         context['details'] = context['columns']
         context['error_form'] = context['error_form']
         if context['error_form']:
             context['errors'] = context['response'].data.get('errors')
+
+        # hide/display sidebar options
+        allowed_methods = set(
+            (x.lower() for x in (view.http_method_names or ()))
+        )
+        context['show_sidebar'] = True
+        context['allow_filter'] = False
+        context['allow_delete'] = 'delete' in allowed_methods
+        context['allow_edit'] = 'put' in allowed_methods
+        context['allow_create'] = 'post' in allowed_methods
+        context['allow_import'] = 'post' in allowed_methods
         return context
 
     def render_form_for_serializer(self, serializer):
