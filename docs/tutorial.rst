@@ -454,13 +454,13 @@ To address this issue, DREST fields like DynamicField and DynamicMethodField sup
                 user.profile.preferred_last_name
             )
 
-Following relations using a slug instead of an id
--------------------------------------------------
+Using a slug to reference a single resource instead of a pk
+-----------------------------------------------------------
 
-DREST auto-generates an endpoint to return just the related data (useful as link objects). By default
-this uses the primary key of the model in the URL: `http://localhost:9002/events/5/users/`. You can define a custom
-`lookup_field` in your Serializer and Viewset to change this behavior so that you can use a slug instead. This way
-your API becomes more descriptive.
+By default DREST refers to single resources using the pk of the model. In some cases you would
+rather want to use a slug as a more descriptive unique name for the resource. You can define a custom
+`lookup_field` in your Serializer and Viewset to have DREST lookup the resource based on the contents
+of this field.
 
 To do this for our events, change the model to contain a SlugField::
 
@@ -495,5 +495,7 @@ Update the ViewSet to also use this lookup_field::
         lookup_field = 'slug'
 
 If the slug of our test event is `new-event`, you can now use that slug in the URL:
-`http://localhost:9002/events/new-event/users/`
+`http://localhost:9002/events/new-event/`
 
+DREST will also automatically use the `lookup_field` in generating URL's for related data. The URL
+to get all the related users for this event now is: `http://localhost:9002/events/new-event/users/`
