@@ -275,6 +275,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         serializer = self.serializer
         model = serializer.get_model()
         source = self.source
+        # Use try/except here since both Meta and lookup_field getattrs can raise AttributeError
         try:
             lookup_field = serializer.Meta.lookup_field
         except AttributeError:
