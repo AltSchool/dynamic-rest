@@ -511,7 +511,7 @@ The sky is the limit! DREST supports just about every basic filtering scenario a
 * gt
 ...
 
-See the [full list here](dynamic_rest/filters.py#L133).
+See the [full list here](dynamic_rest/filters.py#L153-L176).
 
 ## Ordering
 
