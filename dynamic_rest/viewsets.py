@@ -76,7 +76,16 @@ class WithDynamicViewSetMixin(object):
     pagination_class = DynamicPageNumberPagination
     metadata_class = DynamicMetadata
     renderer_classes = (JSONRenderer, DynamicBrowsableAPIRenderer)
-    features = (INCLUDE, EXCLUDE, FILTER, PAGE, PER_PAGE, SORT, SIDELOADING)
+    features = (
+        DEBUG,
+        INCLUDE,
+        EXCLUDE,
+        FILTER,
+        PAGE,
+        PER_PAGE,
+        SORT,
+        SIDELOADING
+    )
     meta = None
     filter_backends = (DynamicFilterBackend, DynamicSortingFilter)
 
