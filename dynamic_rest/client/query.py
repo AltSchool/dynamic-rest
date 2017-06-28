@@ -1,6 +1,6 @@
 from copy import copy
 from dynamic_rest.utils import unpack
-from six import string_types
+from django.utils.six import string_types
 
 
 class DRESTQuery(object):

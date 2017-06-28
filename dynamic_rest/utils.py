@@ -1,4 +1,4 @@
-from six import string_types
+from django.utils.six import string_types
 
 FALSEY_STRINGS = (
     '0',

@@ -1,6 +1,6 @@
 from rest_framework.test import APITestCase, APIClient
 from dynamic_rest.client import DRESTClient
-from six import string_types
+from django.utils.six import string_types
 from dynamic_rest.client.exceptions import (
     BadRequest, DoesNotExist
 )
