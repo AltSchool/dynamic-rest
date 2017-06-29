@@ -75,7 +75,6 @@ class WithDynamicViewSetMixin(object):
     # TODO: add support for `sort{}`
     pagination_class = DynamicPageNumberPagination
     metadata_class = DynamicMetadata
-    renderer_classes = (JSONRenderer, DynamicBrowsableAPIRenderer)
     features = (
         DEBUG,
         INCLUDE,
