@@ -87,6 +87,18 @@ but it can be used to provide fast and flexible CRUD operations to any consumer 
 
 ```
 
+3) If you want to use the [Directory panel](#directory-panel), replace DRF's browsable API renderer with DREST's
+in your settings:
+ 
+```python
+REST_FRAMEWORK = {
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+        'dynamic_rest.renderers.DynamicBrowsableAPIRenderer',
+    ],
+} 
+```
+
 # Demo
 
 This repository comes with a `tests` package that also serves as a demo application.
