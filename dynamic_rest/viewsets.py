@@ -4,7 +4,7 @@ from django.http import QueryDict
 from django.utils import six
 from rest_framework import exceptions, status, viewsets
 from rest_framework.exceptions import ValidationError
-from rest_framework.renderers import BrowsableAPIRenderer, JSONRenderer
+from rest_framework.renderers import BrowsableAPIRenderer
 from rest_framework.response import Response
 
 from dynamic_rest.conf import settings
@@ -12,7 +12,6 @@ from dynamic_rest.filters import DynamicFilterBackend, DynamicSortingFilter
 from dynamic_rest.metadata import DynamicMetadata
 from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.processors import SideloadingProcessor
-from dynamic_rest.renderers import DynamicBrowsableAPIRenderer
 from dynamic_rest.utils import is_truthy
 
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
