@@ -2,6 +2,11 @@ dependencies:
     override:
         - pip install -r requirements.txt
         - python setup.py develop
+        - pyenv install -s 2.7.11
+        - pyenv install -s 3.3.5
+        - pyenv install -s 3.4.4
+        - pyenv install -s 3.5.3
+        - pyenv install -s 3.6.1
         - pyenv local 2.7.11 3.3.5 3.4.4 3.5.3 3.6.1
 
 test:
