@@ -71,6 +71,25 @@ class TestGenericRelationFieldAPI(APITestCase):
         self.assertTrue('type' in content['users'][0]['favorite_pet'])
         self.assertTrue('id' in content['users'][0]['favorite_pet'])
 
+    def test_multi_sideload_include(self):
+        url = (
+            '/cars/1/?include[]=name&include[]=country.short_name'
+            '&include[]=parts.name&include[]=parts.country.name'
+        )
+        response = self.client.get(url)
+        self.assertEqual(200, response.status_code)
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertTrue('countries' in content)
+
+        country = None
+        for _ in content['countries']:
+            if _['id'] == 1:
+                country = _
+
+        self.assertTrue(country)
+        self.assertTrue('short_name' in country)
+        self.assertTrue('name' in country)
+
     def test_query_counts(self):
         # NOTE: Django doesn't seem to prefetch ContentType objects
         #       themselves, and rather caches internally. That means
