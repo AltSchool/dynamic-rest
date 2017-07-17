@@ -118,6 +118,12 @@ class SideloadingProcessor(object):
                     # move the object into a new top-level bucket
                     # and mark it as seen
                     self.data[name].append(obj)
+                else:
+                    # obj sideloaded, but maybe with other fields
+                    for o in self.data[name]:
+                        if o.instance.pk == pk:
+                            o.update(obj)
+                            break
 
                 # replace the object with a reference
                 if parent is not None and parent_key is not None:

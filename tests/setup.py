@@ -1,16 +1,19 @@
 from collections import namedtuple
 
 from tests.models import (
+    Car,
     Cat,
+    Country,
     Dog,
     Event,
     Group,
     Horse,
     Location,
+    Part,
     Permission,
     User,
     Zebra
-)
+    )
 
 
 def create_fixture():
@@ -20,16 +23,20 @@ def create_fixture():
     # 2 of the users share the same location
     # 2 of the users have their own locations
     # Create 4 dogs.
+    # Create 2 Country
+    # Create 1 Car has 2 Parts each from different Country
 
     types = [
         'users', 'groups', 'locations', 'permissions',
-        'events', 'cats', 'dogs', 'horses', 'zebras'
+        'events', 'cats', 'dogs', 'horses', 'zebras',
+        'cars', 'countries', 'parts',
     ]
     Fixture = namedtuple('Fixture', types)
 
     fixture = Fixture(
         users=[], groups=[], locations=[], permissions=[],
-        events=[], cats=[], dogs=[], horses=[], zebras=[]
+        events=[], cats=[], dogs=[], horses=[], zebras=[],
+        cars=[], countries=[], parts=[]
     )
 
     for i in range(0, 4):
@@ -184,5 +191,48 @@ def create_fixture():
 
     fixture.groups[0].permissions.add(fixture.permissions[0])
     fixture.groups[1].permissions.add(fixture.permissions[1])
+
+    countries = [{
+        'id': 1,
+        'name': 'United States',
+        'short_name': 'US',
+    }, {
+        'id': 2,
+        'name': 'China',
+        'short_name': 'CN',
+    }]
+
+    cars = [{
+        'id': 1,
+        'name': 'Porshe',
+        'country': 1
+    }]
+
+    parts = [{
+        'car': 1,
+        'name': 'wheel',
+        'country': 1
+    }, {
+        'car': 1,
+        'name': 'tire',
+        'country': 2
+    }]
+
+    for country in countries:
+        fixture.countries.append(Country.objects.create(**country))
+
+    for car in cars:
+        fixture.cars.append(Car.objects.create(
+            id=car.get('id'),
+            name=car.get('name'),
+            country_id=car.get('country')
+        ))
+
+    for part in parts:
+        fixture.parts.append(Part.objects.create(
+            car_id=part.get('car'),
+            name=part.get('name'),
+            country_id=part.get('country')
+        ))
 
     return fixture

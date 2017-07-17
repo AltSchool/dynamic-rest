@@ -9,6 +9,7 @@ router.register_resource(viewsets.GroupViewSet)
 router.register_resource(viewsets.ProfileViewSet)
 router.register_resource(viewsets.LocationViewSet)
 
+router.register(r'cars', viewsets.CarViewSet)
 router.register(r'cats', viewsets.CatViewSet)
 router.register_resource(viewsets.DogViewSet)
 router.register_resource(viewsets.HorseViewSet)
