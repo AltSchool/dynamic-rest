@@ -12,15 +12,18 @@ from dynamic_rest.serializers import (
     DynamicModelSerializer
 )
 from tests.models import (
+    Car,
     Cat,
+    Country,
     Dog,
     Group,
     Horse,
     Location,
+    Part,
     Permission,
     Profile,
     User,
-    Zebra
+    Zebra,
 )
 
 
@@ -280,3 +283,30 @@ class ZebraSerializer(DynamicModelSerializer):
             'name',
             'origin',
         )
+
+
+class CountrySerializer(DynamicModelSerializer):
+
+    class Meta:
+        model = Country
+        fields = ('id', 'name', 'short_name')
+        deferred_fields = ('name', 'short_name')
+
+
+class PartSerializer(DynamicModelSerializer):
+    country = DynamicRelationField('CountrySerializer')
+
+    class Meta:
+        model = Part
+        fields = ('id', 'name', 'country')
+        deferred_fields = ('name', 'country')
+
+
+class CarSerializer(DynamicModelSerializer):
+    country = DynamicRelationField('CountrySerializer')
+    parts = DynamicRelationField('PartSerializer', many=True, source='part_set')  # noqa
+
+    class Meta:
+        model = Car
+        fields = ('id', 'name', 'country', 'parts')
+        deferred_fields = ('name', 'country', 'parts')
