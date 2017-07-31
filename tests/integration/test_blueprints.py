@@ -31,7 +31,7 @@ class DJBlueprintsTestCase(TestCase):
         time.sleep(2)
 
         # verify a simple POST flow for the "foo" resource
-        response = requests.post('http://localhost:9123/v0/foos/')
+        response = requests.post('http://localhost:9123/api/v0/foos/')
         self.assertTrue(response.status_code, 201)
         content = json.loads(response.content)
         self.assertEquals(content, {'foo': {'id': 1}})
