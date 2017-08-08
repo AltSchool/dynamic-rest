@@ -251,6 +251,8 @@ DREST-ifying Existing Serializer
 --------------------------------
 As with ViewSets, there’s a mixin to DREST-ify an existing serializer. Same shenanigans warning applies as above::
 
+    from dynamic_rest.serializers import WithDynamicModelSerializerMixin
+
     class NewFooSerializer(WithDynamicModelSerializerMixin, OldFooSerializer):
         # Must override Meta class with DREST attributes
         class Meta:
