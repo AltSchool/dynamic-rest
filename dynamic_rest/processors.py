@@ -120,7 +120,7 @@ class SideloadingProcessor(object):
                     self.data[name].append(obj)
                 else:
                     # obj sideloaded, but maybe with other fields
-                    for o in self.data[name]:
+                    for o in self.data.get(name, []):
                         if o.instance.pk == pk:
                             o.update(obj)
                             break
