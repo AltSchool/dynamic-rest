@@ -100,3 +100,19 @@ class C(models.Model):
 
 class D(models.Model):
     name = models.TextField(blank=True)
+
+
+class Country(models.Model):
+    name = models.CharField(max_length=60)
+    short_name = models.CharField(max_length=30)
+
+
+class Car(models.Model):
+    name = models.CharField(max_length=60)
+    country = models.ForeignKey(Country)
+
+
+class Part(models.Model):
+    car = models.ForeignKey(Car)
+    name = models.CharField(max_length=60)
+    country = models.ForeignKey(Country)
