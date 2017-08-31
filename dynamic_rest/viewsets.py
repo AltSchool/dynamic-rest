@@ -7,9 +7,7 @@ from django.http import QueryDict
 from django.utils import six
 from rest_framework import exceptions, status, viewsets
 from rest_framework.exceptions import ValidationError
-from rest_framework.renderers import (
-    BrowsableAPIRenderer,
-)
+from rest_framework.renderers import BrowsableAPIRenderer
 from rest_framework.response import Response
 from rest_framework.request import is_form_media_type
 from dynamic_rest.conf import settings
@@ -79,7 +77,16 @@ class WithDynamicViewSetMixin(object):
     # TODO: add support for `sort{}`
     pagination_class = DynamicPageNumberPagination
     metadata_class = DynamicMetadata
-    features = (INCLUDE, EXCLUDE, FILTER, PAGE, PER_PAGE, SORT, SIDELOADING)
+    features = (
+        DEBUG,
+        INCLUDE,
+        EXCLUDE,
+        FILTER,
+        PAGE,
+        PER_PAGE,
+        SORT,
+        SIDELOADING
+    )
     meta = None
     filter_backends = (DynamicFilterBackend, DynamicSortingFilter)
 

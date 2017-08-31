@@ -1,5 +1,5 @@
-from six import string_types
 from django.core.urlresolvers import get_script_prefix
+from django.utils.six import string_types
 
 FALSEY_STRINGS = (
     '0',
@@ -24,6 +24,7 @@ def unpack(content):
     if hasattr(content, 'serializer'):
         unpacked.serializer = content.serializer
     return unpacked
+
 
 def get_breadcrumbs(request, view=None):
     from rest_framework.utils.breadcrumbs import (

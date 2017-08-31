@@ -654,15 +654,28 @@ class DynamicSortingFilter(OrderingFilter):
         """
         valid_fields = getattr(view, 'ordering_fields', self.ordering_fields)
 
+        # prefer the overriding method
+        if hasattr(view, 'get_serializer_class'):
+            try:
+                serializer_class = view.get_serializer_class()
+            except AssertionError:
+                # Raised by the default implementation if
+                # no serializer_class was found
+                serializer_class = None
+        # use the attribute
+        else:
+            serializer_class = getattr(view, 'serializer_class', None)
+
+        # neither a method nor an attribute has been specified
+        if serializer_class is None:
+            msg = (
+                "Cannot use %s on a view which does not have either a "
+                "'serializer_class' or an overriding 'get_serializer_class'."
+            )
+            raise ImproperlyConfigured(msg % self.__class__.__name__)
+
         if valid_fields is None or valid_fields == '__all__':
             # Default to allowing filtering on serializer fields
-            serializer_class = getattr(view, 'serializer_class')
-            if serializer_class is None:
-                msg = (
-                    "Cannot use %s on a view which does not have either a "
-                    "'serializer_class' or 'ordering_fields' attribute."
-                )
-                raise ImproperlyConfigured(msg % self.__class__.__name__)
             valid_fields = [
                 (field_name, field.source or field_name)
                 for field_name, field in serializer_class().fields.items()
@@ -671,7 +684,6 @@ class DynamicSortingFilter(OrderingFilter):
                 ) and not field.source == '*'
             ]
         else:
-            serializer_class = getattr(view, 'serializer_class')
             valid_fields = [
                 (field_name, field.source or field_name)
                 for field_name, field in serializer_class().fields.items()
