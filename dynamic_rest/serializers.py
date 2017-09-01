@@ -7,20 +7,55 @@ from django.db import models
 from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import exceptions, fields, serializers
+from rest_framework.compat import set_many
 from rest_framework.fields import SkipField
 from rest_framework.reverse import reverse
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
+from rest_framework.utils import model_meta
 
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.links import merge_link_object
-from dynamic_rest.meta import get_model_table, get_model_field
+from dynamic_rest.meta import (
+    get_model_table,
+    get_model_field,
+    get_related_model
+)
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.tagged import tag_dict
 
 
 NATURAL_KEY_FIELD_NAMES = ('name', 'title', 'slug', 'key')
+
+
+def nested_update(instance, key, value, objects=None):
+    objects = objects or []
+    nested = getattr(instance, key, None)
+    if not nested:
+        # object does not exist, try to create it
+        try:
+            field = get_model_field(instance, key)
+            related_model = get_related_model(field)
+        except:
+            raise exceptions.ValidationError(
+                'Invalid relationship: %s' % key
+            )
+        else:
+            try:
+                nested = related_model.objects.create(**value)
+                setattr(instance, key, nested)
+            except Exception as e:
+                raise exceptions.ValidationError(str(e))
+    else:
+        # object exists, perform a nested update
+        for k, v in six.iteritems(value):
+            if isinstance(v, dict):
+                nested_update(nested, k, v, objects)
+            else:
+                setattr(nested, k, v)
+        objects.append(nested)
+    return objects
 
 
 class WithResourceKeyMixin(object):
@@ -639,6 +674,36 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             for fn in self._post_save:
                 fn(instance)
             self._post_save = []
+
+    def update(self, instance, validated_data):
+        # support nested writes if possible
+        info = model_meta.get_field_info(instance)
+        to_save = [instance]
+        # Simply set each attribute on the instance, and then save it.
+        # Note that unlike `.create()` we don't need to treat many-to-many
+        # relationships as being a special case. During updates we already
+        # have an instance pk for the relationships to be associated with.
+        for attr, value in validated_data.items():
+            if attr in info.relations:
+                if info.relations[attr].to_many:
+                    set_many(instance, attr, value)
+                elif isinstance(value, dict):
+                    # nested dictionary on a has-one relationship
+                    # means we should take the current related value
+                    # and apply updates to it
+                    to_save.extend(
+                        nested_update(instance, attr, value)
+                    )
+                else:
+                    # normal relationship update
+                    setattr(instance, attr, value)
+            else:
+                setattr(instance, attr, value)
+
+        for s in to_save:
+            s.save()
+
+        return instance
 
     def save(self, *args, **kwargs):
         """Serializer save that address prefetch issues."""

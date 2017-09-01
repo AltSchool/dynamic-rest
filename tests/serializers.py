@@ -338,8 +338,19 @@ class PartSerializer(DynamicModelSerializer):
 class CarSerializer(DynamicModelSerializer):
     country = DynamicRelationField('CountrySerializer')
     parts = DynamicRelationField('PartSerializer', many=True, source='part_set')  # noqa
+    country_name = DynamicField(source='country.name')
+    country_short_name = DynamicField(source='country.short_name')
 
     class Meta:
         model = Car
-        fields = ('id', 'name', 'country', 'parts')
-        deferred_fields = ('name', 'country', 'parts')
+        fields = (
+            'id',
+            'name',
+            'country',
+            'parts',
+            'country_name',
+            'country_short_name'
+        )
+        deferred_fields = (
+            'name', 'country', 'parts', 'country_name', 'country_short_name'
+        )

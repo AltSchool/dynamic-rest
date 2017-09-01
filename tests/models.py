@@ -108,7 +108,7 @@ class Country(models.Model):
 
 class Car(models.Model):
     name = models.CharField(max_length=60)
-    country = models.ForeignKey(Country)
+    country = models.ForeignKey(Country, null=True)
 
 
 class Part(models.Model):

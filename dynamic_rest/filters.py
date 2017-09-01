@@ -119,7 +119,8 @@ class FilterNode(object):
 
             # If get_all_fields() was used above, field could be unbound,
             # and field.source would be None
-            rewritten.append(model_field_name)
+            for part in model_field_name.split('.'):
+                rewritten.append(part)
 
             if i == last:
                 break
@@ -135,7 +136,6 @@ class FilterNode(object):
 
         if self.operator:
             rewritten.append(self.operator)
-
         return ('__'.join(rewritten), field)
 
 

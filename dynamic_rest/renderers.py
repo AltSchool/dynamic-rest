@@ -73,7 +73,6 @@ class DynamicAdminRenderer(AdminRenderer):
                 result['url'] = result['links']['self']
         view = context.get('view')
         request = context.get('request')
-        path = request.path
         response = context.get('response')
 
         if view and view.__class__.__name__ == 'API':
@@ -119,6 +118,7 @@ class DynamicAdminRenderer(AdminRenderer):
                 columns = [
                     f for f in fields if f in columns
                 ]
+
         # remove blacklisted columns
         context['columns'] = [
             c for c in columns if c not in self.COLUMN_BLACKLIST

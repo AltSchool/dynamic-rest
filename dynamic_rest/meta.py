@@ -9,6 +9,22 @@ from dynamic_rest.related import RelatedObject
 DJANGO110 = VERSION >= (1, 10)
 
 
+def get_related_model(field):
+    try:
+        # django 1.8+
+        return field.related_model
+    except AttributeError:
+        # django 1.7
+        if hasattr(field, 'field'):
+            return field.field.model
+        elif hasattr(field, 'rel'):
+            return field.rel.to
+        elif field.__class__.__name__ == 'GenericForeignKey':
+            return None
+        else:
+            raise
+
+
 def is_model_field(model, field_name):
     """Check whether a given field exists on a model.
 
@@ -29,6 +45,9 @@ def is_model_field(model, field_name):
 def get_model_field(model, field_name):
     """Return a field given a model and field name.
 
+    The field name may contain dots (.), indicating
+    a remote field.
+
     Arguments:
         model: a Django model
         field_name: the name of a field
@@ -38,6 +57,22 @@ def get_model_field(model, field_name):
             None otherwise.
     """
     meta = model._meta
+    if '.' in field_name:
+        parts = field_name.split('.')
+        last = len(parts) - 1
+        for i, part in enumerate(parts):
+            if i == last:
+                field_name = part
+                break
+            field = get_model_field(model, part)
+            model = get_related_model(field)
+            if not model:
+                raise AttributeError(
+                    '%s is not a related field on %s' % (
+                        part,
+                        model
+                    )
+                )
     try:
         if DJANGO110:
             field = meta.get_field(field_name)
@@ -96,22 +131,6 @@ def is_field_remote(model, field_name):
 
     model_field = get_model_field(model, field_name)
     return isinstance(model_field, (ManyToManyField, RelatedObject))
-
-
-def get_related_model(field):
-    try:
-        # django 1.8+
-        return field.related_model
-    except AttributeError:
-        # django 1.7
-        if hasattr(field, 'field'):
-            return field.field.model
-        elif hasattr(field, 'rel'):
-            return field.rel.to
-        elif field.__class__.__name__ == 'GenericForeignKey':
-            return None
-        else:
-            raise
 
 
 def get_model_table(model):

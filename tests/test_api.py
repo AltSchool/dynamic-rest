@@ -1626,6 +1626,48 @@ class TestCatsAPI(APITestCase):
         self.assertEqual(data['cat']['parent'], parent_id)
         self.assertEqual(data['cat']['name'], kitten_name)
 
+    def test_filter_relationship_rewrite(self):
+        response = self.client.get(
+            '/cars?filter{country_name.icontains}=Chi&include[]=name'
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['cars'][0]['name'], 'Forta')
+
+    def test_update_nested_field(self):
+        patch_data = {
+            'country_name': 'foobar'
+        }
+        response = self.client.patch(
+            '/cars/1',
+            json.dumps(patch_data),
+            content_type='application/json'
+        )
+        self.assertEqual(200, response.status_code, response.content)
+
+    def test_update_create_nested_data(self):
+        patch_data = {
+            'country_name': 'Germany',
+            'country_short_name': None,
+        }
+        response = self.client.patch(
+            '/cars/3',
+            json.dumps(patch_data),
+            content_type='application/json'
+        )
+        # should fail because short name is required
+        self.assertEqual(400, response.status_code, response.content)
+        patch_data['country_short_name'] = 'DE'
+        response = self.client.patch(
+            '/cars/3',
+            json.dumps(patch_data),
+            content_type='application/json'
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(content['car']['country_short_name'], 'DE')
+        self.assertEqual(content['car']['country_name'], 'Germany')
+
 
 class TestFilters(APITestCase):
 
