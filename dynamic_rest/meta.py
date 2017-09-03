@@ -73,6 +73,7 @@ def get_model_field(model, field_name):
                         model
                     )
                 )
+            meta = model._meta
     try:
         if DJANGO110:
             field = meta.get_field(field_name)
