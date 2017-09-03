@@ -52,17 +52,19 @@
                     per_page: per_page,
                   };
                   result[filterName] = params.term;
+                  result['include[]'] = ['id', name];
                   return result;
                 },
                 processResults: function(data, params) {
                   params.page = params.page || 1;
                   var meta = data.meta;
-                  return {
+                  var result = {
                     results: data.{{ field.get_plural_name }},
                     pagination: {
                       more: meta ? meta.page < meta.total_pages : false
                     }
                   };
+                  return result;
                 }
             },
             escapeMarkup: function(markup) {

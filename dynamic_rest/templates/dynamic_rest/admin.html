@@ -321,11 +321,11 @@
 
         <script>
           $(document).ready(function() {
-            // initialize the form
-            $('form').ajaxForm();
             // fix select2 + modal interaction
             // see http://stackoverflow.com/questions/18487056/select2-doesnt-work-when-embedded-in-a-bootstrap-modal
             $.fn.modal.Constructor.prototype.enforceFocus = function() {};
+            // initialize the form
+            $('form').ajaxForm();
           });
         </script>
       {% endblock %}

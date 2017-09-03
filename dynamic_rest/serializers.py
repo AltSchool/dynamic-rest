@@ -708,13 +708,20 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
     def save(self, *args, **kwargs):
         """Serializer save that address prefetch issues."""
         update = getattr(self, 'instance', None) is not None
-        instance = super(
-            WithDynamicSerializerMixin,
-            self
-        ).save(
-            *args,
-            **kwargs
-        )
+        try:
+            instance = super(
+                WithDynamicSerializerMixin,
+                self
+            ).save(
+                *args,
+                **kwargs
+            )
+        except Exception as e:
+            error = getattr(e, 'detail', e.args[0])
+            self._errors = error
+            raise exceptions.ValidationError(
+                self.errors
+            )
         self.do_post_save(instance)
 
         view = self._context.get('view')
