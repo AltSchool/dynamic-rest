@@ -111,8 +111,11 @@ class DynamicAdminRenderer(AdminRenderer):
                 process(results)
 
         columns = context['columns']
+        link_field = None
         if hasattr(view, 'serializer_class'):
-            fields = view.serializer_class.Meta.fields
+            meta = view.serializer_class.Meta
+            link_field = getattr(meta, 'link_field', None)
+            fields = meta.fields
             if not isinstance(fields, six.string_types):
                 # respect serializer field ordering
                 columns = [
@@ -120,9 +123,16 @@ class DynamicAdminRenderer(AdminRenderer):
                 ]
 
         # remove blacklisted columns
-        context['columns'] = [
+        columns = [
             c for c in columns if c not in self.COLUMN_BLACKLIST
         ]
+        context['columns'] = columns
+        # link_field - the field to add the row hyperlink onto
+        # defaults to first visible column
+        if not link_field and columns:
+            link_field = columns[0]
+        context['link_field'] = link_field
+
         context['details'] = context['columns']
         context['error_form'] = context['error_form']
         if context['error_form']:
@@ -132,7 +142,7 @@ class DynamicAdminRenderer(AdminRenderer):
         allowed_methods = set(
             (x.lower() for x in (view.http_method_names or ()))
         )
-        context['show_sidebar'] = True
+        context['actions'] = True
         context['allow_filter'] = False
         context['allow_delete'] = 'delete' in allowed_methods
         context['allow_edit'] = 'put' in allowed_methods

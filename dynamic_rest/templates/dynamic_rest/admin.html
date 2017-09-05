@@ -4,7 +4,7 @@
 
 
 <!DOCTYPE html>
-<html>
+<html lang="en">
   <head>
     {% block head %}
 
@@ -13,150 +13,131 @@
         <meta name="robots" content="NONE,NOARCHIVE" />
       {% endblock %}
 
-      <title>{% block title %}Admin API{% endblock %}</title>
+      <title>
+        {% block title %}
+            Admin API
+        {% endblock %}
+      </title>
 
       {% block style %}
         {% block bootstrap_theme %}
-          <link rel="stylesheet" type="text/css" href="{% static "rest_framework/css/bootstrap.min.css" %}"/>
-          <link rel="stylesheet" type="text/css" href="{% static "rest_framework/css/bootstrap-tweaks.css" %}"/>
+          <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
         {% endblock %}
-        <link rel="stylesheet" type="text/css" href="{% static "rest_framework/css/prettify.css" %}"/>
-        <link rel="stylesheet" type="text/css" href="{% static "rest_framework/css/default.css" %}"/>
         <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css"/>
-        <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/details.css" %}"/>
+        <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/stacktable.css" %}"/>
+        <style>
+        </style>
       {% endblock %}
-
-        <script src="{% static "rest_framework/js/jquery-1.12.4.min.js" %}"></script>
+          <script
+              src="https://code.jquery.com/jquery-1.12.4.min.js"
+              integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="
+              crossorigin="anonymous"
+            ></script>
     {% endblock %}
   </head>
 
   {% block body %}
     <body class="{% block bodyclass %}{% endblock %}">
-      <div class="wrapper">
           {% block navbar %}
-            <div class="navbar navbar-static-top {% block bootstrap_navbar_variant %}navbar-inverse{% endblock %}">
-              <div class="container">
-                <span>
-                  {% block branding %}
-                    <a class='navbar-brand' rel="nofollow" href='/'>
-                      {% load static %}
-                      <img class="logo" src="{% static "images/logo.svg" %}" alt="Logo" />
-                    </a>
-                  {% endblock %}
-                </span>
+            <nav class="navbar navbar-toggleable navbar-inverse bg-primary fixed-top">
+                <a class="navbar-brand" href='/' rel="nofollow">
+                  <img class="logo" src="{% static "images/logo.svg" %}" alt="Logo" />
+                </a>
 
-                {% block breadcrumbs %}
-                  <ul class="breadcrumb">
-                    {% for breadcrumb_name, breadcrumb_url in breadcrumblist %}
-                      {% if forloop.first %}
-                      {% else %}
-                          {% if forloop.last %}
-                            <li class="active"><a href="{{ breadcrumb_url }}">{{ breadcrumb_name }}</a></li>
-                          {% else %}
-                            <li><a href="{{ breadcrumb_url }}">{{ breadcrumb_name }}</a></li>
-                          {% endif %}
-                      {% endif %}
-                    {% endfor %}
-                  </ul>
-                {% endblock %}
-
-                <ul class="nav navbar-nav pull-right">
-                  {% block userlinks %}
-                    {% if user.is_authenticated %}
-                      {% optional_logout request user %}
-                    {% else %}
-                      {% optional_login request %}
-                    {% endif %}
-                  {% endblock %}
-                </ul>
+              <div class="navbar-nav mr-auto">
+                {% for breadcrumb_name, breadcrumb_url in breadcrumblist %}
+                  {% if forloop.first %}
+                  {% else %}
+                    <div class="nav-item {% if forloop.last %}active{% endif %}">
+                        <a class="nav-link" href="{{ breadcrumb_url }}">{{ breadcrumb_name }}</a>
+                    </div>
+                  {% endif %}
+                {% endfor %}
               </div>
-            </div>
-          {% endblock %}
 
-          <div class="container">
+              {% block userlinks %}
+                {% if user.is_authenticated %}
+                  {% optional_logout request user %}
+                {% else %}
+                  {% optional_login request %}
+                {% endif %}
+              {% endblock %}
+            </nav>
+          {% endblock %}
 
           <!-- Content -->
           <div id="content">
-
-
-            <div class="content-main">
-              <div class="left">
-                  <div class="page-header">
-                    <h1>{{ name }}</h1>
-                  </div>
-
-                  <div style="float:left">
-                    {% block description %}
-                      {{ description }}
-                    {% endblock %}
-                  </div>
-              </div>
-
-              </div>
-              {% if show_sidebar %}
-                <div class="sidebar-actions">
-                  {% if post_form and allow_create %}
-                    <button type="button" class="button-form btn btn-primary sidebar-action btn-create" data-toggle="modal" data-target="#createModal">
-                      <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-                      <p class="btn-label">Create</p>
-                    </button>
-                  {% endif %}
-
-                  {% if style == 'list' and allow_import %}
-                    <button type="button" class="button-form btn btn-primary sidebar-action btn-import" data-toggle="modal" data-target="#importModal">
-                      <span class="glyphicon glyphicon-import" aria-hidden="true"></span>
-                      <p class="btn-label">Import</p>
-                    </button>
-                  {% endif %}
-
-                  {% if put_form and allow_edit %}
-                    <button type="button" class="button-form btn btn-primary sidebar-action btn-edit" data-toggle="modal" data-target="#editModal">
-                      <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
-                      <p class="btn-label">Edit</p>
-                    </button>
-                  {% endif %}
-
-                  {% if style == 'detail' and allow_delete %}
-                    <form class="button-form" action="{{ request.get_full_path }}" data-method="DELETE">
-                      <button class="btn btn-danger sidebar-action btn-delete">
-                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
-                        <p class="btn-label">Delete</p>
-                      </button>
-                    </form>
-                  {% endif %}
-
-                  {% if filter_form and allow_filter %}
-                    <button style="float: right; margin-right: 10px" data-toggle="modal" data-target="#filtersModal" class="btn btn-default sidebar-action btn-filters">
-                      <span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
-                      <p class="btn-label">{% trans "Filters" %}</p>
-                    </button>
-                  {% endif %}
-
-                </div>
-              {% endif %}
-
-              <div class="request-info" style="clear: both" >
-                {% if style == 'list' %}
-                  {% include "dynamic_rest/admin/list.html" %}
+            <div class="header">
+              <h2>{{ name }}</h2>
+            </div>
+            <div class="description">
+              {% block description %}
+                {{ description }}
+              {% endblock %}
+            </div>
+            <div class="main">
+              {% if style == 'list' %}
+                {% include "dynamic_rest/admin/list.html" %}
+              {% else %}
+                {% if style == 'root' %}
+                  {% include "dynamic_rest/admin/root.html" %}
                 {% else %}
-                  {% if style == 'root' %}
-                      {% include "dynamic_rest/admin/root.html" %}
-                  {% else %}
-                      {% include "dynamic_rest/admin/detail.html" %}
-                  {% endif %}
+                  {% include "dynamic_rest/admin/detail.html" %}
                 {% endif %}
-              </div>
-
-              {% if paginator %}
-                <nav style="float: right">
-                  {% get_pagination_html paginator %}
-                </nav>
               {% endif %}
+            </div>
+
+              <div class="navbar navbar-inverse navbar-fixed-bottom">
+                  {% if paginator %}
+                    <div class="pull-right">
+                      {% get_pagination_html paginator %}
+                    </div>
+                  {% endif %}
+                  {% if actions %}
+                    <div class="actions">
+                      {% if post_form and allow_create %}
+                        <div class="btn btn-primary" data-toggle="modal" data-target="#createModal">
+                          <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                          Create
+                        </div>
+                      {% endif %}
+
+                      {% if style == 'list' and allow_import %}
+                        <div class="btn btn-info" data-toggle="modal" data-target="#importModal">
+                          <span class="glyphicon glyphicon-import" aria-hidden="true"></span>
+                          Import
+                        </div>
+                      {% endif %}
+
+                      {% if put_form and allow_edit %}
+                        <div class="btn btn-primary" data-toggle="modal" data-target="#editModal">
+                          <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
+                          Edit
+                        </div>
+                      {% endif %}
+
+                      {% if style == 'detail' and allow_delete %}
+                        <form action="{{ request.get_full_path }}" data-method="DELETE">
+                          <div class="btn btn-danger">
+                            <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                            Delete
+                          </div>
+                        </form>
+                      {% endif %}
+
+                      {% if filter_form and allow_filter %}
+                        <button style="float: right; margin-right: 10px" data-toggle="modal" data-target="#filtersModal" class="btn btn-default sidebar-action btn-filters">
+                          <span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+                          <p class="btn-label">{% trans "Filters" %}</p>
+                        </button>
+                      {% endif %}
+
+                    </div>
+                  {% endif %}
+              </div>
             </div>
           </div>
           <!-- END Content -->
-        </div><!-- /.container -->
-      </div><!-- ./wrapper -->
 
       <!-- Create Modal -->
       <div class="modal fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -312,20 +293,24 @@
           };
         </script>
 
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+        <script src="{% static "dynamic_rest/js/stacktable.js" %}"></script>
         <script src="{% static "rest_framework/js/ajax-form.js" %}"></script>
-        <script src="{% static "rest_framework/js/csrf.js" %}"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.full.min.js"></script>
+        <!-- <script src="{% static "rest_framework/js/csrf.js" %}"></script>
         <script src="{% static "rest_framework/js/bootstrap.min.js" %}"></script>
         <script src="{% static "rest_framework/js/prettify-min.js" %}"></script>
-        <script src="{% static "rest_framework/js/default.js" %}"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.full.min.js"></script>
+        <script src="{% static "rest_framework/js/default.js" %}"></script> -->
 
         <script>
           $(document).ready(function() {
             // fix select2 + modal interaction
             // see http://stackoverflow.com/questions/18487056/select2-doesnt-work-when-embedded-in-a-bootstrap-modal
-            $.fn.modal.Constructor.prototype.enforceFocus = function() {};
+            $.fn.modal.Constructor.prototype._enforceFocus = function() {};
             // initialize the form
             $('form').ajaxForm();
+            $('#errorModal').modal('show');
           });
         </script>
       {% endblock %}

@@ -1,22 +1,29 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
 {% if results %}
-    <table class="table table-striped">
+    <script>
+        $(document).ready(function() {
+            $('#results-table').cardtable();
+        });
+    </script>
+    <table id="results-table" class="table">
       <thead>
-        <tr>{% for column in columns%}<th>{{ column|format_key }}</th>{% endfor %}<th></th></tr>
+        <tr>{% for column in columns%}<th>{{ column|format_key }}</th>{% endfor %}</tr>
       </thead>
       <tbody>
             {% for row in results %}
               <tr>
                 {% for key in columns %}
                     <td {{ row|get_value_from_dict:key | add_nested_class }} >
-                      {{ row|get_value_from_dict:key | format_value }}
+                      {% if link_field == key %}
+                          <a href="{{ row.url }}">
+                              {{ row|get_value_from_dict:key | format_value }}
+                          </a>
+                      {% else %}
+                          {{ row|get_value_from_dict:key | format_value }}
+                      {% endif %}
                     </td>
                 {% endfor %}
-                <td>
-                  <a href="{{ row.url }}"><span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span></a>
-                </td>
-
               </tr>
             {% endfor %}
       </tbody>
