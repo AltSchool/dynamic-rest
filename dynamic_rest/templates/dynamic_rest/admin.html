@@ -25,8 +25,7 @@
         {% endblock %}
         <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css"/>
         <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/stacktable.css" %}"/>
-        <style>
-        </style>
+        <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/custom.css" %}"/>
       {% endblock %}
           <script
               src="https://code.jquery.com/jquery-1.12.4.min.js"
@@ -39,7 +38,7 @@
   {% block body %}
     <body class="{% block bodyclass %}{% endblock %}">
           {% block navbar %}
-            <nav class="navbar navbar-toggleable navbar-inverse bg-primary fixed-top">
+            <nav class="navbar flex-row navbar-inverse bg-primary fixed-top">
                 <a class="navbar-brand" href='/' rel="nofollow">
                   <img class="logo" src="{% static "images/logo.svg" %}" alt="Logo" />
                 </a>
@@ -67,14 +66,14 @@
 
           <!-- Content -->
           <div id="content">
-            <div class="header">
+            <!-- <div class="header">
               <h2>{{ name }}</h2>
             </div>
             <div class="description">
               {% block description %}
                 {{ description }}
               {% endblock %}
-            </div>
+            </div> -->
             <div class="main">
               {% if style == 'list' %}
                 {% include "dynamic_rest/admin/list.html" %}
@@ -87,14 +86,12 @@
               {% endif %}
             </div>
 
-              <div class="navbar navbar-inverse navbar-fixed-bottom">
+              <nav class="navbar flex-row navbar-inverse bg-faded fixed-bottom">
                   {% if paginator %}
-                    <div class="pull-right">
-                      {% get_pagination_html paginator %}
-                    </div>
+                    {% get_pagination_html paginator %}
                   {% endif %}
                   {% if actions %}
-                    <div class="actions">
+                    <div class="actions ml-auto">
                       {% if post_form and allow_create %}
                         <div class="btn btn-primary" data-toggle="modal" data-target="#createModal">
                           <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
@@ -117,12 +114,12 @@
                       {% endif %}
 
                       {% if style == 'detail' and allow_delete %}
-                        <form action="{{ request.get_full_path }}" data-method="DELETE">
                           <div class="btn btn-danger">
-                            <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
-                            Delete
+                            <form action="{{ request.get_full_path }}" method="DELETE" data-method="DELETE">
+                                <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                                Delete
+                            </form>
                           </div>
-                        </form>
                       {% endif %}
 
                       {% if filter_form and allow_filter %}
@@ -134,7 +131,7 @@
 
                     </div>
                   {% endif %}
-              </div>
+              </nav>
             </div>
           </div>
           <!-- END Content -->
@@ -205,7 +202,7 @@
               <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
               <h4 class="modal-title" id="myModalLabel">Edit</h4>
             </div>
-            <form action="{{ request.get_full_path }}" data-method="PUT" enctype="multipart/form-data" class="form-horizontal" novalidate>
+            <form action="{{ request.get_full_path }}" method="PUT" data-method="PUT" enctype="multipart/form-data" class="form-horizontal" novalidate>
               <div class="modal-body">
                 <fieldset>
                   {{ put_form }}
@@ -229,7 +226,7 @@
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 <h4 class="modal-title" id="myModalLabel">{{ error_title }}</h4>
               </div>
-              <form action="{{ request.get_full_path }}" data-method="{{ request.method }}" enctype="multipart/form-data" class="form-horizontal" novalidate>
+              <form action="{{ request.get_full_path }}" method="{{ request.method }}" data-method="{{ request.method }}" enctype="multipart/form-data" class="form-horizontal" novalidate>
                 <div class="modal-body">
                   <fieldset>
                     {{ error_form }}
@@ -254,7 +251,7 @@
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
                 <h4 class="modal-title" id="myModalLabel">Uh oh! Import Error:</h4>
               </div>
-              <form action="{{ request.get_full_path }}" data-method="{{ request.method }}" enctype="multipart/form-data" class="form-horizontal" novalidate>
+              <form action="{{ request.get_full_path }}" method="{{ request.method }}" data-method="{{ request.method }}" enctype="multipart/form-data" class="form-horizontal" novalidate>
                 <div class="modal-body">
                   <div class="import-example">
                     <table style="width:100%">

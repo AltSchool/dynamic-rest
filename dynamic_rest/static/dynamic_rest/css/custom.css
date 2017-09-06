@@ -1,0 +1,8 @@
+body {
+    position: absolute;
+    top: 70px;
+    bottom: 70px;
+    right: 20px;
+    left: 20px;
+    overflow-y: auto;
+}
