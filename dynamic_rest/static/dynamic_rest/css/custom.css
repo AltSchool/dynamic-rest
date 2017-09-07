@@ -1,14 +1,34 @@
-body {
-    position: absolute;
-    top: 70px;
-    bottom: 70px;
-    right: 20px;
-    left: 20px;
-    overflow-y: auto;
+.drest-content-container {
+    position: fixed;
+    top: 50px;
+    bottom: 50px;
+    right: 0;
+    left: 0;
 }
-.logo {
+.drest-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    overflow-y: scroll;
+}
+.drest-nav {
+    justify-content: space-between;
+    flex-direction: row;
+}
+.drest-nav-edge {
+    flex: 0 0 auto;
+}
+
+.drest-nav-center {
+    flex: 1 1 auto;
+    text-align: center;
+}
+
+.drest-logo {
     width: 30px;
 }
+
 .stacktable.small-only {
     border: 1px solid #aaa;
 }

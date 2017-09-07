@@ -2,320 +2,236 @@
 {% load i18n %}
 {% load rest_framework %}
 
-
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+
     {% block head %}
+        <head>
+            {% block meta %}
+                <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+                <meta name="robots" content="NONE,NOARCHIVE" />
+            {% endblock %}
 
-      {% block meta %}
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-        <meta name="robots" content="NONE,NOARCHIVE" />
-      {% endblock %}
+            <title>
+                {% block title %}
+                    Admin API
+                {% endblock %}
+            </title>
 
-      <title>
-        {% block title %}
-            Admin API
-        {% endblock %}
-      </title>
+            {% block style %}
+                {% block bootstrap_css %}
+                    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+                {% endblock %}
+                <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css"/>
+                <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/stacktable.css" %}"/>
+                <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/custom.css" %}"/>
+            {% endblock %}
 
-      {% block style %}
-        {% block bootstrap_theme %}
-          <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
-        {% endblock %}
-        <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css"/>
-        <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/stacktable.css" %}"/>
-        <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/custom.css" %}"/>
-      {% endblock %}
-          <script
-              src="https://code.jquery.com/jquery-1.12.4.min.js"
-              integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ="
-              crossorigin="anonymous"
-            ></script>
-    {% endblock %}
-  </head>
+            {% block jquery %}
+                <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+            {% endblock %}
+        </head>
+    {% endblock %} <!-- /head -->
 
-  {% block body %}
-    <body class="{% block bodyclass %}{% endblock %}">
-          {% block navbar %}
-            <nav class="navbar navbar-toggleable navbar-inverse bg-primary fixed-top">
-             <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#top-navbar-collapse" aria-controls="top-navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
-                <span class="navbar-toggler-icon"></span>
-              </button>
+    {% block body %}
+        <body>
+            {% block header %}
+                <nav class="navbar navbar-inverse bg-primary fixed-top">
+                    <div class="navbar-nav drest-nav">
+                        <div class="navbar-brand drest-nav-edge">
+                            {% block brand %}
+                                <a href="/">
+                                    <img class="drest-logo" src="{% static "dynamic_rest/img/logo.svg" %}" alt="Logo" />
+                                </a>
+                            {% endblock %}
+                        </div>
+                        <div class="nav-item drest-nav-center active">
+                            <a class="nav-link">
+                                Dogs
+                            </a>
+                        </div>
 
-                <a class="navbar-brand" href='/' rel="nofollow">
-                  <img class="logo" src="{% static "images/logo.svg" %}" alt="Logo" />
-                </a>
-            <div class="collapse navbar-collapse" id="top-navbar-collapse">
-              <div class="navbar-nav mr-auto">
-                {% for breadcrumb_name, breadcrumb_url in breadcrumblist %}
-                  {% if forloop.first %}
-                  {% else %}
-                    <div class="nav-item {% if forloop.last %}active{% endif %}">
-                        <a class="nav-link" href="{{ breadcrumb_url }}">{{ breadcrumb_name }}</a>
+                        <div class="nav-item drest-nav-edge">
+                                <div class="btn btn-secondary">
+                                    <span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+                                    Login
+                                </div>
+                                {% if user.is_authenticated %}
+                                    {% optional_logout request user %}
+                                {% else %}
+                                    {% optional_login request %}
+                                {% endif %}
+                        </div>
                     </div>
-                  {% endif %}
-                {% endfor %}
-              </div>
+                </nav>
+            {% endblock %} <!-- /header -->
 
-              {% block userlinks %}
-                {% if user.is_authenticated %}
-                  {% optional_logout request user %}
-                {% else %}
-                  {% optional_login request %}
-                {% endif %}
-              {% endblock %}
-              </div>
-            </nav>
-          {% endblock %}
+            {% block content %}
+                <div class="drest-content-container">
+                    <div class="drest-content">
+                        {% if style == 'list' %}
+                            {% include "dynamic_rest/admin/list.html" %}
+                        {% else %}
+                            {% if style == 'root' %}
+                                {% include "dynamic_rest/admin/root.html" %}
+                            {% else %}
+                                {% include "dynamic_rest/admin/detail.html" %}
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endblock %} <!-- /content -->
 
-          <!-- Content -->
-          <div id="content">
-            <!-- <div class="header">
-              <h2>{{ name }}</h2>
-            </div>
-            <div class="description">
-              {% block description %}
-                {{ description }}
-              {% endblock %}
-            </div> -->
-            <div class="main">
-              {% if style == 'list' %}
-                {% include "dynamic_rest/admin/list.html" %}
-              {% else %}
-                {% if style == 'root' %}
-                  {% include "dynamic_rest/admin/root.html" %}
-                {% else %}
-                  {% include "dynamic_rest/admin/detail.html" %}
-                {% endif %}
-              {% endif %}
-            </div>
-
-              <nav class="navbar flex-row navbar-inverse bg-faded fixed-bottom">
-                  {% if paginator %}
-                    {% get_pagination_html paginator %}
-                  {% endif %}
-                  {% if actions %}
-                    <div class="actions ml-auto">
-                      {% if post_form and allow_create %}
-                        <div class="btn btn-primary" data-toggle="modal" data-target="#createModal">
-                          <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-                          Create
+            {% block footer %}
+                <nav class="navbar navbar-inverse bg-faded fixed-bottom">
+                    <div class="navbar-nav drest-nav">
+                        <div class="nav-item drest-nav-edge">
+                            {% if filter_form and allow_filter %}
+                                <div data-toggle="modal" data-target="#filtersModal" class="btn btn-secondary">
+                                    <span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
+                                    Filter
+                                </div>
+                            {% endif %}
+                            {% if put_form and allow_edit %}
+                                <div class="btn btn-primary" data-toggle="modal" data-target="#editModal">
+                                    <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
+                                    Edit
+                                </div>
+                            {% endif %}
                         </div>
-                      {% endif %}
-
-                      {% if style == 'list' and allow_import %}
-                        <div class="btn btn-info" data-toggle="modal" data-target="#importModal">
-                          <span class="glyphicon glyphicon-import" aria-hidden="true"></span>
-                          Import
+                        <div class="nav-item">
+                            {% if paginator %}
+                                {% get_pagination_html paginator %}
+                            {% endif %}
                         </div>
-                      {% endif %}
-
-                      {% if put_form and allow_edit %}
-                        <div class="btn btn-primary" data-toggle="modal" data-target="#editModal">
-                          <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
-                          Edit
+                        <div class="nav-item drest-nav-edge">
+                            {% if post_form and allow_create %}
+                                <div class="btn btn-primary" data-toggle="modal" data-target="#createModal">
+                                    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
+                                    Create
+                                </div>
+                            {% endif %}
+                            {% if style == 'detail' and allow_delete %}
+                                <div class="btn btn-danger">
+                                    <form action="{{ request.get_full_path }}" method="DELETE" data-method="DELETE">
+                                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                                        Delete
+                                    </form>
+                                </div>
+                            {% endif %}
                         </div>
-                      {% endif %}
+                    </div>
+                </nav>
+            {% endblock %} <!-- /footer -->
 
-                      {% if style == 'detail' and allow_delete %}
-                          <div class="btn btn-danger">
-                            <form action="{{ request.get_full_path }}" method="DELETE" data-method="DELETE">
-                                <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
-                                Delete
+            {% block create_modal %}
+                <div class="modal fade" id="createModal">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">Create</h4>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <form action="{{ request.get_full_path }}" method="POST" enctype="multipart/form-data" class="form-horizontal" novalidate>
+                                <div class="modal-body">
+                                    <fieldset>
+                                        {% csrf_token %}
+                                        {{ post_form }}
+                                    </fieldset>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                    <button type="submit" class="btn btn-primary">Save</button>
+                                </div>
                             </form>
-                          </div>
-                      {% endif %}
-
-                      {% if filter_form and allow_filter %}
-                        <button style="float: right; margin-right: 10px" data-toggle="modal" data-target="#filtersModal" class="btn btn-default sidebar-action btn-filters">
-                          <span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
-                          <p class="btn-label">{% trans "Filters" %}</p>
-                        </button>
-                      {% endif %}
-
+                        </div>
                     </div>
-                  {% endif %}
-              </nav>
-            </div>
-          </div>
-          <!-- END Content -->
-
-      <!-- Create Modal -->
-      <div class="modal fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-              <h4 class="modal-title" id="myModalLabel">Create</h4>
-            </div>
-            <form action="{{ request.get_full_path }}" method="POST" enctype="multipart/form-data" class="form-horizontal" novalidate>
-              <div class="modal-body">
-                <fieldset>
-                  {% csrf_token %}
-                  {{ post_form }}
-                </fieldset>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="submit" class="btn btn-primary">Save</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      <!-- Import Modal -->
-      <div class="modal fade" id="importModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-              <h4 class="modal-title" id="myModalLabel">Import</h4>
-            </div>
-            <form action="{{ request.get_full_path }}" method="POST" enctype="multipart/form-data" class="form-horizontal" novalidate>
-              <div class="modal-body">
-                <fieldset>
-                  {% csrf_token %}
-                  <label class="control-label">Upload CSV File</label>
-                  <br><br>
-                  <input id="csv-import" name="file" type="file" class="file" accept=".csv">
-                </fieldset>
-              </div>
-              <div class="import-example">
-                <div class="modal-body">
-                  <table style="width:100%">
-                    <tr>{% for column in columns%}<th>{{ column|capfirst }}</th>{% endfor %}<th></th></tr>
-
-                  </table>
                 </div>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="submit" class="btn btn-primary" value="Upload">Upload</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
+            {% endblock %} <!-- /create_modal -->
 
-      <!-- Edit Modal -->
-      <div class="modal fade" id="editModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-          <div class="modal-content">
-            <div class="modal-header">
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-              <h4 class="modal-title" id="myModalLabel">Edit</h4>
-            </div>
-            <form action="{{ request.get_full_path }}" method="PUT" data-method="PUT" enctype="multipart/form-data" class="form-horizontal" novalidate>
-              <div class="modal-body">
-                <fieldset>
-                  {{ put_form }}
-                </fieldset>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="submit" class="btn btn-primary">Save</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      </div>
-
-      {% if error_form and not errors %}
-        <!-- Errors Modal -->
-        <div class="modal" id="errorModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="myModalLabel">{{ error_title }}</h4>
-              </div>
-              <form action="{{ request.get_full_path }}" method="{{ request.method }}" data-method="{{ request.method }}" enctype="multipart/form-data" class="form-horizontal" novalidate>
-                <div class="modal-body">
-                  <fieldset>
-                    {{ error_form }}
-                  </fieldset>
+            {% block edit_modal %}
+                <div class="modal fade" id="editModal">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">Edit</h4>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <form action="{{ request.get_full_path }}" method="PUT" data-method="PUT" enctype="multipart/form-data" class="form-horizontal" novalidate>
+                                <div class="modal-body">
+                                    <fieldset>
+                                        {{ put_form }}
+                                    </fieldset>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                    <button type="submit" class="btn btn-primary">Save</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                  <button type="submit" class="btn btn-primary">Save</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      {% endif %}
+            {% endblock %} <!-- /edit_modal -->
 
-      {% if errors %}
-        <!-- Bulk Import Errors Modal -->
-        <<div class="modal" id="errorModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-                <h4 class="modal-title" id="myModalLabel">Uh oh! Import Error:</h4>
-              </div>
-              <form action="{{ request.get_full_path }}" method="{{ request.method }}" data-method="{{ request.method }}" enctype="multipart/form-data" class="form-horizontal" novalidate>
-                <div class="modal-body">
-                  <div class="import-example">
-                    <table style="width:100%">
-                      <tr>
-                        <th>Origin</th><th>Fur</th><th>Name</th><th>Error</th>
-                      </tr>
-                      {% for error in errors %}
-                      <tr>
-                          <td>{{ error.source.origin }}</td>
-                          <td>{{ error.source.fur }}</td>
-                          <td>{{ error.source.name }}</td>
-                          <td>{{ error.detail }}</td>
-                      </tr>
-                      {% endfor %}
-                    </table>
-                  </div>
-                </div>
-                <div class="modal-footer">
-                  <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      {% endif %}
+            {% block error_form %}
+                {% if error_form %}
+                    <div class="modal" id="errorModal">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h4 class="modal-title">{{ error_title }}</h4>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <form action="{{ request.get_full_path }}" method="{{ request.method }}" data-method="{{ request.method }}" enctype="multipart/form-data" class="form-horizontal" novalidate>
+                                    <div class="modal-body">
+                                        <fieldset>
+                                            {{ error_form }}
+                                        </fieldset>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                        <button type="submit" class="btn btn-primary">Save</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endblock %} <!-- /error_form -->
 
-      {% if filter_form %}
-        {{ filter_form }}
-      {% endif %}
+            {% if filter_form %}
+                {{ filter_form }}
+            {% endif %} <!-- /filter_form -->
 
-      {% block script %}
-        <script>
-          window.drf = {
-            csrfHeaderName: "{{ csrf_header_name|default:'X-CSRFToken' }}",
-            csrfCookieName: "{{ csrf_cookie_name|default:'csrftoken' }}"
-          };
-        </script>
+            {% block script %}
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+                <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+                <script src="{% static "dynamic_rest/js/stacktable.js" %}"></script>
+                <script src="{% static "rest_framework/js/ajax-form.js" %}"></script>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.full.min.js"></script>
 
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
-        <script src="{% static "dynamic_rest/js/stacktable.js" %}"></script>
-        <script src="{% static "rest_framework/js/ajax-form.js" %}"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.full.min.js"></script>
-        <!-- <script src="{% static "rest_framework/js/csrf.js" %}"></script>
-        <script src="{% static "rest_framework/js/bootstrap.min.js" %}"></script>
-        <script src="{% static "rest_framework/js/prettify-min.js" %}"></script>
-        <script src="{% static "rest_framework/js/default.js" %}"></script> -->
-
-        <script>
-          $(document).ready(function() {
-            // fix select2 + modal interaction
-            // see http://stackoverflow.com/questions/18487056/select2-doesnt-work-when-embedded-in-a-bootstrap-modal
-            $.fn.modal.Constructor.prototype._enforceFocus = function() {};
-            // initialize the form
-            $('form').ajaxForm();
-            $('#errorModal').modal('show');
-          });
-        </script>
-      {% endblock %}
-    </body>
-  {% endblock %}
+                <script>
+                    window.drf = {
+                        csrfHeaderName: "{{ csrf_header_name|default:'X-CSRFToken' }}",
+                        csrfCookieName: "{{ csrf_cookie_name|default:'csrftoken' }}"
+                    };
+                    $(document).ready(function() {
+                        // fix select2 + modal interaction
+                        // see http://stackoverflow.com/questions/18487056/select2-doesnt-work-when-embedded-in-a-bootstrap-modal
+                        $.fn.modal.Constructor.prototype._enforceFocus = function() {};
+                        // initialize the form
+                        $('form').ajaxForm();
+                        // show the error modal
+                        $('#errorModal').modal('show');
+                    });
+                </script>
+            {% endblock %} <!-- /script -->
+        </body>
+    {% endblock %} <!-- /body -->
 </html>
