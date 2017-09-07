@@ -6,3 +6,9 @@ body {
     left: 20px;
     overflow-y: auto;
 }
+.logo {
+    width: 30px;
+}
+.stacktable.small-only {
+    border: 1px solid #aaa;
+}

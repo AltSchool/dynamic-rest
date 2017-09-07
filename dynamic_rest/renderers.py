@@ -147,7 +147,7 @@ class DynamicAdminRenderer(AdminRenderer):
         context['allow_delete'] = 'delete' in allowed_methods
         context['allow_edit'] = 'put' in allowed_methods
         context['allow_create'] = 'post' in allowed_methods
-        context['allow_import'] = 'post' in allowed_methods
+        context['allow_import'] = False
         return context
 
     def render_form_for_serializer(self, serializer):

@@ -38,11 +38,15 @@
   {% block body %}
     <body class="{% block bodyclass %}{% endblock %}">
           {% block navbar %}
-            <nav class="navbar flex-row navbar-inverse bg-primary fixed-top">
+            <nav class="navbar navbar-toggleable navbar-inverse bg-primary fixed-top">
+             <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse" data-target="#top-navbar-collapse" aria-controls="top-navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+              </button>
+
                 <a class="navbar-brand" href='/' rel="nofollow">
                   <img class="logo" src="{% static "images/logo.svg" %}" alt="Logo" />
                 </a>
-
+            <div class="collapse navbar-collapse" id="top-navbar-collapse">
               <div class="navbar-nav mr-auto">
                 {% for breadcrumb_name, breadcrumb_url in breadcrumblist %}
                   {% if forloop.first %}
@@ -61,6 +65,7 @@
                   {% optional_login request %}
                 {% endif %}
               {% endblock %}
+              </div>
             </nav>
           {% endblock %}
 
