@@ -12,10 +12,10 @@
                     <td {{ row|get_value_from_dict:key | add_nested_class }} >
                       {% if link_field == key %}
                           <a href="{{ row.url }}">
-                              {{ row|get_value_from_dict:key | drest_format_value | format_value }}
+                              {{ row|get_value_from_dict:key | drest_format_value }}
                           </a>
                       {% else %}
-                          {{ row|get_value_from_dict:key | drest_format_value | format_value }}
+                          {{ row|get_value_from_dict:key | drest_format_value }}
                       {% endif %}
                     </td>
                 {% endfor %}

@@ -6,6 +6,7 @@ import inflection
 from django import template
 from django.utils.safestring import mark_safe
 from dynamic_rest.conf import settings
+from rest_framework.templatetags.rest_framework import format_value
 
 register = template.Library()
 
@@ -52,6 +53,15 @@ def to_json(value):
 
 @register.filter
 def drest_format_value(value):
-    if getattr(value, 'is_choice', False):
-        return value.name
-    return value
+    classes = getattr(value, 'classes', None)
+    if getattr(value, 'is_choice', None):
+        value = value.name
+
+    if classes:
+        return mark_safe(
+            '<span class="%s">%s</span>' % (
+                classes,
+                drest_format_value(str(value))
+            )
+        )
+    return format_value(value)
