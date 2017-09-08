@@ -53,15 +53,16 @@ def to_json(value):
 
 @register.filter
 def drest_format_value(value):
-    classes = getattr(value, 'classes', None)
-    if getattr(value, 'is_choice', None):
-        value = value.name
-
-    if classes:
-        return mark_safe(
-            '<span class="%s">%s</span>' % (
-                classes,
-                drest_format_value(str(value))
+    if getattr(value, 'is_dynamic_value', None):
+        classes = value.classes
+        value = value.name if value.display_name else value.value
+        if classes:
+            return mark_safe(
+                '<span class="%s">%s</span>' % (
+                    classes,
+                    drest_format_value(value)
+                )
             )
-        )
+        else:
+            return drest_format_value(value)
     return format_value(value)

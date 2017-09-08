@@ -1,5 +1,5 @@
 from django.core.urlresolvers import get_script_prefix
-from django.utils.six import string_types
+from django.utils.six import string_types, text_type
 
 FALSEY_STRINGS = (
     '0',
@@ -59,3 +59,30 @@ def get_breadcrumbs(request, view=None):
         return breadcrumbs
     else:
         return _get_breadcrumbs(request)
+
+
+class DynamicValue(text_type):
+    """
+    A string like object that additionally has an associated display name.
+    We use this for hyperlinked URLs that may render as a named link
+    in some contexts, or render as a plain URL in others.
+    """
+    def __new__(self, value, display, classes='', display_name=False):
+        ret = text_type.__new__(self, value)
+        ret.value = value
+        ret.display = display
+        ret.display_name = display_name
+        ret.classes = classes
+        return ret
+
+    def __getnewargs__(self):
+        return(str(self), self.name, self.classes, self.display_name)
+
+    @property
+    def name(self):
+        # This ensures that we only called `__str__` lazily,
+        # as in some cases calling __str__ on a model instances *might*
+        # involve a database lookup.
+        return text_type(self.display)
+
+    is_dynamic_value = True

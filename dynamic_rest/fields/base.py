@@ -36,8 +36,8 @@ class DynamicField(fields.Field):
     def to_representation(self, value):
         return value
 
-    def to_internal_value(self, data):
-        return data
+    def to_internal_value(self, value):
+        return value
 
     @property
     def parent_model(self):
