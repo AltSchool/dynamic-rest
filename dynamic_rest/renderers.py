@@ -112,10 +112,15 @@ class DynamicAdminRenderer(AdminRenderer):
 
         columns = context['columns']
         link_field = None
+        header = ''
+        header_link = ''
         if hasattr(view, 'serializer_class'):
-            meta = view.serializer_class.Meta
+            serializer_class = view.serializer_class
+            meta = serializer_class.Meta
             link_field = getattr(meta, 'link_field', None)
             fields = meta.fields
+            header = serializer_class.get_plural_name().title()
+            header_link = serializer_class.get_url()
             if not isinstance(fields, six.string_types):
                 # respect serializer field ordering
                 columns = [
@@ -133,6 +138,8 @@ class DynamicAdminRenderer(AdminRenderer):
             link_field = columns[0]
         context['link_field'] = link_field
 
+        context['header'] = header
+        context['header_link'] = header_link
         context['details'] = context['columns']
         context['error_form'] = context['error_form']
         if context['error_form']:
