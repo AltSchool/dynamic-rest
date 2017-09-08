@@ -1,8 +1,11 @@
+from __future__ import absolute_import
+
 import six
 import json
 import inflection
 from django import template
 from django.utils.safestring import mark_safe
+from dynamic_rest.conf import settings
 
 register = template.Library()
 
@@ -35,3 +38,8 @@ def get_value_from_dict(d, key):
 @register.filter
 def format_key(key):
     return inflection.humanize(key)
+
+
+@register.simple_tag
+def drest_settings(key):
+    return getattr(settings, key)

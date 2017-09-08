@@ -1,9 +1,14 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
 <table class="table">
-  <tbody>
-    {% for key in details %}
-      <tr><th>{{ key|format_key }}</th><td {{ results|get_value_from_dict:key | add_nested_class }}>{{ results|get_value_from_dict:key |format_value }}</td></tr>
-    {% endfor %}
-  </tbody>
+    <tbody>
+        {% for key in details %}
+            <tr>
+                <th>{{ key|format_key }}</th>
+                <td {{ results|get_value_from_dict:key | add_nested_class }}>
+                    {{ results|get_value_from_dict:key |format_value }}
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
 </table>

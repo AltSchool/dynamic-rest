@@ -6,6 +6,7 @@ from rest_framework.renderers import (
     HTMLFormRenderer,
     ClassLookupDict
 )
+from rest_framework.compat import reverse, NoReverseMatch
 try:
     from rest_framework.renderers import AdminRenderer
 except:
@@ -14,6 +15,7 @@ except:
         format = 'admin'
 
 from dynamic_rest.utils import unpack, get_breadcrumbs
+from dynamic_rest.conf import settings
 from dynamic_rest.fields import DynamicRelationField
 
 
@@ -62,7 +64,6 @@ class DynamicAdminRenderer(AdminRenderer):
     """Admin renderer."""
     form_renderer_class = DynamicHTMLFormRenderer
     template = 'dynamic_rest/admin.html'
-    COLUMN_BLACKLIST = ('id', 'links')
 
     def get_breadcrumbs(self, request, view=None):
         return get_breadcrumbs(request.path, view=view)
@@ -71,8 +72,9 @@ class DynamicAdminRenderer(AdminRenderer):
         def process(result):
             if result.get('links', {}).get('self'):
                 result['url'] = result['links']['self']
+            result.pop('links', None)
+
         view = context.get('view')
-        request = context.get('request')
         response = context.get('response')
 
         if view and view.__class__.__name__ == 'API':
@@ -91,14 +93,16 @@ class DynamicAdminRenderer(AdminRenderer):
             context
         )
 
-        # modify context
-        context['breadcrumblist'] = self.get_breadcrumbs(
-            request,
-            view=view
-        )
+        # add context
 
+        header = ''
+        header_url = '#'
         if is_root:
             context['style'] = 'root'
+            header = settings.ROOT_VIEW_NAME or ''
+            header_url = '/'
+
+        style = context['style']
 
         # to account for the DREST envelope
         # (data is stored one level deeper than expected in the response)
@@ -112,49 +116,80 @@ class DynamicAdminRenderer(AdminRenderer):
 
         columns = context['columns']
         link_field = None
-        header = ''
-        header_link = ''
+        paginator = context.get('paginator')
         if hasattr(view, 'serializer_class'):
             serializer_class = view.serializer_class
-            meta = serializer_class.Meta
-            link_field = getattr(meta, 'link_field', None)
-            fields = meta.fields
             header = serializer_class.get_plural_name().title()
-            header_link = serializer_class.get_url()
+            if style == 'list':
+                if paginator:
+                    paging = paginator.get_page_metadata()
+                    count = paging['total_results']
+                else:
+                    count = len(results)
+                header = '%d %s' % (count, header)
+            else:
+                header_url = serializer_class.get_url()
+            meta = serializer_class.Meta
+            if style == 'list':
+                fields = getattr(meta, 'list_fields', None) or meta.fields
+            else:
+                fields = meta.fields
+            blacklist = ('id', )
             if not isinstance(fields, six.string_types):
                 # respect serializer field ordering
                 columns = [
-                    f for f in fields if f in columns
+                    f for f in fields if f in columns and f not in blacklist
                 ]
 
-        # remove blacklisted columns
-        columns = [
-            c for c in columns if c not in self.COLUMN_BLACKLIST
-        ]
+        # columns
         context['columns'] = columns
+
         # link_field - the field to add the row hyperlink onto
         # defaults to first visible column
         if not link_field and columns:
             link_field = columns[0]
         context['link_field'] = link_field
 
-        context['header'] = header
-        context['header_link'] = header_link
-        context['details'] = context['columns']
-        context['error_form'] = context['error_form']
-        if context['error_form']:
-            context['errors'] = context['response'].data.get('errors')
+        login_url = ''
+        try:
+            login_url = settings.LOGIN_URL or reverse('dynamic_rest:login')
+        except NoReverseMatch:
+            login_url = settings.LOGIN_URL or reverse('rest_framework:login')
+        except NoReverseMatch:
+            pass
+        context['login_url'] = login_url
 
-        # hide/display sidebar options
+        logout_url = ''
+        try:
+            logout_url = (
+                settings.LOGOUT_URL or reverse('dynamic_rest:logout')
+            )
+        except NoReverseMatch:
+            logout_url = (
+                settings.LOGOUT_URL or reverse('dynamic_rest:logout')
+            )
+        except NoReverseMatch:
+            pass
+        context['logout_url'] = logout_url
+
+        context['header'] = header
+        context['header_url'] = header_url
+        context['details'] = context['columns']
         allowed_methods = set(
             (x.lower() for x in (view.http_method_names or ()))
         )
-        context['actions'] = True
-        context['allow_filter'] = False
-        context['allow_delete'] = 'delete' in allowed_methods
-        context['allow_edit'] = 'put' in allowed_methods
-        context['allow_create'] = 'post' in allowed_methods
-        context['allow_import'] = False
+        context['allow_filter'] = (
+            'get' in allowed_methods and style == 'list'
+        )
+        context['allow_delete'] = (
+            'delete' in allowed_methods and style == 'detail'
+        )
+        context['allow_edit'] = (
+            'put' in allowed_methods and style == 'detail'
+        )
+        context['allow_create'] = (
+            'post' in allowed_methods and style == 'list'
+        )
         return context
 
     def render_form_for_serializer(self, serializer):

@@ -35,6 +35,12 @@ DYNAMIC_REST = {
     # Can be overriden at the viewset level.
     'MAX_PAGE_SIZE': None,
 
+    # LOGIN_URL: the login URL, defaults to reverse-URL lookup
+    'LOGIN_URL': '',
+
+    # LOGOUT_URL: the logout URL, defaults to reverse-URL lookup
+    'LOGOUT_URL': '',
+
     # PAGE_QUERY_PARAM: global setting for the pagination query parameter.
     # Can be overriden at the viewset level.
     'PAGE_QUERY_PARAM': 'page',

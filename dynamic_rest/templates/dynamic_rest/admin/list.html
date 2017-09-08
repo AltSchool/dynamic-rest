@@ -1,12 +1,7 @@
 {% load rest_framework %}
 {% load dynamic_rest %}
 {% if results %}
-    <script>
-        $(document).ready(function() {
-            $('#results-table').cardtable();
-        });
-    </script>
-    <table id="results-table" class="table">
+    <table id="results-table" class="table cardtable">
       <thead>
         <tr>{% for column in columns%}<th>{{ column|format_key }}</th>{% endfor %}</tr>
       </thead>

@@ -1,6 +1,7 @@
 {% load staticfiles %}
 {% load i18n %}
 {% load rest_framework %}
+{% load dynamic_rest %}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -14,13 +15,16 @@
 
             <title>
                 {% block title %}
-                    Admin API
+                    {% drest_settings 'ROOT_VIEW_NAME' %}
                 {% endblock %}
             </title>
 
             {% block style %}
                 {% block bootstrap_css %}
                     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+                {% endblock %}
+                {% block fontawesome_css %}
+                    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
                 {% endblock %}
                 <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css"/>
                 <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/stacktable.css" %}"/>
@@ -38,7 +42,7 @@
             {% block header %}
                 <nav class="navbar navbar-inverse bg-primary fixed-top">
                     <div class="navbar-nav drest-nav">
-                        <div class="navbar-brand drest-nav-edge">
+                        <div class="navbar-brand drest-nav-left">
                             {% block brand %}
                                 <a href="/">
                                     <img class="drest-logo" src="{% static "dynamic_rest/img/logo.svg" %}" alt="Logo" />
@@ -46,22 +50,34 @@
                             {% endblock %}
                         </div>
                         <div class="nav-item drest-nav-center active">
-                            {% if header %}
-                                <a class="nav-link" href="{{header_link}}">
-                                    {{ header }}
+                                <a class="nav-link" href="{{ header_url }}">
+                                    {% if header %}
+                                        {% if style == 'detail' %}
+                                            <span class="fa fa-arrow-left"></span>
+                                        {% endif %}
+                                        <span>{{ header }}</span>
+                                    {% else %}
+                                        {% drest_settings 'ROOT_VIEW_NAME' %}
+                                    {% endif %}
                                 </a>
-                            {% endif %}
                         </div>
 
-                        <div class="nav-item drest-nav-edge">
-                            {% if user.is_authenticated %}
-                                <a class="nav-link" href="/logout">
-                                    Logout
-                                </a>
+                        <div class="nav-item drest-nav-right drest-btn">
+                            {% if request.user.is_authenticated %}
+                                {% if logout_url %}
+                                    <a class="nav-link" href="{{logout_url}}">
+                                        <span class="fa fa-sign-out drest-btn-icon"></span>
+                                        <span class="drest-btn-label">
+                                            Logout
+                                        </span>
+                                    </a>
+                                {% endif %}
                             {% else %}
-                                <a class="nav-link" href="/login">
-                                    Login
-                                </a>
+                                {% if login_url %}
+                                    <a class="nav-link" href="{{login_url}}">
+                                        Login
+                                    </a>
+                                {% endif %}
                             {% endif %}
                         </div>
                     </div>
@@ -85,20 +101,22 @@
             {% endblock %} <!-- /content -->
 
             {% block footer %}
-                <nav class="navbar navbar-inverse bg-faded fixed-bottom">
+                <nav class="navbar bg-faded fixed-bottom">
                     <div class="navbar-nav drest-nav">
-                        <div class="nav-item drest-nav-edge">
-                            {% if filter_form and allow_filter %}
-                                <div data-toggle="modal" data-target="#filtersModal" class="btn btn-secondary">
-                                    <span class="glyphicon glyphicon-wrench" aria-hidden="true"></span>
-                                    Filter
-                                </div>
+                        <div class="nav-item drest-nav-left">
+                            {% if allow_delete %}
+                                <a href='#' class="drest-btn btn btn-danger nav-link">
+                                    <form action="{{ request.get_full_path }}" method="DELETE" data-method="DELETE">
+                                        <span class="drest-btn-icon fa fa-remove" aria-hidden="true"></span>
+                                        <span class="drest-btn-label">Delete</span>
+                                    </form>
+                                </a>
                             {% endif %}
-                            {% if put_form and allow_edit %}
-                                <div class="btn btn-primary" data-toggle="modal" data-target="#editModal">
-                                    <span class="glyphicon glyphicon-pencil" aria-hidden="true"></span>
-                                    Edit
-                                </div>
+                            {% if allow_filter %}
+                                <a href='#' data-toggle="modal" data-target="#filtersModal" class="btn btn-secondary drest-btn nav-link">
+                                    <span class="fa fa-search drest-btn-icon"></span>
+                                    <span class="drest-btn-label">Filter</span>
+                                </a>
                             {% endif %}
                         </div>
                         <div class="nav-item">
@@ -106,20 +124,18 @@
                                 {% get_pagination_html paginator %}
                             {% endif %}
                         </div>
-                        <div class="nav-item drest-nav-edge">
-                            {% if post_form and allow_create %}
-                                <div class="btn btn-primary" data-toggle="modal" data-target="#createModal">
-                                    <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>
-                                    Create
-                                </div>
+                        <div class="nav-item drest-nav-right">
+                            {% if allow_create %}
+                                <a href='#' class="drest-btn btn btn-primary nav-link" data-toggle="modal" data-target="#createModal">
+                                    <span class="drest-btn-icon fa fa-plus" aria-hidden="true"></span>
+                                    <span class="drest-btn-label">Create</span>
+                                </a>
                             {% endif %}
-                            {% if style == 'detail' and allow_delete %}
-                                <div class="btn btn-danger">
-                                    <form action="{{ request.get_full_path }}" method="DELETE" data-method="DELETE">
-                                        <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
-                                        Delete
-                                    </form>
-                                </div>
+                            {% if allow_edit %}
+                                <a href='#' class="btn btn-primary nav-link drest-btn" data-toggle="modal" data-target="#editModal">
+                                    <span class="drest-btn-icon fa fa-pencil" aria-hidden="true"></span>
+                                    <span class="drest-btn-label">Edit</span>
+                                </a>
                             {% endif %}
                         </div>
                     </div>
@@ -231,6 +247,8 @@
                         $('form').ajaxForm();
                         // show the error modal
                         $('#errorModal').modal('show');
+                        // enable responsible tables
+                        $('.cardtable').cardtable();
                     });
                 </script>
             {% endblock %} <!-- /script -->

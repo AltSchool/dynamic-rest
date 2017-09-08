@@ -1,0 +1,68 @@
+{% extends "dynamic_rest/admin.html" %}
+{% load staticfiles %}
+{% load rest_framework %}
+{% load dynamic_rest %}
+
+{% block content %}
+    <div class="drest-content-container">
+        <div class="drest-content">
+            <form action="{% url 'dynamic_rest:login' %}" role="form" method="post">
+              {% csrf_token %}
+              <input type="hidden" name="next" value="{{ next }}" />
+
+              <div id="div_id_username" class="clearfix control-group {% if form.username.errors %}error{% endif %}">
+                <div class="form-group">
+                    <label for="id_username">
+                        {% if form %}
+                            {{ form.username.label }}:
+                        {% else %}
+                            Username:
+                        {%endif%}
+                    </label>
+                    <input type="text" name="username" maxlength="100"
+                        autocapitalize="off"
+                        autocorrect="off" class="form-control textinput textInput"
+                        id="id_username" required autofocus
+                        {% if form.username.value %}value="{{ form.username.value }}"{% endif %}>
+                    {% if form.username.errors %}
+                        <p class="text-danger">
+                            {{ form.username.errors|striptags }}
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div id="div_id_password" class="clearfix control-group {% if form.password.errors %}error{% endif %}">
+                <div class="form-group">
+                    <label for="id_password">
+                        {% if form %}
+                            {{ form.password.label }}:
+                        {% else %}
+                            Password:
+                        {%endif%}
+                    </label>
+                    <input type="password" name="password" maxlength="100" autocapitalize="off" autocorrect="off" class="form-control textinput textInput" id="id_password" required>
+                    {% if form.password.errors %}
+                        <p class="text-danger">
+                            {{ form.password.errors|striptags }}
+                        </p>
+                    {% endif %}
+                    </div>
+                </div>
+
+                {% if form.non_field_errors %}
+                    {% for error in form.non_field_errors %}
+                        <div class="well well-small text-danger" style="border: none">{{ error }}</div>
+                    {% endfor %}
+                {% endif %}
+
+                <div class="form-actions-no-box">
+                    <input type="submit" name="submit" value="Log in" class="btn btn-primary form-control" id="submit-id-submit">
+                </div>
+            </form>
+        </div>
+    </div>
+{% endblock %}
+
+{% block footer %}
+{% endblock %}

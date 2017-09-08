@@ -1,9 +1,14 @@
+.has-error .help-block {
+    color: #d9534f!important
+}
 .drest-content-container {
     position: fixed;
     top: 50px;
     bottom: 50px;
     right: 0;
     left: 0;
+    margin-left: auto;
+    margin-right: auto;
 }
 .drest-content {
     position: relative;
@@ -16,8 +21,12 @@
     justify-content: space-between;
     flex-direction: row;
 }
-.drest-nav-edge {
+.drest-nav-left, .drest-nav-right {
     flex: 0 0 auto;
+    width: 100px;
+}
+.drest-nav-right {
+    text-align: end;
 }
 
 .drest-nav-center {
@@ -28,7 +37,19 @@
 .drest-logo {
     width: 30px;
 }
-
-.stacktable.small-only {
+.drest-btn {
+    flex-direction: row;
+}
+.drest-btn-label {
+    display: inline-block;
+}
+@media screen and (max-width: 420px) {
+}
+.table, .stacktable.small-only {
     border: 1px solid #aaa;
+}
+.drest-content .st-key {
+    width: auto;
+    text-align: inherit;
+    font-weight: bold;
 }

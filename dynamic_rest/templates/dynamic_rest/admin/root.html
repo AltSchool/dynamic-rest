@@ -1,13 +1,13 @@
 {% load rest_framework %}
-<!-- ADMIN ROOT -->
 <table class="table">
-  <tbody>
-    {% for key, value in results.items %}
-      {% if key in details %}
-        <tr>
-          <th><a href="{{ value }}">{{ key|capfirst }}</a></th><td></td>
-        </tr>
-      {% endif %}
-    {% endfor %}
-  </tbody>
+    <tbody>
+        {% for key, value in results.items %}
+            {% if key in details %}
+                <tr>
+                    <th><a href="{{ value }}">{{ key|capfirst }}</a></th>
+                    <td></td>
+                </tr>
+            {% endif %}
+        {% endfor %}
+    </tbody>
 </table>
