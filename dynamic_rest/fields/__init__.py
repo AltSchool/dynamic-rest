@@ -4,3 +4,4 @@ from .base import (
 )
 from .relation import DynamicRelationField
 from .generic import DynamicGenericRelationField
+from .choices import DynamicChoicesField

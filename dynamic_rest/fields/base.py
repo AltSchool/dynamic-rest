@@ -1,5 +1,6 @@
 from rest_framework.serializers import SerializerMethodField
 from rest_framework import fields
+from dynamic_rest.meta import get_model_field
 
 
 class DynamicField(fields.Field):
@@ -37,6 +38,23 @@ class DynamicField(fields.Field):
 
     def to_internal_value(self, data):
         return data
+
+    @property
+    def parent_model(self):
+        if not hasattr(self, '_parent_model'):
+            self._parent_model = getattr(self.parent.Meta, 'model', None)
+        return self._parent_model
+
+    @property
+    def model_field(self):
+        if not hasattr(self, '_model_field'):
+            try:
+                self._model_field = get_model_field(
+                    self.parent_model, self.source
+                )
+            except:
+                self._model_field = None
+        return self._model_field
 
 
 class DynamicComputedField(DynamicField):

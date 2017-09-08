@@ -10,7 +10,6 @@ from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
 from dynamic_rest.meta import (
     is_field_remote,
-    get_model_field,
     get_related_model
 )
 from .base import DynamicField, WithRelationalFieldMixin
@@ -104,23 +103,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         """Get the serializer's model."""
         return self.serializer_class.get_model()
 
-    @property
-    def parent_model(self):
-        if not hasattr(self, '_parent_model'):
-            self._parent_model = getattr(self.parent.Meta, 'model', None)
-        return self._parent_model
-
-    @property
-    def model_field(self):
-        if not hasattr(self, '_model_field'):
-            try:
-                self._model_field = get_model_field(
-                    self.parent_model, self.source
-                )
-            except:
-                self._model_field = None
-        return self._model_field
-
     def get_value(self, dictionary):
         """Extract value from QueryDict.
 
@@ -140,6 +122,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         """Bind to the parent serializer."""
         if self.bound:  # Prevent double-binding
             return
+
         super(DynamicRelationField, self).bind(*args, **kwargs)
         self.bound = True
 

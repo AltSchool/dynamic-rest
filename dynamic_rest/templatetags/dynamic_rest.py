@@ -43,3 +43,15 @@ def format_key(key):
 @register.simple_tag
 def drest_settings(key):
     return getattr(settings, key)
+
+
+@register.filter
+def to_json(value):
+    return json.dumps(value)
+
+
+@register.filter
+def drest_format_value(value):
+    if getattr(value, 'is_choice', False):
+        return value.name
+    return value
