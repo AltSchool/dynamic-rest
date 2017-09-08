@@ -15,6 +15,7 @@ class DynamicField(fields.Field):
         deferred=None,
         field_type=None,
         immutable=False,
+        get_class=None,
         **kwargs
     ):
         """
