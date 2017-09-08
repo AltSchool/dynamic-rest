@@ -52,9 +52,6 @@
                         <div class="nav-item drest-nav-center active">
                                 <a class="nav-link" href="{{ header_url }}">
                                     {% if header %}
-                                        {% if style == 'detail' %}
-                                            <span class="fa fa-arrow-left"></span>
-                                        {% endif %}
                                         <span>{{ header }}</span>
                                     {% else %}
                                         {% drest_settings 'ROOT_VIEW_NAME' %}
@@ -105,18 +102,18 @@
                     <div class="navbar-nav drest-nav">
                         <div class="nav-item drest-nav-left">
                             {% if allow_delete %}
-                                <a href='#' class="drest-btn btn btn-danger nav-link">
+                                <div class="drest-btn btn btn-danger">
                                     <form action="{{ request.get_full_path }}" method="DELETE" data-method="DELETE">
                                         <span class="drest-btn-icon fa fa-remove" aria-hidden="true"></span>
                                         <span class="drest-btn-label">Delete</span>
                                     </form>
-                                </a>
+                                </div>
                             {% endif %}
                             {% if allow_filter %}
-                                <a href='#' data-toggle="modal" data-target="#filtersModal" class="btn btn-secondary drest-btn nav-link">
+                                <div data-toggle="modal" data-target="#filtersModal" class="btn btn-secondary drest-btn {% if search_value %}active{% endif%}">
                                     <span class="fa fa-search drest-btn-icon"></span>
-                                    <span class="drest-btn-label">Filter</span>
-                                </a>
+                                    <span class="drest-btn-label">{% if search_value %}"{{ search_value }}"{% else %}Filter{% endif %}</span>
+                                </div>
                             {% endif %}
                         </div>
                         <div class="nav-item">
@@ -126,16 +123,16 @@
                         </div>
                         <div class="nav-item drest-nav-right">
                             {% if allow_create %}
-                                <a href='#' class="drest-btn btn btn-primary nav-link" data-toggle="modal" data-target="#createModal">
+                                <div class="drest-btn btn btn-primary" data-toggle="modal" data-target="#createModal">
                                     <span class="drest-btn-icon fa fa-plus" aria-hidden="true"></span>
                                     <span class="drest-btn-label">Create</span>
-                                </a>
+                                </div>
                             {% endif %}
                             {% if allow_edit %}
-                                <a href='#' class="btn btn-primary nav-link drest-btn" data-toggle="modal" data-target="#editModal">
+                                <div class="btn btn-primary drest-btn" data-toggle="modal" data-target="#editModal">
                                     <span class="drest-btn-icon fa fa-pencil" aria-hidden="true"></span>
                                     <span class="drest-btn-label">Edit</span>
-                                </a>
+                                </div>
                             {% endif %}
                         </div>
                     </div>
@@ -223,9 +220,36 @@
                 {% endif %}
             {% endblock %} <!-- /error_form -->
 
-            {% if filter_form %}
-                {{ filter_form }}
-            {% endif %} <!-- /filter_form -->
+                <div class="modal" id="filtersModal">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">Filter</h4>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <form class="filter-form" method="get" action="{{ request.get_full_path }}">
+                                <div class="modal-body">
+                                    <fieldset>
+                                        <div class="form-group">
+                                            <label class="col-sm-2 control-label">
+                                                Search
+                                            </label>
+                                            <div class="col-sm-10">
+                                                <input name="{{ search_key }}" class="form-control" type="text" value="{{ search_value }}"/>
+                                            </div>
+                                        </div
+                                    </fieldset>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                    <button type="submit" class="drest-apply-filters btn btn-primary">Apply</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
 
             {% block script %}
                 <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>

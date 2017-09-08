@@ -76,6 +76,7 @@ class DynamicAdminRenderer(AdminRenderer):
 
         view = context.get('view')
         response = context.get('response')
+        request = context.get('request')
 
         if view and view.__class__.__name__ == 'API':
             # root view
@@ -107,6 +108,7 @@ class DynamicAdminRenderer(AdminRenderer):
         # to account for the DREST envelope
         # (data is stored one level deeper than expected in the response)
         results = context.get('results')
+        serializer = getattr(results, 'serializer', None)
         if results:
             if isinstance(results, list):
                 for result in results:
@@ -117,6 +119,8 @@ class DynamicAdminRenderer(AdminRenderer):
         columns = context['columns']
         link_field = None
         paginator = context.get('paginator')
+        serializer_class = None
+        meta = None
         if hasattr(view, 'serializer_class'):
             serializer_class = view.serializer_class
             header = serializer_class.get_plural_name().title()
@@ -128,7 +132,13 @@ class DynamicAdminRenderer(AdminRenderer):
                     count = len(results)
                 header = '%d %s' % (count, header)
             else:
-                header_url = serializer_class.get_url()
+                header = getattr(
+                    serializer.instance,
+                    serializer.get_natural_key()
+                )
+                header_url = serializer.get_url(
+                    pk=serializer.instance.pk
+                )
             meta = serializer_class.Meta
             if style == 'list':
                 fields = getattr(meta, 'list_fields', None) or meta.fields
@@ -138,9 +148,19 @@ class DynamicAdminRenderer(AdminRenderer):
             if not isinstance(fields, six.string_types):
                 # respect serializer field ordering
                 columns = [
-                    f for f in fields if f in columns and f not in blacklist
+                    f for f in fields
+                    if f in columns and f not in blacklist
                 ]
 
+        search_key = getattr(
+            meta,
+            'search_key',
+            None
+        ) or None
+        search_value = (
+            request.query_params.get(search_key, '')
+            if search_key else ''
+        )
         # columns
         context['columns'] = columns
 
@@ -178,9 +198,11 @@ class DynamicAdminRenderer(AdminRenderer):
         allowed_methods = set(
             (x.lower() for x in (view.http_method_names or ()))
         )
+        context['search_value'] = search_value
+        context['search_key'] = search_key
         context['allow_filter'] = (
             'get' in allowed_methods and style == 'list'
-        )
+        ) and search_key
         context['allow_delete'] = (
             'delete' in allowed_methods and style == 'detail'
         )
