@@ -16,7 +16,7 @@ except:
 
 from dynamic_rest.utils import unpack, get_breadcrumbs
 from dynamic_rest.conf import settings
-from dynamic_rest.fields import DynamicRelationField, DynamicChoicesField
+from dynamic_rest.fields import DynamicRelationField
 
 
 class DynamicBrowsableAPIRenderer(BrowsableAPIRenderer):
@@ -174,9 +174,12 @@ class DynamicAdminRenderer(AdminRenderer):
         try:
             login_url = settings.LOGIN_URL or reverse('dynamic_rest:login')
         except NoReverseMatch:
-            login_url = settings.LOGIN_URL or reverse('rest_framework:login')
-        except NoReverseMatch:
-            pass
+            try:
+                login_url = (
+                    settings.LOGIN_URL or reverse('rest_framework:login')
+                )
+            except NoReverseMatch:
+                pass
         context['login_url'] = login_url
 
         logout_url = ''
@@ -185,11 +188,12 @@ class DynamicAdminRenderer(AdminRenderer):
                 settings.LOGOUT_URL or reverse('dynamic_rest:logout')
             )
         except NoReverseMatch:
-            logout_url = (
-                settings.LOGOUT_URL or reverse('dynamic_rest:logout')
-            )
-        except NoReverseMatch:
-            pass
+            try:
+                logout_url = (
+                    settings.LOGOUT_URL or reverse('dynamic_rest:logout')
+                )
+            except NoReverseMatch:
+                pass
         context['logout_url'] = logout_url
 
         context['header'] = header
