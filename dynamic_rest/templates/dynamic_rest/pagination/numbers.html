@@ -6,7 +6,7 @@
       </a>
     </div>
   {% else %}
-    <div class="page-item disabled">
+    <div class="page-item disabled hidden-xs-down">
       <a class="page-link" href="#" aria-label="Previous">
         <span aria-hidden="true">&laquo;</span>
       </a>
@@ -15,7 +15,7 @@
 
   {% for page_link in page_links %}
     {% if page_link.is_break %}
-      <div class="page-item disabled">
+      <div class="page-item disabled hidden-xs-down">
         <a class="page-link" href="#"><span aria-hidden="true">&hellip;</span></a>
       </div>
     {% else %}
@@ -38,7 +38,7 @@
       </a>
     </div>
   {% else %}
-    <div class="page-item disabled">
+    <div class="page-item disabled hidden-xs-down">
       <a class="page-link" href="#" aria-label="Next">
         <span aria-hidden="true">&raquo;</span>
       </a>
