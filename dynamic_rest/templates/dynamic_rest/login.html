@@ -8,7 +8,7 @@
         <div class="drest-content">
             <form action="{% url 'dynamic_rest:login' %}" role="form" method="post">
               {% csrf_token %}
-              <input type="hidden" name="next" value="{{ next }}" />
+              <input type="hidden" name="next" value="{{ next }}">
 
               <div id="div_id_username" class="clearfix control-group {% if form.username.errors %}error{% endif %}">
                 <div class="form-group">

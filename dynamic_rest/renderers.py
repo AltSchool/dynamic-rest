@@ -77,7 +77,10 @@ class DynamicAdminRenderer(AdminRenderer):
         view = context.get('view')
         response = context.get('response')
         is_error = response.status_code > 399
+        is_auth_error = response.status_code in (401, 403)
         request = context.get('request')
+        user = request.user if request else None
+        referer = request.META.get('HTTP_REFERER') if request else None
 
         if view and view.__class__.__name__ == 'API':
             # root view
@@ -86,13 +89,16 @@ class DynamicAdminRenderer(AdminRenderer):
             # data view
             is_root = False
             # remove envelope for successful responses
-            data = unpack(data)
+            if getattr(data, 'serializer', None):
+                data = unpack(data)
 
         context = super(DynamicAdminRenderer, self).get_context(
             data,
             media_type,
             context
         )
+
+        context['is_auth_error'] = is_auth_error
 
         # add context
 
@@ -109,10 +115,17 @@ class DynamicAdminRenderer(AdminRenderer):
         # (data is stored one level deeper than expected in the response)
         results = context.get('results')
         serializer = getattr(results, 'serializer', None)
+        natural_key = serializer.get_natural_key() if serializer else None
+        instance = serializer.instance if serializer else None
 
-        if is_error:
-            # results = context['results'] = serializer.data
-            print results, context['columns']
+        if serializer:
+            singular_name = serializer.get_name().title()
+            plural_name = serializer.get_plural_name().title()
+        else:
+            singular_name = plural_name = ''
+
+        context['singular_name'] = singular_name
+        context['plural_name'] = plural_name
         if results:
             if isinstance(results, list):
                 for result in results:
@@ -139,12 +152,12 @@ class DynamicAdminRenderer(AdminRenderer):
                 header = '%d %s' % (count, header)
             elif not is_error:
                 header = getattr(
-                    serializer.instance,
-                    serializer.get_natural_key(),
+                    instance,
+                    natural_key,
                     header
                 )
                 header_url = serializer.get_url(
-                    pk=serializer.instance.pk
+                    pk=instance.pk
                 )
             meta = serializer_class.Meta
             if style == 'list':
@@ -188,7 +201,6 @@ class DynamicAdminRenderer(AdminRenderer):
             except NoReverseMatch:
                 pass
         context['login_url'] = login_url
-
         logout_url = ''
         try:
             logout_url = (
@@ -218,7 +230,9 @@ class DynamicAdminRenderer(AdminRenderer):
             'delete' in allowed_methods and style == 'detail'
         )
         context['allow_edit'] = (
-            'put' in allowed_methods and style == 'detail'
+            'put' in allowed_methods and
+            style == 'detail' and
+            bool(instance)
         )
         context['allow_create'] = (
             'post' in allowed_methods and style == 'list'
@@ -230,6 +244,17 @@ class DynamicAdminRenderer(AdminRenderer):
             alert_class = 'danger'
         elif is_update:
             alert = 'Saved successfully'
+            alert_class = 'success'
+        elif (
+            login_url and user and
+            referer and login_url in referer
+        ):
+            alert = 'Welcome back'
+            name = getattr(user, 'name', None)
+            if name:
+                alert += ', %s!' % name
+            else:
+                alert += '!'
             alert_class = 'success'
         if alert and not alert_class:
             alert_class = 'info'

@@ -73,8 +73,13 @@
                                 {% endif %}
                             {% else %}
                                 {% if login_url %}
-                                    <a class="nav-link drest-btn" href="{{login_url}}">
-                                        Login
+                                    <a class="nav-link" href="{{login_url}}">
+                                        <div class="drest-btn">
+                                            <span class="fa fa-sign-in drest-btn-icon"></span>
+                                            <span class="drest-btn-label">
+                                                Login
+                                            </span>
+                                        </div>
                                     </a>
                                 {% endif %}
                             {% endif %}
@@ -86,13 +91,20 @@
             {% block content %}
                 <div class="drest-content-container">
                     <div class="drest-content">
-                        {% if style == 'list' %}
-                            {% include "dynamic_rest/admin/list.html" %}
+                        {% if is_auth_error %}
+                            <div class="text">
+                                You are not authorized to view
+                                this page. Try to login.
+                            </div>
                         {% else %}
-                            {% if style == 'root' %}
-                                {% include "dynamic_rest/admin/root.html" %}
+                            {% if style == 'list' %}
+                                {% include "dynamic_rest/admin/list.html" %}
                             {% else %}
-                                {% include "dynamic_rest/admin/detail.html" %}
+                                {% if style == 'root' %}
+                                    {% include "dynamic_rest/admin/root.html" %}
+                                {% else %}
+                                    {% include "dynamic_rest/admin/detail.html" %}
+                                {% endif %}
                             {% endif %}
                         {% endif %}
                     </div>
@@ -155,7 +167,7 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h4 class="modal-title">Create</h4>
+                                <h4 class="modal-title">Create {{ singular_name }}</h4>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
@@ -182,7 +194,7 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h4 class="modal-title">Edit</h4>
+                                <h4 class="modal-title">Edit {{ singular_name }}</h4>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
