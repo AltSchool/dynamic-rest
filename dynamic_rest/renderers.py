@@ -63,7 +63,7 @@ DynamicHTMLFormRenderer.default_style[DynamicRelationField] = {
 class DynamicAdminRenderer(AdminRenderer):
     """Admin renderer."""
     form_renderer_class = DynamicHTMLFormRenderer
-    template = 'dynamic_rest/admin.html'
+    template = settings.ADMIN_TEMPLATE
 
     def get_breadcrumbs(self, request, view=None):
         return get_breadcrumbs(request.path, view=view)
@@ -76,6 +76,7 @@ class DynamicAdminRenderer(AdminRenderer):
 
         view = context.get('view')
         response = context.get('response')
+        is_error = response.status_code > 399
         request = context.get('request')
 
         if view and view.__class__.__name__ == 'API':
@@ -84,9 +85,8 @@ class DynamicAdminRenderer(AdminRenderer):
         else:
             # data view
             is_root = False
-            if response.status_code < 400:
-                # remove envelope for successful responses
-                data = unpack(data)
+            # remove envelope for successful responses
+            data = unpack(data)
 
         context = super(DynamicAdminRenderer, self).get_context(
             data,
@@ -109,6 +109,10 @@ class DynamicAdminRenderer(AdminRenderer):
         # (data is stored one level deeper than expected in the response)
         results = context.get('results')
         serializer = getattr(results, 'serializer', None)
+
+        if is_error:
+            # results = context['results'] = serializer.data
+            print results, context['columns']
         if results:
             if isinstance(results, list):
                 for result in results:
@@ -121,6 +125,8 @@ class DynamicAdminRenderer(AdminRenderer):
         paginator = context.get('paginator')
         serializer_class = None
         meta = None
+        is_update = getattr(view, 'is_update', lambda: False)()
+
         if hasattr(view, 'serializer_class'):
             serializer_class = view.serializer_class
             header = serializer_class.get_plural_name().title()
@@ -131,10 +137,11 @@ class DynamicAdminRenderer(AdminRenderer):
                 else:
                     count = len(results)
                 header = '%d %s' % (count, header)
-            else:
+            elif not is_error:
                 header = getattr(
                     serializer.instance,
-                    serializer.get_natural_key()
+                    serializer.get_natural_key(),
+                    header
                 )
                 header_url = serializer.get_url(
                     pk=serializer.instance.pk
@@ -216,6 +223,19 @@ class DynamicAdminRenderer(AdminRenderer):
         context['allow_create'] = (
             'post' in allowed_methods and style == 'list'
         )
+        alert = request.query_params.get('alert', None)
+        alert_class = request.query_params.get('alert-class', None)
+        if is_error:
+            alert = 'An error has occurred'
+            alert_class = 'danger'
+        elif is_update:
+            alert = 'Saved successfully'
+            alert_class = 'success'
+        if alert and not alert_class:
+            alert_class = 'info'
+
+        context['alert'] = alert
+        context['alert_class'] = alert_class
         return context
 
     def render_form_for_serializer(self, serializer):
@@ -229,3 +249,28 @@ class DynamicAdminRenderer(AdminRenderer):
             self.accepted_media_type,
             {'style': {'template_pack': 'dynamic_rest/horizontal'}}
         )
+
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        renderer_context = renderer_context or {}
+        response = renderer_context.get('response')
+        serializer = getattr(data, 'serializer', None)
+        # Creation and deletion should use redirects in the admin style.
+        location = None
+        if (
+            response and response.status_code == 201
+            and serializer and serializer.instance
+        ):
+            location = serializer.get_url(
+                pk=serializer.instance.pk
+            )
+            location = '%s?alert=Created+successfully&alert-class=success' % (
+                location,
+            )
+        result = super(DynamicAdminRenderer, self).render(
+            data,
+            accepted_media_type,
+            renderer_context
+        )
+        if response and location:
+            response['Location'] = location
+        return result

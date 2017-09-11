@@ -59,19 +59,21 @@
                                 </a>
                         </div>
 
-                        <div class="nav-item drest-nav-right drest-btn">
+                        <div class="nav-item drest-nav-right">
                             {% if request.user.is_authenticated %}
                                 {% if logout_url %}
                                     <a class="nav-link" href="{{logout_url}}">
-                                        <span class="fa fa-sign-out drest-btn-icon"></span>
-                                        <span class="drest-btn-label">
-                                            Logout
-                                        </span>
+                                        <div class="drest-btn">
+                                            <span class="fa fa-sign-out drest-btn-icon"></span>
+                                            <span class="drest-btn-label">
+                                                Logout
+                                            </span>
+                                        </div>
                                     </a>
                                 {% endif %}
                             {% else %}
                                 {% if login_url %}
-                                    <a class="nav-link" href="{{login_url}}">
+                                    <a class="nav-link drest-btn" href="{{login_url}}">
                                         Login
                                     </a>
                                 {% endif %}
@@ -96,6 +98,15 @@
                     </div>
                 </div>
             {% endblock %} <!-- /content -->
+
+            {% block alert %}
+                {% if alert %}
+                    <div class="alert alert-dismissable drest-nav-alert alert-{{alert_class}}">
+                        <span>{{ alert }}</span>
+                        <span><a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a></span>
+                    </div>
+                {% endif %}
+            {% endblock %}
 
             {% block footer %}
                 <nav class="navbar bg-faded fixed-bottom">
@@ -220,6 +231,7 @@
                 {% endif %}
             {% endblock %} <!-- /error_form -->
 
+            {% block filter_form %}
                 <div class="modal" id="filtersModal">
                     <div class="modal-dialog">
                         <div class="modal-content">
@@ -250,6 +262,7 @@
                         </div>
                     </div>
                 </div>
+            {% endblock %}
 
             {% block script %}
                 <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
@@ -273,6 +286,9 @@
                         $('#errorModal').modal('show');
                         // enable responsible tables
                         $('.cardtable').cardtable();
+                        $('.drest-nav-alert').delay(2000).slideUp(200, function() {
+                            $(this).alert('close');
+                        });
                     });
                 </script>
             {% endblock %} <!-- /script -->

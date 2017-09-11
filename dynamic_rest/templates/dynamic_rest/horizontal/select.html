@@ -25,12 +25,12 @@
 
     {% if field.errors %}
       {% for error in field.errors %}
-        <span class="help-block">{{ error }}</span>
+        <span class="text-danger">{{ error }}</span>
       {% endfor %}
     {% endif %}
 
     {% if field.help_text %}
-      <span class="help-block">{{ field.help_text|safe }}</span>
+      <span class="text-info">{{ field.help_text|safe }}</span>
     {% endif %}
   </div>
 </div>

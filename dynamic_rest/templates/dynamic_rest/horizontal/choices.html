@@ -4,9 +4,9 @@
 
 {% trans "No items to select." as no_items %}
 
-<div class="form-group {% if field.errors %}has-error{% endif %}">
+<div class="row form-group {% if field.errors %}has-error{% endif %}">
   {% if field.label %}
-    <label class="col-sm-2 control-label {% if style.hide_label %}sr-only{% endif %}">
+    <label class="col-sm-2 form-control-label {% if style.hide_label %}sr-only{% endif %}">
       {{ field.label }}
     </label>
   {% endif %}
@@ -17,12 +17,12 @@
 
     {% if field.errors %}
       {% for error in field.errors %}
-        <span class="text-danger help-block">{{ error }}</span>
+        <span class="text-danger">{{ error }}</span>
       {% endfor %}
     {% endif %}
 
     {% if field.help_text %}
-      <span class="help-block">{{ field.help_text|safe }}</span>
+      <span class="text-info">{{ field.help_text|safe }}</span>
     {% endif %}
   </div>
 </div>

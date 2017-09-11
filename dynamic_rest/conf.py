@@ -2,6 +2,8 @@ from django.conf import settings as django_settings
 from django.test.signals import setting_changed
 
 DYNAMIC_REST = {
+    'ADMIN_TEMPLATE': 'dynamic_rest/admin.html',
+
     # DEBUG: enable/disable internal debugging
     'DEBUG': False,
 
@@ -40,6 +42,8 @@ DYNAMIC_REST = {
 
     # LOGOUT_URL: the logout URL, defaults to reverse-URL lookup
     'LOGOUT_URL': '',
+
+    'LOGIN_TEMPLATE': 'dynamic_rest/login.html',
 
     # PAGE_QUERY_PARAM: global setting for the pagination query parameter.
     # Can be overriden at the viewset level.

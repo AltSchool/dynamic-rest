@@ -23,7 +23,10 @@
 }
 .drest-nav-left, .drest-nav-right {
     flex: 0 0 auto;
-    width: 71px;
+    width: 100px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
 }
 .drest-nav-right {
     text-align: end;
@@ -32,24 +35,60 @@
 .drest-nav-center {
     flex: 1 1 auto;
     text-align: center;
+    justify-content: center;
+    flex-direction: column;
+    display: flex;
 }
 
 .drest-logo {
-    width: 30px;
+    width: 38px;
 }
 .drest-btn {
     flex-direction: row;
+    align-items: center;
+    justify-content: center;
 }
 .drest-btn-label {
     display: inline-block;
 }
 @media screen and (max-width: 420px) {
+    .drest-nav .nav-link {
+        padding: 0;
+    }
+    .navbar-brand.drest-nav-left {
+    }
+    .drest-btn {
+        display: flex;
+        width: 38px;
+        height: 38px;
+        flex-direction: column;
+    }
+    .drest-btn-label {
+        font-size: 9px;
+    }
+    .drest-nav-right,.drest-nav-left {
+        width: 30px;
+    }
 }
 .table, .stacktable.small-only {
-    border: 1px solid #aaa;
+    border: 1px solid #ddd;
+}
+.navbar-brand.drest-nav-left {
+    margin-right: 0;
 }
 .drest-content .st-key {
     width: auto;
     text-align: inherit;
     font-weight: bold;
+}
+.drest-nav-alert {
+    padding: 14px;
+    display: flex;
+    justify-content: space-between;
+    margin: 0;
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 9001;
+    bottom: 0;
 }

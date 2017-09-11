@@ -152,6 +152,17 @@ class WithDynamicViewSetMixin(object):
         else:
             return renderers
 
+    def get_success_headers(self, data):
+        serializer = getattr(data, 'serializer', None)
+        headers = super(WithDynamicViewSetMixin, self).get_success_headers(
+            data
+        )
+        if serializer and serializer.instance:
+            headers['Location'] = serializer.get_url(
+                pk=getattr(serializer.instance, 'pk', None)
+            )
+        return headers
+
     def get_view_name(self):
         serializer_class = getattr(self, 'serializer_class', None)
         suffix = self.suffix or ''
@@ -574,8 +585,13 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         bulk_payload = self._get_bulk_payload(request)
         if bulk_payload:
             return self._create_many(bulk_payload)
-        return super(DynamicModelViewSet, self).create(
+        response = super(DynamicModelViewSet, self).create(
             request, *args, **kwargs)
+        serializer = getattr(response.data, 'serializer')
+        if serializer and serializer.instance:
+            url = serializer.get_url(pk=serializer.instance.pk)
+            response['Location'] = url
+        return response
 
     def _destroy_many(self, data):
         instances = self.get_queryset().filter(

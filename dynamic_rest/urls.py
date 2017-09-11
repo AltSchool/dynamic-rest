@@ -16,8 +16,9 @@ from __future__ import unicode_literals
 
 from django.conf.urls import url
 from django.contrib.auth import views
+from dynamic_rest.conf import settings as drest
 
-template_name = {'template_name': 'dynamic_rest/login.html'}
+template_name = {'template_name': drest.LOGIN_TEMPLATE}
 
 app_name = 'dynamic_rest'
 urlpatterns = [
