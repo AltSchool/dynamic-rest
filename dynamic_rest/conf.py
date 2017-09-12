@@ -70,7 +70,9 @@ DYNAMIC_REST = {
     'ROOT_REQUIRES_AUTHENTICATION': False,
 
     # Name of the root API view
-    'ROOT_VIEW_NAME': 'API'
+    'ROOT_VIEW_NAME': 'API',
+
+    'ROOT_DESCRIPTION': '',
 }
 
 

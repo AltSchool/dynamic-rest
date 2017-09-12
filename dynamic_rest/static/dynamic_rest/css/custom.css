@@ -2,6 +2,7 @@
     color: #d9534f!important
 }
 .drest-content-container {
+    display: none;
     position: fixed;
     top: 50px;
     bottom: 50px;

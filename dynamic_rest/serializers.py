@@ -90,6 +90,10 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         iterable = data.all() if isinstance(data, models.Manager) else data
         return [self.child.to_representation(item) for item in iterable]
 
+    def get_description(self):
+        """Get the child's natural key."""
+        return self.child.get_description()
+
     def get_natural_key(self):
         """Get the child's natural key."""
         return self.child.get_natural_key()
@@ -374,6 +378,10 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         if pk:
             return '%s/%s/' % (url, pk)
         return url
+
+    @classmethod
+    def get_description(cls):
+        return getattr(cls.Meta, 'description', None)
 
     @classmethod
     def get_natural_key(cls):

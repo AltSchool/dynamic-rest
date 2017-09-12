@@ -104,9 +104,11 @@ class DynamicAdminRenderer(AdminRenderer):
 
         header = ''
         header_url = '#'
+        description = ''
         if is_root:
             context['style'] = 'root'
             header = settings.ROOT_VIEW_NAME or ''
+            description = settings.ROOT_DESCRIPTION
             header_url = '/'
 
         style = context['style']
@@ -121,6 +123,7 @@ class DynamicAdminRenderer(AdminRenderer):
         if serializer:
             singular_name = serializer.get_name().title()
             plural_name = serializer.get_plural_name().title()
+            description = serializer.get_description()
         else:
             singular_name = plural_name = ''
 
@@ -184,6 +187,7 @@ class DynamicAdminRenderer(AdminRenderer):
         # columns
         context['columns'] = columns
 
+        context['description'] = description
         # link_field - the field to add the row hyperlink onto
         # defaults to first visible column
         if not link_field and columns:

@@ -51,11 +51,13 @@
                             {% endblock %}
                         </div>
                         <div class="nav-item drest-nav-center active">
-                                <a class="nav-link" href="{{ header_url }}">
+                                <a class="nav-link" href="#">
                                     {% if header %}
-                                        <span>{{ header }}</span>
-                                    {% else %}
-                                        {% drest_settings 'ROOT_VIEW_NAME' %}
+                                        {% if description %}
+                                            <span data-trigger="click" data-toggle="tooltip" data-placement="bottom" title="{{ description }}">{{ header }}</span>
+                                        {% else %}
+                                            <span>{{ header }}</span>
+                                        {% endif %}
                                     {% endif %}
                                 </a>
                         </div>
@@ -302,6 +304,8 @@
                         $('.drest-nav-alert').delay(2000).slideUp(200, function() {
                             $(this).alert('close');
                         });
+                        $('[data-toggle="tooltip"]').tooltip();
+                        $('.drest-content-container').show();
                     });
                 </script>
             {% endblock %} <!-- /script -->
