@@ -1,18 +1,4 @@
 <div class="pagination" style="margin: 0">
-  {% if previous_url %}
-    <div class="page-item">
-      <a class="page-link" href="{{ previous_url }}" aria-label="Previous">
-        <span aria-hidden="true">&laquo;</span>
-      </a>
-    </div>
-  {% else %}
-    <div class="page-item disabled hidden-xs-down">
-      <a class="page-link" href="#" aria-label="Previous">
-        <span aria-hidden="true">&laquo;</span>
-      </a>
-    </div>
-  {% endif %}
-
   {% for page_link in page_links %}
     {% if page_link.is_break %}
       <div class="page-item disabled hidden-xs-down">
@@ -31,17 +17,4 @@
     {% endif %}
   {% endfor %}
 
-  {% if next_url %}
-    <div class="page-item">
-      <a class="page-link" href="{{ next_url }}" aria-label="Next">
-        <span aria-hidden="true">&raquo;</span>
-      </a>
-    </div>
-  {% else %}
-    <div class="page-item disabled hidden-xs-down">
-      <a class="page-link" href="#" aria-label="Next">
-        <span aria-hidden="true">&raquo;</span>
-      </a>
-    </div>
-  {% endif %}
 </div>
