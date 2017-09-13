@@ -96,7 +96,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         return self.serializer_class.get_plural_name()
 
     def get_name_field(self):
-        """Get the serializer's natural key."""
+        """Get the serializer's name field."""
         return self.serializer_class.get_name_field()
 
     def get_model(self):

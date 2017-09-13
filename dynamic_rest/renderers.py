@@ -117,7 +117,7 @@ class DynamicAdminRenderer(AdminRenderer):
         # (data is stored one level deeper than expected in the response)
         results = context.get('results')
         serializer = getattr(results, 'serializer', None)
-        natural_key = serializer.get_name_field() if serializer else None
+        name_field = serializer.get_name_field() if serializer else None
         instance = serializer.instance if serializer else None
 
         if serializer:
@@ -156,7 +156,7 @@ class DynamicAdminRenderer(AdminRenderer):
             elif not is_error:
                 header = getattr(
                     instance,
-                    natural_key,
+                    name_field,
                     header
                 )
                 header_url = serializer.get_url(
