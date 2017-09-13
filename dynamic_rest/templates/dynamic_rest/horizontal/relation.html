@@ -40,6 +40,7 @@
         }
         $("select[name='{{ field.name }}']").select2({
             data: initials,
+            allowClear: true,
             ajax: {
                 url: "{{ field.get_url }}",
                 dataType: "json",
