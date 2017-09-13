@@ -1,10 +1,9 @@
-from .base import WithRelationalFieldMixin, DynamicField
+from .base import DynamicField
 from rest_framework.serializers import ChoiceField
 from dynamic_rest.utils import DynamicValue
 
 
 class DynamicChoicesField(
-    WithRelationalFieldMixin,
     ChoiceField,
     DynamicField
 ):

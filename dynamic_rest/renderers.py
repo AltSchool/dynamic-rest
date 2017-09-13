@@ -16,7 +16,7 @@ except:
 
 from dynamic_rest.utils import unpack, get_breadcrumbs
 from dynamic_rest.conf import settings
-from dynamic_rest.fields import DynamicRelationField
+from dynamic_rest import fields
 
 
 class DynamicBrowsableAPIRenderer(BrowsableAPIRenderer):
@@ -55,8 +55,11 @@ class DynamicHTMLFormRenderer(HTMLFormRenderer):
 DynamicHTMLFormRenderer.default_style = ClassLookupDict(
     copy(DynamicHTMLFormRenderer.default_style.mapping)
 )
-DynamicHTMLFormRenderer.default_style[DynamicRelationField] = {
+DynamicHTMLFormRenderer.default_style[fields.DynamicRelationField] = {
     'base_template': 'relation.html'
+}
+DynamicHTMLFormRenderer.default_style[fields.DynamicListField] = {
+    'base_template': 'list.html'
 }
 
 

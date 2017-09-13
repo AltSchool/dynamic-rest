@@ -10,11 +10,12 @@ except ImportError:
         get_script_prefix
     )
 
+from django.urls import reverse as django_reverse
 from django.utils import six
 from django.shortcuts import redirect
 from rest_framework import views
 from rest_framework.response import Response
-from rest_framework.reverse import reverse
+from rest_framework.reverse import reverse, NoReverseMatch
 from rest_framework.routers import DefaultRouter, Route, replace_methodname
 
 from dynamic_rest.meta import get_model_table
@@ -28,7 +29,13 @@ resource_name_map = {}
 def get_directory(request, show_all=True):
     """Get API directory as a nested list of lists."""
     def get_url(url):
-        return reverse(url, request=request) if url else url
+        try:
+            return reverse(url, request=request) if url else url
+        except NoReverseMatch:
+            try:
+                return django_reverse(url)
+            except NoReverseMatch:
+                return ''
 
     def is_prefix_of(path, url):
         return path.startswith(url) if url and path else False
@@ -115,7 +122,12 @@ class DynamicRouter(DefaultRouter):
                     settings.ROOT_REQUIRES_AUTHENTICATION and
                     not request.user.is_authenticated()
                 ):
-                    return redirect('/login/?next=%s' % request.path)
+                    return redirect(
+                        '%s?next=%s' % (
+                            settings.LOGIN_URL,
+                            request.path
+                        )
+                    )
                 directory_list = get_directory(request, show_all=False)
                 result = OrderedDict()
                 for group_name, url, endpoints, _ in directory_list:
