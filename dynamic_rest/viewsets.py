@@ -173,8 +173,8 @@ class WithDynamicViewSetMixin(object):
             else:
                 try:
                     obj = self.get_object()
-                    natural_key = serializer.get_natural_key()
-                    name = str(getattr(obj, natural_key))
+                    name_field = serializer.get_name_field()
+                    name = str(getattr(obj, name_field))
                 except:
                     name = serializer.get_name()
         else:

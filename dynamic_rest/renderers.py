@@ -14,7 +14,7 @@ except:
     class AdminRenderer(BrowsableAPIRenderer):
         format = 'admin'
 
-from dynamic_rest.utils import unpack, get_breadcrumbs
+from dynamic_rest.utils import unpack
 from dynamic_rest.conf import settings
 from dynamic_rest import fields
 
@@ -68,9 +68,6 @@ class DynamicAdminRenderer(AdminRenderer):
     form_renderer_class = DynamicHTMLFormRenderer
     template = settings.ADMIN_TEMPLATE
 
-    def get_breadcrumbs(self, request, view=None):
-        return get_breadcrumbs(request.path, view=view)
-
     def get_context(self, data, media_type, context):
         def process(result):
             if result.get('links', {}).get('self'):
@@ -120,7 +117,7 @@ class DynamicAdminRenderer(AdminRenderer):
         # (data is stored one level deeper than expected in the response)
         results = context.get('results')
         serializer = getattr(results, 'serializer', None)
-        natural_key = serializer.get_natural_key() if serializer else None
+        natural_key = serializer.get_name_field() if serializer else None
         instance = serializer.instance if serializer else None
 
         if serializer:
