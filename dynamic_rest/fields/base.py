@@ -1,4 +1,3 @@
-from rest_framework.serializers import SerializerMethodField
 from rest_framework import fields
 from dynamic_rest.meta import get_model_field
 
@@ -62,10 +61,6 @@ class DynamicComputedField(DynamicField):
     def __init__(self, *args, **kwargs):
         kwargs['read_only'] = True
         super(DynamicComputedField, self).__init__(*args, **kwargs)
-
-
-class DynamicMethodField(SerializerMethodField, DynamicField):
-    pass
 
 
 class CountField(DynamicComputedField):

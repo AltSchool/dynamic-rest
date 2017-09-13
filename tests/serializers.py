@@ -42,6 +42,7 @@ class CatSerializer(DynamicModelSerializer):
     class Meta:
         model = Cat
         name = 'cat'
+        name_field = 'cat'
         fields = ('id', 'name', 'home', 'backup_home', 'foobar', 'parent')
         deferred_fields = ('home', 'backup_home', 'foobar', 'parent')
         immutable_fields = ('name',)
@@ -343,6 +344,7 @@ class CarSerializer(DynamicModelSerializer):
 
     class Meta:
         model = Car
+        name_field = 'name'
         fields = (
             'id',
             'name',

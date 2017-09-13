@@ -95,9 +95,9 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         """Get the serializer's plural name."""
         return self.serializer_class.get_plural_name()
 
-    def get_natural_key(self):
+    def get_name_field(self):
         """Get the serializer's natural key."""
-        return self.serializer_class.get_natural_key()
+        return self.serializer_class.get_name_field()
 
     def get_model(self):
         """Get the serializer's model."""
@@ -279,11 +279,11 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         return renderer.format == 'admin'
 
     def as_hyperlink(self, instance):
-        natural_key = self.get_natural_key()
+        name_field = self.get_name_field()
         url = self.get_url(instance.pk)
         label = (
-            getattr(instance, natural_key)
-            if natural_key else instance
+            getattr(instance, name_field)
+            if name_field else instance
         )
         return Hyperlink(url, label)
 

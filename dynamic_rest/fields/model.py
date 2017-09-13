@@ -1,6 +1,7 @@
 import sys
 from .base import DynamicField
 from rest_framework.serializers import (
+    SerializerMethodField,
     BooleanField,
     CharField,
     DateField,
@@ -57,3 +58,7 @@ for cls in (
         {}
     )
     setattr(sys.modules[__name__], new_name, new_cls)
+
+
+class DynamicMethodField(SerializerMethodField, DynamicField):
+    pass

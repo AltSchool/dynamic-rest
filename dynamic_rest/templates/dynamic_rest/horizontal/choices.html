@@ -39,12 +39,6 @@
         }
         $("select[name='{{ field.name }}']").select2({
             data: initials,
-            templateResult: function(item) {
-                return item.{{ field.get_natural_key }};
-            },
-            templateSelection: function(item) {
-                return item.{{ field.get_natural_key }};
-            },
             minimumInputLength: 1,
         }).val(selected).trigger('change');
     });

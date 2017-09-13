@@ -45,7 +45,7 @@
                 dataType: "json",
                 delay: 250,
                 data: function(params) {
-                  var name = '{{field.get_natural_key}}';
+                  var name = '{{field.get_name_field}}';
                   var filterName = 'filter{' + name + '.icontains}';
                   var result = {
                     page: params.page,
@@ -71,10 +71,10 @@
                 return markup;
             },
             templateResult: function(item) {
-                return item.{{ field.get_natural_key }};
+                return item.{{ field.get_name_field }};
             },
             templateSelection: function(item) {
-                return item.{{ field.get_natural_key }};
+                return item.{{ field.get_name_field }};
             },
             minimumInputLength: 1,
         }).val(selected).trigger('change');

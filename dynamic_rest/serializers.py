@@ -26,9 +26,6 @@ from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.tagged import tag_dict
 
 
-NATURAL_KEY_FIELD_NAMES = ('name', 'title', 'slug', 'key')
-
-
 def nested_update(instance, key, value, objects=None):
     objects = objects or []
     nested = getattr(instance, key, None)
@@ -91,12 +88,12 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         return [self.child.to_representation(item) for item in iterable]
 
     def get_description(self):
-        """Get the child's natural key."""
+        """Get the child's description."""
         return self.child.get_description()
 
-    def get_natural_key(self):
-        """Get the child's natural key."""
-        return self.child.get_natural_key()
+    def get_name_field(self):
+        """Get the child's name field."""
+        return self.child.get_name_field()
 
     def get_url(self, pk=None):
         return self.child.get_url(pk=pk)
@@ -384,19 +381,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         return getattr(cls.Meta, 'description', None)
 
     @classmethod
-    def get_natural_key(cls):
-        if not hasattr(cls.Meta, 'natural_key'):
-            model = cls.get_model()
-            for name in NATURAL_KEY_FIELD_NAMES:
-                # try several common natural key field names
-                try:
-                    get_model_field(model, name)
-                    return name
-                except AttributeError:
-                    pass
+    def get_name_field(cls):
+        if not hasattr(cls.Meta, 'name_field'):
             # fallback to primary key
             return 'pk'
-        return cls.Meta.natural_key
+        return cls.Meta.name
 
     @classmethod
     def get_plural_name(cls):
