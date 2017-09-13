@@ -385,7 +385,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         if not hasattr(cls.Meta, 'name_field'):
             # fallback to primary key
             return 'pk'
-        return cls.Meta.name
+        return cls.Meta.name_field
 
     @classmethod
     def get_plural_name(cls):
