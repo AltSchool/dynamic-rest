@@ -5,7 +5,6 @@ from dynamic_rest.conf import settings
 
 def login(request):
     template_name = settings.LOGIN_TEMPLATE
-    print template_name
     return views.login(request, template_name=template_name)
 
 
