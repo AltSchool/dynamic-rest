@@ -1,57 +1,35 @@
 import sys
 from .base import DynamicField
-from rest_framework.serializers import (
-    SerializerMethodField,
-    BooleanField,
-    CharField,
-    DateField,
-    DateTimeField,
-    DecimalField,
-    DictField,
-    DurationField,
-    EmailField,
-    FileField,
-    FilePathField,
-    FloatField,
-    HiddenField,
-    IPAddressField,
-    ImageField,
-    IntegerField,
-    JSONField,
-    ListField,
-    RegexField,
-    SlugField,
-    TimeField,
-    URLField,
-    UUIDField
-)
+from rest_framework import serializers
 
-for cls in (
-    BooleanField,
-    CharField,
-    DateField,
-    DateTimeField,
-    DecimalField,
-    DictField,
-    DurationField,
-    EmailField,
-    FileField,
-    FilePathField,
-    FloatField,
-    HiddenField,
-    IPAddressField,
-    ImageField,
-    IntegerField,
-    JSONField,
-    ListField,
-    RegexField,
-    SlugField,
-    TimeField,
-    URLField,
-    UUIDField
+for cls_name in (
+    'BooleanField',
+    'CharField',
+    'DateField',
+    'DateTimeField',
+    'DecimalField',
+    'DictField',
+    'EmailField',
+    'FileField',
+    'FilePathField',
+    'FloatField',
+    'HiddenField',
+    'IPAddressField',
+    'ImageField',
+    'IntegerField',
+    'JSONField',
+    'ListField',
+    'RegexField',
+    'SlugField',
+    'TimeField',
+    'URLField',
+    'UUIDField',
 ):
-    name = cls.__name__
-    new_name = 'Dynamic%s' % name
+    cls = getattr(serializers, cls_name, None)
+    if not cls:
+        continue
+
+    new_name = 'Dynamic%s' % cls_name
     new_cls = type(
         new_name,
         (cls, DynamicField),
@@ -60,5 +38,8 @@ for cls in (
     setattr(sys.modules[__name__], new_name, new_cls)
 
 
-class DynamicMethodField(SerializerMethodField, DynamicField):
+class DynamicMethodField(
+    serializers.SerializerMethodField,
+    DynamicField
+):
     pass

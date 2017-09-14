@@ -6,7 +6,6 @@ from rest_framework.renderers import (
     HTMLFormRenderer,
     ClassLookupDict
 )
-from rest_framework.compat import reverse, NoReverseMatch
 try:
     from rest_framework.renderers import AdminRenderer
 except:
@@ -15,6 +14,7 @@ except:
         format = 'admin'
 
 from dynamic_rest.utils import unpack
+from dynamic_rest.compat import reverse, NoReverseMatch
 from dynamic_rest.conf import settings
 from dynamic_rest import fields
 

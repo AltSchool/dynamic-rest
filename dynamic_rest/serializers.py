@@ -7,7 +7,6 @@ from django.db import models
 from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import exceptions, fields, serializers
-from rest_framework.compat import set_many
 from rest_framework.fields import SkipField
 from rest_framework.reverse import reverse
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
@@ -24,6 +23,7 @@ from dynamic_rest.meta import (
 )
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.tagged import tag_dict
+from dynamic_rest.compat import set_many
 
 
 def nested_update(instance, key, value, objects=None):

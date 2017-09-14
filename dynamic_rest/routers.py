@@ -2,24 +2,19 @@
 from collections import OrderedDict
 import re
 
-# Backwards compatability for django < 1.10.x
-try:
-    from django.urls import get_script_prefix
-except ImportError:
-    from django.core.urlresolvers import (
-        get_script_prefix
-    )
-
-from django.urls import reverse as django_reverse
 from django.utils import six
 from django.shortcuts import redirect
 from rest_framework import views
 from rest_framework.response import Response
-from rest_framework.reverse import reverse, NoReverseMatch
 from rest_framework.routers import DefaultRouter, Route, replace_methodname
 
 from dynamic_rest.meta import get_model_table
 from dynamic_rest.conf import settings
+from dynamic_rest.compat import (
+    get_script_prefix,
+    reverse,
+    NoReverseMatch
+)
 
 directory = {}
 resource_map = {}
@@ -30,12 +25,9 @@ def get_directory(request, show_all=True):
     """Get API directory as a nested list of lists."""
     def get_url(url):
         try:
-            return reverse(url, request=request) if url else url
+            return reverse(url) if url else url
         except NoReverseMatch:
-            try:
-                return django_reverse(url)
-            except NoReverseMatch:
-                return ''
+            return '#'
 
     def is_prefix_of(path, url):
         return path.startswith(url) if url and path else False
