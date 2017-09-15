@@ -4,7 +4,7 @@ from dynamic_rest.conf import settings
 
 
 def login(request):
-    template_name = settings.LOGIN_TEMPLATE
+    template_name = settings.ADMIN_LOGIN_TEMPLATE
     return views.login(request, template_name=template_name)
 
 

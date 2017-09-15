@@ -107,16 +107,16 @@ class DynamicRouter(DefaultRouter):
             _ignore_model_permissions = True
 
             def get_view_name(self, *args, **kwargs):
-                return settings.ROOT_VIEW_NAME
+                return settings.API_NAME
 
             def get(self, request, *args, **kwargs):
                 if (
-                    settings.ROOT_REQUIRES_AUTHENTICATION and
+                    settings.API_ROOT_SECURE and
                     not request.user.is_authenticated()
                 ):
                     return redirect(
                         '%s?next=%s' % (
-                            settings.LOGIN_URL,
+                            settings.ADMIN_LOGIN_URL,
                             request.path
                         )
                     )

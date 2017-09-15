@@ -166,7 +166,7 @@ class WithDynamicViewSetMixin(object):
         return headers
 
     def get_view_name(self):
-        serializer_class = getattr(self, 'serializer_class', None)
+        serializer_class = self.get_serializer_class()
         suffix = self.suffix or ''
         if serializer_class:
             serializer = self.serializer_class()

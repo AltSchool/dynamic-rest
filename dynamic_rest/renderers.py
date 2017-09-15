@@ -6,6 +6,8 @@ from rest_framework.renderers import (
     HTMLFormRenderer,
     ClassLookupDict
 )
+
+
 try:
     from rest_framework.renderers import AdminRenderer
 except:
@@ -13,7 +15,6 @@ except:
     class AdminRenderer(BrowsableAPIRenderer):
         format = 'admin'
 
-from dynamic_rest.utils import unpack
 from dynamic_rest.compat import reverse, NoReverseMatch
 from dynamic_rest.conf import settings
 from dynamic_rest import fields
@@ -69,28 +70,19 @@ class DynamicAdminRenderer(AdminRenderer):
     template = settings.ADMIN_TEMPLATE
 
     def get_context(self, data, media_type, context):
-        def process(result):
-            if result.get('links', {}).get('self'):
-                result['url'] = result['links']['self']
-            result.pop('links', None)
-
         view = context.get('view')
         response = context.get('response')
+        request = context.get('request')
         is_error = response.status_code > 399
         is_auth_error = response.status_code in (401, 403)
-        request = context.get('request')
         user = request.user if request else None
         referer = request.META.get('HTTP_REFERER') if request else None
 
-        if view and view.__class__.__name__ == 'API':
-            # root view
-            is_root = True
-        else:
-            # data view
-            is_root = False
-            # remove envelope for successful responses
-            if getattr(data, 'serializer', None):
-                data = unpack(data)
+        # remove envelope for successful responses
+        if getattr(data, 'serializer', None):
+            serializer = data.serializer
+            serializer.disable_envelope()
+            data = serializer.data
 
         context = super(DynamicAdminRenderer, self).get_context(
             data,
@@ -98,37 +90,32 @@ class DynamicAdminRenderer(AdminRenderer):
             context
         )
 
-        context['is_auth_error'] = is_auth_error
-
         # add context
-
+        name_field = None
+        meta = None
+        is_update = getattr(view, 'is_update', lambda: False)()
+        is_root = view and view.__class__.__name__ == 'API'
         header = ''
         header_url = '#'
         description = ''
-        if is_root:
-            context['style'] = 'root'
-            header = settings.ROOT_VIEW_NAME or ''
-            description = settings.ROOT_DESCRIPTION
-            header_url = '/'
 
         style = context['style']
-
         # to account for the DREST envelope
         # (data is stored one level deeper than expected in the response)
         results = context.get('results')
+        paginator = context.get('paginator')
+        columns = context['columns']
         serializer = getattr(results, 'serializer', None)
         name_field = serializer.get_name_field() if serializer else None
         instance = serializer.instance if serializer else None
 
-        if serializer:
-            singular_name = serializer.get_name().title()
-            plural_name = serializer.get_plural_name().title()
-            description = serializer.get_description()
-        else:
-            singular_name = plural_name = ''
+        def process(result):
+            if result.get('links', {}).get('self'):
+                url = result['url'] = result['links']['self']
+                parts = url.split('/')
+                pk = parts[-1] if parts[-1] else parts[-2]
+                result['pk'] = pk
 
-        context['singular_name'] = singular_name
-        context['plural_name'] = plural_name
         if results:
             if isinstance(results, list):
                 for result in results:
@@ -136,17 +123,17 @@ class DynamicAdminRenderer(AdminRenderer):
             else:
                 process(results)
 
-        columns = context['columns']
-        name_field = None
-        paginator = context.get('paginator')
-        serializer_class = None
-        meta = None
-        is_update = getattr(view, 'is_update', lambda: False)()
-
-        if hasattr(view, 'serializer_class'):
-            serializer_class = view.serializer_class
-            header = serializer_class.get_plural_name().title()
-            name_field = serializer_class.get_name_field()
+        if is_root:
+            context['style'] = 'root'
+            header = settings.API_NAME or ''
+            description = settings.API_DESCRIPTION
+            header_url = '/'
+        if serializer:
+            singular_name = serializer.get_name().title()
+            plural_name = serializer.get_plural_name().title()
+            description = serializer.get_description()
+            header = serializer.get_plural_name().title()
+            name_field = serializer.get_name_field()
             if style == 'list':
                 if paginator:
                     paging = paginator.get_page_metadata()
@@ -155,15 +142,11 @@ class DynamicAdminRenderer(AdminRenderer):
                     count = len(results)
                 header = '%d %s' % (count, header)
             elif not is_error:
-                header = getattr(
-                    instance,
-                    name_field,
-                    header
-                )
+                header = results.get(name_field)
                 header_url = serializer.get_url(
                     pk=instance.pk
                 )
-            meta = serializer_class.Meta
+            meta = serializer.Meta
             if style == 'list':
                 fields = getattr(meta, 'list_fields', None) or meta.fields
             else:
@@ -175,7 +158,10 @@ class DynamicAdminRenderer(AdminRenderer):
                     f for f in fields
                     if f in columns and f not in blacklist
                 ]
+        else:
+            singular_name = plural_name = ''
 
+        # search
         search_key = getattr(
             meta,
             'search_key',
@@ -185,63 +171,40 @@ class DynamicAdminRenderer(AdminRenderer):
             request.query_params.get(search_key, '')
             if search_key else ''
         )
-        # columns
-        context['columns'] = columns
 
-        context['description'] = description
-        # name_field - the field to add the row hyperlink onto
-        # defaults to first visible column
-        if not name_field and columns:
+        if (
+            columns and not name_field or
+            (columns and name_field not in columns)
+        ):
             name_field = columns[0]
-        context['name_field'] = name_field
 
+        # login and logout
         login_url = ''
         try:
-            login_url = settings.LOGIN_URL or reverse('dynamic_rest:login')
+            login_url = settings.ADMIN_LOGIN_URL or reverse(
+                'dynamic_rest:login'
+            )
         except NoReverseMatch:
             try:
                 login_url = (
-                    settings.LOGIN_URL or reverse('rest_framework:login')
+                    settings.ADMIN_LOGIN_URL or reverse('rest_framework:login')
                 )
             except NoReverseMatch:
                 pass
-        context['login_url'] = login_url
         logout_url = ''
         try:
             logout_url = (
-                settings.LOGOUT_URL or reverse('dynamic_rest:logout')
+                settings.ADMIN_LOGOUT_URL or reverse('dynamic_rest:logout')
             )
         except NoReverseMatch:
             try:
                 logout_url = (
-                    settings.LOGOUT_URL or reverse('dynamic_rest:logout')
+                    settings.ADMIN_LOGOUT_URL or reverse('dynamic_rest:logout')
                 )
             except NoReverseMatch:
                 pass
-        context['logout_url'] = logout_url
 
-        context['header'] = header
-        context['header_url'] = header_url
-        context['details'] = context['columns']
-        allowed_methods = set(
-            (x.lower() for x in (view.http_method_names or ()))
-        )
-        context['search_value'] = search_value
-        context['search_key'] = search_key
-        context['allow_filter'] = (
-            'get' in allowed_methods and style == 'list'
-        ) and search_key
-        context['allow_delete'] = (
-            'delete' in allowed_methods and style == 'detail'
-        )
-        context['allow_edit'] = (
-            'put' in allowed_methods and
-            style == 'detail' and
-            bool(instance)
-        )
-        context['allow_create'] = (
-            'post' in allowed_methods and style == 'list'
-        )
+        # alerts
         alert = request.query_params.get('alert', None)
         alert_class = request.query_params.get('alert-class', None)
         if is_error:
@@ -263,7 +226,38 @@ class DynamicAdminRenderer(AdminRenderer):
             alert_class = 'success'
         if alert and not alert_class:
             alert_class = 'info'
+        # methods
+        allowed_methods = set(
+            (x.lower() for x in (view.http_method_names or ()))
+        )
 
+        context['name_field'] = name_field
+        context['columns'] = columns
+        context['details'] = context['columns']
+        context['description'] = description
+        context['singular_name'] = singular_name
+        context['plural_name'] = plural_name
+        context['is_auth_error'] = is_auth_error
+        context['login_url'] = login_url
+        context['logout_url'] = logout_url
+        context['header'] = header
+        context['header_url'] = header_url
+        context['search_value'] = search_value
+        context['search_key'] = search_key
+        context['allow_filter'] = (
+            'get' in allowed_methods and style == 'list'
+        ) and search_key
+        context['allow_delete'] = (
+            'delete' in allowed_methods and style == 'detail'
+        )
+        context['allow_edit'] = (
+            'put' in allowed_methods and
+            style == 'detail' and
+            bool(instance)
+        )
+        context['allow_create'] = (
+            'post' in allowed_methods and style == 'list'
+        )
         context['alert'] = alert
         context['alert_class'] = alert_class
         return context

@@ -2,17 +2,56 @@ from django.conf import settings as django_settings
 from django.test.signals import setting_changed
 
 DYNAMIC_REST = {
+    # API_NAME: Name of the API
+    'API_NAME': 'DREST',
+
+    # API_DESCRIPTION: Description of the API
+    'API_DESCRIPTION': 'My DREST API',
+
+    # API_ROOT_SECURE: whether or not the root API view requires authentication
+    'API_ROOT_SECURE': False,
+
+    # ADDITIONAL_PRIMARY_RESOURCE_PREFIX: String to prefix additional
+    # instances of the primary resource when sideloading.
+    'ADDITIONAL_PRIMARY_RESOURCE_PREFIX': '+',
+
+    # ADMIN_TEMPLATE: Name of the admin template
+    # Override this to add custom styling or UI
     'ADMIN_TEMPLATE': 'dynamic_rest/admin.html',
+
+    # ADMIN_LOGIN_TEMPLATE: the login template used to render login UI
+    'ADMIN_LOGIN_TEMPLATE': 'dynamic_rest/login.html',
+
+    # ADMIN_LOGIN_URL: the login URL, defaults to reverse-URL lookup
+    'ADMIN_LOGIN_URL': '',
+
+    # ADMIN_LOGOUT_URL: the logout URL, defaults to reverse-URL lookup
+    'ADMIN_LOGOUT_URL': '',
 
     # DEBUG: enable/disable internal debugging
     'DEBUG': False,
+
+    # DEFER_MANY_RELATIONS: automatically defer many-relations, unless
+    # `deferred=False` is explicitly set on the field.
+    'DEFER_MANY_RELATIONS': False,
 
     # ENABLE_BROWSABLE_API: enable/disable the browsable API.
     # It can be useful to disable it in production.
     'ENABLE_BROWSABLE_API': True,
 
+    # ENABLE_BULK_PARTIAL_CREATION: enable/disable partial creation in bulk
+    'ENABLE_BULK_PARTIAL_CREATION': False,
+
+    # ENABLE_BULK_UPDATE: enable/disable update in bulk
+    'ENABLE_BULK_UPDATE': True,
+
     # ENABLE_LINKS: enable/disable relationship links
     'ENABLE_LINKS': True,
+
+    # Enables host-relative links.  Only compatible with resources registered
+    # through the dynamic router.  If a resource doesn't have a canonical
+    # path registered, links will default back to being resource-relative urls
+    'ENABLE_HOST_RELATIVE_LINKS': True,
 
     # ENABLE_SELF_LINKS: enable/disable links to self
     'ENABLE_SELF_LINKS': False,
@@ -23,27 +62,9 @@ DYNAMIC_REST = {
     # ENABLE_SERIALIZER_OPTIMIZATIONS: enable/disable representation speedups
     'ENABLE_SERIALIZER_OPTIMIZATIONS': True,
 
-    # ENABLE_BULK_PARTIAL_CREATION: enable/disable partial creation in bulk
-    'ENABLE_BULK_PARTIAL_CREATION': False,
-
-    # ENABLE_BULK_UPDATE: enable/disable update in bulk
-    'ENABLE_BULK_UPDATE': True,
-
-    # DEFER_MANY_RELATIONS: automatically defer many-relations, unless
-    # `deferred=False` is explicitly set on the field.
-    'DEFER_MANY_RELATIONS': False,
-
     # MAX_PAGE_SIZE: global setting for max page size.
     # Can be overriden at the viewset level.
     'MAX_PAGE_SIZE': None,
-
-    # LOGIN_URL: the login URL, defaults to reverse-URL lookup
-    'LOGIN_URL': '',
-
-    # LOGOUT_URL: the logout URL, defaults to reverse-URL lookup
-    'LOGOUT_URL': '',
-
-    'LOGIN_TEMPLATE': 'dynamic_rest/login.html',
 
     # PAGE_QUERY_PARAM: global setting for the pagination query parameter.
     # Can be overriden at the viewset level.
@@ -56,23 +77,6 @@ DYNAMIC_REST = {
     # PAGE_SIZE_QUERY_PARAM: global setting for the page size query parameter.
     # Can be overriden at the viewset level.
     'PAGE_SIZE_QUERY_PARAM': 'per_page',
-
-    # ADDITIONAL_PRIMARY_RESOURCE_PREFIX: String to prefix additional
-    # instances of the primary resource when sideloading.
-    'ADDITIONAL_PRIMARY_RESOURCE_PREFIX': '+',
-
-    # Enables host-relative links.  Only compatible with resources registered
-    # through the dynamic router.  If a resource doesn't have a canonical
-    # path registered, links will default back to being resource-relative urls
-    'ENABLE_HOST_RELATIVE_LINKS': True,
-
-    # Whether or not the root API view requires authentication
-    'ROOT_REQUIRES_AUTHENTICATION': False,
-
-    # Name of the root API view
-    'ROOT_VIEW_NAME': 'API',
-
-    'ROOT_DESCRIPTION': '',
 }
 
 

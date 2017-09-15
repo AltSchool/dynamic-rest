@@ -53,7 +53,7 @@
                     per_page: per_page,
                   };
                   result[filterName] = params.term;
-                  result['include[]'] = ['id', name];
+                  result['include[]'] = ['pk', name];
                   return result;
                 },
                 processResults: function(data, params) {
@@ -72,10 +72,18 @@
                 return markup;
             },
             templateResult: function(item) {
-                return item.{{ field.get_name_field }};
+                var name = '{{field.get_name_field}}';
+                if (name == 'pk') {
+                    return items.links ? item.links.self : item.id;
+                }
+                return item[name];
             },
             templateSelection: function(item) {
-                return item.{{ field.get_name_field }};
+                var name = '{{field.get_name_field}}';
+                if (name == 'pk') {
+                    return item.links ? item.links.self : item.id;
+                }
+                return item[name];
             },
             minimumInputLength: 1,
         }).val(selected).trigger('change');
