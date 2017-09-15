@@ -39,15 +39,15 @@ Major release
 - New serializer method: *`get_field`*
     Returns a serializer field
 
-- New serializer method: *`rewrite`*
-    Provides a consistent way to rewrite an API-field
+- New serializer method: *`resolve`*
+    Provides a consistent way to resolve an API-field
     into a chain of model fields. Returns a model field list
     and serializer field list.
 
     For example, consider the API field `creator.location_name`
     on a `BlogSerializer` and underlying model path 
     `user.location.name` starting from the `Blog` model.
-    `BlogSerializer.rewrite("creator.location_name")`
+    `BlogSerializer.resolve("creator.location_name")`
     will return two paths of model and serializer fields necessary
     to "reach" the field from the serializer.
 
@@ -66,7 +66,7 @@ Major release
     Note that the lists do not necessarily contain the same number of elements
     because API fields can reference nested model fields.
 
-    Calling rewrite on a method field (`source == '*'`) will cause an exception.
+    Calling resolve on a method field (`source == '*'`) will cause an exception.
 
 - New serializer functionality: *nested updates*
     DREST serializers will now attempt to properly handle

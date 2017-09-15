@@ -91,9 +91,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         """Get the child's description."""
         return self.child.get_description()
 
-    def rewrite(self, query):
-        """Use the child's rewrite."""
-        return self.child.rewrite(query)
+    def resolve(self, query):
+        """Use the child's method."""
+        return self.child.resolve(query)
 
     def get_name_field(self):
         """Get the child's name field."""
@@ -334,8 +334,34 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
                 # not sideloading this field
                 self.request_fields[name] = True
 
-    def rewrite(self, query):
-        """Return rewrites given a serializer field path."""
+    def resolve(self, query):
+        """Resolves a query into model and serializer fields.
+
+        Arguments:
+            query: an API field path, in dot-nation
+                e.g: "creator.location_name"
+
+        Returns:
+            (model_fields, api_fields)
+                e.g:
+                    [
+                        ("user", Blog._meta.fields.user),
+                        ("location", User._meta.fields.location),
+                        ("name", Location._meta.fields.name)
+                    ],
+                    [
+                        ("creator", RelationField(source="user")),
+                        ("location_name", CharField(source="location.name"))
+                    ]
+
+        Raises:
+            ValidationError if the query is invalid,
+                e.g. references a method field or an undefined field
+        ```
+
+        Note that the lists do not necessarily contain the
+        same number of elements because API fields can reference nested model fields.
+        """  # noqa
         if not isinstance(query, six.string_types):
             parts = query
             query = '.'.join(query)
@@ -369,19 +395,23 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             source = api_field.source or api_name
             related = api_field.serializer_class()
             other = '.'.join(other)
-            model_fields, api_fields = related.rewrite(other)
+            model_fields, api_fields = related.resolve(other)
             model_field = meta.get_field(source)
             model_name = Meta.get_query_name(model_field)
             model_fields.insert(0, (model_name, model_field))
             api_fields.insert(0, (api_name, api_field))
         else:
             if api_field == 'pk':
-                # pk is an alias for the id field, which
-                # may not exist within the serializer
-                model_fields.append(('pk', meta.get_pk_field()))
-                api_field = serializer.get_field('pk')
-                if api_field:
+                # pk is an alias for the id field
+                model_field = meta.get_pk_field()
+                model_fields.append(('pk', model_field))
+
+                try:
+                    api_field = serializer.get_field('pk')
                     api_fields.append(('pk', api_field))
+                except:
+                    # the ID field may not exist within the serializer
+                    pass
             else:
                 if not api_field or api_field.source == '*':
                     raise ValidationError(
@@ -427,9 +457,43 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
 
     def get_field(self, field_name):
         if field_name == 'pk':
-            # TODO: better remapping of pk
-            if 'id' in self.fields:
-                return self.fields['id']
+            if hasattr(self.Meta, '_pk'):
+                return self.Meta._pk
+
+            fields = self.fields
+            field = None
+            model = self.get_model()
+            primary_key = getattr(self.Meta, 'primary_key', None)
+
+            if primary_key:
+                field = fields.get(primary_key)
+            else:
+                for name, f in fields.items():
+                    # try to use model fields
+                    try:
+                        if getattr(field, 'primary_key', False):
+                            field = f
+                            break
+
+                        model_field = get_model_field(
+                            model,
+                            f.source or name
+                        )
+
+                        if model_field.primary_key:
+                            field = f
+                            break
+                    except:
+                        pass
+
+            if not field:
+                # fall back to a field called ID
+                if 'id' in fields:
+                    field = fields['id']
+
+            if field:
+                self.Meta._pk = field
+                return field
         else:
             if field_name in self.fields:
                 return self.fields[field_name]
@@ -438,7 +502,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             if field_name in fields:
                 return fields[field_name]
 
-        raise ValueError(
+        raise ValidationError(
             '%s is not a field' % field_name
         )
 

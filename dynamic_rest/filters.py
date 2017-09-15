@@ -178,8 +178,8 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                     operator = None
 
             if serializer:
-                # perform model-field rewrites
-                model_fields, serializer_fields = serializer.rewrite(terms)
+                # perform model-field resolution
+                model_fields, serializer_fields = serializer.resolve(terms)
                 field = serializer_fields[-1] if serializer_fields else None
                 # if the field is a boolean,
                 # coerce the value
@@ -572,15 +572,15 @@ class DynamicSortingFilter(WithGetSerializerClass, OrderingFilter):
                     else '-'
                 )
                 try:
-                    ordering = self.rewrite(serializer, stripped_term, view)
+                    ordering = self.resolve(serializer, stripped_term, view)
                     valid_orderings.append(reverse_sort_term + ordering)
                 except ValidationError:
                     invalid_orderings.append(term)
 
         return valid_orderings, invalid_orderings
 
-    def rewrite(self, serializer, query, view=None):
-        """Get re-written field.
+    def resolve(self, serializer, query, view=None):
+        """Resolve an ordering.
 
         Arguments:
             query: a string representing an API field
@@ -601,7 +601,7 @@ class DynamicSortingFilter(WithGetSerializerClass, OrderingFilter):
         if not self._is_allowed_query(query, view):
             raise ValidationError('Invalid sort option: %s' % query)
 
-        model_fields, _ = serializer.rewrite(query)
+        model_fields, _ = serializer.resolve(query)
         return '__'.join([f[0] for f in model_fields])
 
     def _is_allowed_query(self, query, view=None):
