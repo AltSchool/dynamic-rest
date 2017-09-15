@@ -335,115 +335,83 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
                 self.request_fields[name] = True
 
     def rewrite(self, query):
-        """Return a list of rewrites given a serializer field path.
-        """
+        """Return rewrites given a serializer field path."""
         if not isinstance(query, six.string_types):
-            terms = query
+            parts = query
             query = '.'.join(query)
         else:
-            terms = query.split('.')
+            parts = query.split('.')
 
         model_fields = []
-        serializer_fields = []
+        api_fields = []
 
         serializer = self
+
         model = serializer.get_model()
         meta = Meta(model)
-        first_term = terms[0]
-        other_terms = terms[1:]
+        api_name = parts[0]
+        other = parts[1:]
 
-        first_field = None
-        if first_term != 'pk':
-            if first_term in serializer.fields:
-                first_field = serializer.fields.get(first_term)
-            else:
-                first_field = serializer.get_all_fields().get(
-                    first_term
-                )
+        try:
+            api_field = serializer.get_field(api_name)
+        except:
+            api_field = None
 
-        if other_terms:
+        if other:
             if not (
-                first_field and
-                isinstance(first_field, DynamicRelationField)
+                api_field and
+                isinstance(api_field, DynamicRelationField)
             ):
                 raise ValidationError(
                     'Invalid field option: %s' % query
                 )
 
-            source = first_field.source or first_term
-            related_serializer = first_field.serializer_class()
-            remainder = '.'.join(other_terms)
-            model_fields, serializer_fields = related_serializer.rewrite(
-                remainder
-            )
+            source = api_field.source or api_name
+            related = api_field.serializer_class()
+            other = '.'.join(other)
+            model_fields, api_fields = related.rewrite(other)
             model_field = meta.get_field(source)
-            if (
-                hasattr(model_field, 'field') and
-                hasattr(model_field.field, 'related_query_name')
-            ):
-                source = model_field.field.related_query_name()
-
-            model_fields.insert(0, (source, model_field))
-            serializer_fields.insert(0, (first_term, first_field))
+            model_name = Meta.get_query_name(model_field)
+            model_fields.insert(0, (model_name, model_field))
+            api_fields.insert(0, (api_name, api_field))
         else:
-            if first_term == 'pk':
-                # pk is an alias for the id
-                model_fields.append(
-                    ('pk', meta.get_pk_field())
-                )
+            if api_field == 'pk':
+                # pk is an alias for the id field, which
+                # may not exist within the serializer
+                model_fields.append(('pk', meta.get_pk_field()))
+                api_field = serializer.get_field('pk')
+                if api_field:
+                    api_fields.append(('pk', api_field))
             else:
-                if not first_field or first_field.source == '*':
+                if not api_field or api_field.source == '*':
                     raise ValidationError(
                         'Invalid field option: %s' % query
                     )
 
-                serializer_fields.append((first_term, first_field))
-                source = first_field.source or first_term
+                api_fields.append((api_name, api_field))
+                source = api_field.source or api_name
                 if '.' in source:
-                    terms = source.split('.')
-                    for term in terms[:-1]:
-                        model_field = meta.get_field(term)
+                    fields = source.split('.')
+                    for field in fields[:-1]:
+                        model_field = meta.get_field(field)
                         if not model_field.related_model:
                             raise ValidationError(
-                                'Invalid field option: %s, '
-                                '%s %s has no related model' % (
-                                    query,
-                                    term,
-                                    source,
-                                )
+                                'Invalid field option: %s' % query
                             )
-                        if (
-                            hasattr(model_field, 'field') and
-                            hasattr(model_field.field, 'related_query_name')
-                        ):
-                            term = model_field.field.related_query_name()
+                        model_name = Meta.get_query_name(model_field)
                         model = model_field.related_model
                         meta = Meta(model)
-                        model_fields.append(
-                            (term, model_field)
-                        )
-                    last_term = terms[-1]
-                    model_field = meta.get_field(last_term)
-                    if (
-                        hasattr(model_field, 'field') and
-                        hasattr(model_field.field, 'related_query_name')
-                    ):
-                        last_term = model_field.field.related_query_name()
-
-                    model_fields.append((last_term, model_field))
+                        model_fields.append((model_name, model_field))
+                    field = fields[-1]
+                    model_field = meta.get_field(field)
+                    model_name = meta.get_query_name(model_field)
+                    model_fields.append((model_name, model_field))
                 else:
                     model_field = meta.get_field(source)
-                    if (
-                        hasattr(model_field, 'field') and
-                        hasattr(model_field.field, 'related_query_name')
-                    ):
-                        source = model_field.field.related_query_name()
-                    model_fields.append(
-                        (source, model_field)
-                    )
+                    model_name = meta.get_query_name(model_field)
+                    model_fields.append((model_name, model_field))
 
-        print model_fields, serializer_fields
-        return (model_fields, serializer_fields)
+        return (model_fields, api_fields)
 
     def disable_envelope(self):
         self.envelope = False
@@ -456,6 +424,23 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         Model serializers should implement this method.
         """
         return None
+
+    def get_field(self, field_name):
+        if field_name == 'pk':
+            # TODO: better remapping of pk
+            if 'id' in self.fields:
+                return self.fields['id']
+        else:
+            if field_name in self.fields:
+                return self.fields[field_name]
+
+            fields = self.get_all_fields()
+            if field_name in fields:
+                return fields[field_name]
+
+        raise ValueError(
+            '%s is not a field' % field_name
+        )
 
     @classmethod
     def get_name(cls):

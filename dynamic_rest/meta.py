@@ -25,6 +25,15 @@ class Meta(object):
     def get_related_model(cls, field):
         return field.related_model if field else None
 
+    @classmethod
+    def get_query_name(cls, field):
+        if (
+            hasattr(field, 'field') and
+            hasattr(field.field, 'related_query_name')
+        ):
+            return field.field.related_query_name()
+        return field.name
+
     def is_field(self, field_name):
         """Check whether a given field exists on a model.
 
