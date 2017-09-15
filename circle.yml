@@ -3,9 +3,10 @@ dependencies:
         - pip install -r requirements.txt
         - python setup.py develop
         - pyenv install -s 2.7.10
+        - pyenv install -s 3.3.6
         - pyenv install -s 3.4.3
         - pyenv install -s 3.5.0
-        - pyenv local 2.7.10 3.4.3 3.5.3
+        - pyenv local 2.7.10 3.3.6 3.4.3 3.5.0
 
 test:
     override:
