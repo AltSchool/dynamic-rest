@@ -13,7 +13,7 @@ class Meta(object):
     def __new__(cls, model):
         key = model._meta.db_table if hasattr(model, '_meta') else model
         if key not in cls._instances:
-            cls._instances[key] = super().__new__(cls, model)
+            cls._instances[key] = super(Meta, cls).__new__(model)
         return cls._instances.get(key)
 
     def __init__(self, model):
