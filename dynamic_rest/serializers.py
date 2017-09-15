@@ -389,19 +389,34 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
                 isinstance(api_field, DynamicRelationField)
             ):
                 raise ValidationError(
-                    'Invalid field option: %s' % query
+                    'Could not resolve field: %s, '
+                    '%s is not a valid API relation' % (
+                        query,
+                        api_name
+                    )
                 )
 
             source = api_field.source or api_name
             related = api_field.serializer_class()
             other = '.'.join(other)
             model_fields, api_fields = related.resolve(other)
-            model_field = meta.get_field(source)
+
+            try:
+                model_field = meta.get_field(source)
+            except AttributeError:
+                raise ValidationError(
+                    'Could not resolve field: %s, '
+                    '%s is not a valid model field' % (
+                        source
+                    )
+                )
+
             model_name = Meta.get_query_name(model_field)
             model_fields.insert(0, (model_name, model_field))
             api_fields.insert(0, (api_name, api_field))
         else:
             if api_field == 'pk':
+
                 # pk is an alias for the id field
                 model_field = meta.get_pk_field()
                 model_fields.append(('pk', model_field))
@@ -415,7 +430,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             else:
                 if not api_field or api_field.source == '*':
                     raise ValidationError(
-                        'Invalid field option: %s' % query
+                        'Could not resolve field: %s, '
+                        '%s is not a model-mapped API field' % (
+                            query,
+                            api_name
+                        )
                     )
 
                 api_fields.append((api_name, api_field))
@@ -423,21 +442,49 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
                 if '.' in source:
                     fields = source.split('.')
                     for field in fields[:-1]:
-                        model_field = meta.get_field(field)
-                        if not model_field.related_model:
+                        related_model = None
+                        try:
+                            model_field = meta.get_field(field)
+                            related_model = model_field.related_model
+                        except:
+                            pass
+
+                        if not related_model:
                             raise ValidationError(
-                                'Invalid field option: %s' % query
+                                'Could not resolve field: %s, '
+                                '%s is not a model relation' % (
+                                    query,
+                                    field
+                                )
                             )
                         model_name = Meta.get_query_name(model_field)
-                        model = model_field.related_model
+                        model = related_model
                         meta = Meta(model)
                         model_fields.append((model_name, model_field))
                     field = fields[-1]
-                    model_field = meta.get_field(field)
+                    try:
+                        model_field = meta.get_field(field)
+                    except:
+                        raise ValidationError(
+                            'Could not resolve field: %s, '
+                            '%s is not a model field' % (
+                                query,
+                                field
+                            )
+                        )
                     model_name = meta.get_query_name(model_field)
                     model_fields.append((model_name, model_field))
                 else:
-                    model_field = meta.get_field(source)
+                    try:
+                        model_field = meta.get_field(source)
+                    except:
+                        raise ValidationError(
+                            'Could not resolve field: %s, '
+                            '%s is not a model field' % (
+                                query,
+                                source
+                            )
+                        )
                     model_name = meta.get_query_name(model_field)
                     model_fields.append((model_name, model_field))
 
