@@ -43,7 +43,6 @@ class CatSerializer(DynamicModelSerializer):
         model = Cat
         name = 'cat'
         name_field = 'name'
-        name_field = 'cat'
         fields = ('id', 'name', 'home', 'backup_home', 'foobar', 'parent')
         deferred_fields = ('home', 'backup_home', 'foobar', 'parent')
         immutable_fields = ('name',)
