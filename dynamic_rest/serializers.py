@@ -9,21 +9,21 @@ from django.utils.functional import cached_property
 from rest_framework import exceptions, fields, serializers
 from rest_framework.fields import SkipField
 from rest_framework.reverse import reverse
+from rest_framework.exceptions import ValidationError
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
-from rest_framework.utils import model_meta
 
 from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.links import merge_link_object
 from dynamic_rest.meta import (
+    Meta,
     get_model_table,
     get_model_field,
     get_related_model
 )
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.tagged import tag_dict
-from dynamic_rest.compat import set_many
 
 
 def nested_update(instance, key, value, objects=None):
@@ -90,6 +90,10 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def get_description(self):
         """Get the child's description."""
         return self.child.get_description()
+
+    def rewrite(self, query):
+        """Use the child's rewrite."""
+        return self.child.rewrite(query)
 
     def get_name_field(self):
         """Get the child's name field."""
@@ -329,6 +333,117 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             if not isinstance(self.request_fields.get(name), dict):
                 # not sideloading this field
                 self.request_fields[name] = True
+
+    def rewrite(self, query):
+        """Return a list of rewrites given a serializer field path.
+        """
+        if not isinstance(query, six.string_types):
+            terms = query
+            query = '.'.join(query)
+        else:
+            terms = query.split('.')
+
+        model_fields = []
+        serializer_fields = []
+
+        serializer = self
+        model = serializer.get_model()
+        meta = Meta(model)
+        first_term = terms[0]
+        other_terms = terms[1:]
+
+        first_field = None
+        if first_term != 'pk':
+            if first_term in serializer.fields:
+                first_field = serializer.fields.get(first_term)
+            else:
+                first_field = serializer.get_all_fields().get(
+                    first_term
+                )
+
+        if other_terms:
+            if not (
+                first_field and
+                isinstance(first_field, DynamicRelationField)
+            ):
+                raise ValidationError(
+                    'Invalid field option: %s' % query
+                )
+
+            source = first_field.source or first_term
+            related_serializer = first_field.serializer_class()
+            remainder = '.'.join(other_terms)
+            model_fields, serializer_fields = related_serializer.rewrite(
+                remainder
+            )
+            model_field = meta.get_field(source)
+            if (
+                hasattr(model_field, 'field') and
+                hasattr(model_field.field, 'related_query_name')
+            ):
+                source = model_field.field.related_query_name()
+
+            model_fields.insert(0, (source, model_field))
+            serializer_fields.insert(0, (first_term, first_field))
+        else:
+            if first_term == 'pk':
+                # pk is an alias for the id
+                model_fields.append(
+                    ('pk', meta.get_pk_field())
+                )
+            else:
+                if not first_field or first_field.source == '*':
+                    raise ValidationError(
+                        'Invalid field option: %s' % query
+                    )
+
+                serializer_fields.append((first_term, first_field))
+                source = first_field.source or first_term
+                if '.' in source:
+                    terms = source.split('.')
+                    for term in terms[:-1]:
+                        model_field = meta.get_field(term)
+                        if not model_field.related_model:
+                            raise ValidationError(
+                                'Invalid field option: %s, '
+                                '%s %s has no related model' % (
+                                    query,
+                                    term,
+                                    source,
+                                )
+                            )
+                        if (
+                            hasattr(model_field, 'field') and
+                            hasattr(model_field.field, 'related_query_name')
+                        ):
+                            term = model_field.field.related_query_name()
+                        model = model_field.related_model
+                        meta = Meta(model)
+                        model_fields.append(
+                            (term, model_field)
+                        )
+                    last_term = terms[-1]
+                    model_field = meta.get_field(last_term)
+                    if (
+                        hasattr(model_field, 'field') and
+                        hasattr(model_field.field, 'related_query_name')
+                    ):
+                        last_term = model_field.field.related_query_name()
+
+                    model_fields.append((last_term, model_field))
+                else:
+                    model_field = meta.get_field(source)
+                    if (
+                        hasattr(model_field, 'field') and
+                        hasattr(model_field.field, 'related_query_name')
+                    ):
+                        source = model_field.field.related_query_name()
+                    model_fields.append(
+                        (source, model_field)
+                    )
+
+        print model_fields, serializer_fields
+        return (model_fields, serializer_fields)
 
     def disable_envelope(self):
         self.envelope = False
@@ -674,27 +789,29 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
 
     def update(self, instance, validated_data):
         # support nested writes if possible
-        info = model_meta.get_field_info(instance)
+        meta = Meta(instance)
         to_save = [instance]
         # Simply set each attribute on the instance, and then save it.
         # Note that unlike `.create()` we don't need to treat many-to-many
         # relationships as being a special case. During updates we already
         # have an instance pk for the relationships to be associated with.
         for attr, value in validated_data.items():
-            if attr in info.relations:
-                if info.relations[attr].to_many:
-                    set_many(instance, attr, value)
-                elif isinstance(value, dict):
-                    # nested dictionary on a has-one relationship
-                    # means we should take the current related value
-                    # and apply updates to it
-                    to_save.extend(
-                        nested_update(instance, attr, value)
-                    )
+            try:
+                field = meta.get_field(attr)
+                if field.related_model:
+                    if isinstance(value, dict):
+                        # nested dictionary on a has-one relationship
+                        # means we should take the current related value
+                        # and apply updates to it
+                        to_save.extend(
+                            nested_update(instance, attr, value)
+                        )
+                    else:
+                        # normal relationship update
+                        setattr(instance, attr, value)
                 else:
-                    # normal relationship update
                     setattr(instance, attr, value)
-            else:
+            except AttributeError:
                 setattr(instance, attr, value)
 
         for s in to_save:
@@ -703,7 +820,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         return instance
 
     def save(self, *args, **kwargs):
-        """Serializer save that address prefetch issues."""
+        """Serializer save that addresses prefetch issues."""
         update = getattr(self, 'instance', None) is not None
         try:
             instance = super(

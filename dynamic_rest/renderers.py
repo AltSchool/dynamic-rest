@@ -137,7 +137,7 @@ class DynamicAdminRenderer(AdminRenderer):
                 process(results)
 
         columns = context['columns']
-        link_field = None
+        name_field = None
         paginator = context.get('paginator')
         serializer_class = None
         meta = None
@@ -146,6 +146,7 @@ class DynamicAdminRenderer(AdminRenderer):
         if hasattr(view, 'serializer_class'):
             serializer_class = view.serializer_class
             header = serializer_class.get_plural_name().title()
+            name_field = serializer_class.get_name_field()
             if style == 'list':
                 if paginator:
                     paging = paginator.get_page_metadata()
@@ -188,11 +189,11 @@ class DynamicAdminRenderer(AdminRenderer):
         context['columns'] = columns
 
         context['description'] = description
-        # link_field - the field to add the row hyperlink onto
+        # name_field - the field to add the row hyperlink onto
         # defaults to first visible column
-        if not link_field and columns:
-            link_field = columns[0]
-        context['link_field'] = link_field
+        if not name_field and columns:
+            name_field = columns[0]
+        context['name_field'] = name_field
 
         login_url = ''
         try:

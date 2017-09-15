@@ -5,9 +5,8 @@ from django.test.client import RequestFactory
 from rest_framework import exceptions, status
 from rest_framework.request import Request
 
-from dynamic_rest.filters import DynamicFilterBackend, FilterNode
+from dynamic_rest.filters import DynamicFilterBackend
 from tests.models import Dog, Group, User
-from tests.serializers import GroupSerializer
 from tests.setup import create_fixture
 from tests.viewsets import (
     GroupNoMergeDictViewSet,
@@ -75,15 +74,15 @@ class TestUserViewSet(TestCase):
 
         backend = DynamicFilterBackend()
         out = backend._get_requested_filters(filters_map=filters_map)
-        self.assertEqual(out['_include']['attr'].value, 'bar')
-        self.assertEqual(out['_include']['attr2'].value, 'bar')
-        self.assertEqual(out['_exclude']['attr3'].value, 'bar')
-        self.assertEqual(out['rel']['_include']['attr1'].value, 'val')
-        self.assertEqual(out['rel']['_exclude']['attr2'].value, 'val')
-        self.assertEqual(out['_include']['rel__attr'].value, 'baz')
-        self.assertEqual(out['rel']['bar']['_include']['attr'].value, 'val')
-        self.assertEqual(out['_include']['attr4__lt'].value, 'val')
-        self.assertEqual(len(out['_include']['attr5__in'].value), 3)
+        self.assertEqual(out['_include']['attr'], 'bar')
+        self.assertEqual(out['_include']['attr2'], 'bar')
+        self.assertEqual(out['_exclude']['attr3'], 'bar')
+        self.assertEqual(out['rel']['_include']['attr1'], 'val')
+        self.assertEqual(out['rel']['_exclude']['attr2'], 'val')
+        self.assertEqual(out['_include']['rel__attr'], 'baz')
+        self.assertEqual(out['rel']['bar']['_include']['attr'], 'val')
+        self.assertEqual(out['_include']['attr4__lt'], 'val')
+        self.assertEqual(len(out['_include']['attr5__in']), 3)
 
     def test_is_null_casting(self):
         filters_map = {
@@ -104,25 +103,19 @@ class TestUserViewSet(TestCase):
         backend = DynamicFilterBackend()
         out = backend._get_requested_filters(filters_map=filters_map)
 
-        self.assertEqual(out['_include']['f1__isnull'].value, True)
-        self.assertEqual(out['_include']['f2__isnull'].value, ['a'])
-        self.assertEqual(out['_include']['f3__isnull'].value, True)
-        self.assertEqual(out['_include']['f4__isnull'].value, True)
-        self.assertEqual(out['_include']['f5__isnull'].value, 1)
+        self.assertEqual(out['_include']['f1__isnull'], True)
+        self.assertEqual(out['_include']['f2__isnull'], ['a'])
+        self.assertEqual(out['_include']['f3__isnull'], True)
+        self.assertEqual(out['_include']['f4__isnull'], True)
+        self.assertEqual(out['_include']['f5__isnull'], 1)
 
-        self.assertEqual(out['_include']['f6__isnull'].value, False)
-        self.assertEqual(out['_include']['f7__isnull'].value, [])
-        self.assertEqual(out['_include']['f8__isnull'].value, False)
-        self.assertEqual(out['_include']['f9__isnull'].value, False)
-        self.assertEqual(out['_include']['f10__isnull'].value, False)
-        self.assertEqual(out['_include']['f11__isnull'].value, False)
-        self.assertEqual(out['_include']['f12__isnull'].value, None)
-
-    def test_nested_filter_rewrite(self):
-        node = FilterNode(['members', 'id'], 'in', [1])
-        gs = GroupSerializer(include_fields='*')
-        filter_key, field = node.generate_query_key(gs)
-        self.assertEqual(filter_key, 'users__id__in')
+        self.assertEqual(out['_include']['f6__isnull'], False)
+        self.assertEqual(out['_include']['f7__isnull'], [])
+        self.assertEqual(out['_include']['f8__isnull'], False)
+        self.assertEqual(out['_include']['f9__isnull'], False)
+        self.assertEqual(out['_include']['f10__isnull'], False)
+        self.assertEqual(out['_include']['f11__isnull'], False)
+        self.assertEqual(out['_include']['f12__isnull'], None)
 
 
 class TestMergeDictConvertsToDict(TestCase):

@@ -1,16 +1,24 @@
 """Module containing Django meta helpers."""
 from itertools import chain
 
-from django.db.models import ManyToManyField
+from django.db import models
 
 from dynamic_rest.related import RelatedObject
 from dynamic_rest.compat import DJANGO110
 
 
 class Meta(object):
+    _instances = {}
+
+    def __new__(cls, model):
+        key = model._meta.db_table if hasattr(model, '_meta') else model
+        if key not in cls._instances:
+            cls._instances[key] = object.__new__(cls, model)
+        return cls._instances.get(key)
 
     def __init__(self, model):
         self.model = model
+        self.fields = {}  # lazy
         self.meta = getattr(self.model, '_meta', None)
 
     @classmethod
@@ -33,6 +41,9 @@ class Meta(object):
         except AttributeError:
             return False
 
+    def get_pk_field(self):
+        return self.get_field(self.meta.pk.name)
+
     def get_field(self, field_name):
         """Return a field given a model and field name.
 
@@ -47,6 +58,10 @@ class Meta(object):
             A Django field if `field_name` is a valid field for `model`,
                 None otherwise.
         """
+        if field_name in self.fields:
+            return self.fields[field_name]
+
+        field = None
         model = self.model
         meta = self.meta
 
@@ -73,7 +88,6 @@ class Meta(object):
                 field = meta.get_field(field_name)
             else:
                 field = meta.get_field_by_name(field_name)[0]
-            return field
         except:
             if DJANGO110:
                 related_objs = (
@@ -94,17 +108,15 @@ class Meta(object):
                 for o in chain(related_objs, related_m2m_objs)
             }
             if field_name in related_objects:
-                return related_objects[field_name]
-            else:
-                # check virtual fields (1.7)
-                if hasattr(meta, 'virtual_fields'):
-                    for field in meta.virtual_fields:
-                        if field.name == field_name:
-                            return field
+                field = related_objects[field_name]
 
-                raise AttributeError(
-                    '%s is not a valid field for %s' % (field_name, model)
-                )
+        if not field:
+            raise AttributeError(
+                '%s is not a valid field for %s' % (field_name, model)
+            )
+
+        self.fields[field_name] = field
+        return field
 
     def is_field_remote(self, field_name):
         """Check whether a given model field is a remote field.
@@ -121,7 +133,10 @@ class Meta(object):
         """
         try:
             model_field = self.get_field(field_name)
-            return isinstance(model_field, (ManyToManyField, RelatedObject))
+            return isinstance(
+                model_field,
+                (models.ManyToManyField, RelatedObject)
+            )
         except AttributeError:
             return False
 
