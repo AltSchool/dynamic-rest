@@ -7,19 +7,23 @@ from dynamic_rest.related import RelatedObject
 from dynamic_rest.compat import DJANGO110
 
 
-class Meta:
+class Meta(object):
     _instances = {}
 
     def __new__(cls, model):
         key = model._meta.db_table if hasattr(model, '_meta') else model
         if key not in cls._instances:
-            cls._instances[key] = super(Meta, cls).__new__(cls, model)
+            instance = cls._instances[key] = super(Meta, cls).__new__(cls)
+            instance.model = model
         return cls._instances.get(key)
 
     def __init__(self, model):
         self.model = model
         self.fields = {}  # lazy
-        self.meta = getattr(self.model, '_meta', None)
+
+    @property
+    def meta(self):
+        return getattr(self.model, '_meta', None)
 
     @classmethod
     def get_related_model(cls, field):
