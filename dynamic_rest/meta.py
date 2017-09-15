@@ -7,7 +7,7 @@ from dynamic_rest.related import RelatedObject
 from dynamic_rest.compat import DJANGO110
 
 
-class Meta(object):
+class Meta:
     _instances = {}
 
     def __new__(cls, model):
