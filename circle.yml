@@ -10,5 +10,5 @@ dependencies:
 
 test:
     override:
-        - ENABLE_INTEGRATION_TESTS=True py.test tests/integration --nosugar
-        - tox --nosugar
+        - ENABLE_INTEGRATION_TESTS=True py.test tests/integration
+        - tox

@@ -1,0 +1,4 @@
+devRequirements: requirements.txt.dev
+name: dynamic_rest
+requirements: requirements.txt
+runtime: system
