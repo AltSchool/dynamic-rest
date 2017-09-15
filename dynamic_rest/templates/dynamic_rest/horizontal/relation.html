@@ -40,20 +40,28 @@
         }
         $("select[name='{{ field.name }}']").select2({
             data: initials,
+            placeholder: {
+                id: "",
+                placeholder: ""
+            },
             allowClear: true,
             ajax: {
                 url: "{{ field.get_url }}",
                 dataType: "json",
                 delay: 250,
                 data: function(params) {
-                  var name = '{{field.get_name_field}}';
+                  var name = '{{ field.get_name_field }}';
                   var filterName = 'filter{' + name + '.icontains}';
+                  var pkName = '{{ field.get_pk_field }}';
                   var result = {
                     page: params.page,
                     per_page: per_page,
                   };
                   result[filterName] = params.term;
-                  result['include[]'] = ['pk', name];
+                  result['include[]'] = [pkName];
+                  if (name !== pkName) {
+                    result['include[]'].push(name)
+                  }
                   return result;
                 },
                 processResults: function(data, params) {
@@ -72,13 +80,15 @@
                 return markup;
             },
             templateResult: function(item) {
+                if (item.placeholder) return item.placeholder;
                 var name = '{{field.get_name_field}}';
                 if (name == 'pk') {
-                    return items.links ? item.links.self : item.id;
+                    return item.links ? item.links.self : item.id;
                 }
                 return item[name];
             },
             templateSelection: function(item) {
+                if (item.placeholder) return item.placeholder;
                 var name = '{{field.get_name_field}}';
                 if (name == 'pk') {
                     return item.links ? item.links.self : item.id;

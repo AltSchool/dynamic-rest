@@ -80,8 +80,12 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         super(DynamicListSerializer, self).__init__(*args, **kwargs)
         self.child.parent = self
 
+    def get_meta(self):
+        return self.child.get_meta()
+
     def disable_envelope(self):
         self.child.disable_envelope()
+        self._processed_data = None
 
     def to_representation(self, data):
         iterable = data.all() if isinstance(data, models.Manager) else data
@@ -105,6 +109,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def get_model(self):
         """Get the child's model."""
         return self.child.get_model()
+
+    def get_pk_field(self):
+        return self.child.get_pk_field()
 
     def get_name(self):
         """Get the child's name."""
@@ -263,7 +270,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         kwargs['instance'] = instance
         kwargs['data'] = data
 
-        # "sideload" argument is pending deprecation as of 1.6
+        # "sideload" argument is pending deprecation
         if kwargs.pop('sideload', False):
             # if "sideload=True" is passed, turn on the envelope
             envelope = True
@@ -333,6 +340,17 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             if not isinstance(self.request_fields.get(name), dict):
                 # not sideloading this field
                 self.request_fields[name] = True
+
+    def get_pk_field(self):
+        try:
+            field = self.get_field('pk')
+            return field.field_name
+        except:
+            pass
+        return 'pk'
+
+    def get_meta(self):
+        return self.Meta
 
     def resolve(self, query):
         """Resolves a query into model and serializer fields.
@@ -491,8 +509,10 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         return (model_fields, api_fields)
 
     def disable_envelope(self):
+        envelope = self.envelope
         self.envelope = False
-        self._processed_data = None
+        if envelope:
+            self._processed_data = None
 
     @classmethod
     def get_model(cls):
@@ -700,7 +720,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         # apply request overrides
         if request_fields:
             for name, include in six.iteritems(request_fields):
-                if name not in serializer_fields:
+                if name not in serializer_fields and name != 'pk':
                     raise exceptions.ParseError(
                         '"%s" is not a valid field name for "%s".' %
                         (name, self.get_name())

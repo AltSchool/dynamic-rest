@@ -126,6 +126,8 @@ Major release
         - defaults to all fields
         - used for displaying the list view
         - e.g. `["name", "description"]`
+    - *`description`*: a description of the resource
+        - e.g: "The Build resource represents a backend build."
 
 - New option: *`ADMIN_LOGIN_URL`*
     The login URL to use within admin UI.

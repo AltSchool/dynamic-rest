@@ -42,6 +42,7 @@ class CatSerializer(DynamicModelSerializer):
     class Meta:
         model = Cat
         name = 'cat'
+        name_field = 'name'
         name_field = 'cat'
         fields = ('id', 'name', 'home', 'backup_home', 'foobar', 'parent')
         deferred_fields = ('home', 'backup_home', 'foobar', 'parent')
@@ -54,6 +55,7 @@ class LocationSerializer(DynamicModelSerializer):
     class Meta:
         defer_many_relations = False
         model = Location
+        name_field = 'name'
         name = 'location'
         fields = (
             'id', 'name', 'users', 'user_count', 'address',
@@ -81,6 +83,7 @@ class PermissionSerializer(DynamicModelSerializer):
         defer_many_relations = True
         model = Permission
         name = 'permission'
+        name_field = 'name'
         fields = ('id', 'name', 'code', 'users', 'groups')
         deferred_fields = ('code',)
 
@@ -91,6 +94,7 @@ class PermissionSerializer(DynamicModelSerializer):
 class GroupSerializer(DynamicModelSerializer):
 
     class Meta:
+        name_field = 'name'
         model = Group
         name = 'group'
         fields = (
@@ -171,6 +175,7 @@ class UserSerializer(DynamicModelSerializer):
     class Meta:
         model = User
         name = 'user'
+        name_field = 'name'
         fields = (
             'id',
             'name',
@@ -234,6 +239,7 @@ class ProfileSerializer(DynamicModelSerializer):
 
     class Meta:
         model = Profile
+        name_field = 'display_name'
         name = 'profile'
         fields = (
             'user',
@@ -289,6 +295,8 @@ class DogSerializer(DynamicModelSerializer):
 
     class Meta:
         model = Dog
+        name_field = 'name'
+        description = 'Woof woof!'
         fields = ('id', 'name', 'origin', 'fur')
 
     fur = CharField(source='fur_color')
@@ -299,6 +307,7 @@ class HorseSerializer(DynamicModelSerializer):
     class Meta:
         model = Horse
         fields = '__all__'
+        name_field = 'name'
         name = 'horse'
         fields = (
             'id',
@@ -312,6 +321,7 @@ class ZebraSerializer(DynamicModelSerializer):
     class Meta:
         model = Zebra
         name = 'zebra'
+        name_field = 'zebra'
         fields = (
             'id',
             'name',
@@ -323,6 +333,7 @@ class CountrySerializer(DynamicModelSerializer):
 
     class Meta:
         model = Country
+        name_field = 'name'
         fields = ('id', 'name', 'short_name')
         deferred_fields = ('name', 'short_name')
 
@@ -332,6 +343,7 @@ class PartSerializer(DynamicModelSerializer):
 
     class Meta:
         model = Part
+        name_field = 'name'
         fields = ('id', 'name', 'country')
         deferred_fields = ('name', 'country')
 

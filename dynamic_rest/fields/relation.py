@@ -87,6 +87,9 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         super(DynamicRelationField, self).__init__(**kwargs)
         self.kwargs['many'] = self.many = many
 
+    def get_pk_field(self):
+        return self.serializer.get_pk_field()
+
     def get_url(self, pk=None):
         """Get the serializer's endpoint."""
         return self.serializer_class.get_url(pk=pk)

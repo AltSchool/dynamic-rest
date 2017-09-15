@@ -6,7 +6,13 @@
             <tr>
                 <th>{{ key|format_key }}</th>
                 <td {{ results|get_value_from_dict:key | add_nested_class }}>
-                    {{ results|get_value_from_dict:key | drest_format_value }}
+                    {% if link_field == key %}
+                        <a href="{{ results|get_value_from_dict:"url"}}">
+                            {{ results|get_value_from_dict:key | drest_format_value }}
+                        </a>
+                    {% else %}
+                        {{ results|get_value_from_dict:key | drest_format_value }}
+                    {% endif %}
                 </td>
             </tr>
         {% endfor %}

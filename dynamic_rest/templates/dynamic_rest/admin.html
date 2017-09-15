@@ -16,7 +16,7 @@
 
             <title>
                 {% block title %}
-                    {% drest_settings 'ROOT_VIEW_NAME' %}
+                    {% drest_settings 'API_NAME' %}
                 {% endblock %}
             </title>
 
@@ -128,11 +128,9 @@
                     <div class="navbar-nav drest-nav">
                         <div class="nav-item drest-nav-left">
                             {% if allow_delete %}
-                                <div class="drest-btn btn btn-danger">
-                                    <form action="{{ request.get_full_path }}" method="DELETE" data-method="DELETE">
-                                        <span class="drest-btn-icon fa fa-remove" aria-hidden="true"></span>
-                                        <span class="drest-btn-label">Delete</span>
-                                    </form>
+                                <div data-toggle="modal" data-target="#deleteModal" class="drest-btn btn btn-danger">
+                                    <span class="drest-btn-icon fa fa-remove" aria-hidden="true"></span>
+                                    <span class="drest-btn-label">Delete</span>
                                 </div>
                             {% endif %}
                             {% if allow_filter %}
@@ -145,6 +143,12 @@
                         <div class="nav-item">
                             {% if paginator %}
                                 {% get_pagination_html paginator %}
+                            {% endif %}
+                            {% if back %}
+                                <a class="nav-link drest-btn" href="{{back_url}}">
+                                    <span class="fa fa-arrow-left drest-btn-icon"></span>
+                                    <span class="drest-btn-label">{{back}}</span>
+                                </a>
                             {% endif %}
                         </div>
                         <div class="nav-item drest-nav-right">
@@ -191,6 +195,35 @@
                     </div>
                 </div>
             {% endblock %} <!-- /create_modal -->
+
+            {% block delete_modal %}
+                <div class="modal fade" id="deleteModal">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">Delete {{ singular_name }}</h4>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <form action="{{ request.get_full_path }}" method="DELETE" enctype="multipart/form-data" class="form-horizontal" novalidate>
+                                <div class="modal-body">
+                                    <p>Are you sure you want to delete?</p>
+                                    <p class="text-danger">
+                                        <span class="fa fa-exclamation-triangle"></span>
+                                        <span>This operation cannot be undone!</span>
+                                    </p>
+
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                    <button type="submit" class="btn btn-danger btn-primary">Confirm</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endblock %} <!-- /delete_modal -->
 
             {% block edit_modal %}
                 <div class="modal fade" id="editModal">
@@ -251,7 +284,7 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header">
-                                <h4 class="modal-title">Filter</h4>
+                                <h4 class="modal-title">Search {{plural_name}}</h4>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>

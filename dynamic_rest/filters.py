@@ -543,7 +543,12 @@ class DynamicSortingFilter(WithGetSerializerClass, OrderingFilter):
             # else return the ordering
             if invalid_ordering:
                 raise ValidationError(
-                    "Invalid ordering: %s" % invalid_ordering
+                    "Invalid ordering: %s" % (
+                        ','.join((
+                            '%s: %s' % (ex[0], ex[1].message) for ex in
+                            invalid_ordering
+                        ))
+                    )
                 )
             else:
                 return valid_ordering
@@ -574,8 +579,8 @@ class DynamicSortingFilter(WithGetSerializerClass, OrderingFilter):
                 try:
                     ordering = self.resolve(serializer, stripped_term, view)
                     valid_orderings.append(reverse_sort_term + ordering)
-                except ValidationError:
-                    invalid_orderings.append(term)
+                except ValidationError as e:
+                    invalid_orderings.append((term, e))
 
         return valid_orderings, invalid_orderings
 

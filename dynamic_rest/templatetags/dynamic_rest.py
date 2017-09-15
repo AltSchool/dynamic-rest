@@ -33,7 +33,7 @@ def as_id_to_name(value):
 
 @register.filter
 def get_value_from_dict(d, key):
-    return d[key]
+    return d.get(key, '')
 
 
 @register.filter

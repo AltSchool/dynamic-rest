@@ -81,7 +81,8 @@ class DynamicAdminRenderer(AdminRenderer):
         # remove envelope for successful responses
         if getattr(data, 'serializer', None):
             serializer = data.serializer
-            serializer.disable_envelope()
+            if hasattr(serializer, 'disable_envelope'):
+                serializer.disable_envelope()
             data = serializer.data
 
         context = super(DynamicAdminRenderer, self).get_context(
@@ -106,8 +107,9 @@ class DynamicAdminRenderer(AdminRenderer):
         paginator = context.get('paginator')
         columns = context['columns']
         serializer = getattr(results, 'serializer', None)
-        name_field = serializer.get_name_field() if serializer else None
         instance = serializer.instance if serializer else None
+        if isinstance(instance, list):
+            instance = None
 
         def process(result):
             if result.get('links', {}).get('self'):
@@ -124,10 +126,14 @@ class DynamicAdminRenderer(AdminRenderer):
                 process(results)
 
         if is_root:
-            context['style'] = 'root'
+            style = context['style'] = 'root'
             header = settings.API_NAME or ''
             description = settings.API_DESCRIPTION
             header_url = '/'
+
+        back_url = None
+        back = None
+
         if serializer:
             singular_name = serializer.get_name().title()
             plural_name = serializer.get_plural_name().title()
@@ -142,11 +148,14 @@ class DynamicAdminRenderer(AdminRenderer):
                     count = len(results)
                 header = '%d %s' % (count, header)
             elif not is_error:
+                back_url = serializer.get_url()
+                back = plural_name
                 header = results.get(name_field)
                 header_url = serializer.get_url(
                     pk=instance.pk
                 )
-            meta = serializer.Meta
+
+            meta = serializer.get_meta()
             if style == 'list':
                 fields = getattr(meta, 'list_fields', None) or meta.fields
             else:
@@ -167,16 +176,20 @@ class DynamicAdminRenderer(AdminRenderer):
             'search_key',
             None
         ) or None
+        if not search_key and name_field:
+            search_key = 'filter{%s.icontains}' % name_field
+
+        link_field = name_field
+        if (
+            columns and not link_field or
+            (columns and link_field not in columns)
+        ):
+            link_field = columns[0]
+
         search_value = (
             request.query_params.get(search_key, '')
             if search_key else ''
         )
-
-        if (
-            columns and not name_field or
-            (columns and name_field not in columns)
-        ):
-            name_field = columns[0]
 
         # login and logout
         login_url = ''
@@ -226,12 +239,15 @@ class DynamicAdminRenderer(AdminRenderer):
             alert_class = 'success'
         if alert and not alert_class:
             alert_class = 'info'
+
         # methods
         allowed_methods = set(
             (x.lower() for x in (view.http_method_names or ()))
         )
 
-        context['name_field'] = name_field
+        context['back_url'] = back_url
+        context['back'] = back
+        context['link_field'] = link_field
         context['columns'] = columns
         context['details'] = context['columns']
         context['description'] = description
@@ -249,6 +265,7 @@ class DynamicAdminRenderer(AdminRenderer):
         ) and search_key
         context['allow_delete'] = (
             'delete' in allowed_methods and style == 'detail'
+            and bool(instance)
         )
         context['allow_edit'] = (
             'put' in allowed_methods and
@@ -275,26 +292,36 @@ class DynamicAdminRenderer(AdminRenderer):
         )
 
     def render(self, data, accepted_media_type=None, renderer_context=None):
+        # add redirects for successful creates and deletes
         renderer_context = renderer_context or {}
         response = renderer_context.get('response')
         serializer = getattr(data, 'serializer', None)
         # Creation and deletion should use redirects in the admin style.
         location = None
+
+        did_create = response and response.status_code == 201
+        did_delete = response and response.status_code == 204
+
         if (
-            response and response.status_code == 201
-            and serializer and serializer.instance
+            did_create
+            and serializer
         ):
-            location = serializer.get_url(
-                pk=serializer.instance.pk
-            )
             location = '%s?alert=Created+successfully&alert-class=success' % (
-                location,
+                serializer.get_url(pk=serializer.instance.pk)
             )
+
         result = super(DynamicAdminRenderer, self).render(
             data,
             accepted_media_type,
             renderer_context
         )
+
+        if did_delete:
+            location = (
+                response['Location'] +
+                '?alert=Deleted+successfully&alert-class=success'
+            )
+
         if response and location:
             response['Location'] = location
         return result
