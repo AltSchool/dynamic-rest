@@ -545,7 +545,7 @@ class DynamicSortingFilter(WithGetSerializerClass, OrderingFilter):
                 raise ValidationError(
                     "Invalid ordering: %s" % (
                         ','.join((
-                            '%s: %s' % (ex[0], ex[1].args[0]) for ex in
+                            '%s: %s' % (ex[0], str(ex[1])) for ex in
                             invalid_ordering
                         ))
                     )
