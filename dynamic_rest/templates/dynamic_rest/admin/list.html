@@ -3,7 +3,16 @@
 {% if results %}
     <table id="results-table" class="table cardtable">
       <thead>
-        <tr>{% for column in columns%}<th>{{ column|format_key }}</th>{% endfor %}</tr>
+        <tr>
+            {% for column in columns%}
+                {% get_value_from_dict fields column as field %}
+                {% if field %}
+                    <th>{{ field.label }}</th>
+                {% else %}
+                    <th>{{ column }}</th>
+                {% endif %}
+            {% endfor %}
+        </tr>
       </thead>
       <tbody>
             {% for row in results %}
