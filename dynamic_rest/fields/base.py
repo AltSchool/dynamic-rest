@@ -1,8 +1,9 @@
 from rest_framework import fields
 from dynamic_rest.meta import get_model_field
+from dynamic_rest.base import DynamicBase
 
 
-class DynamicField(fields.Field):
+class DynamicField(fields.Field, DynamicBase):
 
     """
     Generic field base to capture additional custom field attributes.

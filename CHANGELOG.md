@@ -82,6 +82,14 @@ Major release
     to craete it using the fields in the request.
     Multiple fields on a related model can be mapped to.
 
+- New serializer method: *`needs_prefetch`*
+    This method allows a serializer to specify whether its
+    source should be prefetched.
+
+    This is only relevant to model serializers which are being handled
+    by DREST views: if this method returns True, the underlying object
+    will be added to the prefetch tree by the DREST query backend.
+
 ## Views
 
 - Fixed `sort[]` behavior around rewrites

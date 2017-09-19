@@ -5,14 +5,18 @@ from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework.exceptions import NotFound, ParseError
 from rest_framework import fields
-from dynamic_rest.hyperlink import Hyperlink
-from dynamic_rest.bases import DynamicSerializerBase
+
+from dynamic_rest.compat import Hyperlink
 from dynamic_rest.conf import settings
 from dynamic_rest.meta import (
     is_field_remote,
     get_related_model
 )
-from .base import DynamicField, WithRelationalFieldMixin
+from .base import (
+    DynamicField,
+    WithRelationalFieldMixin
+)
+from dynamic_rest.base import DynamicBase
 
 
 class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
@@ -268,18 +272,11 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         """Return True if the child serializer is dynamic."""
         return issubclass(
             self.serializer_class,
-            DynamicSerializerBase
+            DynamicBase
         )
 
     def get_attribute(self, instance):
         return instance
-
-    def is_hyperlink(self):
-        request = self.context.get('request')
-        if not request:
-            return False
-        renderer = request.accepted_renderer
-        return renderer.format == 'admin'
 
     def as_hyperlink(self, instance):
         name_field = self.get_name_field()
@@ -298,11 +295,11 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         model = serializer.get_model()
         source = self.source
 
-        is_hyperlink = self.is_hyperlink()
+        is_admin = self.is_admin()
 
         if (
             not self.getter and
-            not is_hyperlink and
+            not is_admin and
             not self.kwargs['many'] and
             serializer.id_only()
         ):
@@ -329,7 +326,11 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         if related is None:
             return None
         try:
-            if is_hyperlink:
+            if is_admin:
+                # TODO: refactor this to use dict/value tagging
+                # within the serializer layer and tag
+                # rendering within the renderer layer
+
                 # return as (list of) Hyperlink
                 if self.many:
                     if callable(getattr(related, 'all', None)):

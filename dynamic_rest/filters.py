@@ -306,9 +306,10 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                 continue
 
             source = field.source or name
+
             if '.' in source:
                 raise ValidationError(
-                    'nested relationship values '
+                    'Nested relationship values '
                     'are not supported'
                 )
             if source == '*':
@@ -319,17 +320,24 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                 # ignore duplicated sources
                 continue
 
+            # serializers can control their prefetching
+            # for DRF serializers, we assume they need to be prefetched
+            # because they will render the entire instance
+            needs_prefetch = getattr(field, 'needs_prefetch', lambda: True)()
+
+            # remote relationships must be prefetched, even if the serializer
+            # does not request it
             is_remote = meta.is_field_remote(source)
-            is_id_only = getattr(field, 'id_only', lambda: False)()
-            if is_id_only and not is_remote:
+
+            if not needs_prefetch and not is_remote:
                 continue
 
-            related_queryset = getattr(original_field, 'queryset', None)
+            # prefetch this relationship
 
+            related_queryset = getattr(original_field, 'queryset', None)
             if callable(related_queryset):
                 related_queryset = related_queryset(field)
 
-            source = field.source or name
             # Popping the source here (during explicit prefetch construction)
             # guarantees that implicitly required prefetches that follow will
             # not conflict.
@@ -342,11 +350,11 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                 requirements=required
             )
 
-            # Note: There can only be one prefetch per source, even
-            #       though there can be multiple fields pointing to
-            #       the same source. This could break in some cases,
-            #       but is mostly an issue on writes when we use all
-            #       fields by default.
+            # There can only be one prefetch per source, even
+            # though there can be multiple fields pointing to
+            # the same source. This could break in some cases,
+            # but is mostly an issue on writes when we use all
+            # fields by default.
             prefetches[source] = Prefetch(
                 source,
                 queryset=prefetch_queryset

@@ -12,7 +12,6 @@ from rest_framework.reverse import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 
-from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.links import merge_link_object
@@ -24,6 +23,7 @@ from dynamic_rest.meta import (
 )
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.tagged import tag_dict
+from dynamic_rest.base import DynamicBase
 
 
 def nested_update(instance, key, value, objects=None):
@@ -92,37 +92,36 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         return [self.child.to_representation(item) for item in iterable]
 
     def get_description(self):
-        """Get the child's description."""
         return self.child.get_description()
 
+    def is_admin(self):
+        return self.child.is_admin()
+
     def resolve(self, query):
-        """Use the child's method."""
         return self.child.resolve(query)
 
     def get_name_field(self):
-        """Get the child's name field."""
         return self.child.get_name_field()
 
     def get_url(self, pk=None):
         return self.child.get_url(pk=pk)
 
     def get_model(self):
-        """Get the child's model."""
         return self.child.get_model()
 
     def get_pk_field(self):
         return self.child.get_pk_field()
 
     def get_name(self):
-        """Get the child's name."""
         return self.child.get_name()
 
     def get_plural_name(self):
-        """Get the child's plural name."""
         return self.child.get_plural_name()
 
+    def needs_prefetch(self):
+        return self.child.needs_prefetch()
+
     def id_only(self):
-        """Get the child's rendering mode."""
         return self.child.id_only()
 
     @property
@@ -176,7 +175,7 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         return updated_objects
 
 
-class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
+class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
     """Base class for DREST serializers.
 
     This class provides support for dynamic field inclusions/exclusions.
@@ -340,6 +339,19 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             if not isinstance(self.request_fields.get(name), dict):
                 # not sideloading this field
                 self.request_fields[name] = True
+
+    def is_admin(self):
+        """Whether or not this serializer is being used by an admin view."""
+        context = getattr(self, 'context', None)
+        if not context:
+            return False
+
+        request = context.get('request')
+        if not request:
+            return False
+
+        renderer = request.accepted_renderer
+        return renderer.format == 'admin'
 
     def get_pk_field(self):
         try:
@@ -524,13 +536,14 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
 
     def get_field(self, field_name):
         if field_name == 'pk':
-            if hasattr(self.Meta, '_pk'):
-                return self.Meta._pk
+            meta = self.get_meta()
+            if hasattr(meta, '_pk'):
+                return meta._pk
 
             fields = self.fields
             field = None
             model = self.get_model()
-            primary_key = getattr(self.Meta, 'primary_key', None)
+            primary_key = getattr(meta, 'primary_key', None)
 
             if primary_key:
                 field = fields.get(primary_key)
@@ -559,7 +572,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
                     field = fields['id']
 
             if field:
-                self.Meta._pk = field
+                meta._pk = field
                 return field
         else:
             if field_name in self.fields:
@@ -663,9 +676,10 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         return self._all_fields
 
     def _get_flagged_field_names(self, fields, attr, meta_attr=None):
+        meta = self.get_meta()
         if meta_attr is None:
             meta_attr = '%s_fields' % attr
-        meta_list = set(getattr(self.Meta, meta_attr, []))
+        meta_list = set(getattr(meta, meta_attr, []))
         return {
             name for name, field in six.iteritems(fields)
             if getattr(field, attr, None) is True or name in
@@ -673,14 +687,16 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         }
 
     def _get_deferred_field_names(self, fields):
+        meta = self.get_meta()
         deferred_fields = self._get_flagged_field_names(
             fields,
             'deferred'
         )
+
         defer_many_relations = (
             settings.DEFER_MANY_RELATIONS
-            if not hasattr(self.Meta, 'defer_many_relations')
-            else self.Meta.defer_many_relations
+            if not hasattr(meta, 'defer_many_relations')
+            else meta.defer_many_relations
         )
         if defer_many_relations:
             # Auto-defer all fields, unless the 'deferred' attribute
@@ -735,10 +751,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
 
         # Set read_only flags based on read_only_fields meta list.
         # Here to cover DynamicFields not covered by DRF.
-        ro_fields = getattr(self.Meta, 'read_only_fields', [])
+        meta = self.get_meta()
+        ro_fields = getattr(meta, 'read_only_fields', [])
         self.flag_fields(serializer_fields, ro_fields, 'read_only', True)
 
-        pw_fields = getattr(self.Meta, 'untrimmed_fields', [])
+        pw_fields = getattr(meta, 'untrimmed_fields', [])
         self.flag_fields(
             serializer_fields,
             pw_fields,
@@ -877,8 +894,9 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         )
 
     def to_internal_value(self, data):
+        meta = self.get_meta()
         value = super(WithDynamicSerializerMixin, self).to_internal_value(data)
-        id_attr = getattr(self.Meta, 'update_lookup_field', 'id')
+        id_attr = getattr(meta, 'update_lookup_field', 'id')
         request_method = self.get_request_method()
 
         # Add update_lookup_field field back to validated data
@@ -960,6 +978,12 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             # to get around prefetch cache issues
             instance = self.instance = view.get_object()
         return instance
+
+    def needs_prefetch(self):
+        if self.is_admin():
+            return True
+
+        return not self.id_only()
 
     def id_only(self):
         """Whether the serializer should return an ID instead of an object.
