@@ -3,15 +3,25 @@
 <table class="table table-detail">
     <tbody>
         {% for key in details %}
+            {% get_value_from_dict fields key as field %}
+            {% get_value_from_dict results key as result %}
+            {% get_value_from_dict results "url" as url %}
+
             <tr>
-                <th>{{ key|format_key }}</th>
-                <td {{ results|get_value_from_dict:key | add_nested_class }}>
+                <th>
+                    {% if field and field.help_text %}
+                        <span data-placement="right" class="drest-has-tooltip" data-toggle="tooltip" data-trigger="click" title="{{ field.help_text }}">{{ field.label }}</span>
+                    {% else %}
+                        {{ field.label }}
+                    {% endif %}
+                </th>
+                <td {{ result | add_nested_class }}>
                     {% if link_field == key %}
-                        <a href="{{ results|get_value_from_dict:"url"}}">
-                            {{ results|get_value_from_dict:key | drest_format_value }}
+                        <a href="{{ url }}">
+                            {{ result | drest_format_value }}
                         </a>
                     {% else %}
-                        {{ results|get_value_from_dict:key | drest_format_value }}
+                        {{ result | drest_format_value }}
                     {% endif %}
                 </td>
             </tr>

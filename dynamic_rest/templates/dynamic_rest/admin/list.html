@@ -9,13 +9,14 @@
             {% for row in results %}
               <tr>
                 {% for key in columns %}
-                    <td {{ row|get_value_from_dict:key | add_nested_class }} >
+                    {% get_value_from_dict row key as value %}
+                    <td {{ value | add_nested_class }} >
                       {% if link_field == key %}
                           <a href="{{ row.url }}">
-                              {{ row|get_value_from_dict:key | drest_format_value }}
+                              {{ value | drest_format_value }}
                           </a>
                       {% else %}
-                          {{ row|get_value_from_dict:key | drest_format_value }}
+                          {{ value | drest_format_value }}
                       {% endif %}
                     </td>
                 {% endfor %}

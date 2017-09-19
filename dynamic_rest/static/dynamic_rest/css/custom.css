@@ -93,3 +93,12 @@
     z-index: 9001;
     bottom: 0;
 }
+.bg-primary .drest-has-tooltip, .bg-inverse .drest-has-tooltip {
+    border-bottom: 1px dotted #fff;
+}
+.modal-dialog.modal-dialog {
+    max-width: 1024px;
+}
+.drest-has-tooltip {
+    border-bottom: 1px dashed #000;
+}

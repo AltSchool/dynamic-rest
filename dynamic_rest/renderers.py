@@ -135,11 +135,15 @@ class DynamicAdminRenderer(AdminRenderer):
         back = None
 
         if serializer:
+            meta = serializer.get_meta()
+            search_key = serializer.get_search_key()
+            search_help = getattr(meta, 'search_help', None)
             singular_name = serializer.get_name().title()
             plural_name = serializer.get_plural_name().title()
             description = serializer.get_description()
             header = serializer.get_plural_name().title()
             name_field = serializer.get_name_field()
+
             if style == 'list':
                 if paginator:
                     paging = paginator.get_page_metadata()
@@ -155,41 +159,37 @@ class DynamicAdminRenderer(AdminRenderer):
                     pk=instance.pk
                 )
 
-            meta = serializer.get_meta()
             if style == 'list':
-                fields = getattr(meta, 'list_fields', None) or meta.fields
+                list_fields = getattr(meta, 'list_fields', None) or meta.fields
             else:
-                fields = meta.fields
+                list_fields = meta.fields
             blacklist = ('id', )
-            if not isinstance(fields, six.string_types):
+            if not isinstance(list_fields, six.string_types):
                 # respect serializer field ordering
                 columns = [
-                    f for f in fields
+                    f for f in list_fields
                     if f in columns and f not in blacklist
                 ]
+
+            fields = serializer.get_all_fields()
         else:
+            fields = {}
+            search_key = search_help = None
             singular_name = plural_name = ''
 
-        # search
-        search_key = getattr(
-            meta,
-            'search_key',
-            None
-        ) or None
-        if not search_key and name_field:
-            search_key = 'filter{%s.icontains}' % name_field
+        # search value
+        search_value = (
+            request.query_params.get(search_key, '')
+            if search_key else ''
+        )
 
+        # link field
         link_field = name_field
         if (
             columns and not link_field or
             (columns and link_field not in columns)
         ):
             link_field = columns[0]
-
-        search_value = (
-            request.query_params.get(search_key, '')
-            if search_key else ''
-        )
 
         # login and logout
         login_url = ''
@@ -249,6 +249,7 @@ class DynamicAdminRenderer(AdminRenderer):
         context['back'] = back
         context['link_field'] = link_field
         context['columns'] = columns
+        context['fields'] = fields
         context['details'] = context['columns']
         context['description'] = description
         context['singular_name'] = singular_name
@@ -260,6 +261,7 @@ class DynamicAdminRenderer(AdminRenderer):
         context['header_url'] = header_url
         context['search_value'] = search_value
         context['search_key'] = search_key
+        context['search_help'] = search_help
         context['allow_filter'] = (
             'get' in allowed_methods and style == 'list'
         ) and search_key

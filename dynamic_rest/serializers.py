@@ -80,6 +80,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         super(DynamicListSerializer, self).__init__(*args, **kwargs)
         self.child.parent = self
 
+    def get_all_fields(self):
+        return self.child.get_all_fields()
+
     def get_meta(self):
         return self.child.get_meta()
 
@@ -100,6 +103,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def get_name_field(self):
         return self.child.get_name_field()
 
+    def get_search_key(self):
+        return self.child.get_search_key()
+
     def get_url(self, pk=None):
         return self.child.get_url(pk=pk)
 
@@ -114,9 +120,6 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
 
     def get_plural_name(self):
         return self.child.get_plural_name()
-
-    def needs_prefetch(self):
-        return self.child.needs_prefetch()
 
     def id_only(self):
         return self.child.id_only()
@@ -221,7 +224,6 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
             request_fields=None,
             sideloading=None,
             debug=False,
-            gui=False,
             dynamic=True,
             embed=False,
             envelope=False,
@@ -251,7 +253,6 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
         if data is not fields.empty and name in data and len(data) == 1:
             # support POST/PUT key'd by resource name
             data = data[name]
-
         if data is not fields.empty:
             # if a field is nullable but not required and the implementation
             # passes null as a value, remove the field from the data
@@ -277,7 +278,6 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
         self.envelope = envelope
         self.sideloading = sideloading
         self.debug = debug
-        self.gui = gui
         self.dynamic = dynamic
         self.request_fields = request_fields or {}
 
@@ -347,8 +347,9 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
             pass
         return 'pk'
 
-    def get_meta(self):
-        return self.Meta
+    @classmethod
+    def get_meta(cls):
+        return cls.Meta
 
     def resolve(self, query):
         """Resolves a query into model and serializer fields.
@@ -618,6 +619,20 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
         return cls.Meta.name_field
 
     @classmethod
+    def get_search_key(cls):
+        meta = cls.get_meta()
+        if hasattr(meta, 'search_key'):
+            return meta.search_key
+
+        # fallback to name field
+        name_field = cls.get_name_field()
+        if name_field:
+            return 'filter{%s.icontains}' % name_field
+
+        # fallback to PK
+        return 'pk'
+
+    @classmethod
     def get_plural_name(cls):
         """Get the serializer's plural name.
 
@@ -658,6 +673,8 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
             ).get_fields()
             for k, field in six.iteritems(self._all_fields):
                 field.field_name = k
+                label = inflection.humanize(k)
+                field.label = getattr(field, 'label', label) or label
                 field.parent = self
         return self._all_fields
 
@@ -964,12 +981,6 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
             # to get around prefetch cache issues
             instance = self.instance = view.get_object()
         return instance
-
-    def needs_prefetch(self):
-        if self.gui:
-            return True
-
-        return not self.id_only()
 
     def id_only(self):
         """Whether the serializer should return an ID instead of an object.

@@ -105,7 +105,8 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
         self.view = view
 
         self.DEBUG = settings.DEBUG
-        return self._build_queryset(queryset=queryset)
+        queryset = self._build_queryset(queryset=queryset)
+        return queryset
 
     """
     This function was renamed and broke downstream dependencies that haven't
@@ -281,8 +282,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
         )
         prefetch = prefetches.values()
         queryset = queryset.prefetch_related(*prefetch).distinct()
-        if self.DEBUG:
-            queryset._using_prefetches = prefetches
+        queryset._using_prefetches = prefetches
         return queryset
 
     def _build_requested_prefetches(
@@ -294,7 +294,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
         filters
     ):
         """Build a prefetch dictionary based on request requirements."""
-
+        is_gui = getattr(self.view, 'is_gui', False)
         meta = Meta(model)
         for name, field in six.iteritems(fields):
             original_field = field
@@ -306,7 +306,6 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                 continue
 
             source = field.source or name
-
             if '.' in source:
                 raise ValidationError(
                     'Nested relationship values '
@@ -320,20 +319,14 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                 # ignore duplicated sources
                 continue
 
-            # serializers can control their prefetching
-            # for DRF serializers, we assume they need to be prefetched
-            # because they will render the entire instance
-            needs_prefetch = getattr(field, 'needs_prefetch', lambda: True)()
-
-            # remote relationships must be prefetched, even if the serializer
-            # does not request it
+            is_id_only = getattr(field, 'id_only', lambda: False)()
             is_remote = meta.is_field_remote(source)
-
-            if not needs_prefetch and not is_remote:
+            if not is_gui and is_id_only and not is_remote:
+                # GUI rendering, full representation, and remote fields
+                # should all trigger prefetching
                 continue
 
             # prefetch this relationship
-
             related_queryset = getattr(original_field, 'queryset', None)
             if callable(related_queryset):
                 related_queryset = related_queryset(field)
@@ -414,7 +407,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
             serializer = self.view.get_serializer()
             is_root_level = True
 
-        model = getattr(serializer.Meta, 'model', None)
+        model = serializer.get_model()
 
         if not model:
             return queryset
@@ -458,10 +451,12 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
         # use requirements at this level to limit fields selected
         # only do this for GET requests where we are not requesting the
         # entire fieldset
+        is_gui = getattr(self.view, 'is_gui', False)
         if (
             '*' not in requirements and
             not self.view.is_update() and
-            not self.view.is_delete()
+            not self.view.is_delete() and
+            not is_gui
         ):
             id_fields = getattr(serializer, 'get_id_fields', lambda: [])()
             # only include local model fields

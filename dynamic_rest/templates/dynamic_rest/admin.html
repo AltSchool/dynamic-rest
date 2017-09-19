@@ -54,7 +54,7 @@
                                 <a class="nav-link" href="#">
                                     {% if header %}
                                         {% if description %}
-                                            <span data-trigger="click" data-toggle="tooltip" data-placement="bottom" title="{{ description }}">{{ header }}</span>
+                                            <span class="drest-has-tooltip" data-trigger="click" data-toggle="tooltip" data-placement="bottom" title="{{ description }}">{{ header }}</span>
                                         {% else %}
                                             <span>{{ header }}</span>
                                         {% endif %}
@@ -294,7 +294,11 @@
                                     <fieldset>
                                         <div class="row form-group">
                                             <label class="col-sm-2 form-control-label">
-                                                Search
+                                                {% if search_help %}
+                                                    <span class="drest-has-tooltip" data-placement="right" data-trigger="click" data-toggle="tooltip" data-placement="bottom" title="{{ search_help }}">Search</span>
+                                                {% else %}
+                                                    Search
+                                                {% endif %}
                                             </label>
                                             <div class="col-sm-10">
                                                 <input name="{{ search_key }}" class="form-control" type="text" value="{{ search_value }}"/>

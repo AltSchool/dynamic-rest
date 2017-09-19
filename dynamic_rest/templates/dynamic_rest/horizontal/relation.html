@@ -7,7 +7,11 @@
 <div class="row form-group {% if field.errors %}has-error{% endif %}">
   {% if field.label %}
     <label class="col-sm-2 form-control-label {% if style.hide_label %}sr-only{% endif %}">
-      {{ field.label }}
+        {% if field.help_text %}
+            <span class="drest-has-tooltip" data-trigger="click" data-placement="right" data-toggle="tooltip" title="{{ field.help_text | safe }}">{{ field.label }}</span>
+        {% else %}
+            {{ field.label }}
+        {% endif %}
     </label>
   {% endif %}
 
@@ -21,9 +25,6 @@
       {% endfor %}
     {% endif %}
 
-    {% if field.help_text %}
-      <span class="text-muted">{{ field.help_text|safe }}</span>
-    {% endif %}
   </div>
 </div>
 
@@ -34,11 +35,22 @@
         var values = {{field.value | as_id_to_name}};
         var selected = [];
         var initials = [];
+        // get field/serializer info
+        var fieldName = '{{ field.name }}';
+        var nameField = '{{ field.get_name_field }}';
+        var searchKey = '{{ field.get_search_key }}';
+        var pkField = '{{ field.get_pk_field }}';
+        var pluralName = '{{ field.get_plural_name }}';
+        var url = '{{ field.get_url }}';
+        var includes = [pkField];
+        if (pkField !== nameField) {
+            includes.push(nameField);
+        }
         for (var s in values) {
             initials.push({id: s, name: values[s]});
             selected.push(s);
         }
-        $("select[name='{{ field.name }}']").select2({
+        $("select[name='" + fieldName + "']").select2({
             data: initials,
             placeholder: {
                 id: "",
@@ -46,29 +58,23 @@
             },
             allowClear: true,
             ajax: {
-                url: "{{ field.get_url }}",
+                url: url,
                 dataType: "json",
                 delay: 250,
                 data: function(params) {
-                  var name = '{{ field.get_name_field }}';
-                  var filterName = 'filter{' + name + '.icontains}';
-                  var pkName = '{{ field.get_pk_field }}';
                   var result = {
                     page: params.page,
                     per_page: per_page,
                   };
-                  result[filterName] = params.term;
-                  result['include[]'] = [pkName];
-                  if (name !== pkName) {
-                    result['include[]'].push(name)
-                  }
+                  result[searchKey] = params.term;
+                  result['include[]'] = includes;
                   return result;
                 },
                 processResults: function(data, params) {
                   params.page = params.page || 1;
                   var meta = data.meta;
                   var result = {
-                    results: data.{{ field.get_plural_name }},
+                    results: data[pluralName],
                     pagination: {
                       more: meta ? meta.page < meta.total_pages : false
                     }
@@ -81,19 +87,17 @@
             },
             templateResult: function(item) {
                 if (item.placeholder) return item.placeholder;
-                var name = '{{field.get_name_field}}';
-                if (name == 'pk') {
+                if (nameField == 'pk') {
                     return item.links ? item.links.self : item.id;
                 }
-                return item[name];
+                return item[nameField];
             },
             templateSelection: function(item) {
                 if (item.placeholder) return item.placeholder;
-                var name = '{{field.get_name_field}}';
-                if (name == 'pk') {
+                if (nameField == 'pk') {
                     return item.links ? item.links.self : item.id;
                 }
-                return item[name];
+                return item[nameField];
             },
             minimumInputLength: 1,
         }).val(selected).trigger('change');

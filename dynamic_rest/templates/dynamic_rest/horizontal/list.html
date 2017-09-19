@@ -7,7 +7,11 @@
 <div class="row form-group {% if field.errors %}has-error{% endif %}">
   {% if field.label %}
     <label class="col-sm-2 form-control-label {% if style.hide_label %}sr-only{% endif %}">
-      {{ field.label }}
+        {% if field.help_text %}
+            <span class="drest-has-tooltip" data-trigger="click" data-placement="right" data-toggle="tooltip" title="{{ field.help_text | safe }}">{{ field.label }}</span>
+        {% else %}
+          {{ field.label }}
+        {% endif %}
     </label>
   {% endif %}
 
@@ -19,10 +23,6 @@
       {% for error in field.errors %}
         <span class="text-danger">{{ error }}</span>
       {% endfor %}
-    {% endif %}
-
-    {% if field.help_text %}
-      <span class="text-muted">{{ field.help_text|safe }}</span>
     {% endif %}
   </div>
 </div>
