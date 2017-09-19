@@ -329,6 +329,8 @@ class WithDynamicViewSetMixin(object):
             kwargs['envelope'] = True
         if self.is_update():
             kwargs['include_fields'] = '*'
+        if self.request.accepted_renderer.format == 'admin':
+            kwargs['gui'] = True
         return super(
             WithDynamicViewSetMixin, self
         ).get_serializer(

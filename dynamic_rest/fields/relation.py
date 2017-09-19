@@ -45,6 +45,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             embed=False,
             sideloading=None,
             debug=False,
+            gui=False,
             **kwargs
     ):
         """
@@ -240,6 +241,9 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         if hasattr(self.parent, 'debug'):
             kwargs['debug'] = self.parent.debug
 
+        if hasattr(self.parent, 'gui'):
+            kwargs['gui'] = self.parent.gui
+
         return kwargs
 
     def get_serializer(self, *args, **kwargs):
@@ -295,11 +299,11 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         model = serializer.get_model()
         source = self.source
 
-        is_admin = self.is_admin()
+        gui = getattr(self.parent, 'gui', False)
 
         if (
             not self.getter and
-            not is_admin and
+            not gui and
             not self.kwargs['many'] and
             serializer.id_only()
         ):
@@ -326,7 +330,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         if related is None:
             return None
         try:
-            if is_admin:
+            if gui:
                 # TODO: refactor this to use dict/value tagging
                 # within the serializer layer and tag
                 # rendering within the renderer layer

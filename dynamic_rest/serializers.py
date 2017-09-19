@@ -94,9 +94,6 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def get_description(self):
         return self.child.get_description()
 
-    def is_admin(self):
-        return self.child.is_admin()
-
     def resolve(self, query):
         return self.child.resolve(query)
 
@@ -224,6 +221,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
             request_fields=None,
             sideloading=None,
             debug=False,
+            gui=False,
             dynamic=True,
             embed=False,
             envelope=False,
@@ -279,6 +277,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
         self.envelope = envelope
         self.sideloading = sideloading
         self.debug = debug
+        self.gui = gui
         self.dynamic = dynamic
         self.request_fields = request_fields or {}
 
@@ -339,19 +338,6 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
             if not isinstance(self.request_fields.get(name), dict):
                 # not sideloading this field
                 self.request_fields[name] = True
-
-    def is_admin(self):
-        """Whether or not this serializer is being used by an admin view."""
-        context = getattr(self, 'context', None)
-        if not context:
-            return False
-
-        request = context.get('request')
-        if not request:
-            return False
-
-        renderer = request.accepted_renderer
-        return renderer.format == 'admin'
 
     def get_pk_field(self):
         try:
@@ -980,7 +966,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
         return instance
 
     def needs_prefetch(self):
-        if self.is_admin():
+        if self.gui:
             return True
 
         return not self.id_only()
