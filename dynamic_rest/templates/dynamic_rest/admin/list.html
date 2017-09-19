@@ -4,10 +4,14 @@
     <table id="results-table" class="table cardtable">
       <thead>
         <tr>
-            {% for column in columns%}
+            {% for column in columns %}
                 {% get_value_from_dict fields column as field %}
                 {% if field %}
-                    <th>{{ field.label }}</th>
+                    {% if field.help_text %}
+                        <th><span class="drest-has-tooltip" data-placement="right" data-toggle="tooltip" data-trigger="click" title="{{ field.help_text }}">{{ field.label }}</span></th>
+                    {% else %}
+                        <th>{{ field.label }}</th>
+                    {% endif %}
                 {% else %}
                     <th>{{ column }}</th>
                 {% endif %}
