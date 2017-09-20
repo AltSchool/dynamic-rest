@@ -6,7 +6,7 @@
 {% block content %}
     <div class="drest-content-container">
         <div class="drest-content">
-            <form action="{% url 'dynamic_rest:login' %}" role="form" method="post">
+            <form class="container mr-auto" action="{% url 'dynamic_rest:login' %}" role="form" method="post">
               {% csrf_token %}
               <input type="hidden" name="next" value="{{ next }}">
 

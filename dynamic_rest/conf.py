@@ -11,6 +11,9 @@ DYNAMIC_REST = {
     # API_ROOT_SECURE: whether or not the root API view requires authentication
     'API_ROOT_SECURE': False,
 
+    # API_ROOT_URL: API root URL
+    'API_ROOT_URL': '/',
+
     # ADDITIONAL_PRIMARY_RESOURCE_PREFIX: String to prefix additional
     # instances of the primary resource when sideloading.
     'ADDITIONAL_PRIMARY_RESOURCE_PREFIX': '+',

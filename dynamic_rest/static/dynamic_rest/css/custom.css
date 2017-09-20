@@ -16,7 +16,11 @@
     width: 100%;
     height: 100%;
     padding: 20px;
+    overflow-x: hidden;
     overflow-y: scroll;
+}
+.drest-content > .container {
+    padding: 0;
 }
 .drest-nav {
     justify-content: space-between;
@@ -101,4 +105,10 @@
 }
 .drest-has-tooltip {
     border-bottom: 1px dashed #000;
+}
+.drest-table-details {
+    border: 0;
+}
+.table.drest-table-details td, .table.drest-table-details th {
+    border: 0;
 }

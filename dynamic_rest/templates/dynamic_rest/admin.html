@@ -44,11 +44,11 @@
                 <nav class="navbar navbar-inverse bg-primary fixed-top">
                     <div class="navbar-nav drest-nav">
                         <div class="navbar-brand drest-nav-left">
-                            {% block brand %}
-                                <a href="/">
+                            <a href="{{ root_url }}">
+                                {% block brand %}
                                     <img class="drest-logo" src="{% static "dynamic_rest/img/logo.svg" %}" alt="Logo" />
-                                </a>
-                            {% endblock %}
+                                {% endblock %}
+                            </a>
                         </div>
                         <div class="nav-item drest-nav-center active">
                                 <a class="nav-link" href="#">

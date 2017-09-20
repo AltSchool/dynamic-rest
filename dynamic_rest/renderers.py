@@ -133,6 +133,8 @@ class DynamicAdminRenderer(AdminRenderer):
 
         back_url = None
         back = None
+        this_url = request.get_full_path()
+        root_url = settings.API_ROOT_URL
 
         if serializer:
             meta = serializer.get_meta()
@@ -204,6 +206,7 @@ class DynamicAdminRenderer(AdminRenderer):
                 )
             except NoReverseMatch:
                 pass
+
         logout_url = ''
         try:
             logout_url = (
@@ -245,6 +248,7 @@ class DynamicAdminRenderer(AdminRenderer):
             (x.lower() for x in (view.http_method_names or ()))
         )
 
+        context['root_url'] = root_url
         context['back_url'] = back_url
         context['back'] = back
         context['link_field'] = link_field

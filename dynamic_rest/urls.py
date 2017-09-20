@@ -18,7 +18,7 @@ from django.conf.urls import url
 from django.contrib.auth import views
 from dynamic_rest.conf import settings as drest
 
-template_name = {'template_name': drest.LOGIN_TEMPLATE}
+template_name = {'template_name': drest.ADMIN_LOGIN_TEMPLATE}
 
 app_name = 'dynamic_rest'
 urlpatterns = [
