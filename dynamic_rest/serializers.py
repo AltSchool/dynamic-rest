@@ -968,7 +968,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
                 **kwargs
             )
         except Exception as e:
-            error = getattr(e, 'detail', e.args[0])
+            error = getattr(e, 'detail', str(e))
             self._errors = error
             raise exceptions.ValidationError(
                 self.errors
