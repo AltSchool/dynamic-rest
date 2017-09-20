@@ -56,7 +56,7 @@
                 id: "",
                 placeholder: ""
             },
-            allowClear: true,
+            allowClear: {% if field.many %}false{% else %}true{% endif %},
             ajax: {
                 url: url,
                 dataType: "json",
