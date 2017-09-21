@@ -133,7 +133,6 @@ class DynamicAdminRenderer(AdminRenderer):
 
         back_url = None
         back = None
-        this_url = request.get_full_path()
         root_url = settings.API_ROOT_URL
 
         if serializer:

@@ -967,8 +967,10 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
                 *args,
                 **kwargs
             )
+        except exceptions.APIException as e:
+            raise
         except Exception as e:
-            error = getattr(e, 'detail', str(e))
+            error = e.args[0] if e.args else str(e)
             if not isinstance(error, dict):
                 error = {'error': error}
             self._errors = error
