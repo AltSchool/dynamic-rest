@@ -969,6 +969,8 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
             )
         except Exception as e:
             error = getattr(e, 'detail', str(e))
+            if not isinstance(error, dict):
+                error = {'error': error}
             self._errors = error
             raise exceptions.ValidationError(
                 self.errors
