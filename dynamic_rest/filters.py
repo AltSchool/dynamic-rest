@@ -128,11 +128,12 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
 
         filters_map = kwargs.get('filters_map')
 
-        if hasattr(self, 'view'):
-            serializer_class = self.view.get_serializer_class()
+        view = getattr(self, 'view', None)
+        if view:
+            serializer_class = view.get_serializer_class()
             serializer = serializer_class()
             if not filters_map:
-                filters_map = self.view.get_request_feature(self.view.FILTER)
+                filters_map = view.get_request_feature(view.FILTER)
         else:
             serializer = None
 
