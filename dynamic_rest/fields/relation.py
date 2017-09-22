@@ -291,7 +291,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             getattr(instance, key, instance)
             if key else instance
         )
-        print url, label
         return Hyperlink(url, label)
 
     def to_representation(self, instance):
