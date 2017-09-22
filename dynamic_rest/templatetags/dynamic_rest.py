@@ -18,7 +18,7 @@ def as_id_to_name(value):
     for v in value:
         if v:
             name = six.text_type(getattr(v, 'obj', v))
-            splits = v.split('/')
+            splits = str(v).split('/')
             if splits[-1]:
                 # no trailing slash: /foo/1
                 pk = splits[-1]

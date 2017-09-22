@@ -283,14 +283,15 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         return instance
 
     def as_hyperlink(self, instance):
-        name_field = self.get_name_field()
-        field = self.parent.fields.get(name_field)
-        key = field.source or field.name if field else None
+        parent_name_field = self.parent.get_name_field()
+        field = self.parent.fields.get(parent_name_field)
+        key = field.source or field.field_name if field else None
         url = self.get_url(instance.pk)
         label = (
-            getattr(instance, key)
+            getattr(instance, key, instance)
             if key else instance
         )
+        print url, label
         return Hyperlink(url, label)
 
     def to_representation(self, instance):
@@ -299,9 +300,11 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         model = serializer.get_model()
         source = self.source
 
+        gui = getattr(self.context.get('view'), 'is_gui', False)
         if (
             not self.getter and
             not self.kwargs['many'] and
+            not gui and
             serializer.id_only()
         ):
             # attempt to optimize by reading the related ID directly
@@ -327,7 +330,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         if related is None:
             return None
         try:
-            gui = getattr(self.context.get('view'), 'is_gui', False)
             if gui:
 
                 # TODO: refactor this to use dict/value tagging
