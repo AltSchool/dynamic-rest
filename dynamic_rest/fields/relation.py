@@ -3,9 +3,12 @@ import pickle
 
 from django.utils import six
 from django.utils.functional import cached_property
-from rest_framework.exceptions import NotFound, ParseError
+from rest_framework.exceptions import (
+    APIException,
+    NotFound,
+    ParseError
+)
 from rest_framework import fields
-
 from dynamic_rest.compat import Hyperlink
 from dynamic_rest.conf import settings
 from dynamic_rest.meta import (
@@ -293,10 +296,34 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         )
         return Hyperlink(url, label)
 
+    def get_related(self, instance):
+        serializer = self.serializer
+        model = serializer.get_model()
+        source = self.source
+        related = None
+        if self.getter:
+            # use custom getter to read the relationship
+            getter = getattr(self.parent, self.getter)
+            related = getter(instance)
+        else:
+            # use source to read the relationship
+            if model is None:
+                related = getattr(instance, source, None)
+            else:
+                try:
+                    related = getattr(instance, source)
+                except model.DoesNotExist:
+                    pass
+
+        if related and self.many and callable(getattr(related, 'all', None)):
+            # get list from manager
+            related = related.all()
+
+        return related
+
     def to_representation(self, instance):
         """Represent the relationship, either as an ID or object."""
         serializer = self.serializer
-        model = serializer.get_model()
         source = self.source
 
         gui = getattr(self.context.get('view'), 'is_gui', False)
@@ -312,34 +339,18 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             if hasattr(instance, source_id):
                 return getattr(instance, source_id)
 
-        if self.getter:
-            # use custom getter to read the relationship
-            getter = getattr(self.parent, self.getter)
-            related = getter(instance)
-        else:
-            # use source to read the relationship
-            if model is None:
-                related = getattr(instance, source)
-            else:
-                try:
-                    related = getattr(instance, source)
-                except model.DoesNotExist:
-                    return None
+        related = self.get_related(instance)
 
         if related is None:
             return None
         try:
             if gui:
-
                 # TODO: refactor this to use dict/value tagging
                 # within the serializer layer and tag
                 # rendering within the renderer layer
 
                 # return as (list of) Hyperlink
                 if self.many:
-                    if callable(getattr(related, 'all', None)):
-                        # get list from manager
-                        related = related.all()
                     return [self.as_hyperlink(r) for r in related]
                 else:
                     return self.as_hyperlink(related)
@@ -351,7 +362,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             if getattr(serializer, 'debug', False):
                 import traceback
                 traceback.print_exc()
-            raise Exception(
+            raise APIException(
                 "Failed to serialize %s.%s: %s\nObj: %s" %
                 (
                     self.parent.__class__.__name__,
@@ -370,7 +381,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             instance = model.objects.get(pk=data)
         except model.DoesNotExist:
             raise NotFound(
-                "'%s object with ID=%s not found" %
+                '"%s" with ID "%s" not found' %
                 (model.__name__, data)
             )
         return instance
@@ -386,7 +397,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
 
         if self.kwargs['many']:
             if not isinstance(data, list):
-                raise ParseError("'%s' value must be a list" % self.field_name)
+                raise ParseError('"%s" value must be a list' % self.field_name)
             return [
                 self.to_internal_value_single(
                     instance,

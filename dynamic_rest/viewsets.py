@@ -3,11 +3,9 @@ import csv
 from io import StringIO
 import inflection
 
-from django.core.exceptions import ObjectDoesNotExist
 from django.http import QueryDict
 from django.utils import six
 from rest_framework import exceptions, status, viewsets
-from rest_framework.exceptions import ValidationError
 from rest_framework.renderers import BrowsableAPIRenderer
 from rest_framework.response import Response
 from rest_framework.request import is_form_media_type
@@ -384,11 +382,11 @@ class WithDynamicViewSetMixin(object):
             https://gist.github.com/ryochiji/54687d675978c7d96503
         """
 
-        # Explicitly disable support filtering. Applying filters to this
+        # Explicitly disable filtering support. Applying filters to this
         # endpoint would require us to pass through sideload filters, which
         # can have unintended consequences when applied asynchronously.
         if self.get_request_feature(self.FILTER):
-            raise ValidationError(
+            raise exceptions.ValidationError(
                 'Filtering is not enabled on relation endpoints.'
             )
 
@@ -406,30 +404,37 @@ class WithDynamicViewSetMixin(object):
         serializer = self.get_serializer()
         field = serializer.fields.get(field_name)
         if field is None:
-            raise ValidationError('Unknown field: "%s".' % field_name)
+            raise exceptions.ValidationError(
+                'Unknown field: "%s".' % field_name
+            )
+
+        if not hasattr(field, 'get_serializer'):
+            raise exceptions.ValidationError(
+                'Not a related field: "%s".' % field_name
+            )
 
         # Query for root object, with related field prefetched
         queryset = self.get_queryset()
         queryset = self.filter_queryset(queryset)
-        obj = queryset.first()
+        instance = queryset.first()
 
-        if not obj:
-            return Response("Not found", status=404)
+        if not instance:
+            raise exceptions.NotFound()
 
-        # Serialize the related data. Use the field's serializer to ensure
-        # it's configured identically to the sideload case.
-        serializer = field.get_serializer(envelope=True)
-        try:
-            # TODO(ryo): Probably should use field.get_attribute() but that
-            #            seems to break a bunch of things. Investigate later.
-            serializer.instance = getattr(obj, field.source)
-        except ObjectDoesNotExist:
+        related = field.get_related(instance)
+        if not related:
             # See:
             # http://jsonapi.org/format/#fetching-relationships-responses-404
             # This is a case where the "link URL exists but the relationship
-            # is empty" and therefore must return a 200.
-            return Response({}, status=200)
+            # is empty" and therefore must return a 200. not related:
+            return Response([] if field.many else {}, status=200)
 
+        # create an instance of the related serializer
+        # and use it to render the data
+        serializer = field.get_serializer(
+            instance=related,
+            envelope=True
+        )
         return Response(serializer.data)
 
 
