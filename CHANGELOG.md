@@ -9,7 +9,7 @@ Major release
           This can be useful for simplifying complex "through" relations.
 
     - Argument change: `serializer_class` is now optional
-        - DynamicRelationField` will attempt to infer `serializer_class` from the
+        - `DynamicRelationField` will attempt to infer `serializer_class` from the
           given source using `DynamicRouter.get_canonical_serializer`.
 
 - New dynamic model fields: `dynamic_rest.fields.model`
