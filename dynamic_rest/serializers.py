@@ -362,13 +362,13 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
             (model_fields, api_fields)
                 e.g:
                     [
-                        ("user", Blog._meta.fields.user),
-                        ("location", User._meta.fields.location),
-                        ("name", Location._meta.fields.name)
+                        Blog._meta.fields.user,
+                        User._meta.fields.location,
+                        Location._meta.fields.name
                     ],
                     [
-                        ("creator", RelationField(source="user")),
-                        ("location_name", CharField(source="location.name"))
+                        DynamicRelationField(source="user"),
+                        DynamicCharField(source="location.name")
                     ]
 
         Raises:
@@ -431,19 +431,18 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
                     )
                 })
 
-            model_name = Meta.get_query_name(model_field)
-            model_fields.insert(0, (model_name, model_field))
-            api_fields.insert(0, (api_name, api_field))
+            model_fields.insert(0, model_field)
+            api_fields.insert(0, api_field)
         else:
             if api_field == 'pk':
 
                 # pk is an alias for the id field
                 model_field = meta.get_pk_field()
-                model_fields.append(('pk', model_field))
+                model_fields.append(model_field)
 
                 try:
                     api_field = serializer.get_field('pk')
-                    api_fields.append(('pk', api_field))
+                    api_fields.append(api_field)
                 except:
                     # the ID field may not exist within the serializer
                     pass
@@ -458,7 +457,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
                         )
                     })
 
-                api_fields.append((api_name, api_field))
+                api_fields.append(api_field)
 
                 if api_field.source == '*':
                     # a method field was requested, model field is unknown
@@ -484,10 +483,9 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
                                     field
                                 )
                             })
-                        model_name = Meta.get_query_name(model_field)
                         model = related_model
                         meta = Meta(model)
-                        model_fields.append((model_name, model_field))
+                        model_fields.append(model_field)
                     field = fields[-1]
                     try:
                         model_field = meta.get_field(field)
@@ -500,8 +498,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
                                 field
                             )
                         })
-                    model_name = meta.get_query_name(model_field)
-                    model_fields.append((model_name, model_field))
+                    model_fields.append(model_field)
                 else:
                     try:
                         model_field = meta.get_field(source)
@@ -514,8 +511,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
                                 source
                             )
                         })
-                    model_name = meta.get_query_name(model_field)
-                    model_fields.append((model_name, model_field))
+                    model_fields.append(model_field)
 
         return (model_fields, api_fields)
 

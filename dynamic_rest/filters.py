@@ -175,10 +175,10 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                 if rel:
                     # get related serializer
                     model_fields, serializer_fields = serializer.resolve(rel)
-                    serializer = serializer_fields[-1][1]
+                    serializer = serializer_fields[-1]
                     serializer = getattr(serializer, 'serializer', serializer)
                     rel = [
-                        f[0] for f in model_fields
+                        Meta.get_query_name(f) for f in model_fields
                     ]
 
                 # perform model-field resolution
@@ -187,7 +187,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                 # if the field is a boolean,
                 # coerce the value
                 if field and isinstance(
-                    field[1],
+                    field,
                     (
                         serializers.BooleanField,
                         serializers.NullBooleanField
@@ -195,7 +195,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                 ):
                     value = is_truthy(value)
                 key = '__'.join(
-                    [f[0] for f in model_fields]
+                    [Meta.get_query_name(f) for f in model_fields]
                 )
 
             else:
@@ -614,7 +614,9 @@ class DynamicSortingFilter(WithGetSerializerClass, OrderingFilter):
             raise ValidationError('Invalid sort option: %s' % query)
 
         model_fields, _ = serializer.resolve(query)
-        return '__'.join([f[0] for f in model_fields])
+        return '__'.join([
+            Meta.get_query_name(f) for f in model_fields
+        ])
 
     def _is_allowed_query(self, query, view=None):
         if not view:
