@@ -19,6 +19,9 @@ class User(models.Model):
     )
     is_dead = models.NullBooleanField(default=False)
 
+    def __unicode__(self):
+        return str(self.pk)
+
 
 class Profile(models.Model):
     user = models.OneToOneField(User)
@@ -71,6 +74,9 @@ class Permission(models.Model):
 class Location(models.Model):
     name = models.TextField()
     blob = models.TextField()
+
+    def __unicode__(self):
+        return str(self.pk)
 
 
 class Event(models.Model):

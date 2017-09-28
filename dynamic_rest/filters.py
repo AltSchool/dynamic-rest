@@ -149,7 +149,6 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                 rel = None
 
             terms = key.split('.')
-
             # Last part could be operator, e.g. "events.capacity.gte"
             if len(terms) > 1 and terms[-1] in self.VALID_FILTER_OPERATORS:
                 operator = terms.pop()
@@ -173,6 +172,15 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                     operator = None
 
             if serializer:
+                if rel:
+                    # get related serializer
+                    model_fields, serializer_fields = serializer.resolve(rel)
+                    serializer = serializer_fields[-1][1]
+                    serializer = getattr(serializer, 'serializer', serializer)
+                    rel = [
+                        f[0] for f in model_fields
+                    ]
+
                 # perform model-field resolution
                 model_fields, serializer_fields = serializer.resolve(terms)
                 field = serializer_fields[-1] if serializer_fields else None
@@ -200,7 +208,6 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
             path = rel if rel else []
             path += [category, key]
             out.insert(path, value)
-
         return out
 
     def _filters_to_query(self, filters):
@@ -313,26 +320,29 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                 # ignore duplicated sources
                 continue
 
-            is_id_only = getattr(field, 'id_only', lambda: False)()
-            is_remote = meta.is_field_remote(source)
-            if not is_gui and is_id_only and not is_remote:
-                # GUI rendering, full representation, and remote fields
-                # should all trigger prefetching
-                continue
-
-            # prefetch this relationship
             related_queryset = getattr(original_field, 'queryset', None)
             if callable(related_queryset):
                 related_queryset = related_queryset(field)
+
+            is_id_only = getattr(field, 'id_only', lambda: False)()
+            is_remote = meta.is_field_remote(source)
+            if (
+                related_queryset is None and
+                not is_gui and is_id_only and not is_remote
+            ):
+                # GUI rendering, full representation, and remote fields
+                # should all trigger prefetching
+                continue
 
             # Popping the source here (during explicit prefetch construction)
             # guarantees that implicitly required prefetches that follow will
             # not conflict.
             required = requirements.pop(source, None)
 
+            query_name = Meta.get_query_name(original_field.model_field)
             prefetch_queryset = self._build_queryset(
                 serializer=field,
-                filters=filters.get(name, {}),
+                filters=filters.get(query_name, {}),
                 queryset=related_queryset,
                 requirements=required
             )
