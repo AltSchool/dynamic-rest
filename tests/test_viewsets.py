@@ -6,12 +6,17 @@ from rest_framework import exceptions, status
 from rest_framework.request import Request
 
 from dynamic_rest.filters import DynamicFilterBackend
+from dynamic_rest.test import ViewSetTestCase
 from tests.models import Dog, Group, User
 from tests.setup import create_fixture
 from tests.viewsets import (
     GroupNoMergeDictViewSet,
     UserViewSet
 )
+
+
+class TestViewSetTestCase(ViewSetTestCase):
+    viewset = UserViewSet
 
 
 class TestUserViewSet(TestCase):

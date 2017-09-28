@@ -15,6 +15,7 @@ See http://dynamic-rest.readthedocs.org for full documentation.
 
 - [Overview](#overview)
 - [Maintainers](#maintainers)
+- [Changelog](#changelog)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Demo](#demo)
@@ -55,10 +56,14 @@ DREST classes can be used as a drop-in replacement for DRF classes, which offer 
 DREST was initially written to complement [Ember Data](https://github.com/emberjs/data),
 but it can be used to provide fast and flexible CRUD operations to any consumer that supports JSON over HTTP.
 
-## Maintainers
+# Maintainers
 
 * [Anthony Leontiev](mailto:ant@altschool.com)
 * [Ryo Chijiiwa](mailto:ryo@altschool.com)
+
+# Changelog
+
+See the [Changelog](CHANGELOG.md).
 
 # Requirements
 

@@ -1,4 +1,11 @@
+import json
 from django.test import TestCase
+from model_mommy import mommy
+from rest_framework.fields import empty
+from rest_framework.test import APIClient
+from django.contrib.auth import get_user_model
+from django.urls import resolve
+from dynamic_rest.meta import Meta
 
 
 class ViewSetTestCase(TestCase):
@@ -30,19 +37,256 @@ class ViewSetTestCase(TestCase):
     """
     viewset = None
 
-    def test_list(self):
-        if self.viewset is None:
+    def setUp(self):
+        if self.viewset:
+            try:
+                # trigger URL loading
+                resolve('/')
+            except:
+                pass
+
+    def get_model(self):
+        serializer = self.serializer_class
+        return serializer.get_model()
+
+    def get_url(self, pk=None):
+        return self.serializer_class.get_url(pk)
+
+    @property
+    def serializer_class(self):
+        if not hasattr(self, '_serializer_class'):
+            self._serializer_class = self.view.get_serializer_class()
+        return self._serializer_class
+
+    @property
+    def view(self):
+        if not hasattr(self, '_view'):
+            self._view = self.viewset() if self.viewset else None
+        return self._view
+
+    @property
+    def api_client(self):
+        if not getattr(self, '_api_client', None):
+            self._api_client = self.get_client()
+        return self._api_client
+
+    def get_client(self):
+        User = get_user_model()
+        user = mommy.make(
+            User,
+            is_superuser=True,
+            is_staff=True
+        )
+        client = APIClient()
+        client.force_authenticate(user)
+        return client
+
+    def get_create_params(self):
+        return {}
+
+    def get_put_params(self, instance):
+        return self.get_post_params(instance)
+
+    def get_post_params(self, instance=None):
+        def get_from_instance(instance, source):
+            result = getattr(instance, source, None)
+            if callable(getattr(result, 'all', None)):
+                result = [x.pk for x in result.all()]
+            return result
+
+        instance = instance or self.prepare_instance()
+        serializer_class = self.serializer_class
+        serializer = serializer_class()
+        fields = serializer.get_all_fields()
+        params = {
+            name: get_from_instance(instance, field.source or name)
+            for name, field in fields.items()
+            if (not field.read_only) or (field.default is not empty)
+        }
+        return params
+
+    def prepare_instance(self):
+        # prepare a sample instance
+        return mommy.make(
+            self.get_model(),
+            **self.get_create_params()
+        )
+
+    def create_instance(self):
+        # create a sample instance
+        return mommy.make(
+            self.get_model(),
+            **self.get_create_params()
+        )
+
+    def test_get_list(self):
+        view = self.view
+        if view is None:
             return
 
-    def test_get(self):
-        if self.viewset is None:
+        if 'get' not in view.http_method_names:
             return
 
-    def test_create(self):
-        pass
+        url = self.get_url()
+
+        EMPTY = 0
+        NON_EMPTY = 1
+        for case in (EMPTY, NON_EMPTY):
+            if case == NON_EMPTY:
+                self.create_instance()
+
+            for renderer in view.get_renderers():
+                url = '%s?format=%s' % (url, renderer.format)
+                response = self.api_client.get(url)
+                self.assertEquals(
+                    response.status_code,
+                    200,
+                    'GET %s failed with %d: %s' % (
+                        url,
+                        response.status_code,
+                        response.content.decode('utf-8')
+                    )
+                )
+
+    def test_get_detail(self):
+        view = self.view
+        if view is None:
+            return
+
+        if 'get' not in view.http_method_names:
+            return
+
+        instance = self.create_instance()
+        for (pk, status) in (
+            (instance.pk, 200),
+            ('bad-pk', 404)
+        ):
+            url = self.get_url(pk)
+            for renderer in view.get_renderers():
+                url = '%s?format=%s' % (url, renderer.format)
+                response = self.api_client.get(url)
+                self.assertEquals(
+                    response.status_code,
+                    status,
+                    'GET %s, expected %s, got %s: %s' % (
+                        url,
+                        status,
+                        response.status_code,
+                        response.content.decode('utf-8')
+                    )
+                )
+
+    def test_post(self):
+        view = self.view
+        if view is None:
+            return
+
+        if 'post' not in view.http_method_names:
+            return
+
+        for renderer in view.get_renderers():
+            format = renderer.format
+            url = '%s?format=%s' % (
+                self.get_url(),
+                format
+            )
+            data = self.get_post_params()
+            response = self.api_client.post(
+                url,
+                content_type='application/json',
+                data=json.dumps(data)
+            )
+            self.assertTrue(
+                response.status_code < 400,
+                'POST %s failed with %d: %s' % (
+                    url,
+                    response.status_code,
+                    response.content.decode('utf-8')
+                )
+            )
+            if format == 'json':
+                content = json.loads(
+                    response.content.decode('utf-8')
+                )
+                model = self.get_model()
+                model_name = Meta(model).get_name()
+                serializer = self.serializer_class()
+                name = serializer.get_name()
+                pk_field = serializer.get_field('pk')
+                if pk_field:
+                    pk_field = pk_field.field_name
+                    pk = content[name][pk_field]
+                    self.assertTrue(
+                        model.objects.filter(pk=pk).exists(),
+                        'POST %s succeeded but instance '
+                        '"%s.%s" does not exist' % (
+                            url,
+                            model_name,
+                            pk
+                        )
+                    )
 
     def test_update(self):
-        pass
+        view = self.view
+        if view is None:
+            return
+
+        if 'put' not in view.http_method_names:
+            return
+
+        for renderer in view.get_renderers():
+            instance = self.create_instance()
+            data = self.get_put_params(instance)
+            url = '%s?format=%s' % (
+                self.get_url(instance.pk),
+                renderer.format
+            )
+            response = self.api_client.put(
+                url,
+                content_type='application/json',
+                data=json.dumps(data)
+            )
+            self.assertTrue(
+                response.status_code < 400,
+                'PUT %s failed with %d: %s' % (
+                    url,
+                    response.status_code,
+                    response.content.decode('utf-8')
+                )
+            )
 
     def test_delete(self):
-        pass
+        view = self.view
+
+        if view is None:
+            return
+
+        if 'delete' not in view.http_method_names:
+            return
+
+        for renderer in view.get_renderers():
+            instance = self.create_instance()
+            url = '%s?format=%s' % (
+                self.get_url(instance.pk),
+                renderer.format
+            )
+            response = self.api_client.delete(url)
+            self.assertTrue(
+                response.status_code < 400,
+                'DELETE %s failed with %d: %s' % (
+                    url,
+                    response.status_code,
+                    response.content.decode('utf-8')
+                )
+            )
+            model = self.get_model()
+            model_name = Meta(model).get_name()
+            pk = instance.pk
+            self.assertFalse(
+                model.objects.filter(pk=pk).exists(),
+                'DELETE %s succeeded but instance "%s.%s" still exists' % (
+                    url,
+                    model_name,
+                    pk
+                )
+            )
