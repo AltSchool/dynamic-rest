@@ -14,12 +14,12 @@ class ViewSetTestCase(TestCase):
     You must set the "view" property to an API-bound view.
 
     This test runs through the various exposed endpoints,
-    making internal API calls.
+    making internal API calls as a superuser.
 
     Default test cases:
-        test_list:
+        test_get_detail:
             - Only runs if the view allows GET
-        test_get
+        test_get_list
             - Only runs if the view allows GET
         test_create
             - Only runs if the view allows POST
@@ -28,11 +28,29 @@ class ViewSetTestCase(TestCase):
         test_delete
             - Only run if the view allows DELETE
 
+    Overriding methods:
+        get_client:
+            - should return a suitable API client
+        get_post_params:
+            - returns an object that can be POSTed to the view
+        get_put_params:
+            - return an object that can be PUT to the view given an instance
+        create_instance:
+            - return a committed instance of the model
+        prepare_instance:
+            - return an uncomitted instance of the model
+
+
     Example usage:
 
         class MyAdminViewSetTestCase(AdminViewSetTestCase):
             viewset = UserViewSet
 
+            # use custom post params
+            def get_post_params(self):
+                return {
+                    'foo': 1
+                }
 
     """
     viewset = None
@@ -114,10 +132,9 @@ class ViewSetTestCase(TestCase):
 
     def create_instance(self):
         # create a sample instance
-        return mommy.make(
-            self.get_model(),
-            **self.get_create_params()
-        )
+        instance = self.prepare_instance()
+        instance.save()
+        return instance
 
     def test_get_list(self):
         view = self.view
