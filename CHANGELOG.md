@@ -68,7 +68,7 @@ Major release
 
     - Calling resolve on a method field (`source == '*'`) will cause an exception.
 
-- New serializer functionality: *nested updates*
+- New serializer functionality: **nested updates**
     - DREST serializers will now attempt to properly handle
       nested-source fields during updates.
     
