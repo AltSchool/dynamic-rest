@@ -172,17 +172,19 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                     operator = None
 
             if serializer:
+                s = serializer
+
                 if rel:
                     # get related serializer
                     model_fields, serializer_fields = serializer.resolve(rel)
-                    serializer = serializer_fields[-1]
-                    serializer = getattr(serializer, 'serializer', serializer)
+                    s = serializer_fields[-1]
+                    s = getattr(s, 'serializer', s)
                     rel = [
                         Meta.get_query_name(f) for f in model_fields
                     ]
 
                 # perform model-field resolution
-                model_fields, serializer_fields = serializer.resolve(terms)
+                model_fields, serializer_fields = s.resolve(terms)
                 field = serializer_fields[-1] if serializer_fields else None
                 # if the field is a boolean,
                 # coerce the value

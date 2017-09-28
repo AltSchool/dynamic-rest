@@ -391,6 +391,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
         serializer = self
 
         model = serializer.get_model()
+        resource_name = serializer.get_name()
         meta = Meta(model)
         api_name = parts[0]
         other = parts[1:]
@@ -408,8 +409,9 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
                 raise ValidationError({
                     api_name:
                     'Could not resolve "%s": '
-                    '%s is not an API relation' % (
+                    '"%s.%s" is not an API relation' % (
                         query,
+                        resource_name,
                         api_name
                     )
                 })
@@ -425,8 +427,9 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
                 raise ValidationError({
                     api_name:
                     'Could not resolve "%s": '
-                    '"%s" is not a model relation' % (
+                    '"%s.%s" is not a model relation' % (
                         query,
+                        meta.get_name(),
                         source
                     )
                 })
@@ -434,25 +437,22 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
             model_fields.insert(0, model_field)
             api_fields.insert(0, api_field)
         else:
-            if api_field == 'pk':
-
+            if api_name == 'pk':
                 # pk is an alias for the id field
                 model_field = meta.get_pk_field()
                 model_fields.append(model_field)
-
-                try:
-                    api_field = serializer.get_field('pk')
+                if api_field:
+                    # the pk field may not exist
+                    # on the serializer
                     api_fields.append(api_field)
-                except:
-                    # the ID field may not exist within the serializer
-                    pass
             else:
                 if not api_field:
                     raise ValidationError({
                         api_name:
                         'Could not resolve "%s": '
-                        '%s is not an API field' % (
+                        '"%s.%s" is not an API field' % (
                             query,
+                            resource_name,
                             api_name
                         )
                     })
@@ -478,8 +478,9 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
                             raise ValidationError({
                                 api_name:
                                 'Could not resolve "%s": '
-                                '"%s" is not a model relation' % (
+                                '"%s.%s" is not a model relation' % (
                                     query,
+                                    meta.get_name(),
                                     field
                                 )
                             })
@@ -493,8 +494,9 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
                         raise ValidationError({
                             api_name:
                             'Could not resolve: "%s", '
-                            '"%s" is not a model field' % (
+                            '"%s.%s" is not a model field' % (
                                 query,
+                                meta.get_name(),
                                 field
                             )
                         })
@@ -506,8 +508,9 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
                         raise ValidationError({
                             api_name:
                             'Could not resolve "%s": '
-                            '"%s" is not a model field' % (
+                            '"%s.%s" is not a model field' % (
                                 query,
+                                meta.get_name(),
                                 source
                             )
                         })
@@ -530,12 +533,12 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
         return None
 
     def get_field(self, field_name):
+        fields = self.get_all_fields()
         if field_name == 'pk':
             meta = self.get_meta()
             if hasattr(meta, '_pk'):
                 return meta._pk
 
-            fields = self.fields
             field = None
             model = self.get_model()
             primary_key = getattr(meta, 'primary_key', None)
@@ -570,10 +573,6 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
                 meta._pk = field
                 return field
         else:
-            if field_name in self.fields:
-                return self.fields[field_name]
-
-            fields = self.get_all_fields()
             if field_name in fields:
                 return fields[field_name]
 

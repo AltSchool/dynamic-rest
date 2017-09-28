@@ -29,6 +29,12 @@ class Meta(object):
     def get_related_model(cls, field):
         return field.related_model if field else None
 
+    def get_name(self):
+        meta = self.meta
+        return '%s.%s' % (
+            meta.app_label, meta.db_table
+        ) if meta else None
+
     @classmethod
     def get_query_name(cls, field):
         if (
