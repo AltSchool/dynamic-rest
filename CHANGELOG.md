@@ -4,15 +4,15 @@ Major release
 ## Fields
 
 - `dynamic_rest.fields.DynamicRelationField`
-    - New initialization arguments: *`getter`* and *`setter`*
+    - New initialization arguments: `getter` and `setter`
         Allows for custom relationship getting and setting.
         This can be useful for simplifying complex "through" relations.
 
-    - Argument change: *`serializer_class`* is now optional
+    - Argument change: `serializer_class` is now optional
         DynamicRelationField` will attempt to infer `serializer_class` from the
         given source using `DynamicRouter.get_canonical_serializer`.
 
-- New dynamic model fields: *`dynamic_rest.fields.model`*
+- New dynamic model fields: `dynamic_rest.fields.model`
     These fields add dynamic-value support to base DRF fields.
     Dynamic values are values that can contain metadata used
     by higher-level renderers (admin), such as styling directives.
@@ -21,14 +21,14 @@ Major release
 
 ## Serializers
 
-- New setting: *`ENABLE_SELF_LINKS`*
+- New setting: `ENABLE_SELF_LINKS`
     When enabled, links in representation will include reference to the current resource.
     Default is False.
 
-- New serializer fields, see *`dynamic_rest.fields.model`*
+- New serializer fields, see `dynamic_rest.fields.model`
     These fields extend the base DRF fields with dynamic value behavior.
 
-- New serializer method: *`get_url`*
+- New serializer method: `get_url`
     Returns a URL to the serializer's collection or detail endpoint,
     dependening on whether a PK is passed in.
 
@@ -36,10 +36,10 @@ Major release
     the serializer's view is registered.
     If not, this method will fallback to `DynamicRouter.get_canonical_url`.
 
-- New serializer method: *`get_field`*
+- New serializer method: `get_field`
     Returns a serializer field
 
-- New serializer method: *`resolve`*
+- New serializer method: `resolve`
     Provides a consistent way to resolve an API-field
     into a chain of model fields. Returns a model field list
     and serializer field list.
@@ -82,7 +82,7 @@ Major release
     to craete it using the fields in the request.
     Multiple fields on a related model can be mapped to.
 
-- New serializer method: *`needs_prefetch`*
+- New serializer method: `needs_prefetch`
     This method allows a serializer to specify whether its
     source should be prefetched.
 
@@ -95,25 +95,25 @@ Major release
 - Fixed `sort[]` behavior around rewrites
     API-name to model-name rewrites are now properly handled by `sort[]`.
 
-- New views: *`dynamic_rest.login`* and *`dynamic_rest.logout`*
+- New views: `dynamic_rest.login` and `dynamic_rest.logout`
     Wraps `django.contrib.auth.views` login and logout
     using the DREST admin login template.
 
 ## Routers
 
-- Renamed option: `ROOT_VIEW_NAME` renamed to *`API_NAME`*
+- Renamed option: `ROOT_VIEW_NAME` renamed to `API_NAME`
     Human-friendly name of the API.
 
-- New option: *`API_DESCRIPTION`*
+- New option: `API_DESCRIPTION`
     Human-friendly description of the API.
 
-- New option: *`API_ROOT_SECURE`*
+- New option: `API_ROOT_SECURE`
     If enabled, the root view will redirect if the user is not authenticated.
     Default is False.
 
 ## Renderers
 
-- New renderer: *`dynamic_rest.renderers.DynamicAdminRenderer`*
+- New renderer: `dynamic_rest.renderers.DynamicAdminRenderer`
     Extends `rest_framework.renderers.AdminRenderer`, adding a
     new, responsively designed admin UI that integrates with DREST filters
     and relationships.
@@ -122,28 +122,28 @@ Major release
     the following configuration options in their `Meta` class to support an
     ideal experience.
 
-    - *`name_field`*: a human-friendly field name for records
+    - `name_field`: a human-friendly field name for records
         - defaults to the model PK
         - used for relationship lookup and representation
         - e.g. `"name"`
-    - *`search_key`*: a filter key to search against to find records of this resource
+    - `search_key`: a filter key to search against to find records of this resource
         - defaults to None
         - used for search
         - e.g: `"filter{name.icontains}"`
-    - *`list_fields`*: a list of fields to display within long lists
+    - `list_fields`: a list of fields to display within long lists
         - defaults to all fields
         - used for displaying the list view
         - e.g. `["name", "description"]`
-    - *`description`*: a description of the resource
+    - `description`: a description of the resource
         - e.g: "The Build resource represents a backend build."
 
-- New option: *`ADMIN_LOGIN_URL`*
+- New option: `ADMIN_LOGIN_URL`
     The login URL to use within admin UI.
 
-- New option: *`ADMIN_LOGOUT_URL`*
+- New option: `ADMIN_LOGOUT_URL`
     The logout URL to use within admin UI.
 
-- New option: *`ADMIN_TEMPLATE`*
+- New option: `ADMIN_TEMPLATE`
     Template file name for the admin view.
     Defaults to "dynamic_rest/admin.html"
 
@@ -153,6 +153,6 @@ Major release
     Common blocks to override: `bootstrap_css`, `brand`.
     The UI is implemented in Bootstrap 4.
 
-- New option: *`ADMIN_LOGIN_TEMPLATE`*
+- New option: `ADMIN_LOGIN_TEMPLATE`
     Template file name for the admin login view.
     Defaults to "dynamic_rest/login.html"
