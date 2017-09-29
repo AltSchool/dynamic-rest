@@ -50,7 +50,7 @@ class DynamicBrowsableAPIRenderer(BrowsableAPIRenderer):
 
 
 class DynamicHTMLFormRenderer(HTMLFormRenderer):
-    template_pack = 'rest_framework/vertical'
+    template_pack = 'dynamic_rest/horizontal'
 
 
 DynamicHTMLFormRenderer.default_style = ClassLookupDict(
