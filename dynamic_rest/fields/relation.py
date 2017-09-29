@@ -286,9 +286,9 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         return instance
 
     def as_hyperlink(self, instance):
-        parent_name_field = self.parent.get_name_field()
-        field = self.parent.fields.get(parent_name_field)
-        key = field.source or field.field_name if field else None
+        name_field = self.serializer.get_name_field()
+        field = self.serializer.get_field(name_field)
+        key = field.source or name_field if field else None
         url = self.get_url(instance.pk)
         label = (
             getattr(instance, key, instance)

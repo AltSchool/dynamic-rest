@@ -83,6 +83,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def get_all_fields(self):
         return self.child.get_all_fields()
 
+    def get_field(self, name):
+        return self.child.get_field(name)
+
     def get_meta(self):
         return self.child.get_meta()
 
