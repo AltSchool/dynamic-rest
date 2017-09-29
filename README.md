@@ -67,7 +67,7 @@ See the [Changelog](CHANGELOG.md).
 
 # Requirements
 
-* Python (2.7, 3.3, 3.4, 3.5)
+* Python (2.7, 3.4, 3.5)
 * Django (1.8, 1.9, 1.10, 1.11)
 * Django REST Framework (3.1, 3.2, 3.3, 3.4, 3.5, 3.6)
 
@@ -102,8 +102,7 @@ OR
 
 ```
 
-1b) If you want to use the [admin UI renderer](#admin-ui), replace DRF's renderer with DREST's
-in your settings:
+2) If you want to use the [admin UI renderer](#admin-ui), update your default renderer list:
  
 ```python
 REST_FRAMEWORK = {
@@ -583,158 +582,12 @@ Cubic benchmark: rendering a list of lists of lists
 # Settings
 
 DREST is configurable, and all settings should be nested under a single block in your `settings.py` file.
-Here are our [defaults](dynamic_rest/conf.py):
 
-```python
-DYNAMIC_REST = {
-    # API_NAME: Name of the API
-    'API_NAME': 'DREST',
+See our [defaults](dynamic_rest/conf.py).
 
-    # API_DESCRIPTION: Description of the API
-    'API_DESCRIPTION': 'My DREST API',
+# Compatibility
 
-    # API_ROOT_SECURE: whether or not the root API view requires authentication
-    'API_ROOT_SECURE': False,
-
-    # API_ROOT_URL: API root URL
-    'API_ROOT_URL': '/',
-
-    # ADDITIONAL_PRIMARY_RESOURCE_PREFIX: String to prefix additional
-    # instances of the primary resource when sideloading.
-    'ADDITIONAL_PRIMARY_RESOURCE_PREFIX': '+',
-
-    # ADMIN_TEMPLATE: Name of the admin template
-    # Override this to add custom styling or UI
-    'ADMIN_TEMPLATE': 'dynamic_rest/admin.html',
-
-    # ADMIN_LOGIN_TEMPLATE: the login template used to render login UI
-    'ADMIN_LOGIN_TEMPLATE': 'dynamic_rest/login.html',
-
-    # ADMIN_LOGIN_URL: the login URL, defaults to reverse-URL lookup
-    'ADMIN_LOGIN_URL': '',
-
-    # ADMIN_LOGOUT_URL: the logout URL, defaults to reverse-URL lookup
-    'ADMIN_LOGOUT_URL': '',
-
-    # DEBUG: enable/disable internal debugging
-    'DEBUG': False,
-
-    # DEFER_MANY_RELATIONS: automatically defer many-relations, unless
-    # `deferred=False` is explicitly set on the field.
-    'DEFER_MANY_RELATIONS': False,
-
-    # ENABLE_BROWSABLE_API: enable/disable the browsable API.
-    # It can be useful to disable it in production.
-    'ENABLE_BROWSABLE_API': True,
-
-    # ENABLE_BULK_PARTIAL_CREATION: enable/disable partial creation in bulk
-    'ENABLE_BULK_PARTIAL_CREATION': False,
-
-    # ENABLE_BULK_UPDATE: enable/disable update in bulk
-    'ENABLE_BULK_UPDATE': True,
-
-    # ENABLE_LINKS: enable/disable relationship links
-    'ENABLE_LINKS': True,
-
-    # Enables host-relative links.  Only compatible with resources registered
-    # through the dynamic router.  If a resource doesn't have a canonical
-    # path registered, links will default back to being resource-relative urls
-    'ENABLE_HOST_RELATIVE_LINKS': True,
-
-    # ENABLE_SELF_LINKS: enable/disable links to self
-    'ENABLE_SELF_LINKS': False,
-
-    # ENABLE_SERIALIZER_CACHE: enable/disable caching of related serializers
-    'ENABLE_SERIALIZER_CACHE': True,
-
-    # ENABLE_SERIALIZER_OPTIMIZATIONS: enable/disable representation speedups
-    'ENABLE_SERIALIZER_OPTIMIZATIONS': True,
-
-    # MAX_PAGE_SIZE: global setting for max page size.
-    # Can be overriden at the viewset level.
-    'MAX_PAGE_SIZE': None,
-
-    # PAGE_QUERY_PARAM: global setting for the pagination query parameter.
-    # Can be overriden at the viewset level.
-    'PAGE_QUERY_PARAM': 'page',
-
-    # PAGE_SIZE: global setting for page size.
-    # Can be overriden at the viewset level.
-    'PAGE_SIZE': None,
-
-    # PAGE_SIZE_QUERY_PARAM: global setting for the page size query parameter.
-    # Can be overriden at the viewset level.
-    'PAGE_SIZE_QUERY_PARAM': 'per_page',
-}
-```
-
-# Compatibility table
-
-Not all versions of Python, Django, and DRF are compatible. Here are the combinations you can use reliably with DREST (all tested by our tox configuration):
-
-| Python | Django | DRF | OK  |
-| ------ | ------ | --- | --- |
-| 2.7    | 1.8    | 3.1 | YES |
-| 2.7    | 1.8    | 3.2 | YES |
-| 2.7    | 1.8    | 3.3 | YES |
-| 2.7    | 1.8    | 3.4 | YES |
-| 2.7    | 1.9    | 3.1 | NO<sup>1</sup> |
-| 2.7    | 1.9    | 3.2 | YES |
-| 2.7    | 1.9    | 3.3 | YES |
-| 2.7    | 1.9    | 3.4 | YES |
-| 2.7    | 1.10   | 3.2 | NO<sup>3</sup> |
-| 2.7    | 1.10   | 3.3 | NO<sup>3</sup> |
-| 2.7    | 1.10   | 3.4 | YES |
-| 2.7    | 1.10   | 3.5 | YES |
-| 2.7    | 1.10   | 3.6 | YES |
-| 2.7    | 1.11   | 3.4 | YES |
-| 2.7    | 1.11   | 3.5 | YES |
-| 2.7    | 1.11   | 3.6 | YES |
-| 3.3    | 1.8    | 3.1 | YES |
-| 3.3    | 1.8    | 3.2 | YES |
-| 3.3    | 1.8    | 3.3 | YES |
-| 3.3    | 1.8    | 3.4 | YES |
-| 3.3    | 1.9    | x.x | NO<sup>2</sup> |
-| 3.3    | 1.10   | x.x | NO<sup>4</sup> |
-| 3.3    | 1.11   | x.x | NO<sup>5</sup> |
-| 3.4    | 1.8    | 3.1 | YES |
-| 3.4    | 1.8    | 3.2 | YES |
-| 3.4    | 1.8    | 3.3 | YES |
-| 3.4    | 1.8    | 3.4 | YES |
-| 3.4    | 1.9    | 3.1 | NO<sup>1</sup> |
-| 3.4    | 1.9    | 3.2 | YES |
-| 3.4    | 1.9    | 3.3 | YES |
-| 3.4    | 1.9    | 3.4 | YES |
-| 3.4    | 1.10   | 3.2 | NO<sup>3</sup> |
-| 3.4    | 1.10   | 3.3 | NO<sup>3</sup> |
-| 3.4    | 1.10   | 3.4 | YES |
-| 3.4    | 1.10   | 3.5 | YES |
-| 3.4    | 1.10   | 3.6 | YES |
-| 3.4    | 1.11   | 3.3 | NO<sup>3</sup> |
-| 3.4    | 1.11   | 3.4 | YES |
-| 3.4    | 1.11   | 3.5 | YES |
-| 3.5    | 1.8    | 3.1 | YES |
-| 3.5    | 1.8    | 3.2 | YES |
-| 3.5    | 1.8    | 3.3 | YES |
-| 3.5    | 1.8    | 3.4 | YES |
-| 3.5    | 1.9    | 3.1 | NO<sup>1</sup> |
-| 3.5    | 1.9    | 3.2 | YES |
-| 3.5    | 1.9    | 3.3 | YES |
-| 3.5    | 1.9    | 3.4 | YES |
-| 3.5    | 1.10   | 3.2 | NO<sup>3</sup> |
-| 3.5    | 1.10   | 3.3 | NO<sup>3</sup> |
-| 3.5    | 1.10   | 3.4 | YES |
-| 3.5    | 1.10   | 3.5 | YES |
-| 3.5    | 1.10   | 3.6 | YES |
-| 3.5    | 1.11   | 3.4 | YES |
-| 3.5    | 1.11   | 3.5 | YES |
-| 3.5    | 1.11   | 3.6 | YES |
-
-* 1: Django 1.9 is not compatible with DRF 3.1
-* 2: Django 1.9 is not compatible with Python 3.3
-* 3: Django 1.10 is only compatible with DRF 3.4+
-* 4: Django 1.10 requires Python 2.7, 3.4, 3.5
-* 5: Django 1.11 requires Python 2.7, 3.4, 3.5, 3.6
+See [tox.ini](tox.ini) for all combinations of Python, Django, and DRF that we support. 
 
 # Contributing
 
