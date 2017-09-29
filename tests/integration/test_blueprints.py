@@ -34,7 +34,7 @@ class DJBlueprintsTestCase(TestCase):
         response = requests.post('http://localhost:9123/api/v0/foos/')
         self.assertTrue(response.status_code, 201)
         content = json.loads(response.content)
-        self.assertEquals(content, {'foo': {'id': 1}})
+        self.assertEquals(content['foo']['id'], 1)
 
         # stop the server
         server.terminate()
