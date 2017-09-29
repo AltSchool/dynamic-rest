@@ -6,7 +6,6 @@ import inflection
 from django.http import QueryDict
 from django.utils import six
 from rest_framework import exceptions, status, viewsets
-from rest_framework.renderers import BrowsableAPIRenderer
 from rest_framework.response import Response
 from rest_framework.request import is_form_media_type
 
@@ -143,11 +142,13 @@ class WithDynamicViewSetMixin(object):
         return request
 
     def get_renderers(self):
-        """Optionally block Browsable API rendering. """
+        """Optionally block browsable/admin API rendering. """
         renderers = super(WithDynamicViewSetMixin, self).get_renderers()
+        blacklist = set(('admin', 'api'))
         if settings.ENABLE_BROWSABLE_API is False:
             return [
-                r for r in renderers if not isinstance(r, BrowsableAPIRenderer)
+                r for r in renderers
+                if r.format not in blacklist
             ]
         else:
             return renderers

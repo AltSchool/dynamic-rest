@@ -27,7 +27,7 @@ See http://dynamic-rest.readthedocs.org for full documentation.
   - [Exclusions](#exclusions)
   - [Filtering](#filtering)
   - [Ordering](#ordering)
-  - [Directory panel](#directory-panel)
+  - [Admin UI](#admin-ui)
   - [Optimizations](#optimizations)
 - [Settings](#settings)
 - [Compatibility table](#compatibility-table)
@@ -50,7 +50,7 @@ DREST classes can be used as a drop-in replacement for DRF classes, which offer 
 * Exclusions
 * Filtering
 * Sorting
-* Directory panel for your Browsable API
+* Admin UI
 * Optimizations
 
 DREST was initially written to complement [Ember Data](https://github.com/emberjs/data),
@@ -73,7 +73,17 @@ See the [Changelog](CHANGELOG.md).
 
 # Installation
 
-1) Install using `pip`:
+1) Add and generate boilerplate using [dj](https://github.com/aleontiev/dj):
+
+```bash
+    dj add dynamic-rest
+    dj generate model part
+    dj generate api v1 part
+```
+
+OR
+
+1a) Install using `pip`:
 
 ```bash
     pip install dynamic-rest
@@ -81,7 +91,7 @@ See the [Changelog](CHANGELOG.md).
 
 (or add `dynamic-rest` to `requirements.txt` or `setup.py`)
 
-2) Add `rest_framework` and `dynamic_rest` to `INSTALLED_APPS` in `settings.py`:
+1b) Add `rest_framework` and `dynamic_rest` to `INSTALLED_APPS` in `settings.py`:
 
 ```python
     INSTALLED_APPS = (
@@ -92,14 +102,15 @@ See the [Changelog](CHANGELOG.md).
 
 ```
 
-3) If you want to use the [Directory panel](#directory-panel), replace DRF's browsable API renderer with DREST's
+1b) If you want to use the [admin UI renderer](#admin-ui), replace DRF's renderer with DREST's
 in your settings:
  
 ```python
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
-        'dynamic_rest.renderers.DynamicBrowsableAPIRenderer',
+        'dynamic_rest.renderers.DynamicAdminRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
     ],
 } 
 ```
@@ -542,12 +553,15 @@ You can use the `sort[]` feature to order your response by one or more fields. D
     ...
 ```
 
-## Directory panel
+## Admin UI
 
-We love the DRF browsable API, but wish that it included a directory that would let you see your entire list of endpoints at a glance from any page.
-DREST adds that in:
+DREST includes a revamped version of DRF's `AdminRenderer`, which includes:
 
-![Directory panel][directory]
+- Human-friendly record names, labels, and tooltips
+- Integration with DREST relationships
+- Responsive layout built on Bootstrap 4
+
+![Admin UI][admin-ui]
 
 ## Optimizations
 
@@ -687,6 +701,7 @@ Not all versions of Python, Django, and DRF are compatible. Here are the combina
 * 3: Django 1.10 is only compatible with DRF 3.4+
 * 4: Django 1.10 requires Python 2.7, 3.4, 3.5
 * 5: Django 1.11 requires Python 2.7, 3.4, 3.5, 3.6
+
 # Contributing
 
 See [Contributing](CONTRIBUTING.md).
@@ -695,7 +710,7 @@ See [Contributing](CONTRIBUTING.md).
 
 See [License](LICENSE.md).
 
-[directory]: images/directory.png
+[admin]: images/admin.png
 [benchmark-linear]: images/benchmark-linear.png
 [benchmark-quadratic]: images/benchmark-quadratic.png
 [benchmark-cubic]: images/benchmark-cubic.png

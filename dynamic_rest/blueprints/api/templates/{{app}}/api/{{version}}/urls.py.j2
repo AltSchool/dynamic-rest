@@ -7,8 +7,17 @@ for name in dir(views):
     view = getattr(views, name, None)
     if (
         isclass(view) and
-        hasattr(view, 'serializer_class')
+        hasattr(view, 'get_serializer_class')
     ):
-        router.register_resource(view)
+        view_instance = view()
+        serializer = view_instance.get_serializer_class()
+        plural_name = serializer.get_plural_name()
+        name = serializer.get_name()
+        router.register(
+            r'%s' % plural_name,
+            view,
+            name,
+            namespace='{{version}}'
+        )
 
 urlpatterns = router.urls
