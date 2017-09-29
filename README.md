@@ -710,7 +710,7 @@ See [Contributing](CONTRIBUTING.md).
 
 See [License](LICENSE.md).
 
-[admin]: images/admin.png
+[admin]: images/admin-ui.png
 [benchmark-linear]: images/benchmark-linear.png
 [benchmark-quadratic]: images/benchmark-quadratic.png
 [benchmark-cubic]: images/benchmark-cubic.png
