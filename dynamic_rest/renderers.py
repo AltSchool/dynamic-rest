@@ -53,6 +53,19 @@ class DynamicHTMLFormRenderer(HTMLFormRenderer):
     template_pack = 'dynamic_rest/horizontal'
     default_style = ClassLookupDict(mapping)
 
+    def render(self, data, accepted_media_type=None, renderer_context=None):
+        """
+        Render serializer data and return an HTML form, as a string.
+        """
+        if renderer_context:
+            style = renderer_context.get('style', {})
+            style['template_pack'] = self.template_pack
+        return super(DynamicHTMLFormRenderer, self).render(
+            data,
+            accepted_media_type,
+            renderer_context
+        )
+
 
 class DynamicAdminRenderer(AdminRenderer):
     """Admin renderer."""

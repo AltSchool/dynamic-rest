@@ -38,7 +38,7 @@ INSTALLED_APPS = (
     'django.contrib.contenttypes',
     'django.contrib.auth',
     'django.contrib.sites',
-    # 'debug_toolbar',
+    'debug_toolbar',
     'dynamic_rest',
     'tests',
 )
