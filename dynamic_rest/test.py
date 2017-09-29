@@ -1,4 +1,5 @@
 import json
+
 from django.test import TestCase
 from model_mommy import mommy
 from rest_framework.fields import empty
@@ -106,22 +107,19 @@ class ViewSetTestCase(TestCase):
         return self.get_post_params(instance)
 
     def get_post_params(self, instance=None):
-        def get_from_instance(instance, source):
-            result = getattr(instance, source, None)
-            if callable(getattr(result, 'all', None)):
-                result = [x.pk for x in result.all()]
-            return result
-
         instance = instance or self.prepare_instance()
         serializer_class = self.serializer_class
-        serializer = serializer_class()
+        serializer = serializer_class(include_fields='*')
         fields = serializer.get_all_fields()
-        params = {
-            name: get_from_instance(instance, field.source or name)
-            for name, field in fields.items()
-            if (not field.read_only) or (field.default is not empty)
+        data = serializer.to_representation(instance)
+        data = {
+            k: v for k, v in data.items()
+            if k in fields and (
+                (not fields[k].read_only) or
+                (fields[k].default is not empty)
+            )
         }
-        return params
+        return data
 
     def prepare_instance(self):
         # prepare a sample instance
