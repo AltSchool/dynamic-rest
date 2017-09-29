@@ -6,16 +6,7 @@ from rest_framework.renderers import (
     HTMLFormRenderer,
     ClassLookupDict
 )
-
-
-try:
-    from rest_framework.renderers import AdminRenderer
-except:
-    # DRF < 3.3
-    class AdminRenderer(BrowsableAPIRenderer):
-        format = 'admin'
-
-from dynamic_rest.compat import reverse, NoReverseMatch
+from dynamic_rest.compat import reverse, NoReverseMatch, AdminRenderer
 from dynamic_rest.conf import settings
 from dynamic_rest import fields
 
@@ -49,19 +40,18 @@ class DynamicBrowsableAPIRenderer(BrowsableAPIRenderer):
         )
 
 
-class DynamicHTMLFormRenderer(HTMLFormRenderer):
-    template_pack = 'dynamic_rest/horizontal'
-
-
-DynamicHTMLFormRenderer.default_style = ClassLookupDict(
-    copy.deepcopy(DynamicHTMLFormRenderer.default_style.mapping)
-)
-DynamicHTMLFormRenderer.default_style[fields.DynamicRelationField] = {
+mapping = copy.deepcopy(HTMLFormRenderer.default_style.mapping)
+mapping[fields.DynamicRelationField] = {
     'base_template': 'relation.html'
 }
-DynamicHTMLFormRenderer.default_style[fields.DynamicListField] = {
+mapping[fields.DynamicListField] = {
     'base_template': 'list.html'
 }
+
+
+class DynamicHTMLFormRenderer(HTMLFormRenderer):
+    template_pack = 'dynamic_rest/horizontal'
+    default_style = ClassLookupDict(mapping)
 
 
 class DynamicAdminRenderer(AdminRenderer):
@@ -100,12 +90,10 @@ class DynamicAdminRenderer(AdminRenderer):
         header_url = '#'
         description = ''
 
-        style = context['style']
-        # to account for the DREST envelope
-        # (data is stored one level deeper than expected in the response)
         results = context.get('results')
+        style = context.get('style')
         paginator = context.get('paginator')
-        columns = context['columns']
+        columns = context.get('columns')
         serializer = getattr(results, 'serializer', None)
         instance = serializer.instance if serializer else None
         if isinstance(instance, list):
@@ -323,7 +311,7 @@ class DynamicAdminRenderer(AdminRenderer):
 
         if did_delete:
             location = (
-                response['Location'] +
+                response.get('Location', '/') +
                 '?alert=Deleted+successfully&alert-class=success'
             )
 

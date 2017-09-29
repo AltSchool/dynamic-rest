@@ -5,7 +5,10 @@ import json
 from django import template
 from django.utils.safestring import mark_safe
 from dynamic_rest.conf import settings
-from rest_framework.templatetags.rest_framework import format_value
+try:
+    from rest_framework.templatetags.rest_framework import format_value
+except:
+    format_value = lambda x: x
 
 register = template.Library()
 

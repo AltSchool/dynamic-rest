@@ -34,3 +34,6 @@ class DynamicPageNumberPagination(PageNumberPagination):
         else:
             data['meta'] = meta
         return Response(data)
+
+    def get_results(self, data):
+        return data['results']
