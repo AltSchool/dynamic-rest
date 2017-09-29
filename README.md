@@ -581,21 +581,19 @@ Cubic benchmark: rendering a list of lists of lists
 
 # Settings
 
-DREST is configurable, and all settings should be nested under a single block in your `settings.py` file.
-
-See our [defaults](dynamic_rest/conf.py).
+All [DREST settings](dynamic_rest/conf.py) should be nested under a single block in your `settings.py` file.
 
 # Compatibility
 
-See [tox.ini](tox.ini) for all combinations of Python, Django, and DRF that we support. 
+See the [tox file](tox.ini) for all combinations of Python, Django, and DRF that we support. 
 
 # Contributing
 
-See [Contributing](CONTRIBUTING.md).
+See the [contributing guide](CONTRIBUTING.md) for more information about contributing to DREST.
 
 # License
 
-See [License](LICENSE.md).
+See the [license](LICENSE.md) for legal information.
 
 [admin-ui]: images/admin-ui.png
 [benchmark-linear]: images/benchmark-linear.png
