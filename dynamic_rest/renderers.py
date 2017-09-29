@@ -1,6 +1,6 @@
 """This module contains custom renderer classes."""
 from django.utils import six
-from copy import copy
+import copy
 from rest_framework.renderers import (
     BrowsableAPIRenderer,
     HTMLFormRenderer,
@@ -54,7 +54,7 @@ class DynamicHTMLFormRenderer(HTMLFormRenderer):
 
 
 DynamicHTMLFormRenderer.default_style = ClassLookupDict(
-    copy(DynamicHTMLFormRenderer.default_style.mapping)
+    copy.deepcopy(DynamicHTMLFormRenderer.default_style.mapping)
 )
 DynamicHTMLFormRenderer.default_style[fields.DynamicRelationField] = {
     'base_template': 'relation.html'

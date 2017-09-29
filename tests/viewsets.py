@@ -26,17 +26,11 @@ from tests.serializers import (
     UserSerializer,
     ZebraSerializer
 )
-from dynamic_rest.renderers import DynamicAdminRenderer
-from rest_framework.renderers import JSONRenderer
 
 
 class UserViewSet(DynamicModelViewSet):
     """Represents a User"""
 
-    renderer_classes = (
-        JSONRenderer,
-        DynamicAdminRenderer
-    )
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
         DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT,
