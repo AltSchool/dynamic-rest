@@ -1,5 +1,15 @@
 # 2.0.0
-Major release
+Major release of DREST that includes core API-ORM translation improvements and a robust admin renderer. 
+
+## Boilerplate
+
+- Added integration with [dj](https://github.com/aleontiev/dj), including an `api` blueprint that can be used to bootstrap a new view/serializer:
+
+```
+    dj add dynamic-rest
+    dj generate model product
+    dj generate api v0 product
+```
 
 ## Fields
 
