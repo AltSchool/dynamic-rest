@@ -1,5 +1,5 @@
 # 2.0.0
-Major release of DREST that includes core API-ORM translation improvements and a robust admin renderer. 
+Major release of DREST that includes core API-ORM translation improvements and a robust admin renderer. Compatability with 1.x is likely but not guaranteed, many private APIs have changed, some setting defaults have changed.
 
 ## Boilerplate
 
@@ -33,7 +33,7 @@ Major release of DREST that includes core API-ORM translation improvements and a
 
 - New setting: `ENABLE_SELF_LINKS`
     - When enabled, links in representation will include reference to the current resource.
-    - Default is False.
+    - Default is True.
 
 - New serializer fields, see `dynamic_rest.fields.model`
     - These fields extend the base DRF fields with dynamic value behavior.
