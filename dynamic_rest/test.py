@@ -93,8 +93,7 @@ class ViewSetTestCase(TestCase):
         User = get_user_model()
         user = mommy.make(
             User,
-            is_superuser=True,
-            is_staff=True
+            is_superuser=True
         )
         client = APIClient()
         client.force_authenticate(user)
