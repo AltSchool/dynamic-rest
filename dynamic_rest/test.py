@@ -189,9 +189,19 @@ class ViewSetTestCase(TestCase):
             return
 
         instance = self.create_instance()
+        # generate an invalid PK by modifying a valid PK
+        # this ensures the ID looks valid to the framework,
+        # e.g. a UUID looks like a UUID
+        try:
+            invalid_pk = int(str(instance.pk)) + 1
+        except:
+            invalid_pk = list(str(instance.pk))
+            invalid_pk[0] = 'a' if invalid_pk[0] == 'b' else 'b'
+            invalid_pk = "".join(invalid_pk)
+
         for (pk, status) in (
             (instance.pk, 200),
-            ('bad-pk', 404)
+            (invalid_pk, 404)
         ):
             url = self.get_url(pk)
             for renderer in view.get_renderers():
