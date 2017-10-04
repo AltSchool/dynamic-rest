@@ -1,5 +1,7 @@
 import json
 
+import datetime
+from uuid import UUID
 from django.test import TestCase
 from model_mommy import mommy
 from rest_framework.fields import empty
@@ -106,23 +108,39 @@ class ViewSetTestCase(TestCase):
         return self.get_post_params(instance)
 
     def get_post_params(self, instance=None):
-        instance = instance or self.prepare_instance()
+        def format_value(v):
+            if isinstance(
+                v,
+                (UUID, datetime.datetime, datetime.date)
+            ):
+                v = str(v)
+            return v
+
+        delete = False
+        if not instance:
+            delete = True
+            instance = self.create_instance()
+
         serializer_class = self.serializer_class
         serializer = serializer_class(include_fields='*')
         fields = serializer.get_all_fields()
         data = serializer.to_representation(instance)
         data = {
-            k: v for k, v in data.items()
+            k: format_value(v) for k, v in data.items()
             if k in fields and (
                 (not fields[k].read_only) or
                 (fields[k].default is not empty)
             )
         }
+
+        if delete:
+            instance.delete()
+
         return data
 
     def prepare_instance(self):
-        # prepare a sample instance
-        return mommy.make(
+        # prepare an uncomitted instance
+        return mommy.prepare(
             self.get_model(),
             **self.get_create_params()
         )
@@ -182,15 +200,14 @@ class ViewSetTestCase(TestCase):
                 self.assertEquals(
                     response.status_code,
                     status,
-                    'GET %s, expected %s, got %s: %s' % (
+                    'GET %s failed with %d:\n%s' % (
                         url,
-                        status,
                         response.status_code,
                         response.content.decode('utf-8')
                     )
                 )
 
-    def test_post(self):
+    def test_create(self):
         view = self.view
         if view is None:
             return
@@ -198,7 +215,9 @@ class ViewSetTestCase(TestCase):
         if 'post' not in view.http_method_names:
             return
 
+        model = self.get_model()
         for renderer in view.get_renderers():
+
             format = renderer.format
             url = '%s?format=%s' % (
                 self.get_url(),
@@ -212,16 +231,15 @@ class ViewSetTestCase(TestCase):
             )
             self.assertTrue(
                 response.status_code < 400,
-                'POST %s failed with %d: %s' % (
+                'POST %s failed with %d:\n%s' % (
                     url,
                     response.status_code,
                     response.content.decode('utf-8')
                 )
             )
+            content = response.content.decode('utf-8')
             if format == 'json':
-                content = json.loads(
-                    response.content.decode('utf-8')
-                )
+                content = json.loads(content)
                 model = self.get_model()
                 model_name = Meta(model).get_name()
                 serializer = self.serializer_class()
@@ -248,8 +266,8 @@ class ViewSetTestCase(TestCase):
         if 'put' not in view.http_method_names:
             return
 
+        instance = self.create_instance()
         for renderer in view.get_renderers():
-            instance = self.create_instance()
             data = self.get_put_params(instance)
             url = '%s?format=%s' % (
                 self.get_url(instance.pk),
@@ -262,7 +280,7 @@ class ViewSetTestCase(TestCase):
             )
             self.assertTrue(
                 response.status_code < 400,
-                'PUT %s failed with %d: %s' % (
+                'PUT %s failed with %d:\n%s' % (
                     url,
                     response.status_code,
                     response.content.decode('utf-8')
