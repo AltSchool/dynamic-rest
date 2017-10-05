@@ -915,8 +915,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
         # Add update_lookup_field field back to validated data
         # since super by default strips out read-only fields
         # hence id will no longer be present in validated_data.
-        if all((isinstance(self.root, DynamicListSerializer),
-                id_attr, request_method in ('PUT', 'PATCH'))):
+        if all((
+            isinstance(self.root, DynamicListSerializer),
+            id_attr,
+            request_method in ('PUT', 'PATCH')
+        )):
             id_field = self.fields[id_attr]
             id_value = id_field.get_value(data)
             value[id_attr] = id_value

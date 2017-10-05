@@ -91,12 +91,15 @@ class ViewSetTestCase(TestCase):
             self._api_client = self.get_client()
         return self._api_client
 
-    def get_client(self):
+    def get_superuser(self):
         User = get_user_model()
-        user = mommy.make(
+        return mommy.make(
             User,
             is_superuser=True
         )
+
+    def get_client(self):
+        user = self.get_superuser()
         client = APIClient()
         client.force_authenticate(user)
         return client
