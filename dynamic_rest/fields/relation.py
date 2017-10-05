@@ -1,6 +1,7 @@
 import importlib
 import pickle
 
+from rest_framework.serializers import CreateOnlyDefault, CurrentUserDefault
 from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework.exceptions import (
@@ -439,3 +440,14 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
 
         self._serializer_class = serializer_class
         return serializer_class
+
+
+class DynamicCreatorField(DynamicRelationField):
+    def __init__(self, *args, **kwargs):
+        kwargs['default'] = CreateOnlyDefault(
+            CurrentUserDefault()
+        )
+        if 'read_only' not in kwargs:
+            # default to read_only
+            kwargs['read_only'] = True
+        super(DynamicCreatorField, self).__init__(*args, **kwargs)
