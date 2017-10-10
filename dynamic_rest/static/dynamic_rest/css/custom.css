@@ -90,9 +90,9 @@
 .drest-content .stacktable tr:first-child td {
     border-top: 0px;
 }
-.drest-content .st-key, .drest-content th {
+.drest-content .st-key, .drest-content th, .modal .form-control-label {
     font-weight: 300;
-    font-size: 14px;
+    font-size: 13px;
     text-align: inherit;
     vertical-align: inherit;
     text-transform: uppercase;
@@ -147,8 +147,7 @@
 .modal-content.modal-content {
     height: 100%;
     width: 100%;
-    background-color: rgba(0, 0, 0, 0.75);
-    color: #fff;
+    background-color: rgba(255, 255, 255, 1);
     border: 0px;
     border-radius: 0;
 }
@@ -162,13 +161,16 @@
 }
 .modal-content .modal-header{
     position: fixed;
-    height: 60px;
+    background-color: #00ae8e;
+    color: white;
+    height: 56px;
     left: 0px;
     right: 0px;
     top: 0px;
 }
 .modal-footer.modal-footer {
     position: fixed;
+    background-color: #f7f7f7;
     bottom: 0px;
     left: 0px;
     right: 0px;
