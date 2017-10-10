@@ -7,15 +7,15 @@
         {% get_value_from_dict results key as result %}
         {% get_value_from_dict results "url" as url %}
 
-        <tr>
-            <td class="font-weight-bold">
+        <tr class="drest-field">
+            <td class="drest-field-label">
                 {% if field and field.help_text %}
                     <span data-placement="right" class="drest-has-tooltip" data-toggle="tooltip" data-trigger="click" title="{{ field.help_text }}">{{ field.label }}</span>
                 {% else %}
                     {{ field.label }}
                 {% endif %}
             </td>
-            <td>
+            <td class="drest-field-value">
                 {% if link_field == key %}
                     <a href="{{ url }}">
                         {{ result | drest_format_value }}
