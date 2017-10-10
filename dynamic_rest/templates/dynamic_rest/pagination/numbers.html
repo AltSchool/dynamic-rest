@@ -1,0 +1,20 @@
+<div class="pagination" style="margin: 0">
+  {% for page_link in page_links %}
+    {% if page_link.is_break %}
+      <div class="page-item disabled hidden-xs-down">
+        <a class="page-link" href="#"><span aria-hidden="true">&hellip;</span></a>
+      </div>
+    {% else %}
+      {% if page_link.is_active %}
+        <div class="page-item active">
+          <a class="page-link" href="{{ page_link.url }}">{{ page_link.number }}</a>
+        </div>
+      {% else %}
+        <div class="page-item">
+          <a class="page-link" href="{{ page_link.url }}">{{ page_link.number }}</a>
+        </div>
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+
+</div>

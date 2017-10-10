@@ -16,6 +16,7 @@ class DynamicPageNumberPagination(PageNumberPagination):
     page_query_param = settings.PAGE_QUERY_PARAM
     max_page_size = settings.MAX_PAGE_SIZE
     page_size = settings.PAGE_SIZE or api_settings.PAGE_SIZE
+    template = 'dynamic_rest/pagination/numbers.html'
 
     def get_page_metadata(self):
         # returns total_results, total_pages, page, per_page
@@ -33,3 +34,6 @@ class DynamicPageNumberPagination(PageNumberPagination):
         else:
             data['meta'] = meta
         return Response(data)
+
+    def get_results(self, data):
+        return data['results']

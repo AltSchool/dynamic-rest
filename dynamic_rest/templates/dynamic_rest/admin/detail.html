@@ -1,0 +1,30 @@
+{% load rest_framework %}
+{% load dynamic_rest %}
+<table class="table drest-table-details">
+  <tbody>
+    {% for key in details %}
+        {% get_value_from_dict fields key as field %}
+        {% get_value_from_dict results key as result %}
+        {% get_value_from_dict results "url" as url %}
+
+        <tr>
+            <td class="font-weight-bold">
+                {% if field and field.help_text %}
+                    <span data-placement="right" class="drest-has-tooltip" data-toggle="tooltip" data-trigger="click" title="{{ field.help_text }}">{{ field.label }}</span>
+                {% else %}
+                    {{ field.label }}
+                {% endif %}
+            </td>
+            <td>
+                {% if link_field == key %}
+                    <a href="{{ url }}">
+                        {{ result | drest_format_value }}
+                    </a>
+                {% else %}
+                    {{ result | drest_format_value }}
+                {% endif %}
+            </td>
+        </tr>
+    {% endfor %}
+  </tbody>
+</table>

@@ -8,18 +8,55 @@ from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import exceptions, fields, serializers
 from rest_framework.fields import SkipField
+from rest_framework.reverse import reverse
+from rest_framework.exceptions import ValidationError
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 
-from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.links import merge_link_object
-from dynamic_rest.meta import get_model_table
+from dynamic_rest.meta import (
+    Meta,
+    get_model_table,
+    get_model_field,
+    get_related_model
+)
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.tagged import tag_dict
+from dynamic_rest.base import DynamicBase
+
+
+def nested_update(instance, key, value, objects=None):
+    objects = objects or []
+    nested = getattr(instance, key, None)
+    if not nested:
+        # object does not exist, try to create it
+        try:
+            field = get_model_field(instance, key)
+            related_model = get_related_model(field)
+        except:
+            raise exceptions.ValidationError(
+                'Invalid relationship: %s' % key
+            )
+        else:
+            try:
+                nested = related_model.objects.create(**value)
+                setattr(instance, key, nested)
+            except Exception as e:
+                raise exceptions.ValidationError(str(e))
+    else:
+        # object exists, perform a nested update
+        for k, v in six.iteritems(value):
+            if isinstance(v, dict):
+                nested_update(nested, k, v, objects)
+            else:
+                setattr(nested, k, v)
+        objects.append(nested)
+    return objects
 
 
 class WithResourceKeyMixin(object):
+    @classmethod
     def get_resource_key(self):
         """Return canonical resource key, usually the DB table name."""
         model = self.get_model()
@@ -43,30 +80,57 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         super(DynamicListSerializer, self).__init__(*args, **kwargs)
         self.child.parent = self
 
+    def get_all_fields(self):
+        return self.child.get_all_fields()
+
+    def get_field(self, name):
+        return self.child.get_field(name)
+
+    def get_meta(self):
+        return self.child.get_meta()
+
+    def disable_envelope(self):
+        self.child.disable_envelope()
+        self._processed_data = None
+
     def to_representation(self, data):
         iterable = data.all() if isinstance(data, models.Manager) else data
         return [self.child.to_representation(item) for item in iterable]
 
+    def get_description(self):
+        return self.child.get_description()
+
+    def resolve(self, query):
+        return self.child.resolve(query)
+
+    def get_name_field(self):
+        return self.child.get_name_field()
+
+    def get_search_key(self):
+        return self.child.get_search_key()
+
+    def get_url(self, pk=None):
+        return self.child.get_url(pk=pk)
+
     def get_model(self):
-        """Get the child's model."""
         return self.child.get_model()
 
+    def get_pk_field(self):
+        return self.child.get_pk_field()
+
     def get_name(self):
-        """Get the child's name."""
         return self.child.get_name()
 
     def get_plural_name(self):
-        """Get the child's plural name."""
         return self.child.get_plural_name()
 
     def id_only(self):
-        """Get the child's rendering mode."""
         return self.child.id_only()
 
     @property
     def data(self):
         """Get the data, after performing post-processing if necessary."""
-        if not hasattr(self, '_processed_data'):
+        if getattr(self, '_processed_data', None) is None:
             data = super(DynamicListSerializer, self).data
             self._processed_data = ReturnDict(
                 SideloadingProcessor(self, data).data,
@@ -114,7 +178,7 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         return updated_objects
 
 
-class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
+class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
     """Base class for DREST serializers.
 
     This class provides support for dynamic field inclusions/exclusions.
@@ -192,7 +256,6 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         if data is not fields.empty and name in data and len(data) == 1:
             # support POST/PUT key'd by resource name
             data = data[name]
-
         if data is not fields.empty:
             # if a field is nullable but not required and the implementation
             # passes null as a value, remove the field from the data
@@ -208,7 +271,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         kwargs['instance'] = instance
         kwargs['data'] = data
 
-        # "sideload" argument is pending deprecation as of 1.6
+        # "sideload" argument is pending deprecation
         if kwargs.pop('sideload', False):
             # if "sideload=True" is passed, turn on the envelope
             envelope = True
@@ -279,6 +342,191 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
                 # not sideloading this field
                 self.request_fields[name] = True
 
+    def get_pk_field(self):
+        try:
+            field = self.get_field('pk')
+            return field.field_name
+        except:
+            pass
+        return 'pk'
+
+    @classmethod
+    def get_meta(cls):
+        return cls.Meta
+
+    def resolve(self, query):
+        """Resolves a query into model and serializer fields.
+
+        Arguments:
+            query: an API field path, in dot-nation
+                e.g: "creator.location_name"
+
+        Returns:
+            (model_fields, api_fields)
+                e.g:
+                    [
+                        Blog._meta.fields.user,
+                        User._meta.fields.location,
+                        Location._meta.fields.name
+                    ],
+                    [
+                        DynamicRelationField(source="user"),
+                        DynamicCharField(source="location.name")
+                    ]
+
+        Raises:
+            ValidationError if the query is invalid,
+                e.g. references a method field or an undefined field
+        ```
+
+        Note that the lists do not necessarily contain the
+        same number of elements because API fields can reference nested model fields.
+        """  # noqa
+        if not isinstance(query, six.string_types):
+            parts = query
+            query = '.'.join(query)
+        else:
+            parts = query.split('.')
+
+        model_fields = []
+        api_fields = []
+
+        serializer = self
+
+        model = serializer.get_model()
+        resource_name = serializer.get_name()
+        meta = Meta(model)
+        api_name = parts[0]
+        other = parts[1:]
+
+        try:
+            api_field = serializer.get_field(api_name)
+        except:
+            api_field = None
+
+        if other:
+            if not (
+                api_field and
+                isinstance(api_field, DynamicRelationField)
+            ):
+                raise ValidationError({
+                    api_name:
+                    'Could not resolve "%s": '
+                    '"%s.%s" is not an API relation' % (
+                        query,
+                        resource_name,
+                        api_name
+                    )
+                })
+
+            source = api_field.source or api_name
+            related = api_field.serializer_class()
+            other = '.'.join(other)
+            model_fields, api_fields = related.resolve(other)
+
+            try:
+                model_field = meta.get_field(source)
+            except AttributeError:
+                raise ValidationError({
+                    api_name:
+                    'Could not resolve "%s": '
+                    '"%s.%s" is not a model relation' % (
+                        query,
+                        meta.get_name(),
+                        source
+                    )
+                })
+
+            model_fields.insert(0, model_field)
+            api_fields.insert(0, api_field)
+        else:
+            if api_name == 'pk':
+                # pk is an alias for the id field
+                model_field = meta.get_pk_field()
+                model_fields.append(model_field)
+                if api_field:
+                    # the pk field may not exist
+                    # on the serializer
+                    api_fields.append(api_field)
+            else:
+                if not api_field:
+                    raise ValidationError({
+                        api_name:
+                        'Could not resolve "%s": '
+                        '"%s.%s" is not an API field' % (
+                            query,
+                            resource_name,
+                            api_name
+                        )
+                    })
+
+                api_fields.append(api_field)
+
+                if api_field.source == '*':
+                    # a method field was requested, model field is unknown
+                    return (model_fields, api_fields)
+
+                source = api_field.source or api_name
+                if '.' in source:
+                    fields = source.split('.')
+                    for field in fields[:-1]:
+                        related_model = None
+                        try:
+                            model_field = meta.get_field(field)
+                            related_model = model_field.related_model
+                        except:
+                            pass
+
+                        if not related_model:
+                            raise ValidationError({
+                                api_name:
+                                'Could not resolve "%s": '
+                                '"%s.%s" is not a model relation' % (
+                                    query,
+                                    meta.get_name(),
+                                    field
+                                )
+                            })
+                        model = related_model
+                        meta = Meta(model)
+                        model_fields.append(model_field)
+                    field = fields[-1]
+                    try:
+                        model_field = meta.get_field(field)
+                    except:
+                        raise ValidationError({
+                            api_name:
+                            'Could not resolve: "%s", '
+                            '"%s.%s" is not a model field' % (
+                                query,
+                                meta.get_name(),
+                                field
+                            )
+                        })
+                    model_fields.append(model_field)
+                else:
+                    try:
+                        model_field = meta.get_field(source)
+                    except:
+                        raise ValidationError({
+                            api_name:
+                            'Could not resolve "%s": '
+                            '"%s.%s" is not a model field' % (
+                                query,
+                                meta.get_name(),
+                                source
+                            )
+                        })
+                    model_fields.append(model_field)
+
+        return (model_fields, api_fields)
+
+    def disable_envelope(self):
+        envelope = self.envelope
+        self.envelope = False
+        if envelope:
+            self._processed_data = None
+
     @classmethod
     def get_model(cls):
         """Get the model, if the serializer has one.
@@ -286,6 +534,54 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         Model serializers should implement this method.
         """
         return None
+
+    def get_field(self, field_name):
+        fields = self.get_all_fields()
+        if field_name == 'pk':
+            meta = self.get_meta()
+            if hasattr(meta, '_pk'):
+                return meta._pk
+
+            field = None
+            model = self.get_model()
+            primary_key = getattr(meta, 'primary_key', None)
+
+            if primary_key:
+                field = fields.get(primary_key)
+            else:
+                for name, f in fields.items():
+                    # try to use model fields
+                    try:
+                        if getattr(field, 'primary_key', False):
+                            field = f
+                            break
+
+                        model_field = get_model_field(
+                            model,
+                            f.source or name
+                        )
+
+                        if model_field.primary_key:
+                            field = f
+                            break
+                    except:
+                        pass
+
+            if not field:
+                # fall back to a field called ID
+                if 'id' in fields:
+                    field = fields['id']
+
+            if field:
+                meta._pk = field
+                return field
+        else:
+            if field_name in fields:
+                return fields[field_name]
+
+        raise ValidationError({
+            field_name: '"%s" is not an API field' % field_name
+        })
 
     @classmethod
     def get_name(cls):
@@ -303,6 +599,48 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             )
 
         return cls.Meta.name
+
+    @classmethod
+    def get_url(self, pk=None):
+        # if associated with a registered viewset, use its URL
+        url = getattr(self, '_url', None)
+        if url:
+            # use URL key to get endpoint
+            url = reverse(url)
+        if not url:
+            # otherwise, return canonical URL for this model
+            from dynamic_rest.routers import DynamicRouter
+            url = DynamicRouter.get_canonical_path(
+                self.get_resource_key()
+            )
+        if pk:
+            return '%s/%s/' % (url, pk)
+        return url
+
+    @classmethod
+    def get_description(cls):
+        return getattr(cls.Meta, 'description', None)
+
+    @classmethod
+    def get_name_field(cls):
+        if not hasattr(cls.Meta, 'name_field'):
+            # fallback to primary key
+            return 'pk'
+        return cls.Meta.name_field
+
+    @classmethod
+    def get_search_key(cls):
+        meta = cls.get_meta()
+        if hasattr(meta, 'search_key'):
+            return meta.search_key
+
+        # fallback to name field
+        name_field = cls.get_name_field()
+        if name_field:
+            return 'filter{%s.icontains}' % name_field
+
+        # fallback to PK
+        return 'pk'
 
     @classmethod
     def get_plural_name(cls):
@@ -345,13 +683,16 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
             ).get_fields()
             for k, field in six.iteritems(self._all_fields):
                 field.field_name = k
+                label = inflection.humanize(k)
+                field.label = getattr(field, 'label', label) or label
                 field.parent = self
         return self._all_fields
 
     def _get_flagged_field_names(self, fields, attr, meta_attr=None):
+        meta = self.get_meta()
         if meta_attr is None:
             meta_attr = '%s_fields' % attr
-        meta_list = set(getattr(self.Meta, meta_attr, []))
+        meta_list = set(getattr(meta, meta_attr, []))
         return {
             name for name, field in six.iteritems(fields)
             if getattr(field, attr, None) is True or name in
@@ -359,14 +700,16 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         }
 
     def _get_deferred_field_names(self, fields):
+        meta = self.get_meta()
         deferred_fields = self._get_flagged_field_names(
             fields,
             'deferred'
         )
+
         defer_many_relations = (
             settings.DEFER_MANY_RELATIONS
-            if not hasattr(self.Meta, 'defer_many_relations')
-            else self.Meta.defer_many_relations
+            if not hasattr(meta, 'defer_many_relations')
+            else meta.defer_many_relations
         )
         if defer_many_relations:
             # Auto-defer all fields, unless the 'deferred' attribute
@@ -406,7 +749,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         # apply request overrides
         if request_fields:
             for name, include in six.iteritems(request_fields):
-                if name not in serializer_fields:
+                if name not in serializer_fields and name != 'pk':
                     raise exceptions.ParseError(
                         '"%s" is not a valid field name for "%s".' %
                         (name, self.get_name())
@@ -421,10 +764,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
 
         # Set read_only flags based on read_only_fields meta list.
         # Here to cover DynamicFields not covered by DRF.
-        ro_fields = getattr(self.Meta, 'read_only_fields', [])
+        meta = self.get_meta()
+        ro_fields = getattr(meta, 'read_only_fields', [])
         self.flag_fields(serializer_fields, ro_fields, 'read_only', True)
 
-        pw_fields = getattr(self.Meta, 'untrimmed_fields', [])
+        pw_fields = getattr(meta, 'untrimmed_fields', [])
         self.flag_fields(
             serializer_fields,
             pw_fields,
@@ -539,9 +883,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
                     self
                 ).to_representation(instance)
 
-            if settings.ENABLE_LINKS:
-                # TODO: Make this function configurable to support other
-                #       formats like JSON API link objects.
+            query_params = self.get_request_attribute('query_params', {})
+            if (
+                settings.ENABLE_LINKS and
+                'exclude_links' not in query_params
+            ):
                 representation = merge_link_object(
                     self, representation, instance
                 )
@@ -561,31 +907,91 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
         )
 
     def to_internal_value(self, data):
+        meta = self.get_meta()
         value = super(WithDynamicSerializerMixin, self).to_internal_value(data)
-        id_attr = getattr(self.Meta, 'update_lookup_field', 'id')
+        id_attr = getattr(meta, 'update_lookup_field', 'id')
         request_method = self.get_request_method()
 
         # Add update_lookup_field field back to validated data
         # since super by default strips out read-only fields
         # hence id will no longer be present in validated_data.
-        if all((isinstance(self.root, DynamicListSerializer),
-                id_attr, request_method in ('PUT', 'PATCH'))):
+        if all((
+            isinstance(self.root, DynamicListSerializer),
+            id_attr,
+            request_method in ('PUT', 'PATCH')
+        )):
             id_field = self.fields[id_attr]
             id_value = id_field.get_value(data)
             value[id_attr] = id_value
 
         return value
 
+    def add_post_save(self, fn):
+        if not hasattr(self, '_post_save'):
+            self._post_save = []
+        self._post_save.append(fn)
+
+    def do_post_save(self, instance):
+        if hasattr(self, '_post_save'):
+            for fn in self._post_save:
+                fn(instance)
+            self._post_save = []
+
+    def update(self, instance, validated_data):
+        # support nested writes if possible
+        meta = Meta(instance)
+        to_save = [instance]
+        # Simply set each attribute on the instance, and then save it.
+        # Note that unlike `.create()` we don't need to treat many-to-many
+        # relationships as being a special case. During updates we already
+        # have an instance pk for the relationships to be associated with.
+        for attr, value in validated_data.items():
+            try:
+                field = meta.get_field(attr)
+                if field.related_model:
+                    if isinstance(value, dict):
+                        # nested dictionary on a has-one relationship
+                        # means we should take the current related value
+                        # and apply updates to it
+                        to_save.extend(
+                            nested_update(instance, attr, value)
+                        )
+                    else:
+                        # normal relationship update
+                        setattr(instance, attr, value)
+                else:
+                    setattr(instance, attr, value)
+            except AttributeError:
+                setattr(instance, attr, value)
+
+        for s in to_save:
+            s.save()
+
+        return instance
+
     def save(self, *args, **kwargs):
-        """Serializer save that address prefetch issues."""
+        """Serializer save that addresses prefetch issues."""
         update = getattr(self, 'instance', None) is not None
-        instance = super(
-            WithDynamicSerializerMixin,
-            self
-        ).save(
-            *args,
-            **kwargs
-        )
+        try:
+            instance = super(
+                WithDynamicSerializerMixin,
+                self
+            ).save(
+                *args,
+                **kwargs
+            )
+        except exceptions.APIException as e:
+            raise
+        except Exception as e:
+            error = e.args[0] if e.args else str(e)
+            if not isinstance(error, dict):
+                error = {'error': error}
+            self._errors = error
+            raise exceptions.ValidationError(
+                self.errors
+            )
+        self.do_post_save(instance)
+
         view = self._context.get('view')
         if update and view:
             # Reload the object on update
@@ -603,7 +1009,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicSerializerBase):
 
     @property
     def data(self):
-        if not hasattr(self, '_processed_data'):
+        if getattr(self, '_processed_data', None) is None:
             data = super(WithDynamicSerializerMixin, self).data
             data = SideloadingProcessor(
                 self, data

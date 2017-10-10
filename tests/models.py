@@ -19,6 +19,9 @@ class User(models.Model):
     )
     is_dead = models.NullBooleanField(default=False)
 
+    def __unicode__(self):
+        return str(self.pk)
+
 
 class Profile(models.Model):
     user = models.OneToOneField(User)
@@ -72,6 +75,9 @@ class Location(models.Model):
     name = models.TextField()
     blob = models.TextField()
 
+    def __unicode__(self):
+        return str(self.pk)
+
 
 class Event(models.Model):
     """
@@ -108,7 +114,7 @@ class Country(models.Model):
 
 class Car(models.Model):
     name = models.CharField(max_length=60)
-    country = models.ForeignKey(Country)
+    country = models.ForeignKey(Country, null=True)
 
 
 class Part(models.Model):

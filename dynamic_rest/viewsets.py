@@ -1,11 +1,13 @@
 """This module contains custom viewset classes."""
-from django.core.exceptions import ObjectDoesNotExist
+import csv
+from io import StringIO
+import inflection
+
 from django.http import QueryDict
 from django.utils import six
 from rest_framework import exceptions, status, viewsets
-from rest_framework.exceptions import ValidationError
-from rest_framework.renderers import BrowsableAPIRenderer
 from rest_framework.response import Response
+from rest_framework.request import is_form_media_type
 
 from dynamic_rest.conf import settings
 from dynamic_rest.filters import DynamicFilterBackend, DynamicSortingFilter
@@ -140,14 +142,49 @@ class WithDynamicViewSetMixin(object):
         return request
 
     def get_renderers(self):
-        """Optionally block Browsable API rendering. """
+        """Optionally block browsable/admin API rendering. """
         renderers = super(WithDynamicViewSetMixin, self).get_renderers()
+        blacklist = set(('admin', 'api'))
         if settings.ENABLE_BROWSABLE_API is False:
             return [
-                r for r in renderers if not isinstance(r, BrowsableAPIRenderer)
+                r for r in renderers
+                if r.format not in blacklist
             ]
         else:
             return renderers
+
+    def get_success_headers(self, data):
+        serializer = getattr(data, 'serializer', None)
+        headers = super(WithDynamicViewSetMixin, self).get_success_headers(
+            data
+        )
+        if serializer and serializer.instance:
+            headers['Location'] = serializer.get_url(
+                pk=getattr(serializer.instance, 'pk', None)
+            )
+        return headers
+
+    def get_view_name(self):
+        serializer_class = self.get_serializer_class()
+        suffix = self.suffix or ''
+        if serializer_class:
+            serializer = self.serializer_class()
+            if suffix.lower() == 'list':
+                name = serializer.get_plural_name()
+            else:
+                try:
+                    obj = self.get_object()
+                    name_field = serializer.get_name_field()
+                    name = str(getattr(obj, name_field))
+                except:
+                    name = serializer.get_name()
+        else:
+            name = self.__class__.__name__
+            name = (
+                inflection.pluralize(name)
+                if suffix.lower() == 'list' else name
+            )
+        return name.title()
 
     def get_request_feature(self, name):
         """Parses the request for a particular feature.
@@ -280,6 +317,16 @@ class WithDynamicViewSetMixin(object):
         else:
             return False
 
+    @property
+    def is_gui(self):
+        if (
+            self.request and
+            self.request.accepted_renderer and
+            self.request.accepted_renderer.format == 'admin'
+        ):
+            return True
+        return False
+
     def get_serializer(self, *args, **kwargs):
         if 'request_fields' not in kwargs:
             kwargs['request_fields'] = self.get_request_fields()
@@ -336,11 +383,11 @@ class WithDynamicViewSetMixin(object):
             https://gist.github.com/ryochiji/54687d675978c7d96503
         """
 
-        # Explicitly disable support filtering. Applying filters to this
+        # Explicitly disable filtering support. Applying filters to this
         # endpoint would require us to pass through sideload filters, which
         # can have unintended consequences when applied asynchronously.
         if self.get_request_feature(self.FILTER):
-            raise ValidationError(
+            raise exceptions.ValidationError(
                 'Filtering is not enabled on relation endpoints.'
             )
 
@@ -358,30 +405,37 @@ class WithDynamicViewSetMixin(object):
         serializer = self.get_serializer()
         field = serializer.fields.get(field_name)
         if field is None:
-            raise ValidationError('Unknown field: "%s".' % field_name)
+            raise exceptions.ValidationError(
+                'Unknown field: "%s".' % field_name
+            )
+
+        if not hasattr(field, 'get_serializer'):
+            raise exceptions.ValidationError(
+                'Not a related field: "%s".' % field_name
+            )
 
         # Query for root object, with related field prefetched
         queryset = self.get_queryset()
         queryset = self.filter_queryset(queryset)
-        obj = queryset.first()
+        instance = queryset.first()
 
-        if not obj:
-            return Response("Not found", status=404)
+        if not instance:
+            raise exceptions.NotFound()
 
-        # Serialize the related data. Use the field's serializer to ensure
-        # it's configured identically to the sideload case.
-        serializer = field.get_serializer(envelope=True)
-        try:
-            # TODO(ryo): Probably should use field.get_attribute() but that
-            #            seems to break a bunch of things. Investigate later.
-            serializer.instance = getattr(obj, field.source)
-        except ObjectDoesNotExist:
+        related = field.get_related(instance)
+        if not related:
             # See:
             # http://jsonapi.org/format/#fetching-relationships-responses-404
             # This is a case where the "link URL exists but the relationship
-            # is empty" and therefore must return a 200.
-            return Response({}, status=200)
+            # is empty" and therefore must return a 200. not related:
+            return Response([] if field.many else {}, status=200)
 
+        # create an instance of the related serializer
+        # and use it to render the data
+        serializer = field.get_serializer(
+            instance=related,
+            envelope=True
+        )
         return Response(serializer.data)
 
 
@@ -391,6 +445,28 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
     ENABLE_BULK_UPDATE = settings.ENABLE_BULK_UPDATE
 
     def _get_bulk_payload(self, request):
+        if self._is_csv_upload(request):
+            return self._get_bulk_payload_csv(request)
+        else:
+            return self._get_bulk_payload_json(request)
+
+    def _is_csv_upload(self, request):
+        if is_form_media_type(request.content_type):
+            if (
+                'file' in request.data and
+                request.data['file'].name.lower().endswith('.csv')
+            ):
+                return True
+        return False
+
+    def _get_bulk_payload_csv(self, request):
+        file = request.data['file']
+        reader = csv.DictReader(
+            StringIO(file.read().decode('utf-8'))
+        )
+        return [r for r in reader]
+
+    def _get_bulk_payload_json(self, request):
         plural_name = self.get_serializer_class().get_plural_name()
         if isinstance(request.data, list):
             return request.data
@@ -455,7 +531,7 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
                 serializer.is_valid(raise_exception=True)
             except exceptions.ValidationError as e:
                 errors.append({
-                    'detail': str(e),
+                    'detail': e.detail,
                     'source': entry
                 })
             else:
@@ -527,8 +603,13 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         bulk_payload = self._get_bulk_payload(request)
         if bulk_payload:
             return self._create_many(bulk_payload)
-        return super(DynamicModelViewSet, self).create(
+        response = super(DynamicModelViewSet, self).create(
             request, *args, **kwargs)
+        serializer = getattr(response.data, 'serializer')
+        if serializer and serializer.instance:
+            url = serializer.get_url(pk=serializer.instance.pk)
+            response['Location'] = url
+        return response
 
     def _destroy_many(self, data):
         instances = self.get_queryset().filter(

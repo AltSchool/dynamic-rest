@@ -1,37 +1,48 @@
 """This module contains custom router classes."""
 from collections import OrderedDict
-
-# Backwards compatability for django < 1.10.x
-try:
-    from django.urls import get_script_prefix
-except ImportError:
-    from django.core.urlresolvers import get_script_prefix
+import re
 
 from django.utils import six
+from django.shortcuts import redirect
 from rest_framework import views
 from rest_framework.response import Response
-from rest_framework.reverse import reverse
 from rest_framework.routers import DefaultRouter, Route, replace_methodname
 
 from dynamic_rest.meta import get_model_table
 from dynamic_rest.conf import settings
+from dynamic_rest.compat import (
+    get_script_prefix,
+    reverse,
+    NoReverseMatch
+)
 
 directory = {}
 resource_map = {}
 resource_name_map = {}
 
 
-def get_directory(request):
+def get_directory(request, show_all=True):
     """Get API directory as a nested list of lists."""
-
     def get_url(url):
-        return reverse(url, request=request) if url else url
+        try:
+            return reverse(url) if url else url
+        except NoReverseMatch:
+            return '#'
 
-    def is_active_url(path, url):
+    def is_prefix_of(path, url):
         return path.startswith(url) if url and path else False
 
-    path = request.path
+    def get_relative_url(url):
+        if url is None:
+            return url
+        match = re.match(r'(?:https?://[^/]+)/?(.*)', url)
+        if match:
+            return '/' + match.group(1)
+        else:
+            return url
+
     directory_list = []
+    path = request.path
 
     def sort_key(r):
         return r[0]
@@ -51,16 +62,22 @@ def get_directory(request):
             if endpoint_name[:1] == '_':
                 continue
             endpoint_url = get_url(endpoint.get('_url', None))
-            active = is_active_url(path, endpoint_url)
-            endpoints_list.append(
-                (endpoint_name, endpoint_url, [], active)
-            )
+            relative_url = get_relative_url(endpoint_url)
+            active = is_prefix_of(path, relative_url)
+            relevant = is_prefix_of(relative_url, path)
+            if relevant or show_all:
+                endpoints_list.append(
+                    (endpoint_name, endpoint_url, [], active)
+                )
 
         url = get_url(endpoints.get('_url', None))
-        active = is_active_url(path, url)
-        directory_list.append(
-            (group_name, url, endpoints_list, active)
-        )
+        relative_url = get_relative_url(url)
+        active = is_prefix_of(path, relative_url)
+        relevant = is_prefix_of(relative_url, path)
+        if url is None or relevant or show_all:
+            directory_list.append(
+                (group_name, url, endpoints_list, active)
+            )
     return directory_list
 
 
@@ -89,22 +106,33 @@ class DynamicRouter(DefaultRouter):
         class API(views.APIView):
             _ignore_model_permissions = True
 
+            def get_view_name(self, *args, **kwargs):
+                return settings.API_NAME
+
             def get(self, request, *args, **kwargs):
-                directory_list = get_directory(request)
+                if (
+                    settings.API_ROOT_SECURE and
+                    not request.user.is_authenticated()
+                ):
+                    return redirect(
+                        '%s?next=%s' % (
+                            settings.ADMIN_LOGIN_URL,
+                            request.path
+                        )
+                    )
+                directory_list = get_directory(request, show_all=False)
                 result = OrderedDict()
                 for group_name, url, endpoints, _ in directory_list:
                     if url:
                         result[group_name] = url
                     else:
-                        group = OrderedDict()
                         for endpoint_name, url, _, _ in endpoints:
-                            group[endpoint_name] = url
-                        result[group_name] = group
+                            result[endpoint_name.title()] = url
                 return Response(result)
 
         return API.as_view()
 
-    def register(self, prefix, viewset, base_name=None):
+    def register(self, prefix, viewset, base_name=None, namespace=None):
         """Add any registered route into a global API directory.
 
         If the prefix includes a path separator,
@@ -127,12 +155,15 @@ class DynamicRouter(DefaultRouter):
             }
         }
         """
+        prefix_parts = prefix.split('/')
         if base_name is None:
             base_name = prefix
+        if namespace:
+            prefix_parts = [namespace] + prefix_parts
+            base_name = '%s-%s' % (namespace, base_name)
 
         super(DynamicRouter, self).register(prefix, viewset, base_name)
 
-        prefix_parts = prefix.split('/')
         if len(prefix_parts) > 1:
             prefix = prefix_parts[0]
             endpoint = '/'.join(prefix_parts[1:])
@@ -150,6 +181,16 @@ class DynamicRouter(DefaultRouter):
         if endpoint not in current:
             current[endpoint] = {}
         current[endpoint]['_url'] = url_name
+
+        serializer_class = getattr(viewset, 'serializer_class', None)
+        if serializer_class:
+            # Set URL on the serializer class so that it can determine its
+            # endpoint URL.
+            # If a serializer class is associated with multiple views,
+            # it will take on the URL of the last view.
+            # TODO: is this a problem?
+            serializer_class._url = url_name
+
         current[endpoint]['_viewset'] = viewset
 
     def register_resource(self, viewset, namespace=None):

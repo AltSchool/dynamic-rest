@@ -83,6 +83,13 @@ if __name__ == "__main__":
         style = 'fast'
         run_flake8 = False
 
+    try:
+        sys.argv.remove('--nosugar')
+    except ValueError:
+        sugar = True
+    else:
+        sugar = False
+
     if len(sys.argv) > 1:
         pytest_args = sys.argv[1:]
         first_arg = pytest_args[0]
@@ -116,6 +123,9 @@ if __name__ == "__main__":
     if run_benchmarks:
         pytest_args[0] = BENCHMARKS
         pytest_args.append('--ds=%s.settings' % BENCHMARKS)
+
+    if not sugar:
+        pytest_args.extend(('-p', 'no:sugar'))
 
     if run_tests:
         exit_on_failure(pytest.main(pytest_args))

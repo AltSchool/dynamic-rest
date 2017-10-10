@@ -47,8 +47,9 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 50,
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
+        'dynamic_rest.renderers.DynamicAdminRenderer',
         'dynamic_rest.renderers.DynamicBrowsableAPIRenderer'
-    )
+    ),
 }
 
 ROOT_URLCONF = 'tests.urls'
@@ -68,5 +69,6 @@ TEMPLATES = [
 
 DYNAMIC_REST = {
     'ENABLE_LINKS': True,
+    'ENABLE_SELF_LINKS': True,
     'DEBUG': os.environ.get('DYNAMIC_REST_DEBUG', 'false').lower() == 'true'
 }

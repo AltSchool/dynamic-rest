@@ -1,0 +1,20 @@
+{% load rest_framework %}
+<fieldset>
+  {% if field.label %}
+    <div class="form-group row" style="border-bottom: 1px solid #e5e5e5">
+      <legend class="form-control-label col-sm-2 {% if style.hide_label %}sr-only{% endif %}" style="border-bottom: 0">
+        {% if field.help_text %}
+            <span class="drest-has-tooltip" data-trigger="click" data-placement="right" data-toggle="tooltip" title="{{ field.help_text | safe }}">{{ field.label }}</span>
+        {% else %}
+          {{ field.label }}
+        {% endif %}
+      </legend>
+    </div>
+  {% endif %}
+
+  {% for nested_field in field %}
+    {% if not nested_field.read_only %}
+      {% render_field nested_field style=style %}
+    {% endif %}
+  {% endfor %}
+</fieldset>

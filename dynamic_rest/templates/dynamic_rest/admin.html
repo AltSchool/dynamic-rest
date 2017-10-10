@@ -1,0 +1,351 @@
+{% load staticfiles %}
+{% load i18n %}
+{% load rest_framework %}
+{% load dynamic_rest %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+    {% block head %}
+        <head>
+            {% block meta %}
+                <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+                <meta name="robots" content="NONE,NOARCHIVE" />
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+            {% endblock %}
+
+            <title>
+                {% block title %}
+                    {% drest_settings 'API_NAME' %}
+                {% endblock %}
+            </title>
+
+            {% block style %}
+                {% block bootstrap_css %}
+                    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+                {% endblock %}
+                {% block fontawesome_css %}
+                    <link href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet">
+                {% endblock %}
+                <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/css/select2.min.css"/>
+                <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/stacktable.css" %}"/>
+                <link rel="stylesheet" type="text/css" href="{% static "dynamic_rest/css/custom.css" %}"/>
+            {% endblock %}
+
+            {% block jquery %}
+                <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+            {% endblock %}
+        </head>
+    {% endblock %} <!-- /head -->
+
+    {% block body %}
+        <body>
+            {% block header %}
+                <nav class="navbar navbar-inverse bg-primary fixed-top">
+                    <div class="navbar-nav drest-nav">
+                        <div class="navbar-brand drest-nav-left">
+                            <a href="{{ root_url }}">
+                                {% block brand %}
+                                    <img class="drest-logo" src="{% static "dynamic_rest/img/logo.svg" %}" alt="Logo" />
+                                {% endblock %}
+                            </a>
+                        </div>
+                        <div class="nav-item drest-nav-center active">
+                                <a class="nav-link" href="#">
+                                    {% if header %}
+                                        {% if description %}
+                                            <span class="drest-has-tooltip" data-trigger="click" data-toggle="tooltip" data-placement="bottom" title="{{ description }}">{{ header }}</span>
+                                        {% else %}
+                                            <span>{{ header }}</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </a>
+                        </div>
+
+                        <div class="nav-item drest-nav-right">
+                            {% if request.user.is_authenticated %}
+                                {% if logout_url %}
+                                    <a class="nav-link" href="{{logout_url}}">
+                                        <div class="drest-btn">
+                                            <span class="fa fa-sign-out drest-btn-icon"></span>
+                                            <span class="drest-btn-label">
+                                                Logout
+                                            </span>
+                                        </div>
+                                    </a>
+                                {% endif %}
+                            {% else %}
+                                {% if login_url %}
+                                    <a class="nav-link" href="{{login_url}}">
+                                        <div class="drest-btn">
+                                            <span class="fa fa-sign-in drest-btn-icon"></span>
+                                            <span class="drest-btn-label">
+                                                Login
+                                            </span>
+                                        </div>
+                                    </a>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                </nav>
+            {% endblock %} <!-- /header -->
+
+            {% block content %}
+                <div class="drest-content-container">
+                    <div class="drest-content">
+                        {% if is_auth_error %}
+                            <div class="text">
+                                You are not authorized to view
+                                this page. Try to login.
+                            </div>
+                        {% else %}
+                            {% if style == 'list' %}
+                                {% include "dynamic_rest/admin/list.html" %}
+                            {% else %}
+                                {% if style == 'root' %}
+                                    {% include "dynamic_rest/admin/root.html" %}
+                                {% else %}
+                                    {% include "dynamic_rest/admin/detail.html" %}
+                                {% endif %}
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            {% endblock %} <!-- /content -->
+
+            {% block alert %}
+                {% if alert %}
+                    <div class="alert alert-dismissable drest-nav-alert alert-{{alert_class}}">
+                        <span>{{ alert }}</span>
+                        <span><a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a></span>
+                    </div>
+                {% endif %}
+            {% endblock %}
+
+            {% block footer %}
+                <nav class="navbar bg-faded fixed-bottom">
+                    <div class="navbar-nav drest-nav">
+                        <div class="nav-item drest-nav-left">
+                            {% if allow_delete %}
+                                <div data-toggle="modal" data-target="#deleteModal" class="drest-btn btn btn-danger">
+                                    <span class="drest-btn-icon fa fa-remove" aria-hidden="true"></span>
+                                    <span class="drest-btn-label">Delete</span>
+                                </div>
+                            {% endif %}
+                            {% if allow_filter %}
+                                <div data-toggle="modal" data-target="#filtersModal" class="btn btn-secondary drest-btn {% if search_value %}active{% endif%}">
+                                    <span class="fa fa-search drest-btn-icon"></span>
+                                    <span class="drest-btn-label">{% if search_value %}"{{ search_value }}"{% else %}Filter{% endif %}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="nav-item">
+                            {% if paginator %}
+                                {% get_pagination_html paginator %}
+                            {% endif %}
+                            {% if back %}
+                                <a class="nav-link drest-btn" href="{{back_url}}">
+                                    <span class="fa fa-arrow-left drest-btn-icon"></span>
+                                    <span class="drest-btn-label">{{back}}</span>
+                                </a>
+                            {% endif %}
+                        </div>
+                        <div class="nav-item drest-nav-right">
+                            {% if allow_create %}
+                                <div class="drest-btn btn btn-primary" data-toggle="modal" data-target="#createModal">
+                                    <span class="drest-btn-icon fa fa-plus" aria-hidden="true"></span>
+                                    <span class="drest-btn-label">Create</span>
+                                </div>
+                            {% endif %}
+                            {% if allow_edit %}
+                                <div class="btn btn-primary drest-btn" data-toggle="modal" data-target="#editModal">
+                                    <span class="drest-btn-icon fa fa-pencil" aria-hidden="true"></span>
+                                    <span class="drest-btn-label">Edit</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </nav>
+            {% endblock %} <!-- /footer -->
+
+            {% block create_modal %}
+                <div class="modal fade" id="createModal">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">Create {{ singular_name }}</h4>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <form action="{{ request.get_full_path }}" method="POST" enctype="multipart/form-data" class="form-horizontal" novalidate>
+                                <div class="modal-body">
+                                    <fieldset>
+                                        {% csrf_token %}
+                                        {{ post_form }}
+                                    </fieldset>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                    <button type="submit" class="btn btn-primary">Save</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endblock %} <!-- /create_modal -->
+
+            {% block delete_modal %}
+                <div class="modal fade" id="deleteModal">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">Delete {{ singular_name }}</h4>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <form action="{{ request.get_full_path }}" method="DELETE" enctype="multipart/form-data" class="form-horizontal" novalidate>
+                                <div class="modal-body">
+                                    <p>Are you sure you want to delete?</p>
+                                    <p class="text-danger">
+                                        <span class="fa fa-exclamation-triangle"></span>
+                                        <span>This operation cannot be undone!</span>
+                                    </p>
+
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                    <button type="submit" class="btn btn-danger btn-primary">Confirm</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endblock %} <!-- /delete_modal -->
+
+            {% block edit_modal %}
+                <div class="modal fade" id="editModal">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">Edit {{ singular_name }}</h4>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <form action="{{ request.get_full_path }}" method="PUT" data-method="PUT" enctype="multipart/form-data" class="form-horizontal" novalidate>
+                                <div class="modal-body">
+                                    <fieldset>
+                                        {{ put_form }}
+                                    </fieldset>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                    <button type="submit" class="btn btn-primary">Save</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endblock %} <!-- /edit_modal -->
+
+            {% block error_form %}
+                {% if error_form %}
+                    <div class="modal" id="errorModal">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h4 class="modal-title">{{ error_title }}</h4>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <form action="{{ request.get_full_path }}" method="{{ request.method }}" data-method="{{ request.method }}" enctype="multipart/form-data" class="form-horizontal" novalidate>
+                                    <div class="modal-body">
+                                        <fieldset>
+                                            {{ error_form }}
+                                        </fieldset>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                        <button type="submit" class="btn btn-primary">Save</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endblock %} <!-- /error_form -->
+
+            {% block filter_form %}
+                <div class="modal" id="filtersModal">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">Search {{plural_name}}</h4>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <form class="filter-form" method="get" action="{{ request.get_full_path }}">
+                                <div class="modal-body">
+                                    <fieldset>
+                                        <div class="row form-group">
+                                            <label class="col-sm-2 form-control-label">
+                                                {% if search_help %}
+                                                    <span class="drest-has-tooltip" data-placement="right" data-trigger="click" data-toggle="tooltip" data-placement="bottom" title="{{ search_help }}">Search</span>
+                                                {% else %}
+                                                    Search
+                                                {% endif %}
+                                            </label>
+                                            <div class="col-sm-10">
+                                                <input name="{{ search_key }}" class="form-control" type="text" value="{{ search_value }}"/>
+                                            </div>
+                                        </div
+                                    </fieldset>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                    <button type="submit" class="drest-apply-filters btn btn-primary">Apply</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endblock %}
+
+            {% block script %}
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+                <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+                <script src="{% static "dynamic_rest/js/stacktable.js" %}"></script>
+                <script src="{% static "rest_framework/js/ajax-form.js" %}"></script>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.full.min.js"></script>
+
+                <script>
+                    window.drf = {
+                        csrfHeaderName: "{{ csrf_header_name|default:'X-CSRFToken' }}",
+                        csrfCookieName: "{{ csrf_cookie_name|default:'csrftoken' }}"
+                    };
+                    $(document).ready(function() {
+                        // fix select2 + modal interaction
+                        // see http://stackoverflow.com/questions/18487056/select2-doesnt-work-when-embedded-in-a-bootstrap-modal
+                        $.fn.modal.Constructor.prototype._enforceFocus = function() {};
+                        // initialize the form
+                        $('form').ajaxForm();
+                        // show the error modal
+                        $('#errorModal').modal('show');
+                        // enable responsible tables
+                        $('.cardtable').cardtable();
+                        $('.drest-nav-alert').delay(2000).slideUp(200, function() {
+                            $(this).alert('close');
+                        });
+                        $('[data-toggle="tooltip"]').tooltip();
+                        $('.drest-content-container').show();
+                    });
+                </script>
+            {% endblock %} <!-- /script -->
+        </body>
+    {% endblock %} <!-- /body -->
+</html>

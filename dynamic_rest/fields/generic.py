@@ -2,9 +2,7 @@ import traceback
 
 from rest_framework.exceptions import ValidationError
 
-from dynamic_rest.fields.common import WithRelationalFieldMixin
-from dynamic_rest.fields.fields import DynamicField
-from dynamic_rest.routers import DynamicRouter
+from .base import WithRelationalFieldMixin, DynamicField
 from dynamic_rest.tagged import TaggedDict
 
 
@@ -64,6 +62,7 @@ class DynamicGenericRelationField(
         }
 
     def get_serializer_class_for_instance(self, instance):
+        from dynamic_rest.routers import DynamicRouter
         return DynamicRouter.get_canonical_serializer(
             resource_key=None,
             instance=instance
@@ -118,6 +117,7 @@ class DynamicGenericRelationField(
         model_name = data.get('type', None)
         model_id = data.get('id', None)
         if model_name and model_id:
+            from dynamic_rest.routers import DynamicRouter
             serializer_class = DynamicRouter.get_canonical_serializer(
                 resource_key=None,
                 resource_name=model_name

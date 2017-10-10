@@ -1,0 +1,114 @@
+.has-error .help-block {
+    color: #d9534f!important
+}
+.drest-content-container {
+    display: none;
+    position: fixed;
+    top: 50px;
+    bottom: 50px;
+    right: 0;
+    left: 0;
+    margin-left: auto;
+    margin-right: auto;
+}
+.drest-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    overflow-x: hidden;
+    overflow-y: scroll;
+}
+.drest-content > .container {
+    padding: 0;
+}
+.drest-nav {
+    justify-content: space-between;
+    flex-direction: row;
+}
+.drest-nav-left, .drest-nav-right {
+    flex: 0 0 auto;
+    width: 100px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+.drest-nav-right {
+    text-align: end;
+}
+
+.drest-nav-center {
+    flex: 1 1 auto;
+    text-align: center;
+    justify-content: center;
+    flex-direction: column;
+    display: flex;
+}
+
+.drest-logo {
+    width: 38px;
+}
+.drest-btn {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+.drest-btn-label {
+    display: inline-block;
+}
+@media screen and (max-width: 420px) {
+    .drest-nav .nav-link {
+        padding: 0;
+    }
+    .navbar-brand.drest-nav-left {
+    }
+    .drest-btn {
+        display: flex;
+        width: 38px;
+        height: 38px;
+        flex-direction: column;
+    }
+    .drest-btn-label {
+        font-size: 9px;
+    }
+    .drest-nav-right,.drest-nav-left {
+        width: 30px;
+    }
+}
+.table, .stacktable.small-only {
+    border: 1px solid #ddd;
+}
+.navbar-brand.drest-nav-left {
+    margin-right: 0;
+}
+.drest-content .st-key {
+    width: auto;
+    text-align: inherit;
+    font-weight: bold;
+}
+.drest-nav-alert {
+    padding: 14px;
+    display: flex;
+    justify-content: space-between;
+    margin: 0;
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 9001;
+    bottom: 0;
+}
+.bg-primary .drest-has-tooltip, .bg-inverse .drest-has-tooltip {
+    border-bottom: 1px dotted #fff;
+}
+.modal-dialog.modal-dialog {
+    max-width: 1024px;
+}
+.drest-has-tooltip {
+    border-bottom: 1px dashed #000;
+}
+.drest-table-details {
+    border: 0;
+}
+.table.drest-table-details td, .table.drest-table-details th {
+    border: 0;
+}

@@ -28,7 +28,9 @@ class TestUsersAPI(APITestCase):
 
     def _get_json(self, url, expected_status=200):
         response = self.client.get(url)
-        self.assertEquals(expected_status, response.status_code)
+        self.assertEquals(
+            expected_status, response.status_code, response.content
+        )
         return json.loads(response.content.decode('utf-8'))
 
     def test_get(self):
@@ -535,6 +537,21 @@ class TestUsersAPI(APITestCase):
                 }
             })
 
+    def test_post_with_related_setter(self):
+        data = {
+            'name': 'test',
+            'loc1usersGetter': [1]
+        }
+        response = self.client.post(
+            '/groups/', json.dumps(data), content_type='application/json'
+        )
+        self.assertEqual(201, response.status_code)
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(
+            [1],
+            content['group']['loc1usersGetter']
+        )
+
     def test_put(self):
         group = Group.objects.create(name='test group')
         data = {
@@ -544,7 +561,7 @@ class TestUsersAPI(APITestCase):
             '/groups/%s/' % group.pk,
             json.dumps(data),
             content_type='application/json')
-        self.assertEquals(200, response.status_code)
+        self.assertEquals(200, response.status_code, response.content)
         updated_group = Group.objects.get(pk=group.pk)
         self.assertEquals(updated_group.name, data['name'])
 
@@ -563,6 +580,20 @@ class TestUsersAPI(APITestCase):
         self.assertEqual(
             sorted([1, 2]),
             content['groups'][0]['loc1usersLambda']
+        )
+
+    def test_get_with_related_getter(self):
+        url = '/groups/?filter{id}=1&include[]=loc1usersGetter.location.*'
+        response = self.client.get(url)
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            [1, 2],
+            content['groups'][0]['loc1usersGetter']
+        )
+        self.assertEqual(
+            1,
+            content['locations'][0]['id']
         )
 
     def test_get_with_default_queryset_filtered(self):
@@ -876,7 +907,7 @@ class TestLocationsAPI(APITestCase):
         actual = json.loads(response.content.decode('utf-8'))
         expected = {
             'description': '',
-            'name': 'Location List',
+            'name': 'Locations',
             'parses': [
                 'application/json',
                 'application/x-www-form-urlencoded',
@@ -913,7 +944,7 @@ class TestLocationsAPI(APITestCase):
                     'immutable': False,
                     'label': 'User count',
                     'nullable': False,
-                    'read_only': False,
+                    'read_only': True,
                     'required': False,
                     'type': 'field'
                 },
@@ -958,7 +989,6 @@ class TestLocationsAPI(APITestCase):
                     'type': 'many'
                 }
             },
-            'renders': ['application/json', 'text/html'],
             'resource_name': 'location',
             'resource_name_plural': 'locations'
         }
@@ -968,6 +998,7 @@ class TestLocationsAPI(APITestCase):
         for field in ['cats', 'friendly_cats', 'bad_cats', 'users']:
             del actual['properties'][field]['nullable']
             del expected['properties'][field]['nullable']
+        actual.pop('renders')
         actual.pop('features')
         self.assertEquals(
             json.loads(json.dumps(expected)),
@@ -977,7 +1008,7 @@ class TestLocationsAPI(APITestCase):
     def test_get_with_filter_by_user(self):
         url = '/locations/?filter{users}=1'
         response = self.client.get(url)
-        self.assertEqual(200, response.status_code)
+        self.assertEqual(200, response.status_code, response.content)
         content = json.loads(response.content.decode('utf-8'))
         self.assertEqual(1, len(content['locations']))
 
@@ -990,7 +1021,7 @@ class TestLocationsAPI(APITestCase):
         ]
         for url in urls:
             response = self.client.get(url)
-            self.assertEqual(200, response.status_code)
+            self.assertEqual(200, response.status_code, response.content)
 
 
 class TestRelationsAPI(APITestCase):
@@ -1007,8 +1038,8 @@ class TestRelationsAPI(APITestCase):
         self.assertEqual(404, r.status_code)
 
         r = self.client.get('/users/1/permissions/')
+        self.assertEqual(200, r.status_code, r.content)
         self.assertFalse('groups' in r.data['permissions'][0])
-        self.assertEqual(200, r.status_code)
 
         r = self.client.get('/users/1/groups/')
         self.assertEqual(200, r.status_code)
@@ -1023,21 +1054,21 @@ class TestRelationsAPI(APITestCase):
         r1_data = json.loads(r1.content.decode('utf-8'))
 
         r2 = self.client.get('/locations/1/users/')
-        self.assertEqual(200, r2.status_code)
+        self.assertEqual(200, r2.status_code, r2.content)
         r2_data = json.loads(r2.content.decode('utf-8'))
 
         self.assertEqual(r2_data['users'], r1_data['users'])
 
     def test_relation_includes(self):
         r = self.client.get('/locations/1/users/?include[]=location.')
-        self.assertEqual(200, r.status_code)
+        self.assertEqual(200, r.status_code, r.content)
 
         content = json.loads(r.content.decode('utf-8'))
         self.assertTrue('locations' in content)
 
     def test_relation_excludes(self):
         r = self.client.get('/locations/1/users/?exclude[]=location')
-        self.assertEqual(200, r.status_code)
+        self.assertEqual(200, r.status_code, r.content)
         content = json.loads(r.content.decode('utf-8'))
 
         self.assertFalse('location' in content['users'][0])
@@ -1180,7 +1211,7 @@ class TestLinks(APITestCase):
 
         url = '/users/%s/profile/' % user.pk
         r = self.client.get(url)
-        self.assertEqual(200, r.status_code)
+        self.assertEqual(200, r.status_code, r.content)
         # Check error message to differentiate from a routing error 404
         content = json.loads(r.content.decode('utf-8'))
         self.assertEqual({}, content)
@@ -1262,7 +1293,7 @@ class TestDogsAPI(APITestCase):
         self.fixture = create_fixture()
 
     def test_sort(self):
-        url = '/dogs/?sort[]=name'
+        url = '/dogs/?sort[]=name&exclude_links'
         # 2 queries - one for getting dogs, one for the meta (count)
         with self.assertNumQueries(2):
             response = self.client.get(url)
@@ -1298,7 +1329,7 @@ class TestDogsAPI(APITestCase):
         self.assertEquals(expected_response, actual_response)
 
     def test_sort_reverse(self):
-        url = '/dogs/?sort[]=-name'
+        url = '/dogs/?sort[]=-name&exclude_links'
         # 2 queries - one for getting dogs, one for the meta (count)
         with self.assertNumQueries(2):
             response = self.client.get(url)
@@ -1334,7 +1365,7 @@ class TestDogsAPI(APITestCase):
         self.assertEquals(expected_response, actual_response)
 
     def test_sort_multiple(self):
-        url = '/dogs/?sort[]=-name&sort[]=-origin'
+        url = '/dogs/?sort[]=-name&sort[]=-origin&exclude_links'
         # 2 queries - one for getting dogs, one for the meta (count)
         with self.assertNumQueries(2):
             response = self.client.get(url)
@@ -1370,7 +1401,7 @@ class TestDogsAPI(APITestCase):
         self.assertEquals(expected_response, actual_response)
 
     def test_sort_rewrite(self):
-        url = '/dogs/?sort[]=fur'
+        url = '/dogs/?sort[]=fur&exclude_links'
         # 2 queries - one for getting dogs, one for the meta (count)
         with self.assertNumQueries(2):
             response = self.client.get(url)
@@ -1424,7 +1455,7 @@ class TestHorsesAPI(APITestCase):
         self.fixture = create_fixture()
 
     def test_sort(self):
-        url = '/horses'
+        url = '/horses?exclude_links'
         # 1 query - one for getting horses
         # (the viewset as features specified, so no meta is returned)
         with self.assertNumQueries(1):
@@ -1466,7 +1497,7 @@ class TestZebrasAPI(APITestCase):
         self.fixture = create_fixture()
 
     def test_sort(self):
-        url = '/zebras?sort[]=-name'
+        url = '/zebras?sort[]=-name&exclude_links'
         # 1 query - one for getting zebras
         # (the viewset as features specified, so no meta is returned)
         with self.assertNumQueries(1):
@@ -1487,29 +1518,6 @@ class TestZebrasAPI(APITestCase):
         }
         actual_response = json.loads(response.content.decode('utf-8'))
         self.assertEquals(expected_response, actual_response)
-
-
-class TestBrowsableAPI(APITestCase):
-
-    """
-    Tests for Browsable API directory
-    """
-
-    def test_get_root(self):
-        response = self.client.get('/?format=api')
-        content = response.content.decode('utf-8')
-        self.assertIn('directory', content)
-        self.assertIn('/horses', content)
-        self.assertIn('/zebras', content)
-        self.assertIn('/users', content)
-
-    def test_get_list(self):
-        response = self.client.get('/users/?format=api')
-        content = response.content.decode('utf-8')
-        self.assertIn('directory', content)
-        self.assertIn('/horses', content)
-        self.assertIn('/zebras', content)
-        self.assertIn('/users', content)
 
 
 class TestCatsAPI(APITestCase):
@@ -1596,6 +1604,56 @@ class TestCatsAPI(APITestCase):
         # ... and it should not have changed:
         self.assertEqual(data['cat']['parent'], parent_id)
         self.assertEqual(data['cat']['name'], kitten_name)
+
+    def test_filter_relationship_rewrite(self):
+        response = self.client.get(
+            '/cars?filter{country_name.icontains}=Chi&include[]=name'
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['cars'][0]['name'], 'Forta')
+
+    def test_sort_relationship_rewrite(self):
+        response = self.client.get(
+            '/cars?sort[]=-country_name&include[]=name'
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(data['cars'][0]['name'], 'Porshe')
+
+    def test_update_nested_field(self):
+        patch_data = {
+            'country_name': 'foobar'
+        }
+        response = self.client.patch(
+            '/cars/1',
+            json.dumps(patch_data),
+            content_type='application/json'
+        )
+        self.assertEqual(200, response.status_code, response.content)
+
+    def test_update_create_nested_data(self):
+        patch_data = {
+            'country_name': 'Germany',
+            'country_short_name': None,
+        }
+        response = self.client.patch(
+            '/cars/3',
+            json.dumps(patch_data),
+            content_type='application/json'
+        )
+        # should fail because short name is required
+        self.assertEqual(400, response.status_code, response.content)
+        patch_data['country_short_name'] = 'DE'
+        response = self.client.patch(
+            '/cars/3',
+            json.dumps(patch_data),
+            content_type='application/json'
+        )
+        self.assertEqual(200, response.status_code, response.content)
+        content = json.loads(response.content.decode('utf-8'))
+        self.assertEqual(content['car']['country_short_name'], 'DE')
+        self.assertEqual(content['car']['country_name'], 'Germany')
 
 
 class TestFilters(APITestCase):

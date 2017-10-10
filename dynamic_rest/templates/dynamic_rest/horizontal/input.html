@@ -1,0 +1,22 @@
+<div class="form-group row {% if field.errors %}has-error{% endif %}">
+  {% if field.label %}
+    <label class="col-sm-2 form-control-label {% if style.hide_label %}sr-only{% endif %}">
+        {% if field.help_text %}
+            <span class="drest-has-tooltip" data-trigger="click" data-placement="right" data-toggle="tooltip" title="{{ field.help_text | safe }}">{{ field.label }}</span>
+        {% else %}
+          {{ field.label }}
+        {% endif %}
+    </label>
+  {% endif %}
+
+  <div class="col-sm-10">
+    <input name="{{ field.name }}" {% if style.input_type != "file" %}class="form-control"{% endif %} type="{{ style.input_type }}" {% if style.placeholder %}placeholder="{{ style.placeholder }}"{% endif %} {% if field.value %}value="{{ field.value }}"{% endif %} {% if style.autofocus and style.input_type != "hidden" %}autofocus{% endif %}>
+
+    {% if field.errors %}
+      {% for error in field.errors %}
+        <span class="text-danger">{{ error }}</span>
+      {% endfor %}
+    {% endif %}
+
+  </div>
+</div>

@@ -1,5 +1,5 @@
 from django.conf.urls import include, url
-
+from dynamic_rest.views import login, logout
 from dynamic_rest.routers import DynamicRouter
 from tests import viewsets
 
@@ -20,6 +20,8 @@ router.register(r'user_locations', viewsets.UserLocationViewSet)
 # the above routes are duplicated to test versioned prefixes
 router.register_resource(viewsets.CatViewSet, namespace='v2')  # canonical
 router.register(r'v1/user_locations', viewsets.UserLocationViewSet)
+router.register('login', login)
+router.register('logout', logout)
 
 urlpatterns = [
     url(r'^', include(router.urls))
