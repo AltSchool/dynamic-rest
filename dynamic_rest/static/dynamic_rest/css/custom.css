@@ -94,6 +94,7 @@
     font-weight: 600;
     font-size: 12px;
     text-align: inherit;
+    align-self: center;
     vertical-align: inherit;
     text-transform: uppercase;
 }
@@ -154,7 +155,6 @@
 }
 .modal-content .modal-header{
     position: fixed;
-    background-color: #00ae8e;
     color: white;
     height: 56px;
     left: 0px;
@@ -163,7 +163,6 @@
 }
 .modal-footer.modal-footer {
     position: fixed;
-    background-color: #f7f7f7;
     bottom: 0px;
     left: 0px;
     right: 0px;
