@@ -109,6 +109,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def get_search_key(self):
         return self.child.get_search_key()
 
+    def get_icon(self):
+        return self.child.get_icon()
+
     def get_url(self, pk=None):
         return self.child.get_url(pk=pk)
 
@@ -349,6 +352,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
         except:
             pass
         return 'pk'
+
+    @classmethod
+    def get_icon(cls):
+        meta = cls.get_meta()
+        return getattr(meta, 'icon', None)
 
     @classmethod
     def get_meta(cls):

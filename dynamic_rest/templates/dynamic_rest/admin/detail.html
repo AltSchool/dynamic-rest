@@ -16,13 +16,7 @@
                 {% endif %}
             </td>
             <td class="drest-field-value">
-                {% if link_field == key %}
-                    <a href="{{ url }}">
-                        {{ result | drest_format_value }}
-                    </a>
-                {% else %}
-                    {{ result | drest_format_value }}
-                {% endif %}
+                {{ result | admin_format_value }}
             </td>
         </tr>
     {% endfor %}

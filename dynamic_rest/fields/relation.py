@@ -10,8 +10,8 @@ from rest_framework.exceptions import (
     ParseError
 )
 from rest_framework import fields
-from dynamic_rest.compat import Hyperlink
 from dynamic_rest.conf import settings
+from dynamic_rest.value import Value
 from dynamic_rest.meta import (
     is_field_remote,
     get_related_model
@@ -94,6 +94,33 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             self.link = kwargs.pop('link')
         super(DynamicRelationField, self).__init__(**kwargs)
         self.kwargs['many'] = self.many = many
+
+    def admin_get_icon(self, value):
+        serializer = self.serializer
+        if serializer:
+            return serializer.get_icon()
+
+        return None
+
+    def admin_get_label(self, value):
+        instance = getattr(value, '_instance', None)
+        serializer = self.serializer
+        name_field_name = serializer.get_name_field()
+        name_field = serializer.get_field(name_field_name)
+        source = name_field.source or name_field_name
+        parts = source.split('.')
+        for p in parts:
+            instance = getattr(instance, p, None)
+        return instance
+
+    def admin_get_url(self, value):
+        instance = getattr(value, '_instance', None)
+        serializer = self.serializer
+
+        if instance:
+            return serializer.get_url(instance.pk)
+
+        return None
 
     def get_pk_field(self):
         return self.serializer.get_pk_field()
@@ -286,17 +313,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
     def get_attribute(self, instance):
         return instance
 
-    def as_hyperlink(self, instance):
-        name_field = self.serializer.get_name_field()
-        field = self.serializer.get_field(name_field)
-        key = field.source or name_field if field else None
-        url = self.get_url(instance.pk)
-        label = (
-            getattr(instance, key, instance)
-            if key else instance
-        )
-        return Hyperlink(url, label)
-
     def get_related(self, instance):
         serializer = self.serializer
         model = serializer.get_model()
@@ -320,6 +336,9 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             # get list from manager
             related = related.all()
 
+        if related and self.many:
+            related = list(related)
+
         return related
 
     def to_representation(self, instance):
@@ -330,34 +349,40 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         gui = getattr(self.context.get('view'), 'is_gui', False)
         if (
             not self.getter and
-            not self.kwargs['many'] and
+            not self.many and
             not gui and
             serializer.id_only()
         ):
             # attempt to optimize by reading the related ID directly
             # from the current instance rather than from the related object
             source_id = '%s_id' % source
-            if hasattr(instance, source_id):
-                return getattr(instance, source_id)
+            value = getattr(instance, source_id, None)
+            if value:
+                return value
 
         related = self.get_related(instance)
 
         if related is None:
             return None
         try:
-            if gui:
-                # TODO: refactor this to use dict/value tagging
-                # within the serializer layer and tag
-                # rendering within the renderer layer
-
-                # return as (list of) Hyperlink
-                if self.many:
-                    return [self.as_hyperlink(r) for r in related]
-                else:
-                    return self.as_hyperlink(related)
+            value = serializer.to_representation(related)
+            if not gui:
+                return value
+            if self.many:
+                return [
+                    Value(
+                        v,
+                        field=self,
+                        instance=related[i]
+                    )
+                    for i, v in enumerate(value)
+                ]
             else:
-                # return as (list of) object
-                return serializer.to_representation(related)
+                return Value(
+                    value,
+                    field=self,
+                    instance=related
+                )
         except Exception as e:
             # Provide more context to help debug these cases
             if getattr(serializer, 'debug', False):

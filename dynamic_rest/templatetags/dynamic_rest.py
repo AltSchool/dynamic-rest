@@ -54,17 +54,15 @@ def to_json(value):
 
 
 @register.filter
-def drest_format_value(value):
-    if getattr(value, 'is_dynamic_value', None):
-        classes = value.classes
-        value = value.name if value.display_name else value.value
-        if classes:
-            return mark_safe(
-                '<span class="%s">%s</span>' % (
-                    classes,
-                    drest_format_value(value)
-                )
-            )
-        else:
-            return drest_format_value(value)
+def admin_format_value(value):
+    if callable(getattr(value, 'render', None)):
+        return value.render('admin')
+    if isinstance(value, list) and value and callable(
+        getattr(value[0], 'render', None)
+    ):
+        return mark_safe(
+            ', '.join([
+                admin_format_value(v) for v in value
+            ])
+        )
     return format_value(value)

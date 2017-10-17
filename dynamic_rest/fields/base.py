@@ -1,6 +1,10 @@
 from rest_framework import fields
+from django.utils import six
+from django.utils.safestring import mark_safe
+
 from dynamic_rest.meta import get_model_field
 from dynamic_rest.base import DynamicBase
+from dynamic_rest.value import Value
 
 
 class DynamicField(fields.Field, DynamicBase):
@@ -11,11 +15,7 @@ class DynamicField(fields.Field, DynamicBase):
 
     def __init__(
         self,
-        requires=None,
-        deferred=None,
-        field_type=None,
-        immutable=False,
-        get_class=None,
+        *args,
         **kwargs
     ):
         """
@@ -26,19 +26,100 @@ class DynamicField(fields.Field, DynamicBase):
             field_type: Field data type, if not inferrable from model.
             requires: List of fields that this field depends on.
                 Processed by the view layer during queryset build time.
+            immutable: True if the field cannot be updated
+            get_classes: a parent serializer method name that should
+                return a list of classes to apply
         """
-        self.requires = requires
-        self.deferred = deferred
-        self.field_type = field_type
-        self.immutable = immutable
+
+        self.requires = kwargs.pop('requires', None)
+        self.deferred = kwargs.pop('deferred', None)
+        self.field_type = kwargs.pop('field_type', None)
+        self.immutable = kwargs.pop('immutable', False)
+        self.get_classes = kwargs.pop('get_classes', None)
         self.kwargs = kwargs
-        super(DynamicField, self).__init__(**kwargs)
+        super(DynamicField, self).__init__(*args, **kwargs)
+
+    def admin_get_label(self, value):
+        return value
+
+    def admin_get_url(self, value):
+        # override this to set a link on the returned value
+        return None
+
+    def admin_get_classes(self, value):
+        # override this to set custom CSS based on value
+        instance = getattr(value, '_instance', None)
+        parent = self.parent
+        getter = self.get_classes
+        if getter and instance and parent:
+            return getattr(parent, getter)(instance)
+        return None
+
+    def admin_get_icon(self, value):
+        serializer = self.parent
+        name_field = serializer.get_name_field()
+        if name_field == self.field_name:
+            return serializer.get_icon()
+
+        return None
+
+    def render_admin(self, value):
+        if isinstance(value, list) and not isinstance(
+            value, six.string_types
+        ):
+            return mark_safe(
+                ', '.join((
+                    self.render_admin(v) for v in value
+                ))
+            )
+
+        # URL link or None
+        url = self.admin_get_url(value)
+        # list of classes or None
+        classes = self.admin_get_classes(value) or []
+        classes.append('drest-value')
+        # name of an icon or None
+        icon = self.admin_get_icon(value)
+        # label or None
+        label = self.admin_get_label(value)
+
+        tag = 'a' if url else 'span'
+        result = label or value
+
+        if icon:
+            result = """
+                <span>
+                    <span class="{0} {0}-{1}"></span>
+                    <span>{2}</span>
+                </span>
+            """.format('fa', icon, result)
+
+        result = '<{0} {3} class="{1}">{2}</{0}>'.format(
+            tag,
+            ' '.join(classes),
+            result,
+            ('href="%s"' % url) if url else ''
+        )
+
+        return mark_safe(result)
+
+    def render(self, value, format=None):
+        if format == 'admin':
+            return self.render_admin(value)
+
+        return value
 
     def to_representation(self, value):
-        return value
+        try:
+            return super(DynamicField, self).to_representation(value)
+        except:
+            return value
 
     def to_internal_value(self, value):
-        return value
+        try:
+            return super(DynamicField, self).to_internal_value(value)
+        except:
+            return value
 
     @property
     def parent_model(self):
