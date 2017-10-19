@@ -12,7 +12,6 @@ from rest_framework.exceptions import (
 from rest_framework import fields
 from dynamic_rest.conf import settings
 from dynamic_rest.meta import (
-    is_field_remote,
     get_related_model
 )
 from .base import (
