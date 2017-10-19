@@ -317,15 +317,10 @@ class WithDynamicViewSetMixin(object):
         else:
             return False
 
-    @property
-    def is_gui(self):
-        if (
-            self.request and
-            self.request.accepted_renderer and
-            self.request.accepted_renderer.format == 'admin'
-        ):
-            return True
-        return False
+    def get_format(self):
+        if self.request and self.request.accepted_renderer:
+            return self.request.accepted_renderer.format
+        return None
 
     def get_serializer(self, *args, **kwargs):
         if 'request_fields' not in kwargs:

@@ -297,7 +297,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
         filters
     ):
         """Build a prefetch dictionary based on request requirements."""
-        is_gui = getattr(self.view, 'is_gui', False)
+        is_gui = self.view.get_format() == 'admin'
         meta = Meta(model)
         for name, field in six.iteritems(fields):
             original_field = field
@@ -457,7 +457,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
         # use requirements at this level to limit fields selected
         # only do this for GET requests where we are not requesting the
         # entire fieldset
-        is_gui = getattr(self.view, 'is_gui', False)
+        is_gui = self.view.get_format() == 'admin'
         if (
             '*' not in requirements and
             not self.view.is_update() and

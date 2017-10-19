@@ -11,7 +11,6 @@ from rest_framework.exceptions import (
 )
 from rest_framework import fields
 from dynamic_rest.conf import settings
-from dynamic_rest.value import Value
 from dynamic_rest.meta import (
     is_field_remote,
     get_related_model
@@ -44,7 +43,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             serializer_class=None,
             many=False,
             queryset=None,
-            getter=None,
             setter=None,
             embed=False,
             sideloading=None,
@@ -73,54 +71,14 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
                 and will include the full object unless specifically excluded.
         """
         self._serializer_class = serializer_class
-        self.bound = False
         self.queryset = queryset
         self.sideloading = sideloading
         self.debug = debug
         self.embed = embed if sideloading is None else not sideloading
-        source = kwargs.get('source', '')
-        self.getter = getter
-        self.setter = setter
-        if getter or setter:
-            # dont bind to fields
-            kwargs['source'] = '*'
-        elif source == '*':
-            # use default getter/setter
-            self.getter = self.getter or '*'
-            self.setter = self.setter or '*'
-        if '.' in source:
-            raise AttributeError('Nested relationship sources not supported')
         if 'link' in kwargs:
             self.link = kwargs.pop('link')
         super(DynamicRelationField, self).__init__(**kwargs)
         self.kwargs['many'] = self.many = many
-
-    def admin_get_icon(self, value):
-        serializer = self.serializer
-        if serializer:
-            return serializer.get_icon()
-
-        return None
-
-    def admin_get_label(self, value):
-        instance = getattr(value, '_instance', None)
-        serializer = self.serializer
-        name_field_name = serializer.get_name_field()
-        name_field = serializer.get_field(name_field_name)
-        source = name_field.source or name_field_name
-        parts = source.split('.')
-        for p in parts:
-            instance = getattr(instance, p, None)
-        return instance
-
-    def admin_get_url(self, value):
-        instance = getattr(value, '_instance', None)
-        serializer = self.serializer
-
-        if instance:
-            return serializer.get_url(instance.pk)
-
-        return None
 
     def get_pk_field(self):
         return self.serializer.get_pk_field()
@@ -159,38 +117,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
                 self.field_name
             ) if self.many else dictionary.get(self.field_name)
         return dictionary.get(self.field_name, fields.empty)
-
-    def bind(self, *args, **kwargs):
-        """Bind to the parent serializer."""
-        if self.bound:  # Prevent double-binding
-            return
-
-        super(DynamicRelationField, self).bind(*args, **kwargs)
-        self.bound = True
-
-        if self.source == '*':
-            if self.getter == '*':
-                self.getter = 'get_%s' % self.field_name
-            if self.setter == '*':
-                self.setter = 'set_%s' % self.field_name
-            return
-
-        remote = is_field_remote(self.parent_model, self.source)
-        model_field = self.model_field
-
-        # Infer `required` and `allow_null`
-        if 'required' not in self.kwargs and (
-                remote or (
-                    model_field and (
-                        model_field.has_default() or model_field.null
-                    )
-                )
-        ):
-            self.required = False
-        if 'allow_null' not in self.kwargs and getattr(
-                model_field, 'null', False
-        ):
-            self.allow_null = True
 
     @property
     def root_serializer(self):
@@ -313,44 +239,45 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
     def get_attribute(self, instance):
         return instance
 
-    def get_related(self, instance):
+    def admin_get_icon(self, value, instance=None):
         serializer = self.serializer
-        model = serializer.get_model()
-        source = self.source
-        related = None
-        if self.getter:
-            # use custom getter to read the relationship
-            getter = getattr(self.parent, self.getter)
-            related = getter(instance)
-        else:
-            # use source to read the relationship
-            if model is None:
-                related = getattr(instance, source, None)
-            else:
-                try:
-                    related = getattr(instance, source)
-                except model.DoesNotExist:
-                    pass
+        if serializer:
+            return serializer.get_icon()
 
-        if related and self.many and callable(getattr(related, 'all', None)):
-            # get list from manager
-            related = related.all()
+        return None
 
-        if related and self.many:
-            related = list(related)
+    def admin_get_label(self, value, instance=None):
+        serializer = self.serializer
+        name_field_name = serializer.get_name_field()
+        name_field = serializer.get_field(name_field_name)
+        source = name_field.source or name_field_name
+        parts = source.split('.')
+        for p in parts:
+            instance = getattr(instance, p, None)
+        return instance
 
-        return related
+    def admin_get_url(self, value, instance=None):
+        serializer = self.serializer
+
+        if instance:
+            return serializer.get_url(instance.pk)
+
+        return None
+
+    def get_related(self, instance):
+        return self.prepare_value(instance)
 
     def to_representation(self, instance):
         """Represent the relationship, either as an ID or object."""
+        format = self.get_format()
+        if format == 'admin':
+            return self.admin_to_representation(instance)
+
         serializer = self.serializer
         source = self.source
-
-        gui = getattr(self.context.get('view'), 'is_gui', False)
         if (
             not self.getter and
             not self.many and
-            not gui and
             serializer.id_only()
         ):
             # attempt to optimize by reading the related ID directly
@@ -360,29 +287,12 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             if value:
                 return value
 
-        related = self.get_related(instance)
+        value = self.prepare_value(instance)
 
-        if related is None:
+        if value is None:
             return None
         try:
-            value = serializer.to_representation(related)
-            if not gui:
-                return value
-            if self.many:
-                return [
-                    Value(
-                        v,
-                        field=self,
-                        instance=related[i]
-                    )
-                    for i, v in enumerate(value)
-                ]
-            else:
-                return Value(
-                    value,
-                    field=self,
-                    instance=related
-                )
+            return serializer.to_representation(value)
         except Exception as e:
             # Provide more context to help debug these cases
             if getattr(serializer, 'debug', False):
@@ -394,7 +304,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
                     self.parent.__class__.__name__,
                     self.source,
                     str(e),
-                    repr(related)
+                    repr(value)
                 )
             )
 

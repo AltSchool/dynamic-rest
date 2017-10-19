@@ -1,10 +1,9 @@
 from rest_framework import fields
 from django.utils import six
 from django.utils.safestring import mark_safe
-
-from dynamic_rest.meta import get_model_field
+from django.core.exceptions import ObjectDoesNotExist
+from dynamic_rest.meta import get_model_field, is_field_remote
 from dynamic_rest.base import DynamicBase
-from dynamic_rest.value import Value
 
 
 class DynamicField(fields.Field, DynamicBase):
@@ -30,32 +29,72 @@ class DynamicField(fields.Field, DynamicBase):
             get_classes: a parent serializer method name that should
                 return a list of classes to apply
         """
-
+        source = kwargs.get('source', None)
         self.requires = kwargs.pop('requires', None)
         self.deferred = kwargs.pop('deferred', None)
         self.field_type = kwargs.pop('field_type', None)
         self.immutable = kwargs.pop('immutable', False)
         self.get_classes = kwargs.pop('get_classes', None)
+        self.getter = kwargs.pop('getter', None)
+        self.setter = kwargs.pop('setter', None)
+        self.bound = False
+        if self.getter or self.setter:
+            # dont bind to fields
+            kwargs['source'] = '*'
+        elif source == '*':
+            # use default getter/setter
+            self.getter = self.getter or '*'
+            self.setter = self.setter or '*'
         self.kwargs = kwargs
         super(DynamicField, self).__init__(*args, **kwargs)
 
-    def admin_get_label(self, value):
-        return value
+    def bind(self, *args, **kwargs):
+        """Bind to the parent serializer."""
+        if self.bound:  # Prevent double-binding
+            return
 
-    def admin_get_url(self, value):
+        super(DynamicField, self).bind(*args, **kwargs)
+        self.bound = True
+        if self.source == '*':
+            if self.getter == '*':
+                self.getter = 'get_%s' % self.field_name
+            if self.setter == '*':
+                self.setter = 'set_%s' % self.field_name
+            return
+
+        remote = is_field_remote(self.parent_model, self.source)
+        model_field = self.model_field
+
+        # Infer `required` and `allow_null`
+        if 'required' not in self.kwargs and (
+                remote or (
+                    model_field and (
+                        model_field.has_default() or model_field.null
+                    )
+                )
+        ):
+            self.required = False
+        if 'allow_null' not in self.kwargs and getattr(
+            model_field, 'null', False
+        ):
+            self.allow_null = True
+
+    def admin_get_label(self, value, instance=None):
+        return str(value)
+
+    def admin_get_url(self, value, instance=None):
         # override this to set a link on the returned value
         return None
 
-    def admin_get_classes(self, value):
+    def admin_get_classes(self, value, instance=None):
         # override this to set custom CSS based on value
-        instance = getattr(value, '_instance', None)
         parent = self.parent
         getter = self.get_classes
         if getter and instance and parent:
-            return getattr(parent, getter)(instance)
+            return getattr(parent, getter)(value, instance)
         return None
 
-    def admin_get_icon(self, value):
+    def admin_get_icon(self, value, instance=None):
         serializer = self.parent
         name_field = serializer.get_name_field()
         if name_field == self.field_name:
@@ -63,25 +102,62 @@ class DynamicField(fields.Field, DynamicBase):
 
         return None
 
-    def render_admin(self, value):
-        if isinstance(value, list) and not isinstance(
-            value, six.string_types
-        ):
-            return mark_safe(
-                ', '.join((
-                    self.render_admin(v) for v in value
-                ))
-            )
+    def get_attribute(self, instance):
+        return self.prepare_value(instance)
 
+    def get_format(self):
+        return self.parent.get_format()
+
+    def prepare_value(self, instance):
+        source = self.source or self.field_name
+        sources = source.split('.')
+        value = None
+        many = getattr(self, 'many', False)
+        getter = self.getter
+        if getter:
+            # use custom getter to get the value
+            getter = getattr(self.parent, getter)
+            value = getter(instance)
+        else:
+            # use source to get the value
+            value = instance
+            for source in sources:
+                if source == '*':
+                    break
+                try:
+                    value = getattr(value, source)
+                except (ObjectDoesNotExist, AttributeError):
+                    return None
+        if (
+            value and
+            many and
+            callable(getattr(value, 'all', None))
+        ):
+            # get list from manager
+            value = value.all()
+
+        if value and many:
+            value = list(value)
+
+        return value
+
+    def admin_to_representation(self, instance):
+        if isinstance(instance, list) and not isinstance(
+            instance, six.string_types
+        ):
+            ret = [self.admin_to_representation(i) for i in instance]
+            return mark_safe(', '.join(ret))
+
+        value = self.prepare_value(instance)
         # URL link or None
-        url = self.admin_get_url(value)
+        url = self.admin_get_url(value, instance)
         # list of classes or None
-        classes = self.admin_get_classes(value) or []
+        classes = self.admin_get_classes(value, instance) or []
         classes.append('drest-value')
         # name of an icon or None
-        icon = self.admin_get_icon(value)
+        icon = self.admin_get_icon(value, instance)
         # label or None
-        label = self.admin_get_label(value)
+        label = self.admin_get_label(value, instance)
 
         tag = 'a' if url else 'span'
         result = label or value
@@ -103,13 +179,10 @@ class DynamicField(fields.Field, DynamicBase):
 
         return mark_safe(result)
 
-    def render(self, value, format=None):
-        if format == 'admin':
-            return self.render_admin(value)
-
-        return value
-
     def to_representation(self, value):
+        format = self.get_format()
+        if format == 'admin':
+            return self.admin_to_representation(value)
         try:
             return super(DynamicField, self).to_representation(value)
         except:
@@ -163,16 +236,19 @@ class CountField(DynamicComputedField):
         self.serializer_source = serializer_source
         # Set `source` to an empty value rather than the field name to avoid
         # an attempt to look up this field.
-        kwargs['source'] = ''
+        kwargs['source'] = '*'
         self.unique = kwargs.pop('unique', True)
         return super(CountField, self).__init__(*args, **kwargs)
 
     def get_attribute(self, obj):
         source = self.serializer_source
-        if source not in self.parent.fields:
+        try:
+            field = self.parent.get_field(source)
+        except:
             return None
-        value = self.parent.fields[source].get_attribute(obj)
-        data = self.parent.fields[source].to_representation(value)
+
+        value = field.get_attribute(obj)
+        data = field.to_representation(value)
 
         # How to count None is undefined... let the consumer decide.
         if data is None:

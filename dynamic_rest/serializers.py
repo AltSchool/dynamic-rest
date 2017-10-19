@@ -121,6 +121,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def get_pk_field(self):
         return self.child.get_pk_field()
 
+    def get_format(self):
+        return self.child.get_format()
+
     def get_name(self):
         return self.child.get_name()
 
@@ -590,6 +593,13 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
         raise ValidationError({
             field_name: '"%s" is not an API field' % field_name
         })
+
+    def get_format(self):
+        view = self.context.get('view')
+        get_format = getattr(view, 'get_format', None)
+        if callable(get_format):
+            return get_format()
+        return None
 
     @classmethod
     def get_name(cls):

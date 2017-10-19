@@ -55,14 +55,4 @@ def to_json(value):
 
 @register.filter
 def admin_format_value(value):
-    if callable(getattr(value, 'render', None)):
-        return value.render('admin')
-    if isinstance(value, list) and value and callable(
-        getattr(value[0], 'render', None)
-    ):
-        return mark_safe(
-            ', '.join([
-                admin_format_value(v) for v in value
-            ])
-        )
     return format_value(value)
