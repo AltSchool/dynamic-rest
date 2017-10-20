@@ -32,7 +32,7 @@
     $(document).ready(function() {
         var per_page = 25;
         // set initial values
-        var values = {{field.value | as_id_to_name}};
+        var values = {{field | as_id_to_name}};
         var selected = [];
         var initials = [];
         // get field/serializer info
@@ -40,6 +40,7 @@
         var nameField = '{{ field.get_name_field }}';
         var searchKey = '{{ field.get_search_key }}';
         var pkField = '{{ field.get_pk_field }}';
+        var resourceName = '{{ field.serializer.get_name }}';
         var pluralName = '{{ field.get_plural_name }}';
         var url = '{{ field.get_url }}';
         var includes = [pkField];
@@ -47,16 +48,28 @@
             includes.push(nameField);
         }
         for (var s in values) {
-            initials.push({id: s, name: values[s]});
+            s = s ? s.toString() : s;
+            initials.push({
+                id: s,
+                text: values[s],
+                name: values[s],
+                selected: true
+            });
             selected.push(s);
         }
-        $("select[name='" + fieldName + "']").select2({
+        var many = {% if field.many %}true{% else %}false{% endif %};
+        if (!many) {
+            selected = selected[0];
+        }
+        var $select2 = $("select[name='" + fieldName + "']");
+        var select2 = $select2[0];
+        $select2.select2({
             data: initials,
             placeholder: {
                 id: "",
-                placeholder: ""
+                placeholder: "Type the name of a " + resourceName
             },
-            allowClear: {% if field.many %}false{% else %}true{% endif %},
+            allowClear: {% if not field.required or field.allow_null%}true{% else %}false{% endif %},
             ajax: {
                 url: url,
                 dataType: "json",
@@ -100,6 +113,7 @@
                 return item[nameField];
             },
             minimumInputLength: 1,
-        }).val(selected).trigger('change');
+        });
+        $(select2).val(selected).trigger('change');
     });
 </script>

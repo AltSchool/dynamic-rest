@@ -6,6 +6,7 @@ from rest_framework.renderers import (
     HTMLFormRenderer,
     ClassLookupDict
 )
+from django.utils.safestring import mark_safe
 from dynamic_rest.compat import reverse, NoReverseMatch, AdminRenderer
 from dynamic_rest.conf import settings
 from dynamic_rest import fields
@@ -112,20 +113,6 @@ class DynamicAdminRenderer(AdminRenderer):
         if isinstance(instance, list):
             instance = None
 
-        def process(result):
-            if result.get('links', {}).get('self'):
-                url = result['url'] = result['links']['self']
-                parts = url.split('/')
-                pk = parts[-1] if parts[-1] else parts[-2]
-                result['pk'] = pk
-
-        if results:
-            if isinstance(results, list):
-                for result in results:
-                    process(result)
-            else:
-                process(results)
-
         if is_root:
             style = context['style'] = 'root'
             header = settings.API_NAME or ''
@@ -143,6 +130,7 @@ class DynamicAdminRenderer(AdminRenderer):
             singular_name = serializer.get_name().title()
             plural_name = serializer.get_plural_name().title()
             description = serializer.get_description()
+            icon = serializer.get_icon()
             header = serializer.get_plural_name().title()
             name_field = serializer.get_name_field()
 
@@ -160,6 +148,12 @@ class DynamicAdminRenderer(AdminRenderer):
                 header_url = serializer.get_url(
                     pk=instance.pk
                 )
+
+            if icon:
+                header = mark_safe('<span class="fa fa-%s"></span>&nbsp;%s' % (
+                    icon,
+                    header
+                ))
 
             if style == 'list':
                 list_fields = getattr(meta, 'list_fields', None) or meta.fields
@@ -184,14 +178,6 @@ class DynamicAdminRenderer(AdminRenderer):
             request.query_params.get(search_key, '')
             if search_key else ''
         )
-
-        # link field
-        link_field = name_field
-        if (
-            columns and not link_field or
-            (columns and link_field not in columns)
-        ):
-            link_field = columns[0]
 
         # login and logout
         login_url = ''
@@ -251,7 +237,6 @@ class DynamicAdminRenderer(AdminRenderer):
         context['root_url'] = root_url
         context['back_url'] = back_url
         context['back'] = back
-        context['link_field'] = link_field
         context['columns'] = columns
         context['fields'] = fields
         context['details'] = context['columns']

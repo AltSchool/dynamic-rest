@@ -7,7 +7,7 @@ from django.db import models
 from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import exceptions, fields, serializers
-from rest_framework.fields import SkipField
+from rest_framework.fields import SkipField, JSONField
 from rest_framework.reverse import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
@@ -15,6 +15,7 @@ from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 from dynamic_rest.conf import settings
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.links import merge_link_object
+from dynamic_rest.bound import DynamicJSONBoundField, DynamicBoundField
 from dynamic_rest.meta import (
     Meta,
     get_model_table,
@@ -83,8 +84,15 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def get_all_fields(self):
         return self.child.get_all_fields()
 
+    def __iter__(self):
+        return self.child.__iter__()
+
     def get_field(self, name):
         return self.child.get_field(name)
+
+    @property
+    def fields(self):
+        return self.child.fields
 
     def get_meta(self):
         return self.child.get_meta()
@@ -347,6 +355,32 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
             if not isinstance(self.request_fields.get(name), dict):
                 # not sideloading this field
                 self.request_fields[name] = True
+
+    def get_field_value(self, key, instance=None):
+        if instance == '':
+            instance = None
+
+        field = self.fields[key]
+        if hasattr(field, 'prepare_value'):
+            value = field.prepare_value(instance)
+        else:
+            value = field.to_representation(
+                field.get_attribute(instance)
+            )
+        if isinstance(value, list):
+            value = [
+                getattr(v, 'instance', v) for v in value
+            ]
+        else:
+            value = getattr(value, 'instance', value)
+        error = self.errors.get(key) if hasattr(self, '_errors') else None
+        if isinstance(field, JSONField):
+            return DynamicJSONBoundField(
+                field, value, error, prefix='', instance=instance
+            )
+        return DynamicBoundField(
+            field, value, error, prefix='', instance=instance
+        )
 
     def get_pk_field(self):
         try:
@@ -766,6 +800,8 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
 
         # apply request overrides
         if request_fields:
+            if request_fields is True:
+                request_fields = {}
             for name, include in six.iteritems(request_fields):
                 if name not in serializer_fields and name != 'pk':
                     raise exceptions.ParseError(
@@ -890,7 +926,8 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
             Instance ID if the serializer is meant to represent its ID.
             Otherwise, a tagged data dict representation.
         """
-        if self.id_only():
+        id_only = self.id_only() and not self.get_format() == 'admin'
+        if id_only:
             return instance.pk
         else:
             if self.enable_optimization:
@@ -1023,7 +1060,10 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
         Returns:
             True if and only if `request_fields` is True.
         """
-        return self.dynamic and self.request_fields is True
+        return (
+            self.dynamic and
+            self.request_fields is True
+        )
 
     @property
     def data(self):

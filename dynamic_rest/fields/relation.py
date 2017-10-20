@@ -42,7 +42,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             serializer_class=None,
             many=False,
             queryset=None,
-            setter=None,
             embed=False,
             sideloading=None,
             debug=False,
@@ -58,12 +57,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             sideloading: if True, force sideloading all the way down.
                 if False, force embedding all the way down.
                 This overrides the "embed" option if set.
-            getter: name of a method to call on the parent serializer for
-                reading related objects.
-                If source is '*', this will default to 'get_$FIELD_NAME'.
-            setter: name of a method to call on the parent serializer for
-                saving related objects.
-                If source is '*', this will default to 'set_$FIELD_NAME'.
             debug: if True, representation will include a meta key with extra
                 instance information.
             embed: If True, always embed related object(s). Will not sideload,
@@ -238,28 +231,39 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
     def get_attribute(self, instance):
         return instance
 
-    def admin_get_icon(self, value, instance=None):
+    def admin_get_icon(self, instance, value):
         serializer = self.serializer
         if serializer:
-            return serializer.get_icon()
+            icon = serializer.get_icon()
+            label = self.admin_get_label(instance, value)
+            if label:
+                return icon
 
         return None
 
-    def admin_get_label(self, value, instance=None):
+    def admin_get_label(self, instance, value):
+        # use the name field
         serializer = self.serializer
         name_field_name = serializer.get_name_field()
         name_field = serializer.get_field(name_field_name)
         source = name_field.source or name_field_name
-        parts = source.split('.')
-        for p in parts:
-            instance = getattr(instance, p, None)
-        return instance
+        sources = source.split('.')
+        related = value
+        if related:
+            for source in sources:
+                if source == '*':
+                    break
+                related = getattr(related, source)
+            return related
+        else:
+            return ''
 
-    def admin_get_url(self, value, instance=None):
+    def admin_get_url(self, instance, value):
         serializer = self.serializer
+        related = value
 
-        if instance:
-            return serializer.get_url(instance.pk)
+        if related:
+            return serializer.get_url(related.pk)
 
         return None
 
@@ -268,10 +272,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
 
     def to_representation(self, instance):
         """Represent the relationship, either as an ID or object."""
-        format = self.get_format()
-        if format == 'admin':
-            return self.admin_to_representation(instance)
-
         serializer = self.serializer
         source = self.source
         if (
@@ -324,6 +324,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
     def to_internal_value(self, data):
         """Return the underlying object(s), given the serialized form."""
         if self.setter:
+            print self.setter
             setter = getattr(self.parent, self.setter)
             self.parent.add_post_save(
                 lambda instance: setter(instance, data)
