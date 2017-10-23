@@ -297,7 +297,6 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
         filters
     ):
         """Build a prefetch dictionary based on request requirements."""
-        is_gui = self.view.get_format() == 'admin'
         meta = Meta(model)
         for name, field in six.iteritems(fields):
             original_field = field
@@ -330,7 +329,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
             is_remote = meta.is_field_remote(source)
             if (
                 related_queryset is None and
-                not is_gui and is_id_only and not is_remote
+                is_id_only and not is_remote
             ):
                 # GUI rendering, full representation, and remote fields
                 # should all trigger prefetching
@@ -465,6 +464,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
             not is_gui
         ):
             id_fields = getattr(serializer, 'get_id_fields', lambda: [])()
+            print id_fields
             # only include local model fields
             only = [
                 field for field in set(

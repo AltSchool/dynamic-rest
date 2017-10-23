@@ -58,7 +58,7 @@ class DynamicField(fields.Field, DynamicBase):
     def bind(self, *args, **kwargs):
         """Bind to the parent serializer."""
         if self.bound:  # Prevent double-binding
-            pass  # return
+            return
 
         super(DynamicField, self).bind(*args, **kwargs)
         self.bound = True
@@ -117,10 +117,7 @@ class DynamicField(fields.Field, DynamicBase):
                 try:
                     value = getattr(value, source)
                 except (ObjectDoesNotExist, AttributeError):
-                    try:
-                        value = value.get(source)
-                    except AttributeError:
-                        return None
+                    return None
         if (
             value and
             many and
@@ -211,7 +208,10 @@ class DynamicField(fields.Field, DynamicBase):
         return value
 
     def to_representation(self, value):
-        return value
+        try:
+            return super(DynamicField, self).to_representation(value)
+        except:
+            return value
 
     @property
     def parent_model(self):
@@ -268,7 +268,7 @@ class CountField(DynamicComputedField):
     def get_attribute(self, obj):
         source = self.serializer_source
         try:
-            field = self.parent.get_field(source)
+            field = self.parent.fields[source]
         except:
             return None
 
@@ -283,7 +283,8 @@ class CountField(DynamicComputedField):
         # since this is a "count" field, we'll limit to list, set, tuple.
         if not isinstance(data, (list, set, tuple)):
             raise TypeError(
-                "'%s' is %s (%s). Must be list, set or tuple to be countable." % (
+                '"%s" is %s (%s). '
+                "Must be list, set or tuple to be countable." % (
                     source, data, type(data)
                 )
             )

@@ -581,6 +581,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
         return None
 
     def get_field(self, field_name):
+        # it might be deferred
         fields = self.get_all_fields()
         if field_name == 'pk':
             meta = self.get_meta()
@@ -594,7 +595,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
             if primary_key:
                 field = fields.get(primary_key)
             else:
-                for name, f in fields.items():
+                for n, f in fields.items():
                     # try to use model fields
                     try:
                         if getattr(field, 'primary_key', False):
@@ -603,7 +604,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
 
                         model_field = get_model_field(
                             model,
-                            f.source or name
+                            f.source or n
                         )
 
                         if model_field.primary_key:
@@ -622,7 +623,8 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
                 return field
         else:
             if field_name in fields:
-                return fields[field_name]
+                field = fields[field_name]
+                return field
 
         raise ValidationError({
             field_name: '"%s" is not an API field' % field_name
@@ -926,7 +928,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
             Instance ID if the serializer is meant to represent its ID.
             Otherwise, a tagged data dict representation.
         """
-        id_only = self.id_only() and not self.get_format() == 'admin'
+        id_only = self.id_only()
         if id_only:
             return instance.pk
         else:
@@ -964,10 +966,6 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
     def to_internal_value(self, data):
         meta = self.get_meta()
         value = super(WithDynamicSerializerMixin, self).to_internal_value(data)
-        print 'v', str(value) if value else None
-        print 'd', str(data)
-        if not value:
-            value = {}
 
         id_attr = getattr(meta, 'update_lookup_field', 'id')
         request_method = self.get_request_method()
@@ -1065,6 +1063,8 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
         Returns:
             True if and only if `request_fields` is True.
         """
+        if self.get_format() == 'admin':
+            return False
         return (
             self.dynamic and
             self.request_fields is True

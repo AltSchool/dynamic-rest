@@ -324,7 +324,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
     def to_internal_value(self, data):
         """Return the underlying object(s), given the serialized form."""
         if self.setter:
-            print self.setter
             setter = getattr(self.parent, self.setter)
             self.parent.add_post_save(
                 lambda instance: setter(instance, data)
