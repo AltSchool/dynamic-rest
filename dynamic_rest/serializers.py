@@ -964,6 +964,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
     def to_internal_value(self, data):
         meta = self.get_meta()
         value = super(WithDynamicSerializerMixin, self).to_internal_value(data)
+        print 'v', str(value) if value else None
+        print 'd', str(data)
+        if not value:
+            value = {}
+
         id_attr = getattr(meta, 'update_lookup_field', 'id')
         request_method = self.get_request_method()
 

@@ -58,34 +58,37 @@ class DynamicField(fields.Field, DynamicBase):
     def bind(self, *args, **kwargs):
         """Bind to the parent serializer."""
         if self.bound:  # Prevent double-binding
-            return
+            pass  # return
 
         super(DynamicField, self).bind(*args, **kwargs)
         self.bound = True
 
-        if self.source == '*':
+        source = self.source
+        if source == '*':
             if self.getter == '*':
                 self.getter = 'get_%s' % self.field_name
             if self.setter == '*':
                 self.setter = 'set_%s' % self.field_name
             return
 
-        remote = is_field_remote(self.parent_model, self.source)
-        model_field = self.model_field
+        parent_model = self.parent_model
+        if parent_model:
+            remote = is_field_remote(parent_model, source)
+            model_field = self.model_field
 
-        # Infer `required` and `allow_null`
-        if 'required' not in self.kwargs and (
-                remote or (
-                    model_field and (
-                        model_field.has_default() or model_field.null
+            # Infer `required` and `allow_null`
+            if 'required' not in self.kwargs and (
+                    remote or (
+                        model_field and (
+                            model_field.has_default() or model_field.null
+                        )
                     )
-                )
-        ):
-            self.required = False
-        if 'allow_null' not in self.kwargs and getattr(
-            model_field, 'null', False
-        ):
-            self.allow_null = True
+            ):
+                self.required = False
+            if 'allow_null' not in self.kwargs and getattr(
+                model_field, 'null', False
+            ):
+                self.allow_null = True
 
     def get_format(self):
         return self.parent.get_format()
@@ -114,7 +117,10 @@ class DynamicField(fields.Field, DynamicBase):
                 try:
                     value = getattr(value, source)
                 except (ObjectDoesNotExist, AttributeError):
-                    return None
+                    try:
+                        value = value.get(source)
+                    except AttributeError:
+                        return None
         if (
             value and
             many and
@@ -201,17 +207,11 @@ class DynamicField(fields.Field, DynamicBase):
 
         return result
 
-    def to_representation(self, value):
-        try:
-            return super(DynamicField, self).to_representation(value)
-        except:
-            return value
-
     def to_internal_value(self, value):
-        try:
-            return super(DynamicField, self).to_internal_value(value)
-        except:
-            return value
+        return value
+
+    def to_representation(self, value):
+        return value
 
     @property
     def parent_model(self):
@@ -283,8 +283,8 @@ class CountField(DynamicComputedField):
         # since this is a "count" field, we'll limit to list, set, tuple.
         if not isinstance(data, (list, set, tuple)):
             raise TypeError(
-                "'%s' is %s. Must be list, set or tuple to be countable." % (
-                    source, type(data)
+                "'%s' is %s (%s). Must be list, set or tuple to be countable." % (
+                    source, data, type(data)
                 )
             )
 
