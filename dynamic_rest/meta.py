@@ -60,6 +60,9 @@ class Meta(object):
         except AttributeError:
             return False
 
+    def get_fields(self, **kwargs):
+        return self.meta.get_fields(**kwargs)
+
     def get_pk_field(self):
         return self.get_field(self.meta.pk.name)
 

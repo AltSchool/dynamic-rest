@@ -464,7 +464,6 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
             not is_gui
         ):
             id_fields = getattr(serializer, 'get_id_fields', lambda: [])()
-            print id_fields
             # only include local model fields
             only = [
                 field for field in set(

@@ -84,6 +84,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def get_all_fields(self):
         return self.child.get_all_fields()
 
+    def get_id_fields(self):
+        return self.child.get_id_fields()
+
     def __iter__(self):
         return self.child.__iter__()
 
@@ -1101,8 +1104,9 @@ class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
         return a list of IDs.
         """
         model = self.get_model()
+        meta = Meta(model)
 
-        out = [model._meta.pk.name]  # get PK field name
+        out = [meta.get_pk_field().name]
 
         # If this is being called, it means it
         # is a many-relation  to its parent.
@@ -1112,9 +1116,9 @@ class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
         # we will just pull all ID fields.
         # TODO: We also might need to return all non-nullable fields,
         #    or else it is possible Django will issue another request.
-        for field in model._meta.fields:
+        for field in meta.get_fields(include_hidden=True):
             if isinstance(field, models.ForeignKey):
-                out.append(field.name + '_id')
+                out.append(field.attname)
 
         return out
 
