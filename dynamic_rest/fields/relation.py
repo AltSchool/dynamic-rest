@@ -231,6 +231,17 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
     def get_attribute(self, instance):
         return instance
 
+    def admin_get_classes(self, instance, value):
+        serializer = self.serializer
+        getter = self.get_classes or serializer.get_class_getter()
+        if getter:
+            if hasattr(serializer, 'child'):
+                serializer = serializer.child
+            getter = getattr(serializer, getter)
+            return getter(value)
+        else:
+            return super(DynamicRelationField, self).admin_get_classes(instance, value)
+
     def admin_get_icon(self, instance, value):
         serializer = self.serializer
         if serializer:

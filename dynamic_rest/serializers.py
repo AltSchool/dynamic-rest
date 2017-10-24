@@ -120,6 +120,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def get_name_field(self):
         return self.child.get_name_field()
 
+    def get_class_getter(self):
+        return self.child.get_class_getter()
+
     def get_search_key(self):
         return self.child.get_search_key()
 
@@ -680,6 +683,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
     @classmethod
     def get_description(cls):
         return getattr(cls.Meta, 'description', None)
+
+    @classmethod
+    def get_class_getter(self):
+        meta = self.get_meta()
+        return getattr(meta, 'get_classes', None)
 
     @classmethod
     def get_name_field(cls):

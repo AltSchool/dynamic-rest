@@ -1,6 +1,7 @@
 from rest_framework import fields
 from uuid import UUID
 from django.utils import six
+from django.db.models import QuerySet
 from django.core.exceptions import ObjectDoesNotExist
 from dynamic_rest.meta import get_model_field, is_field_remote
 from dynamic_rest.base import DynamicBase
@@ -97,7 +98,7 @@ class DynamicField(fields.Field, DynamicBase):
         if instance is None:
             return None
         value = None
-        many = getattr(self, 'many', False)
+        many = self.kwargs.get('many', False)
         getter = self.getter
         if getter:
             # use custom getter to get the value
@@ -128,6 +129,8 @@ class DynamicField(fields.Field, DynamicBase):
 
         if value and many:
             value = list(value)
+        if isinstance(value, QuerySet):
+            value = list(value)
 
         return value
 
@@ -147,6 +150,10 @@ class DynamicField(fields.Field, DynamicBase):
         # override this to set custom CSS based on value
         parent = self.parent
         getter = self.get_classes
+        if not getter:
+            name_field_name = parent.get_name_field()
+            if self.field_name == name_field_name:
+                getter = parent.get_class_getter()
         if getter and instance and parent:
             return getattr(parent, getter)(instance)
         return None
