@@ -1106,7 +1106,7 @@ class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
         model = self.get_model()
         meta = Meta(model)
 
-        out = [meta.get_pk_field().name]
+        out = [meta.get_pk_field().attname]
 
         # If this is being called, it means it
         # is a many-relation  to its parent.
@@ -1116,7 +1116,7 @@ class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
         # we will just pull all ID fields.
         # TODO: We also might need to return all non-nullable fields,
         #    or else it is possible Django will issue another request.
-        for field in meta.get_fields(include_hidden=True):
+        for field in meta.get_fields():
             if isinstance(field, models.ForeignKey):
                 out.append(field.attname)
 

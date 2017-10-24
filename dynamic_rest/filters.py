@@ -331,7 +331,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
                 related_queryset is None and
                 is_id_only and not is_remote
             ):
-                # GUI rendering, full representation, and remote fields
+                # full representation and remote fields
                 # should all trigger prefetching
                 continue
 
