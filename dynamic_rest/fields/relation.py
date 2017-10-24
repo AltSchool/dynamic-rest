@@ -321,15 +321,20 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             )
         return instance
 
+    def run_validation(self, data):
+        if self.setter:
+            if data == fields.empty:
+                data = [] if self.kwargs.get('many') else None
+            def fn(instance):
+                setter = getattr(self.parent, self.setter)
+                setter(instance, data)
+
+            self.parent.add_post_save(fn)
+            raise fields.SkipField()
+        return super(DynamicRelationField, self).run_validation(data)
+
     def to_internal_value(self, data):
         """Return the underlying object(s), given the serialized form."""
-        if self.setter:
-            setter = getattr(self.parent, self.setter)
-            self.parent.add_post_save(
-                lambda instance: setter(instance, data)
-            )
-            raise fields.SkipField()
-
         if self.kwargs['many']:
             if not isinstance(data, list):
                 raise ParseError('"%s" value must be a list' % self.field_name)

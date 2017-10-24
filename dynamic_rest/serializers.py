@@ -2,6 +2,9 @@
 import copy
 import inspect
 
+from rest_framework.serializers import *
+
+from collections import Mapping
 import inflection
 from django.db import models
 from django.utils import six
@@ -922,6 +925,9 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
 
         return ret
 
+    def is_root(self):
+        return self.parent is None
+
     def to_representation(self, instance):
         """Modified to_representation method.
 
@@ -932,6 +938,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
             Otherwise, a tagged data dict representation.
         """
         id_only = self.id_only()
+        if (
+            self.get_format() == 'admin' and
+            self.is_root()
+        ):
+            id_only = False
         if id_only:
             return instance.pk
         else:
@@ -965,6 +976,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
             instance=instance,
             embed=self.embed
         )
+
 
     def to_internal_value(self, data):
         meta = self.get_meta()
@@ -1066,8 +1078,6 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
         Returns:
             True if and only if `request_fields` is True.
         """
-        if self.get_format() == 'admin':
-            return False
         return (
             self.dynamic and
             self.request_fields is True
