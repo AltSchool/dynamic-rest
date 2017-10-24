@@ -233,8 +233,8 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
 
     def admin_get_classes(self, instance, value):
         serializer = self.serializer
-        getter = self.get_classes or serializer.get_class_getter()
-        if getter:
+        getter = serializer.get_class_getter()
+        if getter and value is not None:
             if hasattr(serializer, 'child'):
                 serializer = serializer.child
             getter = getattr(serializer, getter)
