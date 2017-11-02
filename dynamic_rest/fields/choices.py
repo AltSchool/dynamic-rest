@@ -1,22 +1,16 @@
 from .base import DynamicField
 from rest_framework.serializers import ChoiceField
-from dynamic_rest.utils import DynamicValue
+from dynamic_rest.meta import Meta
 
 
 class DynamicChoicesField(
+    DynamicField,
     ChoiceField,
-    DynamicField
 ):
-    def __init__(self, *args, **kwargs):
-        self.class_choices = kwargs.pop(
-            'class_choices', {}
-        )
-        super(DynamicChoicesField, self).__init__(*args, **kwargs)
-
-    def to_representation(self, value):
-        return DynamicValue(
-            super(DynamicChoicesField, self).to_representation(value),
-            self.choices.get(value, value),
-            classes=self.class_choices.get(value, None),
-            display_name=True
-        )
+    def prepare_value(self, instance):
+        model = self.parent_model
+        source = self.source or self.field_name
+        choices = Meta(model).get_field(source).choices
+        value = getattr(instance, source)
+        choice = dict(choices).get(value)
+        return choice

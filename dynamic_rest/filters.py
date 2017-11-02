@@ -294,10 +294,10 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
         requirements,
         model,
         fields,
-        filters
+        filters,
+        is_root_level
     ):
         """Build a prefetch dictionary based on request requirements."""
-        is_gui = getattr(self.view, 'is_gui', False)
         meta = Meta(model)
         for name, field in six.iteritems(fields):
             original_field = field
@@ -328,11 +328,13 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
 
             is_id_only = getattr(field, 'id_only', lambda: False)()
             is_remote = meta.is_field_remote(source)
+            is_gui_root = self.view.get_format() == 'admin' and is_root_level
             if (
                 related_queryset is None and
-                not is_gui and is_id_only and not is_remote
+                is_id_only and not is_remote
+                and not is_gui_root
             ):
-                # GUI rendering, full representation, and remote fields
+                # full representation and remote fields
                 # should all trigger prefetching
                 continue
 
@@ -443,7 +445,8 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
             requirements,
             model,
             fields,
-            filters
+            filters,
+            is_root_level
         )
 
         # build remaining prefetches out of internal requirements
@@ -457,7 +460,7 @@ class DynamicFilterBackend(WithGetSerializerClass, BaseFilterBackend):
         # use requirements at this level to limit fields selected
         # only do this for GET requests where we are not requesting the
         # entire fieldset
-        is_gui = getattr(self.view, 'is_gui', False)
+        is_gui = self.view.get_format() == 'admin'
         if (
             '*' not in requirements and
             not self.view.is_update() and

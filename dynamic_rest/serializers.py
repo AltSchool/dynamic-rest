@@ -2,12 +2,15 @@
 import copy
 import inspect
 
+from rest_framework.serializers import *
+
+from collections import Mapping
 import inflection
 from django.db import models
 from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import exceptions, fields, serializers
-from rest_framework.fields import SkipField
+from rest_framework.fields import SkipField, JSONField
 from rest_framework.reverse import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
@@ -15,6 +18,7 @@ from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 from dynamic_rest.conf import settings
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.links import merge_link_object
+from dynamic_rest.bound import DynamicJSONBoundField, DynamicBoundField
 from dynamic_rest.meta import (
     Meta,
     get_model_table,
@@ -83,8 +87,18 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def get_all_fields(self):
         return self.child.get_all_fields()
 
+    def get_id_fields(self):
+        return self.child.get_id_fields()
+
+    def __iter__(self):
+        return self.child.__iter__()
+
     def get_field(self, name):
         return self.child.get_field(name)
+
+    @property
+    def fields(self):
+        return self.child.fields
 
     def get_meta(self):
         return self.child.get_meta()
@@ -106,8 +120,14 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def get_name_field(self):
         return self.child.get_name_field()
 
+    def get_class_getter(self):
+        return self.child.get_class_getter()
+
     def get_search_key(self):
         return self.child.get_search_key()
+
+    def get_icon(self):
+        return self.child.get_icon()
 
     def get_url(self, pk=None):
         return self.child.get_url(pk=pk)
@@ -117,6 +137,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
 
     def get_pk_field(self):
         return self.child.get_pk_field()
+
+    def get_format(self):
+        return self.child.get_format()
 
     def get_name(self):
         return self.child.get_name()
@@ -342,6 +365,32 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
                 # not sideloading this field
                 self.request_fields[name] = True
 
+    def get_field_value(self, key, instance=None):
+        if instance == '':
+            instance = None
+
+        field = self.fields[key]
+        if hasattr(field, 'prepare_value'):
+            value = field.prepare_value(instance)
+        else:
+            value = field.to_representation(
+                field.get_attribute(instance)
+            )
+        if isinstance(value, list):
+            value = [
+                getattr(v, 'instance', v) for v in value
+            ]
+        else:
+            value = getattr(value, 'instance', value)
+        error = self.errors.get(key) if hasattr(self, '_errors') else None
+        if isinstance(field, JSONField):
+            return DynamicJSONBoundField(
+                field, value, error, prefix='', instance=instance
+            )
+        return DynamicBoundField(
+            field, value, error, prefix='', instance=instance
+        )
+
     def get_pk_field(self):
         try:
             field = self.get_field('pk')
@@ -349,6 +398,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
         except:
             pass
         return 'pk'
+
+    @classmethod
+    def get_icon(cls):
+        meta = cls.get_meta()
+        return getattr(meta, 'icon', None)
 
     @classmethod
     def get_meta(cls):
@@ -536,6 +590,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
         return None
 
     def get_field(self, field_name):
+        # it might be deferred
         fields = self.get_all_fields()
         if field_name == 'pk':
             meta = self.get_meta()
@@ -549,7 +604,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
             if primary_key:
                 field = fields.get(primary_key)
             else:
-                for name, f in fields.items():
+                for n, f in fields.items():
                     # try to use model fields
                     try:
                         if getattr(field, 'primary_key', False):
@@ -558,7 +613,7 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
 
                         model_field = get_model_field(
                             model,
-                            f.source or name
+                            f.source or n
                         )
 
                         if model_field.primary_key:
@@ -577,11 +632,19 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
                 return field
         else:
             if field_name in fields:
-                return fields[field_name]
+                field = fields[field_name]
+                return field
 
         raise ValidationError({
             field_name: '"%s" is not an API field' % field_name
         })
+
+    def get_format(self):
+        view = self.context.get('view')
+        get_format = getattr(view, 'get_format', None)
+        if callable(get_format):
+            return get_format()
+        return None
 
     @classmethod
     def get_name(cls):
@@ -620,6 +683,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
     @classmethod
     def get_description(cls):
         return getattr(cls.Meta, 'description', None)
+
+    @classmethod
+    def get_class_getter(self):
+        meta = self.get_meta()
+        return getattr(meta, 'get_classes', None)
 
     @classmethod
     def get_name_field(cls):
@@ -748,6 +816,8 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
 
         # apply request overrides
         if request_fields:
+            if request_fields is True:
+                request_fields = {}
             for name, include in six.iteritems(request_fields):
                 if name not in serializer_fields and name != 'pk':
                     raise exceptions.ParseError(
@@ -863,6 +933,9 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
 
         return ret
 
+    def is_root(self):
+        return self.parent is None
+
     def to_representation(self, instance):
         """Modified to_representation method.
 
@@ -872,7 +945,13 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
             Instance ID if the serializer is meant to represent its ID.
             Otherwise, a tagged data dict representation.
         """
-        if self.id_only():
+        id_only = self.id_only()
+        if (
+            self.get_format() == 'admin' and
+            self.is_root()
+        ):
+            id_only = False
+        if id_only:
             return instance.pk
         else:
             if self.enable_optimization:
@@ -906,9 +985,11 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
             embed=self.embed
         )
 
+
     def to_internal_value(self, data):
         meta = self.get_meta()
         value = super(WithDynamicSerializerMixin, self).to_internal_value(data)
+
         id_attr = getattr(meta, 'update_lookup_field', 'id')
         request_method = self.get_request_method()
 
@@ -1005,7 +1086,10 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
         Returns:
             True if and only if `request_fields` is True.
         """
-        return self.dynamic and self.request_fields is True
+        return (
+            self.dynamic and
+            self.request_fields is True
+        )
 
     @property
     def data(self):
@@ -1038,8 +1122,9 @@ class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
         return a list of IDs.
         """
         model = self.get_model()
+        meta = Meta(model)
 
-        out = [model._meta.pk.name]  # get PK field name
+        out = [meta.get_pk_field().attname]
 
         # If this is being called, it means it
         # is a many-relation  to its parent.
@@ -1049,9 +1134,9 @@ class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
         # we will just pull all ID fields.
         # TODO: We also might need to return all non-nullable fields,
         #    or else it is possible Django will issue another request.
-        for field in model._meta.fields:
+        for field in meta.get_fields():
             if isinstance(field, models.ForeignKey):
-                out.append(field.name + '_id')
+                out.append(field.attname)
 
         return out
 

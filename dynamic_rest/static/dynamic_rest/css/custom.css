@@ -75,16 +75,34 @@
         width: 30px;
     }
 }
-.table, .stacktable.small-only {
-    border: 1px solid #ddd;
+.drest-content .table {
+    border: 0px;
+}
+.drest-content .table th {
+    border-top: 0px;
+}
+.drest-content .stacktable.small-only {
+    border: 1px solid #999;
 }
 .navbar-brand.drest-nav-left {
     margin-right: 0;
 }
-.drest-content .st-key {
-    width: auto;
+.drest-content .stacktable tr:first-child td {
+    border-top: 0px;
+}
+.drest-content .st-key, .drest-content th, .modal .form-control-label, .drest-field .drest-field-label {
+    font-weight: 600;
+    font-size: 12px;
     text-align: inherit;
-    font-weight: bold;
+    align-self: center;
+    vertical-align: inherit;
+    text-transform: uppercase;
+}
+.drest-content-container .drest-content th {
+    border-bottom: 1px solid #999;
+}
+.drest-content th:last-child {
+    border-right: 0px;
 }
 .drest-nav-alert {
     padding: 14px;
@@ -97,14 +115,62 @@
     z-index: 9001;
     bottom: 0;
 }
-.bg-primary .drest-has-tooltip, .bg-inverse .drest-has-tooltip {
-    border-bottom: 1px dotted #fff;
+.drest-field {
+    border-bottom: 1px solid #eaeaea;
+}
+.drest-field:last-child {
+    border-bottom: 0px;
+}
+.navbar-nav .drest-has-tooltip {
+    border-bottom: 0px;
 }
 .modal-dialog.modal-dialog {
-    max-width: 1024px;
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+.modal-header.modal-header {
+    height: 56px;
+    border: 0px;
+}
+.modal-header .close {
+    color: white;
+}
+.modal-content.modal-content {
+    height: 100%;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 1);
+    border: 0px;
+    border-radius: 0;
+}
+.modal-content .modal-body {
+    position: fixed;
+    top: 56px;
+    bottom: 60px;
+    left: 0px;
+    right: 0px;
+    overflow-y: scroll;
+}
+.modal-content .modal-header{
+    position: fixed;
+    color: white;
+    height: 56px;
+    left: 0px;
+    right: 0px;
+    top: 0px;
+}
+.modal-footer.modal-footer {
+    position: fixed;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    border: 0px;
+    height: 60px;
 }
 .drest-has-tooltip {
-    border-bottom: 1px dashed #000;
+    border-bottom: 1px dotted #999;
 }
 .drest-table-details {
     border: 0;

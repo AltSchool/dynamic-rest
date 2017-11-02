@@ -32,7 +32,7 @@ for cls_name in (
     new_name = 'Dynamic%s' % cls_name
     new_cls = type(
         new_name,
-        (cls, DynamicField),
+        (DynamicField, cls),
         {}
     )
     setattr(sys.modules[__name__], new_name, new_cls)

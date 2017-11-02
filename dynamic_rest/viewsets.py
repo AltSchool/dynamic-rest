@@ -245,7 +245,8 @@ class WithDynamicViewSetMixin(object):
           queryset: Optional root-level queryset.
         """
         serializer = self.get_serializer()
-        return getattr(self, 'queryset', serializer.Meta.model.objects.all())
+        meta = getattr(serializer, 'get_meta', lambda x: serializer.Meta)()
+        return getattr(self, 'queryset', meta.model.objects.all())
 
     def get_request_fields(self):
         """Parses the INCLUDE and EXCLUDE features.
@@ -308,6 +309,16 @@ class WithDynamicViewSetMixin(object):
         else:
             return False
 
+    def is_list(self):
+        if (
+            self.request and
+            self.request.method.upper() == 'GET' and
+            (self.lookup_url_kwarg or self.lookup_field)
+            not in self.kwargs
+        ):
+            return True
+        return False
+
     def is_delete(self):
         if (
             self.request and
@@ -317,15 +328,10 @@ class WithDynamicViewSetMixin(object):
         else:
             return False
 
-    @property
-    def is_gui(self):
-        if (
-            self.request and
-            self.request.accepted_renderer and
-            self.request.accepted_renderer.format == 'admin'
-        ):
-            return True
-        return False
+    def get_format(self):
+        if self.request and self.request.accepted_renderer:
+            return self.request.accepted_renderer.format
+        return None
 
     def get_serializer(self, *args, **kwargs):
         if 'request_fields' not in kwargs:
@@ -338,11 +344,14 @@ class WithDynamicViewSetMixin(object):
             kwargs['envelope'] = True
         if self.is_update():
             kwargs['include_fields'] = '*'
-        return super(
+        if self.is_list():
+            kwargs['many'] = True
+        serializer = super(
             WithDynamicViewSetMixin, self
         ).get_serializer(
             *args, **kwargs
         )
+        return serializer
 
     def paginate_queryset(self, *args, **kwargs):
         if self.PAGE in self.features:
