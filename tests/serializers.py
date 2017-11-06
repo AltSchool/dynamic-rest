@@ -42,6 +42,7 @@ class CatSerializer(DynamicModelSerializer):
     class Meta:
         model = Cat
         name = 'cat'
+        name_field = 'name'
         fields = ('id', 'name', 'home', 'backup_home', 'foobar', 'parent')
         deferred_fields = ('home', 'backup_home', 'foobar', 'parent')
         immutable_fields = ('name',)
@@ -53,6 +54,7 @@ class LocationSerializer(DynamicModelSerializer):
     class Meta:
         defer_many_relations = False
         model = Location
+        name_field = 'name'
         name = 'location'
         fields = (
             'id', 'name', 'users', 'user_count', 'address',
@@ -80,6 +82,7 @@ class PermissionSerializer(DynamicModelSerializer):
         defer_many_relations = True
         model = Permission
         name = 'permission'
+        name_field = 'name'
         fields = ('id', 'name', 'code', 'users', 'groups')
         deferred_fields = ('code',)
 
@@ -90,6 +93,7 @@ class PermissionSerializer(DynamicModelSerializer):
 class GroupSerializer(DynamicModelSerializer):
 
     class Meta:
+        name_field = 'name'
         model = Group
         name = 'group'
         fields = (
@@ -99,33 +103,38 @@ class GroupSerializer(DynamicModelSerializer):
             'members',
             'users',
             'loc1users',
-            'loc1usersLambda'
+            'loc1usersLambda',
+            'loc1usersGetter',
         )
 
     permissions = DynamicRelationField(
         'PermissionSerializer',
         many=True,
         deferred=True)
+
+    # Infer serializer from source
     members = DynamicRelationField(
-        'UserSerializer',
         source='users',
         many=True,
-        deferred=True)
+        deferred=True
+    )
 
     # Intentional duplicate of 'users':
     users = DynamicRelationField(
-        'UserSerializer',
         many=True,
-        deferred=True)
+        deferred=True
+    )
 
-    # For testing default queryset on relations:
+    # Queryset for get filter
     loc1users = DynamicRelationField(
         'UserSerializer',
         source='users',
         many=True,
         queryset=User.objects.filter(location_id=1),
-        deferred=True)
+        deferred=True
+    )
 
+    # Dynamic queryset through lambda
     loc1usersLambda = DynamicRelationField(
         'UserSerializer',
         source='users',
@@ -133,12 +142,39 @@ class GroupSerializer(DynamicModelSerializer):
         queryset=lambda srlzr: User.objects.filter(location_id=1),
         deferred=True)
 
+    # Custom getter/setter
+    loc1usersGetter = DynamicRelationField(
+        'UserSerializer',
+        source='*',
+        requires=['users.*'],
+        required=False,
+        deferred=True,
+        many=True
+    )
+
+    def get_loc1usersGetter(self, instance):
+        return [u for u in instance.users.all() if u.location_id == 1]
+
+    def set_loc1usersGetter(self, instance, user_ids):
+        users = instance.users.all()
+        user_ids = set(user_ids)
+        for user in users:
+            if user.location_id == 1:
+                if user.id in user_ids:
+                    user_ids.remove(user.id)
+                else:
+                    instance.users.remove(user)
+        new_users = User.objects.filter(pk__in=user_ids)
+        for user in new_users:
+            instance.users.add(user)
+
 
 class UserSerializer(DynamicModelSerializer):
 
     class Meta:
         model = User
         name = 'user'
+        name_field = 'name'
         fields = (
             'id',
             'name',
@@ -171,6 +207,7 @@ class UserSerializer(DynamicModelSerializer):
     permissions = DynamicRelationField(
         'PermissionSerializer',
         many=True,
+        help_text='Permissions for this user',
         deferred=True
     )
     groups = DynamicRelationField('GroupSerializer', many=True, deferred=True)
@@ -201,6 +238,7 @@ class ProfileSerializer(DynamicModelSerializer):
 
     class Meta:
         model = Profile
+        name_field = 'display_name'
         name = 'profile'
         fields = (
             'user',
@@ -256,6 +294,8 @@ class DogSerializer(DynamicModelSerializer):
 
     class Meta:
         model = Dog
+        name_field = 'name'
+        description = 'Woof woof!'
         fields = ('id', 'name', 'origin', 'fur')
 
     fur = CharField(source='fur_color')
@@ -265,6 +305,8 @@ class HorseSerializer(DynamicModelSerializer):
 
     class Meta:
         model = Horse
+        fields = '__all__'
+        name_field = 'name'
         name = 'horse'
         fields = (
             'id',
@@ -278,6 +320,7 @@ class ZebraSerializer(DynamicModelSerializer):
     class Meta:
         model = Zebra
         name = 'zebra'
+        name_field = 'zebra'
         fields = (
             'id',
             'name',
@@ -289,6 +332,7 @@ class CountrySerializer(DynamicModelSerializer):
 
     class Meta:
         model = Country
+        name_field = 'name'
         fields = ('id', 'name', 'short_name')
         deferred_fields = ('name', 'short_name')
 
@@ -298,6 +342,7 @@ class PartSerializer(DynamicModelSerializer):
 
     class Meta:
         model = Part
+        name_field = 'name'
         fields = ('id', 'name', 'country')
         deferred_fields = ('name', 'country')
 
@@ -305,8 +350,20 @@ class PartSerializer(DynamicModelSerializer):
 class CarSerializer(DynamicModelSerializer):
     country = DynamicRelationField('CountrySerializer')
     parts = DynamicRelationField('PartSerializer', many=True, source='part_set')  # noqa
+    country_name = DynamicField(source='country.name')
+    country_short_name = DynamicField(source='country.short_name')
 
     class Meta:
         model = Car
-        fields = ('id', 'name', 'country', 'parts')
-        deferred_fields = ('name', 'country', 'parts')
+        name_field = 'name'
+        fields = (
+            'id',
+            'name',
+            'country',
+            'parts',
+            'country_name',
+            'country_short_name'
+        )
+        deferred_fields = (
+            'name', 'country', 'parts', 'country_name', 'country_short_name'
+        )

@@ -25,10 +25,12 @@ from tests.serializers import (
     UserLocationSerializer,
     UserSerializer,
     ZebraSerializer
-    )
+)
 
 
 class UserViewSet(DynamicModelViewSet):
+    """Represents a User"""
+
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
         DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT,
@@ -96,7 +98,7 @@ class LocationViewSet(DynamicModelViewSet):
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
         DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT,
-        DynamicModelViewSet.DEBUG, DynamicModelViewSet.SIDELOADING
+        DynamicModelViewSet.DEBUG, DynamicModelViewSet.SIDELOADING,
     )
     model = Location
     serializer_class = LocationSerializer

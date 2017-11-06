@@ -1,0 +1,20 @@
+<div class="form-group row {% if field.errors %}has-error{% endif %}">
+    {% if field.label %}
+        <label class="col-2 form-control-label {% if style.hide_label %}sr-only{% endif %}">
+            {% if field.help_text %}
+                <span class="drest-has-tooltip" data-trigger="click" data-placement="right" data-toggle="tooltip" title="{{ field.help_text | safe }}">{{ field.label }}</span>
+            {% else %}
+                {{ field.label }}
+            {% endif %}
+        </label>
+    {% endif %}
+
+    <div class="float-sm-right col-sm-10">
+        <input type="checkbox" name="{{ field.name }}" value="true" {% if field.value %}checked{% endif %}>
+        {% if field.errors %}
+            {% for error in field.errors %}
+                <span class="text-danger">{{ error }}</span>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>

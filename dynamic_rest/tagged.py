@@ -20,8 +20,8 @@ class TaggedDict(object):
     """
 
     def __init__(self, *args, **kwargs):
-        self.serializer = kwargs.pop('serializer')
-        self.instance = kwargs.pop('instance')
+        self.serializer = kwargs.pop('serializer', None)
+        self.instance = kwargs.pop('instance', None)
         self.embed = kwargs.pop('embed', False)
         self.pk_value = kwargs.pop('pk_value', None)
         if not isinstance(self, dict):

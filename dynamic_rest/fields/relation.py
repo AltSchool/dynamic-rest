@@ -1,63 +1,24 @@
-"""This module contains custom field classes."""
-
 import importlib
 import pickle
 
+from rest_framework.serializers import CreateOnlyDefault, CurrentUserDefault
 from django.utils import six
 from django.utils.functional import cached_property
+from rest_framework.exceptions import (
+    APIException,
+    NotFound,
+    ParseError
+)
 from rest_framework import fields
-from rest_framework.exceptions import NotFound, ParseError
-from rest_framework.serializers import SerializerMethodField
-
-from dynamic_rest.bases import DynamicSerializerBase
 from dynamic_rest.conf import settings
-from dynamic_rest.fields.common import WithRelationalFieldMixin
-from dynamic_rest.meta import is_field_remote, get_model_field
-
-
-class DynamicField(fields.Field):
-
-    """
-    Generic field base to capture additional custom field attributes.
-    """
-
-    def __init__(
-        self,
-        requires=None,
-        deferred=None,
-        field_type=None,
-        immutable=False,
-        **kwargs
-    ):
-        """
-        Arguments:
-            deferred: Whether or not this field is deferred.
-                Deferred fields are not included in the response,
-                unless explicitly requested.
-            field_type: Field data type, if not inferrable from model.
-            requires: List of fields that this field depends on.
-                Processed by the view layer during queryset build time.
-        """
-        self.requires = requires
-        self.deferred = deferred
-        self.field_type = field_type
-        self.immutable = immutable
-        self.kwargs = kwargs
-        super(DynamicField, self).__init__(**kwargs)
-
-    def to_representation(self, value):
-        return value
-
-    def to_internal_value(self, data):
-        return data
-
-
-class DynamicComputedField(DynamicField):
-    pass
-
-
-class DynamicMethodField(SerializerMethodField, DynamicField):
-    pass
+from dynamic_rest.meta import (
+    get_related_model
+)
+from .base import (
+    DynamicField,
+    WithRelationalFieldMixin
+)
+from dynamic_rest.base import DynamicBase
 
 
 class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
@@ -78,7 +39,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
 
     def __init__(
             self,
-            serializer_class,
+            serializer_class=None,
             many=False,
             queryset=None,
             embed=False,
@@ -96,58 +57,58 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             sideloading: if True, force sideloading all the way down.
                 if False, force embedding all the way down.
                 This overrides the "embed" option if set.
+            debug: if True, representation will include a meta key with extra
+                instance information.
             embed: If True, always embed related object(s). Will not sideload,
                 and will include the full object unless specifically excluded.
         """
         self._serializer_class = serializer_class
-        self.bound = False
         self.queryset = queryset
         self.sideloading = sideloading
         self.debug = debug
         self.embed = embed if sideloading is None else not sideloading
-        if '.' in kwargs.get('source', ''):
-            raise Exception('Nested relationships are not supported')
         if 'link' in kwargs:
             self.link = kwargs.pop('link')
         super(DynamicRelationField, self).__init__(**kwargs)
         self.kwargs['many'] = self.many = many
 
+    def get_pk_field(self):
+        return self.serializer.get_pk_field()
+
+    def get_url(self, pk=None):
+        """Get the serializer's endpoint."""
+        return self.serializer_class.get_url(pk=pk)
+
+    def get_plural_name(self):
+        """Get the serializer's plural name."""
+        return self.serializer_class.get_plural_name()
+
+    def get_name_field(self):
+        """Get the serializer's name field."""
+        return self.serializer_class.get_name_field()
+
+    def get_search_key(self):
+        """Get the serializer's search key."""
+        return self.serializer_class.get_search_key()
+
     def get_model(self):
-        """Get the child serializer's model."""
-        return getattr(self.serializer_class.Meta, 'model', None)
+        """Get the serializer's model."""
+        return self.serializer_class.get_model()
 
-    def bind(self, *args, **kwargs):
-        """Bind to the parent serializer."""
-        if self.bound:  # Prevent double-binding
-            return
-        super(DynamicRelationField, self).bind(*args, **kwargs)
-        self.bound = True
-        parent_model = getattr(self.parent.Meta, 'model', None)
+    def get_value(self, dictionary):
+        """Extract value from QueryDict.
 
-        remote = is_field_remote(parent_model, self.source)
-
-        try:
-            model_field = get_model_field(parent_model, self.source)
-        except:
-            # model field may not be available for m2o fields with no
-            # related_name
-            model_field = None
-
-        # Infer `required` and `allow_null`
-        if 'required' not in self.kwargs and (
-                remote or (
-                    model_field and (
-                        model_field.has_default() or model_field.null
-                    )
-                )
-        ):
-            self.required = False
-        if 'allow_null' not in self.kwargs and getattr(
-                model_field, 'null', False
-        ):
-            self.allow_null = True
-
-        self.model_field = model_field
+        Taken from DRF's ManyRelatedField
+        """
+        if hasattr(dictionary, 'getlist'):
+            # Don't return [] if the update is partial
+            if self.field_name not in dictionary:
+                if getattr(self.root, 'partial', False):
+                    return fields.empty
+            return dictionary.getlist(
+                self.field_name
+            ) if self.many else dictionary.get(self.field_name)
+        return dictionary.get(self.field_name, fields.empty)
 
     @property
     def root_serializer(self):
@@ -264,78 +225,136 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         """Return True if the child serializer is dynamic."""
         return issubclass(
             self.serializer_class,
-            DynamicSerializerBase
+            DynamicBase
         )
 
     def get_attribute(self, instance):
         return instance
 
+    def admin_get_classes(self, instance, value):
+        serializer = self.serializer
+        getter = serializer.get_class_getter()
+        if getter and value is not None:
+            if hasattr(serializer, 'child'):
+                serializer = serializer.child
+            getter = getattr(serializer, getter)
+            return getter(value)
+        else:
+            return super(DynamicRelationField, self).admin_get_classes(instance, value)
+
+    def admin_get_icon(self, instance, value):
+        serializer = self.serializer
+        if serializer:
+            icon = serializer.get_icon()
+            label = self.admin_get_label(instance, value)
+            if label:
+                return icon
+
+        return None
+
+    def admin_get_label(self, instance, value):
+        # use the name field
+        serializer = self.serializer
+        name_field_name = serializer.get_name_field()
+        name_field = serializer.get_field(name_field_name)
+        source = name_field.source or name_field_name
+        sources = source.split('.')
+        related = value
+        if related:
+            for source in sources:
+                if source == '*':
+                    break
+                related = getattr(related, source)
+            return related
+        else:
+            return ''
+
+    def admin_get_url(self, instance, value):
+        serializer = self.serializer
+        related = value
+
+        if related:
+            return serializer.get_url(related.pk)
+
+        return None
+
+    def get_related(self, instance):
+        return self.prepare_value(instance)
+
     def to_representation(self, instance):
         """Represent the relationship, either as an ID or object."""
         serializer = self.serializer
-        model = serializer.get_model()
         source = self.source
-        if not self.kwargs['many'] and serializer.id_only():
+        if (
+            not self.getter and
+            not self.many and
+            serializer.id_only()
+        ):
             # attempt to optimize by reading the related ID directly
             # from the current instance rather than from the related object
             source_id = '%s_id' % source
-            if hasattr(instance, source_id):
-                return getattr(instance, source_id)
+            value = getattr(instance, source_id, None)
+            if value:
+                return value
 
-        if model is None:
-            related = getattr(instance, source)
-        else:
-            try:
-                related = getattr(instance, source)
-            except model.DoesNotExist:
-                return None
+        value = self.prepare_value(instance)
 
-        if related is None:
+        if value is None:
             return None
         try:
-            return serializer.to_representation(related)
+            return serializer.to_representation(value)
         except Exception as e:
             # Provide more context to help debug these cases
             if getattr(serializer, 'debug', False):
                 import traceback
                 traceback.print_exc()
-            raise Exception(
+            raise APIException(
                 "Failed to serialize %s.%s: %s\nObj: %s" %
                 (
                     self.parent.__class__.__name__,
                     self.source,
                     str(e),
-                    repr(related)
+                    repr(value)
                 )
             )
 
-    def to_internal_value_single(self, data, serializer):
+    def to_internal_value_single(self, data):
         """Return the underlying object, given the serialized form."""
-        related_model = serializer.Meta.model
-        if isinstance(data, related_model):
+        model = self.get_model()
+        if isinstance(data, model):
             return data
         try:
-            instance = related_model.objects.get(pk=data)
-        except related_model.DoesNotExist:
+            instance = model.objects.get(pk=data)
+        except model.DoesNotExist:
             raise NotFound(
-                "'%s object with ID=%s not found" %
-                (related_model.__name__, data)
+                '"%s" with ID "%s" not found' %
+                (model.__name__, data)
             )
         return instance
+
+    def run_validation(self, data):
+        if self.setter:
+            if data == fields.empty:
+                data = [] if self.kwargs.get('many') else None
+            def fn(instance):
+                setter = getattr(self.parent, self.setter)
+                setter(instance, data)
+
+            self.parent.add_post_save(fn)
+            raise fields.SkipField()
+        return super(DynamicRelationField, self).run_validation(data)
 
     def to_internal_value(self, data):
         """Return the underlying object(s), given the serialized form."""
         if self.kwargs['many']:
-            serializer = self.serializer.child
             if not isinstance(data, list):
-                raise ParseError("'%s' value must be a list" % self.field_name)
+                raise ParseError('"%s" value must be a list' % self.field_name)
             return [
                 self.to_internal_value_single(
                     instance,
-                    serializer
                 ) for instance in data
             ]
-        return self.to_internal_value_single(data, self.serializer)
+        return self.to_internal_value_single(data)
 
     @property
     def serializer_class(self):
@@ -344,6 +363,13 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         Resolves string imports.
         """
         serializer_class = self._serializer_class
+        if serializer_class is None:
+            from dynamic_rest.routers import DynamicRouter
+            serializer_class = DynamicRouter.get_canonical_serializer(
+                None,
+                model=get_related_model(self.model_field)
+            )
+
         if not isinstance(serializer_class, six.string_types):
             return serializer_class
 
@@ -353,7 +379,8 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             if getattr(self, 'parent', None) is None:
                 raise Exception(
                     "Can not load serializer '%s'" % serializer_class +
-                    ' before binding or without specifying full path')
+                    ' before binding or without specifying full path'
+                )
 
             # try the module of the parent class
             module_path = self.parent.__module__
@@ -365,54 +392,12 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         return serializer_class
 
 
-class CountField(DynamicComputedField):
-
-    """
-    Computed field that counts the number of elements in another field.
-    """
-
-    def __init__(self, serializer_source, *args, **kwargs):
-        """
-        Arguments:
-            serializer_source: A serializer field.
-            unique: Whether or not to perform a count of distinct elements.
-        """
-        self.field_type = int
-        # Use `serializer_source`, which indicates a field at the API level,
-        # instead of `source`, which indicates a field at the model level.
-        self.serializer_source = serializer_source
-        # Set `source` to an empty value rather than the field name to avoid
-        # an attempt to look up this field.
-        kwargs['source'] = ''
-        self.unique = kwargs.pop('unique', True)
-        return super(CountField, self).__init__(*args, **kwargs)
-
-    def get_attribute(self, obj):
-        source = self.serializer_source
-        if source not in self.parent.fields:
-            return None
-        value = self.parent.fields[source].get_attribute(obj)
-        data = self.parent.fields[source].to_representation(value)
-
-        # How to count None is undefined... let the consumer decide.
-        if data is None:
-            return None
-
-        # Check data type. Technically len() works on dicts, strings, but
-        # since this is a "count" field, we'll limit to list, set, tuple.
-        if not isinstance(data, (list, set, tuple)):
-            raise TypeError(
-                "'%s' is %s. Must be list, set or tuple to be countable." % (
-                    source, type(data)
-                )
-            )
-
-        if self.unique:
-            # Try to create unique set. This may fail if `data` contains
-            # non-hashable elements (like dicts).
-            try:
-                data = set(data)
-            except TypeError:
-                pass
-
-        return len(data)
+class DynamicCreatorField(DynamicRelationField):
+    def __init__(self, *args, **kwargs):
+        kwargs['default'] = CreateOnlyDefault(
+            CurrentUserDefault()
+        )
+        if 'read_only' not in kwargs:
+            # default to read_only
+            kwargs['read_only'] = True
+        super(DynamicCreatorField, self).__init__(*args, **kwargs)

@@ -1,0 +1,108 @@
+body {
+  background: initial !important;
+}
+
+.left {
+    float: left;
+}
+
+.container {
+    width: auto !important;
+}
+
+body a {
+  color: #2789d8;
+  cursor: pointer;
+}
+
+body a:hover {
+  color: #36a3fa;
+  text-decoration: none;
+}
+
+#content {
+  margin-top: 100px !important;
+}
+
+.breadcrumb>li+li:before {
+  content: "\003e" !important;
+}
+
+.navbar {
+  background: rgba(28, 118, 193, 1);
+  border-color: rgba(39, 137, 216, .95);
+}
+
+.navbar-brand {
+  height: auto;
+  padding: 0;
+}
+
+.logo {
+  height: 60px;
+  padding: 15px;
+}
+
+.breadcrumb {
+  background-color: transparent;
+  display: inline-block;
+  margin: 12px auto 0 !important;
+  width: auto;
+}
+
+.breadcrumb li.active a, .breadcrumb li a {
+  color: white;
+}
+
+.breadcrumb li.active a:hover, .breadcrumb li a:hover {
+  color: rgba(255,255,255,.9);
+}
+
+#content {
+  margin-top: 120px;
+}
+
+.sidebar-actions {
+    float: right;
+}
+
+.sidebar-action {
+  margin-bottom: 10px;
+  margin-right: 1em;
+  width: 85px;
+}
+
+/* Buttons */
+
+.btn { border: none; color: white; }
+
+.btn:active:focus, .btn:focus { outline: transparent; }
+
+.btn-label { color: white; margin: 0; }
+
+.btn-primary {  background-color: #2789d8; }
+
+.btn-primary:hover { background-color: #36a3fa; }
+
+.btn-import { background-color: #098f90; }
+
+.btn-import:hover { background-color: #0CADAE; }
+
+.btn-export { background-color: #744D98; }
+
+.btn-export:hover { background-color: #AB80D4; }
+
+.btn-delete { margin-right: 0; }
+
+.btn-filters, .btn-filters:active, .btn-filters:focus, .btn-filters:visited {
+  background-color: #F09648;
+  color: white;
+}
+.btn-filters:hover {
+  background-color: #F8A65F !important;
+  color: white !important;
+}
+
+.page-header > h1 {
+  margin-top: 0;
+}

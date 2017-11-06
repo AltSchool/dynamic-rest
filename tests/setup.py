@@ -206,6 +206,13 @@ def create_fixture():
         'id': 1,
         'name': 'Porshe',
         'country': 1
+    }, {
+        'id': 2,
+        'name': 'Forta',
+        'country': 2
+    }, {
+        'id': 3,
+        'name': 'BMW',
     }]
 
     parts = [{

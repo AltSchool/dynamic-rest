@@ -15,6 +15,7 @@ See http://dynamic-rest.readthedocs.org for full documentation.
 
 - [Overview](#overview)
 - [Maintainers](#maintainers)
+- [Changelog](#changelog)
 - [Requirements](#requirements)
 - [Installation](#installation)
 - [Demo](#demo)
@@ -26,7 +27,7 @@ See http://dynamic-rest.readthedocs.org for full documentation.
   - [Exclusions](#exclusions)
   - [Filtering](#filtering)
   - [Ordering](#ordering)
-  - [Directory panel](#directory-panel)
+  - [Admin UI](#admin-ui)
   - [Optimizations](#optimizations)
 - [Settings](#settings)
 - [Compatibility table](#compatibility-table)
@@ -49,26 +50,40 @@ DREST classes can be used as a drop-in replacement for DRF classes, which offer 
 * Exclusions
 * Filtering
 * Sorting
-* Directory panel for your Browsable API
+* Admin UI
 * Optimizations
 
 DREST was initially written to complement [Ember Data](https://github.com/emberjs/data),
 but it can be used to provide fast and flexible CRUD operations to any consumer that supports JSON over HTTP.
 
-## Maintainers
+# Maintainers
 
 * [Anthony Leontiev](mailto:ant@altschool.com)
 * [Ryo Chijiiwa](mailto:ryo@altschool.com)
 
+# Changelog
+
+See the [Changelog](CHANGELOG.md).
+
 # Requirements
 
-* Python (2.7, 3.3, 3.4, 3.5)
+* Python (2.7, 3.4, 3.5)
 * Django (1.8, 1.9, 1.10, 1.11)
 * Django REST Framework (3.1, 3.2, 3.3, 3.4, 3.5, 3.6)
 
 # Installation
 
-1) Install using `pip`:
+1) Add and generate boilerplate using [dj](https://github.com/aleontiev/dj):
+
+```bash
+    dj add dynamic-rest
+    dj generate model part
+    dj generate api v1 part
+```
+
+OR
+
+1a) Install using `pip`:
 
 ```bash
     pip install dynamic-rest
@@ -76,7 +91,7 @@ but it can be used to provide fast and flexible CRUD operations to any consumer 
 
 (or add `dynamic-rest` to `requirements.txt` or `setup.py`)
 
-2) Add `rest_framework` and `dynamic_rest` to `INSTALLED_APPS` in `settings.py`:
+1b) Add `rest_framework` and `dynamic_rest` to `INSTALLED_APPS` in `settings.py`:
 
 ```python
     INSTALLED_APPS = (
@@ -87,14 +102,14 @@ but it can be used to provide fast and flexible CRUD operations to any consumer 
 
 ```
 
-3) If you want to use the [Directory panel](#directory-panel), replace DRF's browsable API renderer with DREST's
-in your settings:
+2) If you want to use the [admin UI renderer](#admin-ui), update your default renderer list:
  
 ```python
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
-        'dynamic_rest.renderers.DynamicBrowsableAPIRenderer',
+        'dynamic_rest.renderers.DynamicAdminRenderer',
+        'rest_framework.renderers.BrowsableAPIRenderer',
     ],
 } 
 ```
@@ -537,12 +552,15 @@ You can use the `sort[]` feature to order your response by one or more fields. D
     ...
 ```
 
-## Directory panel
+## Admin UI
 
-We love the DRF browsable API, but wish that it included a directory that would let you see your entire list of endpoints at a glance from any page.
-DREST adds that in:
+DREST includes a revamped version of DRF's `AdminRenderer`, which includes:
 
-![Directory panel][directory]
+- Human-friendly record names, labels, and tooltips
+- Integration with DREST relationships
+- Responsive layout built on Bootstrap 4
+
+![Admin UI][admin-ui]
 
 ## Optimizations
 
@@ -563,134 +581,21 @@ Cubic benchmark: rendering a list of lists of lists
 
 # Settings
 
-DREST is configurable, and all settings should be nested under a single block in your `settings.py` file.
-Here are our [defaults](dynamic_rest/conf.py):
+All [DREST settings](dynamic_rest/conf.py) should be nested under a single block in your `settings.py` file.
 
-```python
-DYNAMIC_REST = {
-    # DEBUG: enable/disable internal debugging
-    'DEBUG': False,
+# Compatibility
 
-    # ENABLE_BROWSABLE_API: enable/disable the browsable API.
-    # It can be useful to disable it in production.
-    'ENABLE_BROWSABLE_API': True,
+See the [tox file](tox.ini) for all combinations of Python, Django, and DRF that we support. 
 
-    # ENABLE_LINKS: enable/disable relationship links
-    'ENABLE_LINKS': True,
-
-    # ENABLE_SERIALIZER_CACHE: enable/disable caching of related serializers
-    'ENABLE_SERIALIZER_CACHE': True,
-
-    # ENABLE_SERIALIZER_OPTIMIZATIONS: enable/disable representation speedups
-    'ENABLE_SERIALIZER_OPTIMIZATIONS': True,
-
-    # DEFER_MANY_RELATIONS: automatically defer many-relations, unless 
-    # `deferred=False` is explicitly set on the field.
-    'DEFER_MANY_RELATIONS': False,
-
-    # MAX_PAGE_SIZE: global setting for max page size.
-    # Can be overriden at the viewset level.
-    'MAX_PAGE_SIZE': None,
-
-    # PAGE_QUERY_PARAM: global setting for the pagination query parameter.
-    # Can be overriden at the viewset level.
-    'PAGE_QUERY_PARAM': 'page',
-
-    # PAGE_SIZE: global setting for page size.
-    # Can be overriden at the viewset level.
-    'PAGE_SIZE': None,
-
-    # PAGE_SIZE_QUERY_PARAM: global setting for the page size query parameter.
-    # Can be overriden at the viewset level.
-    'PAGE_SIZE_QUERY_PARAM': 'per_page',
-
-    # ADDITIONAL_PRIMARY_RESOURCE_PREFIX: String to prefix additional
-    # instances of the primary resource when sideloading.
-    'ADDITIONAL_PRIMARY_RESOURCE_PREFIX': '+',
-
-    # Enables host-relative links.  Only compatible with resources registered
-    # through the dynamic router.  If a resource doesn't have a canonical
-    # path registered, links will default back to being resource-relative urls
-    'ENABLE_HOST_RELATIVE_LINKS': True
-}
-```
-
-# Compatibility table
-
-Not all versions of Python, Django, and DRF are compatible. Here are the combinations you can use reliably with DREST (all tested by our tox configuration):
-
-| Python | Django | DRF | OK  |
-| ------ | ------ | --- | --- |
-| 2.7    | 1.8    | 3.1 | YES |
-| 2.7    | 1.8    | 3.2 | YES |
-| 2.7    | 1.8    | 3.3 | YES |
-| 2.7    | 1.8    | 3.4 | YES |
-| 2.7    | 1.9    | 3.1 | NO<sup>1</sup> |
-| 2.7    | 1.9    | 3.2 | YES |
-| 2.7    | 1.9    | 3.3 | YES |
-| 2.7    | 1.9    | 3.4 | YES |
-| 2.7    | 1.10   | 3.2 | NO<sup>3</sup> |
-| 2.7    | 1.10   | 3.3 | NO<sup>3</sup> |
-| 2.7    | 1.10   | 3.4 | YES |
-| 2.7    | 1.10   | 3.5 | YES |
-| 2.7    | 1.10   | 3.6 | YES |
-| 2.7    | 1.11   | 3.4 | YES |
-| 2.7    | 1.11   | 3.5 | YES |
-| 2.7    | 1.11   | 3.6 | YES |
-| 3.3    | 1.8    | 3.1 | YES |
-| 3.3    | 1.8    | 3.2 | YES |
-| 3.3    | 1.8    | 3.3 | YES |
-| 3.3    | 1.8    | 3.4 | YES |
-| 3.3    | 1.9    | x.x | NO<sup>2</sup> |
-| 3.3    | 1.10   | x.x | NO<sup>4</sup> |
-| 3.3    | 1.11   | x.x | NO<sup>5</sup> |
-| 3.4    | 1.8    | 3.1 | YES |
-| 3.4    | 1.8    | 3.2 | YES |
-| 3.4    | 1.8    | 3.3 | YES |
-| 3.4    | 1.8    | 3.4 | YES |
-| 3.4    | 1.9    | 3.1 | NO<sup>1</sup> |
-| 3.4    | 1.9    | 3.2 | YES |
-| 3.4    | 1.9    | 3.3 | YES |
-| 3.4    | 1.9    | 3.4 | YES |
-| 3.4    | 1.10   | 3.2 | NO<sup>3</sup> |
-| 3.4    | 1.10   | 3.3 | NO<sup>3</sup> |
-| 3.4    | 1.10   | 3.4 | YES |
-| 3.4    | 1.10   | 3.5 | YES |
-| 3.4    | 1.10   | 3.6 | YES |
-| 3.4    | 1.11   | 3.3 | NO<sup>3</sup> |
-| 3.4    | 1.11   | 3.4 | YES |
-| 3.4    | 1.11   | 3.5 | YES |
-| 3.5    | 1.8    | 3.1 | YES |
-| 3.5    | 1.8    | 3.2 | YES |
-| 3.5    | 1.8    | 3.3 | YES |
-| 3.5    | 1.8    | 3.4 | YES |
-| 3.5    | 1.9    | 3.1 | NO<sup>1</sup> |
-| 3.5    | 1.9    | 3.2 | YES |
-| 3.5    | 1.9    | 3.3 | YES |
-| 3.5    | 1.9    | 3.4 | YES |
-| 3.5    | 1.10   | 3.2 | NO<sup>3</sup> |
-| 3.5    | 1.10   | 3.3 | NO<sup>3</sup> |
-| 3.5    | 1.10   | 3.4 | YES |
-| 3.5    | 1.10   | 3.5 | YES |
-| 3.5    | 1.10   | 3.6 | YES |
-| 3.5    | 1.11   | 3.4 | YES |
-| 3.5    | 1.11   | 3.5 | YES |
-| 3.5    | 1.11   | 3.6 | YES |
-
-* 1: Django 1.9 is not compatible with DRF 3.1
-* 2: Django 1.9 is not compatible with Python 3.3
-* 3: Django 1.10 is only compatible with DRF 3.4+
-* 4: Django 1.10 requires Python 2.7, 3.4, 3.5
-* 5: Django 1.11 requires Python 2.7, 3.4, 3.5, 3.6
 # Contributing
 
-See [Contributing](CONTRIBUTING.md).
+See the [contributing guide](CONTRIBUTING.md) for more information about contributing to DREST.
 
 # License
 
-See [License](LICENSE.md).
+See the [license](LICENSE.md) for legal information.
 
-[directory]: images/directory.png
+[admin-ui]: images/admin-ui.png
 [benchmark-linear]: images/benchmark-linear.png
 [benchmark-quadratic]: images/benchmark-quadratic.png
 [benchmark-cubic]: images/benchmark-cubic.png

@@ -1,0 +1,46 @@
+{% load i18n %}
+{% load rest_framework %}
+{% load dynamic_rest %}
+
+{% trans "No items to select." as no_items %}
+
+<div class="row form-group {% if field.errors %}has-error{% endif %}">
+  {% if field.label %}
+    <label class="col-sm-2 form-control-label {% if style.hide_label %}sr-only{% endif %}">
+        {% if field.help_text %}
+            <span class="drest-has-tooltip" data-trigger="click" data-placement="right" data-toggle="tooltip" title="{{ field.help_text | safe }}">{{ field.label }}</span>
+        {% else %}
+          {{ field.label }}
+        {% endif %}
+    </label>
+  {% endif %}
+
+  <div class="col-sm-10">
+    <select style="width: 100%" class="form-control" name="{{ field.name }}">
+    </select>
+
+    {% if field.errors %}
+      {% for error in field.errors %}
+        <span class="text-danger">{{ error }}</span>
+      {% endfor %}
+    {% endif %}
+
+  </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        var per_page = 25;
+        // set initial values
+        var value = '{{ field.id_value }}';
+        var choices = {{field.choices | to_json}};
+        var selected = [value];
+        for (var choice in choices) {
+            initials.push({id: choices, name: choices[choice]});
+        }
+        $("select[name='{{ field.name }}']").select2({
+            data: initials,
+            minimumInputLength: 1,
+        }).val(selected).trigger('change');
+    });
+</script>

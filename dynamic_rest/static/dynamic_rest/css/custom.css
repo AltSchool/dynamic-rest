@@ -1,0 +1,180 @@
+.has-error .help-block {
+    color: #d9534f!important
+}
+.drest-content-container {
+    display: none;
+    position: fixed;
+    top: 50px;
+    bottom: 50px;
+    right: 0;
+    left: 0;
+    margin-left: auto;
+    margin-right: auto;
+}
+.drest-content {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    padding: 20px;
+    overflow-x: hidden;
+    overflow-y: scroll;
+}
+.drest-content > .container {
+    padding: 0;
+}
+.drest-nav {
+    justify-content: space-between;
+    flex-direction: row;
+}
+.drest-nav-left, .drest-nav-right {
+    flex: 0 0 auto;
+    width: 100px;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+.drest-nav-right {
+    text-align: end;
+}
+
+.drest-nav-center {
+    flex: 1 1 auto;
+    text-align: center;
+    justify-content: center;
+    flex-direction: column;
+    display: flex;
+}
+
+.drest-logo {
+    width: 38px;
+}
+.drest-btn {
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+.drest-btn-label {
+    display: inline-block;
+}
+@media screen and (max-width: 420px) {
+    .drest-nav .nav-link {
+        padding: 0;
+    }
+    .navbar-brand.drest-nav-left {
+    }
+    .drest-btn {
+        display: flex;
+        width: 38px;
+        height: 38px;
+        flex-direction: column;
+    }
+    .drest-btn-label {
+        font-size: 9px;
+    }
+    .drest-nav-right,.drest-nav-left {
+        width: 30px;
+    }
+}
+.drest-content .table {
+    border: 0px;
+}
+.drest-content .table th {
+    border-top: 0px;
+}
+.drest-content .stacktable.small-only {
+    border: 1px solid #999;
+}
+.navbar-brand.drest-nav-left {
+    margin-right: 0;
+}
+.drest-content .stacktable tr:first-child td {
+    border-top: 0px;
+}
+.drest-content .st-key, .drest-content th, .modal .form-control-label, .drest-field .drest-field-label {
+    font-weight: 600;
+    font-size: 12px;
+    text-align: inherit;
+    align-self: center;
+    vertical-align: inherit;
+    text-transform: uppercase;
+}
+.drest-content-container .drest-content th {
+    border-bottom: 1px solid #999;
+}
+.drest-content th:last-child {
+    border-right: 0px;
+}
+.drest-nav-alert {
+    padding: 14px;
+    display: flex;
+    justify-content: space-between;
+    margin: 0;
+    position: fixed;
+    left: 0;
+    right: 0;
+    z-index: 9001;
+    bottom: 0;
+}
+.drest-field {
+    border-bottom: 1px solid #eaeaea;
+}
+.drest-field:last-child {
+    border-bottom: 0px;
+}
+.navbar-nav .drest-has-tooltip {
+    border-bottom: 0px;
+}
+.modal-dialog.modal-dialog {
+    width: 100%;
+    height: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+}
+.modal-header.modal-header {
+    height: 56px;
+    border: 0px;
+}
+.modal-header .close {
+    color: white;
+}
+.modal-content.modal-content {
+    height: 100%;
+    width: 100%;
+    background-color: rgba(255, 255, 255, 1);
+    border: 0px;
+    border-radius: 0;
+}
+.modal-content .modal-body {
+    position: fixed;
+    top: 56px;
+    bottom: 60px;
+    left: 0px;
+    right: 0px;
+    overflow-y: scroll;
+}
+.modal-content .modal-header{
+    position: fixed;
+    color: white;
+    height: 56px;
+    left: 0px;
+    right: 0px;
+    top: 0px;
+}
+.modal-footer.modal-footer {
+    position: fixed;
+    bottom: 0px;
+    left: 0px;
+    right: 0px;
+    border: 0px;
+    height: 60px;
+}
+.drest-has-tooltip {
+    border-bottom: 1px dotted #999;
+}
+.drest-table-details {
+    border: 0;
+}
+.table.drest-table-details td, .table.drest-table-details th {
+    border: 0;
+}

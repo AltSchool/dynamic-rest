@@ -1,0 +1,34 @@
+{% load rest_framework %}
+{% load dynamic_rest %}
+{% if results %}
+    <table id="results-table" class="table cardtable">
+      <thead>
+        <tr>
+            {% for column in columns %}
+                {% get_value_from_dict fields column as field %}
+                {% if field %}
+                    {% if field.help_text %}
+                        <th><span class="drest-has-tooltip" data-placement="right" data-toggle="tooltip" data-trigger="click" title="{{ field.help_text }}">{{ field.label }}</span></th>
+                    {% else %}
+                        <th>{{ field.label }}</th>
+                    {% endif %}
+                {% else %}
+                    <th>{{ column }}</th>
+                {% endif %}
+            {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+            {% for row in results %}
+              <tr>
+                {% for key in columns %}
+                    {% get_field_value row.serializer row.instance key as field %}
+                    <td>{{ field | render_field_value }}</td>
+                {% endfor %}
+              </tr>
+            {% endfor %}
+      </tbody>
+    </table>
+{% else %}
+    <div class="no-results">No results, try creating a new record.</div>
+{% endif %}
