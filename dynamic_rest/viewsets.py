@@ -382,21 +382,19 @@ class WithDynamicViewSetMixin(object):
     def list_related(self, request, pk=None, field_name=None):
         """Fetch related object(s), as if sideloaded (used to support
         link objects).
-
         This method gets mapped to `/<resource>/<pk>/<field_name>/` by
         DynamicRouter for all DynamicRelationField fields. Generally,
         this method probably shouldn't be overridden.
-
         An alternative implementation would be to generate reverse queries.
         For an exploration of that approach, see:
             https://gist.github.com/ryochiji/54687d675978c7d96503
         """
 
-        # Explicitly disable filtering support. Applying filters to this
+        # Explicitly disable support filtering. Applying filters to this
         # endpoint would require us to pass through sideload filters, which
         # can have unintended consequences when applied asynchronously.
         if self.get_request_feature(self.FILTER):
-            raise exceptions.ValidationError(
+            raise ValidationError(
                 'Filtering is not enabled on relation endpoints.'
             )
 
@@ -414,38 +412,32 @@ class WithDynamicViewSetMixin(object):
         serializer = self.get_serializer()
         field = serializer.fields.get(field_name)
         if field is None:
-            raise exceptions.ValidationError(
-                'Unknown field: "%s".' % field_name
-            )
-
-        if not hasattr(field, 'get_serializer'):
-            raise exceptions.ValidationError(
-                'Not a related field: "%s".' % field_name
-            )
+            raise ValidationError('Unknown field: "%s".' % field_name)
 
         # Query for root object, with related field prefetched
         queryset = self.get_queryset()
         queryset = self.filter_queryset(queryset)
-        instance = queryset.first()
+        obj = queryset.first()
 
-        if not instance:
-            raise exceptions.NotFound()
+        if not obj:
+            return Response("Not found", status=404)
 
-        related = field.get_related(instance)
-        if not related:
+        # Serialize the related data. Use the field's serializer to ensure
+        # it's configured identically to the sideload case.
+        serializer = field.get_serializer(envelope=True)
+        try:
+            # TODO(ryo): Probably should use field.get_attribute() but that
+            #            seems to break a bunch of things. Investigate later.
+            serializer.instance = getattr(obj, field.source)
+        except ObjectDoesNotExist:
             # See:
             # http://jsonapi.org/format/#fetching-relationships-responses-404
             # This is a case where the "link URL exists but the relationship
-            # is empty" and therefore must return a 200. not related:
-            return Response([] if field.many else {}, status=200)
+            # is empty" and therefore must return a 200.
+            return Response({}, status=200)
 
-        # create an instance of the related serializer
-        # and use it to render the data
-        serializer = field.get_serializer(
-            instance=related,
-            envelope=True
-        )
         return Response(serializer.data)
+
 
 
 class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):

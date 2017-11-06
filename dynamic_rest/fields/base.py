@@ -81,7 +81,8 @@ class DynamicField(fields.Field, DynamicBase):
             if 'required' not in self.kwargs and (
                     remote or (
                         model_field and (
-                            model_field.has_default() or model_field.null
+                            ( hasattr( model_field, 'has_default') and model_field.has_default() )
+                                or ( hasattr( model_field, 'null') and model_field.null )
                         )
                     )
             ):
