@@ -54,6 +54,10 @@ def patch_prefetch_one_level():
                     obj._prefetched_objects_cache[cache_name] = qs
         return all_related_objects, additional_lookups
 
-    # apply the patch
-    from django.db.models import query
-    query.prefetch_one_level = prefetch_one_level
+    # apply the patch, but only if on an earlier version than 1.9
+    import django
+
+    minor = django.VERSION[1]
+    if minor < 9:
+        from django.db.models import query
+        query.prefetch_one_level = prefetch_one_level
