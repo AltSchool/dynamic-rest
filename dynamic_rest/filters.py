@@ -20,7 +20,7 @@ from dynamic_rest.meta import (
     get_related_model
 )
 from dynamic_rest.patches import patch_prefetch_one_level
-from dynamic_rest.prefetch import FastQuery
+from dynamic_rest.prefetch import FastQuery, FastPrefetch
 from dynamic_rest.related import RelatedObject
 
 patch_prefetch_one_level()
@@ -330,7 +330,8 @@ class DynamicFilterBackend(BaseFilterBackend):
                 remainder
             ) if related_model else None
 
-            prefetches[source] = Prefetch(
+            prefetch_cls = FastPrefetch if self.make_fast else Prefetch
+            prefetches[source] = prefetch_cls(
                 source,
                 queryset=queryset
             )
@@ -411,7 +412,8 @@ class DynamicFilterBackend(BaseFilterBackend):
             #       the same source. This could break in some cases,
             #       but is mostly an issue on writes when we use all
             #       fields by default.
-            prefetches[source] = Prefetch(
+            prefetch_cls = FastPrefetch if self.make_fast else Prefetch
+            prefetches[source] = prefetch_cls(
                 source,
                 queryset=prefetch_queryset
             )

@@ -1,7 +1,7 @@
 from rest_framework.test import APITestCase
 
 from dynamic_rest.prefetch import FastPrefetch, FastQuery
-from dynamic_rest.utils.profiling import get_cpu_usage
+from dynamic_rest.perfutils.profiling import get_cpu_usage
 from tests.models import Group, Location, Profile, User
 from tests.setup import create_fixture
 
@@ -19,7 +19,8 @@ class TestPrefetch(APITestCase):
             'date_of_birth',
             'favorite_pet_type_id',
             'location_id',
-            'id'
+            'id',
+            'is_dead',
         ])
 
     def test_fk_prefetch(self):

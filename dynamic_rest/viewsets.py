@@ -1,4 +1,6 @@
 """This module contains custom viewset classes."""
+import datetime
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import QueryDict
 from django.utils import six
@@ -7,12 +9,19 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.renderers import BrowsableAPIRenderer
 from rest_framework.response import Response
 
+from dynamic_rest import serializers
 from dynamic_rest.conf import settings
 from dynamic_rest.filters import DynamicFilterBackend, DynamicSortingFilter
 from dynamic_rest.metadata import DynamicMetadata
 from dynamic_rest.pagination import DynamicPageNumberPagination
+from dynamic_rest.perfutils import profiling as prof
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.utils import is_truthy
+
+try:
+    import gevent
+except:
+    pass
 
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
 DELETE_REQUEST_METHOD = 'DELETE'
@@ -182,16 +191,9 @@ class WithDynamicViewSetMixin(object):
         return super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
         '''
 
-        from dynamic_rest import serializers
         serializers.OPTS['ENABLE_FIELDS_CACHE'] = request.query_params.get(
             'enable_fields_cache', False
         )
-        try:
-            import gevent
-        except:
-            pass
-        import datetime
-        from dynamic_rest.utils import profiling as prof
         s = prof.get_cpu_usage()
         if self.request.query_params.get('enable_profiling'):
             file_name = '/tmp/profiling/%s.txt' % (
@@ -210,7 +212,6 @@ class WithDynamicViewSetMixin(object):
             )
         e = prof.get_cpu_usage()
         r['X-CPU-Usage'] = "%.4f" % (e - s)
-        print("CPU Usage: %.4f" % (e - s))
 
         '''
         import datetime

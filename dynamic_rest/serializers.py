@@ -78,14 +78,14 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def data(self):
         """Get the data, after performing post-processing if necessary."""
         data = super(DynamicListSerializer, self).data
-        self._processed_data = ReturnDict(
+        processed_data = ReturnDict(
             SideloadingProcessor(self, data).data,
             serializer=self
         ) if self.child.envelope else ReturnList(
             data,
             serializer=self
         )
-        return data
+        return processed_data
 
     def update(self, queryset, validated_data):
         lookup_attr = getattr(self.child.Meta, 'update_lookup_field', 'id')
