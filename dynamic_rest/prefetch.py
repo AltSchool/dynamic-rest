@@ -48,16 +48,16 @@ class FastList(list):
 
 
 class FastPrefetch(object):
-    def __init__(self, field, query):
-        if isinstance(query, models.Manager):
-            query = query.all()
-        if isinstance(query, QuerySet):
-            query = FastQuery(query)
+    def __init__(self, field, queryset=None):
+        if isinstance(queryset, models.Manager):
+            queryset = queryset.all()
+        if isinstance(queryset, QuerySet):
+            queryset = FastQuery(queryset)
 
-        assert isinstance(query, FastQuery)
+        assert isinstance(queryset, FastQuery)
 
         self.field = field
-        self.query = query
+        self.query = queryset
 
     @classmethod
     def make_from_field(cls, model=None, field_name=None, field=None):
@@ -139,7 +139,8 @@ class FastQueryCompatMixin(object):
         return self
 
     def exclude(self, *fields):
-        # TODO: support for realz
+        # TODO: test this
+        self.queryset = self.queryset.exclude(*fields)
         return self
 
     def count(self):
