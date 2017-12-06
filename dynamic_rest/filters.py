@@ -577,7 +577,12 @@ class DynamicFilterBackend(BaseFilterBackend):
         # serializers for different subsets of a model or to
         # implement permissions which work even in sideloads
         if hasattr(serializer, 'filter_queryset'):
-            queryset = serializer.filter_queryset(queryset)
+            if isinstance(queryset, FastQuery):
+                queryset.queryset = serializer.filter_queryset(
+                    queryset.queryset
+                )
+            else:
+                queryset = serializer.filter_queryset(queryset)
 
         # add prefetches and remove duplicates if necessary
         prefetch = prefetches.values()
