@@ -212,6 +212,10 @@ class WithDynamicViewSetMixin(object):
             )
         e = prof.get_cpu_usage()
         r['X-CPU-Usage'] = "%.4f" % (e - s)
+        print "CPU-USage: %s" % r['X-CPU-Usage']
+
+        from django.db import connection
+        print "%d queries" % len(connection.queries)
 
         '''
         import datetime
