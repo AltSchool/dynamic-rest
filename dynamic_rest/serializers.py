@@ -40,7 +40,11 @@ class WithResourceKeyMixin(object):
             return self.get_name()
 
 
-class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
+class DynamicListSerializer(
+    CacheableFieldMixin,
+    WithResourceKeyMixin,
+    serializers.ListSerializer
+):
     """Custom ListSerializer class.
 
     This implementation delegates DREST-specific methods to
