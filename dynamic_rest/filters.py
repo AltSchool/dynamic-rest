@@ -184,7 +184,6 @@ class DynamicFilterBackend(BaseFilterBackend):
         """
         self.request = request
         self.view = view
-        self.make_fast = self.request.query_params.get('make_fast')
 
         # enable addition of extra filters (i.e., a Q())
         # so custom filters can be added to the queryset without
@@ -318,6 +317,9 @@ class DynamicFilterBackend(BaseFilterBackend):
                 q &= ~Q(**{k: v})
         return q
 
+    def _create_prefetch(self, source, queryset):
+        return Prefetch(source, queryset=queryset)
+
     def _build_implicit_prefetches(
         self,
         model,
@@ -339,10 +341,9 @@ class DynamicFilterBackend(BaseFilterBackend):
                 remainder
             ) if related_model else None
 
-            prefetch_cls = FastPrefetch if self.make_fast else Prefetch
-            prefetches[source] = prefetch_cls(
+            prefetches[source] = self._create_prefetch(
                 source,
-                queryset=queryset
+                queryset
             )
 
         return prefetches
@@ -421,10 +422,9 @@ class DynamicFilterBackend(BaseFilterBackend):
             #       the same source. This could break in some cases,
             #       but is mostly an issue on writes when we use all
             #       fields by default.
-            prefetch_cls = FastPrefetch if self.make_fast else Prefetch
-            prefetches[source] = prefetch_cls(
+            prefetches[source] = self._create_prefetch(
                 source,
-                queryset=prefetch_queryset
+                prefetch_queryset
             )
 
         return prefetches
@@ -452,6 +452,15 @@ class DynamicFilterBackend(BaseFilterBackend):
                     requirement[-1] = '*'
                 requirements.insert(requirement, TreeMap(), update=True)
 
+    def _get_queryset(self, queryset=None, serializer=None):
+        if serializer and queryset is None:
+            queryset = serializer.Meta.model.objects
+
+        return queryset
+
+    def _serializer_filter(self, serializer=None, queryset=None):
+        return serializer.filter_queryset(queryset)
+
     def _build_queryset(
         self,
         serializer=None,
@@ -475,18 +484,13 @@ class DynamicFilterBackend(BaseFilterBackend):
         """
 
         is_root_level = False
-        if serializer:
-            if queryset is None:
-                queryset = serializer.Meta.model.objects
-        else:
+        if not serializer:
             serializer = self.view.get_serializer()
             is_root_level = True
 
-        model = getattr(serializer.Meta, 'model', None)
+        queryset = self._get_queryset(queryset=queryset, serializer=serializer)
 
-        # TODO(fastquery): make this conditional on... something
-        if not isinstance(queryset, FastQuery) and self.make_fast:
-            queryset = FastQuery(queryset)
+        model = getattr(serializer.Meta, 'model', None)
 
         if not model:
             return queryset
@@ -577,12 +581,10 @@ class DynamicFilterBackend(BaseFilterBackend):
         # serializers for different subsets of a model or to
         # implement permissions which work even in sideloads
         if hasattr(serializer, 'filter_queryset'):
-            if isinstance(queryset, FastQuery):
-                queryset.queryset = serializer.filter_queryset(
-                    queryset.queryset
-                )
-            else:
-                queryset = serializer.filter_queryset(queryset)
+            queryset = self._serializer_filter(
+                serializer=serializer,
+                queryset=queryset
+            )
 
         # add prefetches and remove duplicates if necessary
         prefetch = prefetches.values()
@@ -595,6 +597,28 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         if self.DEBUG:
             queryset._using_prefetches = prefetches
+        return queryset
+
+
+class FastDynamicFilterBackend(DynamicFilterBackend):
+    def _create_prefetch(self, source, queryset):
+        return FastPrefetch(source, queryset=queryset)
+
+    def _get_queryset(self, queryset=None, serializer=None):
+        queryset = super(FastDynamicFilterBackend, self)._get_queryset(
+            queryset=queryset,
+            serializer=serializer
+        )
+
+        if not isinstance(queryset, FastQuery):
+            queryset = FastQuery(queryset)
+
+        return queryset
+
+    def _serializer_filter(self, serializer=None, queryset=None):
+        queryset.queryset = serializer.filter_queryset(
+            queryset.queryset
+        )
         return queryset
 
 

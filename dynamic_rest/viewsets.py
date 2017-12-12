@@ -159,82 +159,23 @@ class WithDynamicViewSetMixin(object):
             return renderers
 
     def list(self, request, *args, **kwargs):
-
-        '''
-        # Using custom profiler
-        import datetime
-        import gevent
-        from dynamic_rest.utils import profiling as prof
-
-        file_name = '/tmp/profiling/%s.txt' % (
-            datetime.datetime.now().isoformat()
-        )
-        p = prof.Profiler(file_name, greenlet=gevent.getcurrent())
-        p.start()
-        r = super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
-        p.end()
-        return r
-        '''
-
-        '''
-        def profiler(frame, event, arg):
-            if event not in ('call', 'return',):
-                return
-            if frame.f_code.co_name == 'get_fields':
-                print (
-                    get_cpu_usage(),
-                    event
-                )
-        import sys
-        from dynamic_rest.utils.profiling import get_cpu_usage
-        sys.setprofile(profiler)
-        return super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
-        '''
-
         serializers.OPTS['ENABLE_FIELDS_CACHE'] = request.query_params.get(
             'enable_fields_cache', False
         )
-        s = prof.get_cpu_usage()
         if self.request.query_params.get('enable_profiling'):
-            file_name = '/tmp/profiling/%s.txt' % (
-                datetime.datetime.now().isoformat()
-            )
-            p = prof.Profiler(file_name, greenlet=gevent.getcurrent())
-            p.calibrate()
-            p.start()
-            r = super(WithDynamicViewSetMixin, self).list(
-                request, *args, **kwargs
-            )
-            p.end()
-        else:
-            r = super(WithDynamicViewSetMixin, self).list(
-                request, *args, **kwargs
-            )
-        e = prof.get_cpu_usage()
-        r['X-CPU-Usage'] = "%.4f" % (e - s)
-        print "CPU-USage: %s" % r['X-CPU-Usage']
+            s = prof.get_cpu_usage()
+        response = super(WithDynamicViewSetMixin, self).list(
+            request, *args, **kwargs
+        )
+        if self.request.query_params.get('enable_profiling'):
+            e = prof.get_cpu_usage()
+            from django.db import connection
+            response['X-CPU-Usage'] = "%.4f" % (e - s)
+            response['X-Queries'] = "%d queries" % len(connection.queries)
+            print "CPU-Usage: %s" % response['X-CPU-Usage']
+            print "Queries: %s" % response['X-Queries']
 
-        from django.db import connection
-        print "%d queries" % len(connection.queries)
-
-        '''
-        import datetime
-        from dynamic_rest.utils.py2devtools import Profiler
-        import gevent
-
-        profiler = Profiler(gevent.getcurrent())
-        s = get_cpu_usage()
-        profiler.start()
-        r = super(WithDynamicViewSetMixin, self).list(*args, **kwargs)
-        profiler.stop()
-        e = get_cpu_usage()
-        file_name = '/tmp/profiling/%s' % datetime.datetime.now().isoformat()
-        with open(file_name, 'w') as f:
-            f.write(profiler.output())
-        r['X-CPU-Usage'] = "%.4f" % (e - s)
-        '''
-
-        return r
+        return response
 
     def get_request_feature(self, name):
         """Parses the request for a particular feature.
