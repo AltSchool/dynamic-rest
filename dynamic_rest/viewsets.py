@@ -1,6 +1,4 @@
 """This module contains custom viewset classes."""
-import datetime
-
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import QueryDict
 from django.utils import six
@@ -17,11 +15,6 @@ from dynamic_rest.pagination import DynamicPageNumberPagination
 from dynamic_rest.perfutils import profiling as prof
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.utils import is_truthy
-
-try:
-    import gevent
-except:
-    pass
 
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
 DELETE_REQUEST_METHOD = 'DELETE'
