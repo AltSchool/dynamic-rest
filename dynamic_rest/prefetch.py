@@ -44,7 +44,9 @@ class FastObject(dict):
 
 
 class FastList(list):
-    pass
+    # shim for related m2m record sets
+    def all(self):
+        return self
 
 
 class FastPrefetch(object):
