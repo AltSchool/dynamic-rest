@@ -352,7 +352,7 @@ class FastQuery(FastQueryCompatMixin, object):
         # Set value to None for objects that didn't have a matching prefetch
         not_found = my_ids - reverse_found
         for pk in not_found:
-            id_map[pk][field_name] = None
+            id_map[pk][field_name] = FastList([]) if m2o_mode else None
 
         return data
 
