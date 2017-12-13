@@ -148,6 +148,9 @@ class WithDynamicSerializerMixin(
         - read_only_fields - list of strings
         - untrimmed_fields - list of strings
     """
+
+    ENABLE_FIELDS_CACHE = False
+
     def __new__(cls, *args, **kwargs):
         """
         Custom constructor that sets the ListSerializer to
@@ -358,15 +361,20 @@ class WithDynamicSerializerMixin(
         Does not respect dynamic field inclusions/exclusions.
         """
         if (
-            not OPTS['ENABLE_FIELDS_CACHE']
-            or self.__class__ not in FIELDS_CACHE
+            not settings.ENABLE_FIELDS_CACHE or
+            not self.ENABLE_FIELDS_CACHE or
+            self.__class__ not in FIELDS_CACHE
         ):
             all_fields = super(
                 WithDynamicSerializerMixin,
                 self
             ).get_fields()
 
-            FIELDS_CACHE[self.__class__] = all_fields
+            if (
+                settings.ENABLE_FIELDS_CACHE and
+                self.ENABLE_FIELDS_CACHE
+            ):
+                FIELDS_CACHE[self.__class__] = all_fields
         else:
             all_fields = copy.copy(FIELDS_CACHE[self.__class__])
             for k, field in six.iteritems(all_fields):

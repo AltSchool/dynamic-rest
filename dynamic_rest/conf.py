@@ -52,6 +52,10 @@ DYNAMIC_REST = {
     # through the dynamic router.  If a resource doesn't have a canonical
     # path registered, links will default back to being resource-relative urls
     'ENABLE_HOST_RELATIVE_LINKS': True,
+
+    # Enables caching of serializer fields to speed up serializer usage
+    # Needs to also be configured on a per-serializer basis
+    'ENABLE_FIELDS_CACHE': False,
 }
 
 
