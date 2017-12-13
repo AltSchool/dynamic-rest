@@ -7,12 +7,10 @@ from rest_framework.exceptions import ValidationError
 from rest_framework.renderers import BrowsableAPIRenderer
 from rest_framework.response import Response
 
-from dynamic_rest import serializers
 from dynamic_rest.conf import settings
 from dynamic_rest.filters import DynamicFilterBackend, DynamicSortingFilter
 from dynamic_rest.metadata import DynamicMetadata
 from dynamic_rest.pagination import DynamicPageNumberPagination
-from dynamic_rest.perfutils import profiling as prof
 from dynamic_rest.processors import SideloadingProcessor
 from dynamic_rest.utils import is_truthy
 
@@ -150,25 +148,6 @@ class WithDynamicViewSetMixin(object):
             ]
         else:
             return renderers
-
-    def list(self, request, *args, **kwargs):
-        serializers.OPTS['ENABLE_FIELDS_CACHE'] = request.query_params.get(
-            'enable_fields_cache', False
-        )
-        if self.request.query_params.get('enable_profiling'):
-            s = prof.get_cpu_usage()
-        response = super(WithDynamicViewSetMixin, self).list(
-            request, *args, **kwargs
-        )
-        if self.request.query_params.get('enable_profiling'):
-            e = prof.get_cpu_usage()
-            from django.db import connection
-            response['X-CPU-Usage'] = "%.4f" % (e - s)
-            response['X-Queries'] = "%d queries" % len(connection.queries)
-            print "CPU-Usage: %s" % response['X-CPU-Usage']
-            print "Queries: %s" % response['X-Queries']
-
-        return response
 
     def get_request_feature(self, name):
         """Parses the request for a particular feature.
