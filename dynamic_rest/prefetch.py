@@ -154,8 +154,7 @@ class FastQueryCompatMixin(object):
         return self
 
     def get(self, *args,  **kwargs):
-        self.queryset = self.queryset.get(*args, **kwargs)
-        return self
+        return self.queryset.get(*args, **kwargs)
 
     def filter(self, *args, **kwargs):
         self.queryset = self.queryset.filter(*args, **kwargs)
