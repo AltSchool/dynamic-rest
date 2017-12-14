@@ -2,11 +2,8 @@
 import copy
 import inspect
 
-from rest_framework.serializers import *
-
-from collections import Mapping
 import inflection
-from django.db import models
+from django.db import models, transaction
 from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import exceptions, fields, serializers
@@ -33,6 +30,18 @@ from dynamic_rest.base import DynamicBase
 def nested_update(instance, key, value, objects=None):
     objects = objects or []
     nested = getattr(instance, key, None)
+
+    def fix(x):
+        s = str(x).lower()
+        if s == "true":
+            return "True"
+        if s == "false":
+            return "False"
+        return x
+
+    value = {
+        k: fix(v) for k, v in value.items()
+    }
     if not nested:
         # object does not exist, try to create it
         try:
@@ -43,11 +52,8 @@ def nested_update(instance, key, value, objects=None):
                 'Invalid relationship: %s' % key
             )
         else:
-            try:
-                nested = related_model.objects.create(**value)
-                setattr(instance, key, nested)
-            except Exception as e:
-                raise exceptions.ValidationError(str(e))
+            nested = related_model.objects.create(**value)
+            setattr(instance, key, nested)
     else:
         # object exists, perform a nested update
         for k, v in six.iteritems(value):
@@ -985,7 +991,6 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
             embed=self.embed
         )
 
-
     def to_internal_value(self, data):
         meta = self.get_meta()
         value = super(WithDynamicSerializerMixin, self).to_internal_value(data)
@@ -1026,27 +1031,32 @@ class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
         # Note that unlike `.create()` we don't need to treat many-to-many
         # relationships as being a special case. During updates we already
         # have an instance pk for the relationships to be associated with.
-        for attr, value in validated_data.items():
-            try:
-                field = meta.get_field(attr)
-                if field.related_model:
-                    if isinstance(value, dict):
-                        # nested dictionary on a has-one relationship
-                        # means we should take the current related value
-                        # and apply updates to it
-                        to_save.extend(
-                            nested_update(instance, attr, value)
-                        )
-                    else:
-                        # normal relationship update
-                        setattr(instance, attr, value)
-                else:
-                    setattr(instance, attr, value)
-            except AttributeError:
-                setattr(instance, attr, value)
+        try:
 
-        for s in to_save:
-            s.save()
+            with transaction.atomic():
+                for attr, value in validated_data.items():
+                    try:
+                        field = meta.get_field(attr)
+                        if field.related_model:
+                            if isinstance(value, dict):
+                                # nested dictionary on a has-one
+                                # relationship, we should take the current
+                                # related value and apply updates to it
+                                to_save.extend(
+                                    nested_update(instance, attr, value)
+                                )
+                            else:
+                                # normal relationship update
+                                setattr(instance, attr, value)
+                        else:
+                            setattr(instance, attr, value)
+                    except AttributeError:
+                        setattr(instance, attr, value)
+
+                for s in to_save:
+                    s.save()
+        except Exception as e:
+            raise exceptions.ValidationError(e)
 
         return instance
 

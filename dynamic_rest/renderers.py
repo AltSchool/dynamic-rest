@@ -210,7 +210,10 @@ class DynamicAdminRenderer(AdminRenderer):
         alert = request.query_params.get('alert', None)
         alert_class = request.query_params.get('alert-class', None)
         if is_error:
-            alert = 'An error has occurred'
+            error = response.data
+            if 'error' in error:
+                error = error['error']
+            alert = 'An error has occurred: %s' % error
             alert_class = 'danger'
         elif is_update:
             alert = 'Saved successfully'

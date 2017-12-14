@@ -240,7 +240,10 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             getter = getattr(serializer, getter)
             return getter(value)
         else:
-            return super(DynamicRelationField, self).admin_get_classes(instance, value)
+            return super(DynamicRelationField, self).admin_get_classes(
+                instance,
+                value
+            )
 
     def admin_get_icon(self, instance, value):
         serializer = self.serializer
@@ -336,6 +339,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         if self.setter:
             if data == fields.empty:
                 data = [] if self.kwargs.get('many') else None
+
             def fn(instance):
                 setter = getattr(self.parent, self.setter)
                 setter(instance, data)
