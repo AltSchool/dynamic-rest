@@ -3,6 +3,7 @@ from uuid import UUID
 from django.utils import six
 from django.db.models import QuerySet
 from django.core.exceptions import ObjectDoesNotExist
+from django.contrib.contenttypes.fields import GenericForeignKey
 from dynamic_rest.meta import get_model_field, is_field_remote
 from dynamic_rest.base import DynamicBase
 from rest_framework.fields import ListField
@@ -64,7 +65,7 @@ class DynamicField(fields.Field, DynamicBase):
         super(DynamicField, self).bind(*args, **kwargs)
         self.bound = True
 
-        source = self.source
+        source = self.source or self.field_name
         if source == '*':
             if self.getter == '*':
                 self.getter = 'get_%s' % self.field_name
@@ -76,20 +77,21 @@ class DynamicField(fields.Field, DynamicBase):
         if parent_model:
             remote = is_field_remote(parent_model, source)
             model_field = self.model_field
-
-            # Infer `required` and `allow_null`
-            if 'required' not in self.kwargs and (
-                    remote or (
-                        model_field and (
-                            model_field.has_default() or model_field.null
+            generic = isinstance(model_field, GenericForeignKey)
+            if not generic:
+                # Infer `required` and `allow_null`
+                if 'required' not in self.kwargs and (
+                        remote or (
+                            model_field and (
+                                model_field.has_default() or model_field.null
+                            )
                         )
-                    )
-            ):
-                self.required = False
-            if 'allow_null' not in self.kwargs and getattr(
-                model_field, 'null', False
-            ):
-                self.allow_null = True
+                ):
+                    self.required = False
+                if 'allow_null' not in self.kwargs and getattr(
+                    model_field, 'null', False
+                ):
+                    self.allow_null = True
 
     def get_format(self):
         return self.parent.get_format()

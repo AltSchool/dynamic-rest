@@ -1,9 +1,12 @@
 from __future__ import absolute_import
 
 import json
+from uuid import UUID
 from django import template
 from django.utils.safestring import mark_safe
+from django.utils import six
 from dynamic_rest.conf import settings
+from rest_framework.fields import get_attribute
 try:
     from rest_framework.templatetags.rest_framework import format_value
 except:
@@ -19,15 +22,26 @@ def as_id_to_name(field):
     name_source = serializer.get_field(
         name_field_name
     ).source or name_field_name
+    source_attrs = name_source.split('.')
     value = field.value
-    if not isinstance(value, list):
+
+    if not (
+        isinstance(value, list)
+        and not isinstance(value, six.string_types)
+        and not isinstance(value, UUID)
+    ):
         value = [value]
 
     result = {}
     for v in value:
-        if v and hasattr(v, 'instance'):
-            instance = v.instance
-            result[str(instance.pk)] = getattr(instance, name_source)
+        if v:
+            if hasattr(v, 'instance'):
+                instance = v.instance
+            else:
+                instance = serializer.get_model().objects.get(
+                    pk=str(v)
+                )
+            result[str(instance.pk)] = get_attribute(instance, source_attrs)
     return mark_safe(json.dumps(result))
 
 
