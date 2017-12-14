@@ -3,7 +3,6 @@ import six
 from rest_framework.test import APITestCase
 
 from dynamic_rest.prefetch import FastPrefetch, FastQuery
-from dynamic_rest.perfutils.profiling import get_cpu_usage
 from tests.models import Group, Location, Profile, User
 from tests.setup import create_fixture
 
@@ -169,24 +168,3 @@ class TestPrefetch(APITestCase):
 
         self.assertTrue('user_set' in out[0])
         self.assertTrue('groups' in out[0]['user_set'][0])
-
-    def test_api(self):
-        url = (
-            '/users/?include[]=groups.&include[]=profile.&include[]=location.'
-        )
-
-        s1 = get_cpu_usage()
-        for i in range(0, 100):
-            r1 = self.client.get(url)
-        e1 = get_cpu_usage()
-        u1 = e1 - s1
-
-        s2 = get_cpu_usage()
-        url = url + '&make_fast=1'
-        for i in range(0, 100):
-            r2 = self.client.get(url)
-        e2 = get_cpu_usage()
-        u2 = e2 - s2
-
-        self.assertTrue(u1 > u2)
-        self.assertEquals(r1.content, r2.content)
