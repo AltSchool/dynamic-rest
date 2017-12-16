@@ -245,12 +245,13 @@ class PermissionsSerializerMixin(object):
 
 
 class PermissionsViewSetMixin(object):
-    def get_user_permissions(self, user):
+    @classmethod
+    def get_user_permissions(cls, user):
         if not user or user.is_superuser:
             return None
 
         permissions = getattr(
-            self.serializer_class.get_meta(), 'permissions', None
+            cls.serializer_class.get_meta(), 'permissions', None
         )
         if permissions:
             return Permissions(
