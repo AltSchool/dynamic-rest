@@ -284,10 +284,8 @@ class PermissionsViewSetMixin(object):
                 access = permissions.update
             elif request_method == 'delete':
                 access = permissions.delete
-            elif request_method == 'post':
-                access = permissions.create
             else:
-                access = permissions.read
+                return queryset
 
             if access.full_access:
                 return queryset
