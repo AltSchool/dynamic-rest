@@ -1,11 +1,13 @@
 from collections import namedtuple
-
+from django.contrib.auth import models as auth
 from tests.models import (
     Car,
     Cat,
     Country,
     Dog,
     Event,
+    Manager,
+    Officer,
     Group,
     Horse,
     Location,
@@ -13,7 +15,7 @@ from tests.models import (
     Permission,
     User,
     Zebra
-    )
+)
 
 
 def create_fixture():
@@ -29,7 +31,7 @@ def create_fixture():
     types = [
         'users', 'groups', 'locations', 'permissions',
         'events', 'cats', 'dogs', 'horses', 'zebras',
-        'cars', 'countries', 'parts',
+        'cars', 'countries', 'parts'
     ]
     Fixture = namedtuple('Fixture', types)
 
@@ -43,8 +45,33 @@ def create_fixture():
         fixture.users.append(
             User.objects.create(
                 name=str(i),
-                last_name=str(i)))
+                last_name=str(i)
+            )
+        )
 
+    auth.User.objects.create(
+        first_name='default',
+        username='1',
+        last_name='a',
+    )
+    manager_user = auth.User.objects.create(
+        first_name='manager',
+        last_name='a',
+        username='2',
+    )
+    Manager.objects.create(user=manager_user)
+    officer_user = auth.User.objects.create(
+        first_name='officer',
+        last_name='b',
+        username='3',
+    )
+    Officer.objects.create(user=officer_user)
+    auth.User.objects.create(
+        first_name='admin',
+        last_name='user',
+        username='4',
+        is_superuser=True
+    )
     for i in range(0, 4):
         fixture.permissions.append(
             Permission.objects.create(

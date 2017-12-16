@@ -41,8 +41,10 @@ def get_directory(request, show_all=True):
         else:
             return url
 
-    directory_list = []
+    user = request.user
     path = request.path
+
+    directory_list = []
 
     def sort_key(r):
         return r[0]
@@ -61,6 +63,11 @@ def get_directory(request, show_all=True):
         ):
             if endpoint_name[:1] == '_':
                 continue
+            viewset = endpoint.get('_viewset', None)
+            if viewset and hasattr(viewset, 'get_user_permissions'):
+                permissions = viewset.get_user_permissions(user)
+                if permissions and not viewset.permissions.list:
+                    continue
             endpoint_url = get_url(endpoint.get('_url', None))
             relative_url = get_relative_url(endpoint_url)
             active = is_prefix_of(path, relative_url)
@@ -71,6 +78,11 @@ def get_directory(request, show_all=True):
                 )
 
         url = get_url(endpoints.get('_url', None))
+        viewset = endpoints.get('_viewset', None)
+        if viewset and hasattr(viewset, 'get_user_permissions'):
+            permissions = viewset.get_user_permissions(user)
+            if permissions and not viewset.permissions.list:
+                continue
         relative_url = get_relative_url(url)
         active = is_prefix_of(path, relative_url)
         relevant = is_prefix_of(relative_url, path)
@@ -120,7 +132,10 @@ class DynamicRouter(DefaultRouter):
                             request.path
                         )
                     )
-                directory_list = get_directory(request, show_all=False)
+                directory_list = get_directory(
+                    request,
+                    show_all=False
+                )
                 result = OrderedDict()
                 for group_name, url, endpoints, _ in directory_list:
                     if url:

@@ -1,6 +1,7 @@
 from rest_framework import exceptions
 
 from dynamic_rest.viewsets import DynamicModelViewSet
+from django.contrib.auth import models as auth
 from tests.models import (
     Car,
     Cat,
@@ -24,6 +25,7 @@ from tests.serializers import (
     ProfileSerializer,
     UserLocationSerializer,
     UserSerializer,
+    PermissionsUserSerializer,
     ZebraSerializer
 )
 
@@ -42,7 +44,7 @@ class UserViewSet(DynamicModelViewSet):
 
     def get_queryset(self):
         location = self.request.query_params.get('location')
-        qs = self.queryset
+        qs = super(UserViewSet, self).get_queryset()
         if location:
             qs = qs.filter(location=location)
         return qs
@@ -53,6 +55,14 @@ class UserViewSet(DynamicModelViewSet):
         if query_params.get('name'):
             query_params.add('filter{name}', query_params.get('name'))
         return super(UserViewSet, self).list(request, *args, **kwargs)
+
+
+class PermissionsUserViewSet(
+    DynamicModelViewSet
+):
+    serializer_class = PermissionsUserSerializer
+    model = auth.User
+    queryset = auth.User.objects.all()
 
 
 class GroupNoMergeDictViewSet(DynamicModelViewSet):

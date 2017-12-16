@@ -2,7 +2,6 @@
 from django.utils import six
 import copy
 from rest_framework.renderers import (
-    BrowsableAPIRenderer,
     HTMLFormRenderer,
     ClassLookupDict
 )
@@ -10,35 +9,6 @@ from django.utils.safestring import mark_safe
 from dynamic_rest.compat import reverse, NoReverseMatch, AdminRenderer
 from dynamic_rest.conf import settings
 from dynamic_rest import fields
-
-
-class DynamicBrowsableAPIRenderer(BrowsableAPIRenderer):
-    """Renderer class that adds directory support to the Browsable API."""
-
-    template = 'dynamic_rest/api.html'
-
-    def get_context(self, data, media_type, context):
-        from dynamic_rest.routers import get_directory
-
-        context = super(DynamicBrowsableAPIRenderer, self).get_context(
-            data,
-            media_type,
-            context
-        )
-        request = context['request']
-        context['directory'] = get_directory(request)
-        return context
-
-    def render_form_for_serializer(self, serializer):
-        if hasattr(serializer, 'initial_data'):
-            serializer.is_valid()
-
-        form_renderer = self.form_renderer_class()
-        return form_renderer.render(
-            serializer.data,
-            self.accepted_media_type,
-            {'style': {'template_pack': 'dynamic_rest/horizontal'}}
-        )
 
 
 mapping = copy.deepcopy(HTMLFormRenderer.default_style.mapping)

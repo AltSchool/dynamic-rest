@@ -9,6 +9,7 @@ from rest_framework import exceptions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.request import is_form_media_type
 
+from dynamic_rest.permissions import PermissionsViewSetMixin
 from dynamic_rest.conf import settings
 from dynamic_rest.filters import DynamicFilterBackend, DynamicSortingFilter
 from dynamic_rest.metadata import DynamicMetadata
@@ -55,7 +56,7 @@ class QueryParams(QueryDict):
             self.appendlist(key, value)
 
 
-class WithDynamicViewSetMixin(object):
+class WithDynamicViewSetBase(object):
 
     """A viewset that can support dynamic API features.
 
@@ -119,7 +120,7 @@ class WithDynamicViewSetMixin(object):
             return QueryParams(s)
 
         request.GET = handle_encodings(request)
-        request = super(WithDynamicViewSetMixin, self).initialize_request(
+        request = super(WithDynamicViewSetBase, self).initialize_request(
             request, *args, **kargs
         )
 
@@ -143,7 +144,7 @@ class WithDynamicViewSetMixin(object):
 
     def get_renderers(self):
         """Optionally block browsable/admin API rendering. """
-        renderers = super(WithDynamicViewSetMixin, self).get_renderers()
+        renderers = super(WithDynamicViewSetBase, self).get_renderers()
         blacklist = set(('admin', 'api'))
         if settings.ENABLE_BROWSABLE_API is False:
             return [
@@ -155,7 +156,7 @@ class WithDynamicViewSetMixin(object):
 
     def get_success_headers(self, data):
         serializer = getattr(data, 'serializer', None)
-        headers = super(WithDynamicViewSetMixin, self).get_success_headers(
+        headers = super(WithDynamicViewSetBase, self).get_success_headers(
             data
         )
         if serializer and serializer.instance:
@@ -347,7 +348,7 @@ class WithDynamicViewSetMixin(object):
         if self.is_list():
             kwargs['many'] = True
         serializer = super(
-            WithDynamicViewSetMixin, self
+            WithDynamicViewSetBase, self
         ).get_serializer(
             *args, **kwargs
         )
@@ -363,7 +364,7 @@ class WithDynamicViewSetMixin(object):
                 # remove per_page if it is disabled
                 self.request.query_params[self.PER_PAGE] = None
             return super(
-                WithDynamicViewSetMixin, self
+                WithDynamicViewSetBase, self
             ).paginate_queryset(
                 *args, **kwargs
             )
@@ -446,6 +447,13 @@ class WithDynamicViewSetMixin(object):
             envelope=True
         )
         return Response(serializer.data)
+
+
+class WithDynamicViewSetMixin(
+    PermissionsViewSetMixin,
+    WithDynamicViewSetBase
+):
+    pass
 
 
 class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):

@@ -1,5 +1,6 @@
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.auth import models as auth
 from django.db import models
 
 
@@ -27,6 +28,16 @@ class Profile(models.Model):
     user = models.OneToOneField(User)
     display_name = models.TextField()
     thumbnail_url = models.TextField(null=True, blank=True)
+
+
+class Manager(models.Model):
+    user = models.OneToOneField(auth.User)
+    display_name = models.TextField()
+
+
+class Officer(models.Model):
+    user = models.OneToOneField(auth.User)
+    display_name = models.TextField()
 
 
 class Cat(models.Model):

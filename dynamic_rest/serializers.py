@@ -12,6 +12,7 @@ from rest_framework.reverse import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 
+from dynamic_rest.permissions import PermissionsSerializerMixin
 from dynamic_rest.conf import settings
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.links import merge_link_object
@@ -207,7 +208,11 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         return updated_objects
 
 
-class WithDynamicSerializerMixin(WithResourceKeyMixin, DynamicBase):
+class WithDynamicSerializerMixin(
+    PermissionsSerializerMixin,
+    WithResourceKeyMixin,
+    DynamicBase
+):
     """Base class for DREST serializers.
 
     This class provides support for dynamic field inclusions/exclusions.

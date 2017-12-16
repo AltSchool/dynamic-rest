@@ -1,5 +1,6 @@
 from rest_framework.serializers import CharField
 
+from dynamic_rest.permissions import Me
 from dynamic_rest.fields import (
     CountField,
     DynamicField,
@@ -11,6 +12,7 @@ from dynamic_rest.serializers import (
     DynamicEphemeralSerializer,
     DynamicModelSerializer
 )
+from django.contrib.auth import models as auth
 from tests.models import (
     Car,
     Cat,
@@ -232,6 +234,46 @@ class UserSerializer(DynamicModelSerializer):
     def get_number_of_cats(self, user):
         location = user.location
         return len(location.cat_set.all()) if location else 0
+
+
+class PermissionsUserSerializer(
+    DynamicModelSerializer
+):
+    class Meta:
+        model = auth.User
+        name = 'user'
+        name_field = 'first_name'
+        fields = (
+            'id',
+            'first_name',
+            'last_name',
+            'username',
+            'is_superuser'
+        )
+        read_only_fields = (
+            'is_superuser',
+        )
+        permissions = {
+            'manager': {
+                'delete': {
+                    'is_superuser': False
+                },
+                'read': True,
+                'list': True,
+                'update': True,
+                'create': True,
+            },
+            'officer': {
+                'read': {
+                    'is_superuser': False
+                },
+                'list': True,
+                'update': Me()
+            },
+            '*': {
+                'read': True
+            }
+        }
 
 
 class ProfileSerializer(DynamicModelSerializer):

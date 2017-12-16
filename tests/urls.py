@@ -20,6 +20,7 @@ router.register(r'user_locations', viewsets.UserLocationViewSet)
 # the above routes are duplicated to test versioned prefixes
 router.register_resource(viewsets.CatViewSet, namespace='v2')  # canonical
 router.register(r'v1/user_locations', viewsets.UserLocationViewSet)
+router.register(r'p/users', viewsets.PermissionsUserViewSet, namespace='p')
 router.register('login', login)
 router.register('logout', logout)
 
