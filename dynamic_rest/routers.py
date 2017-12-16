@@ -66,7 +66,7 @@ def get_directory(request, show_all=True):
             viewset = endpoint.get('_viewset', None)
             if viewset and hasattr(viewset, 'get_user_permissions'):
                 permissions = viewset.get_user_permissions(user)
-                if permissions and not viewset.permissions.list:
+                if permissions and not permissions.list:
                     continue
             endpoint_url = get_url(endpoint.get('_url', None))
             relative_url = get_relative_url(endpoint_url)
@@ -81,7 +81,7 @@ def get_directory(request, show_all=True):
         viewset = endpoints.get('_viewset', None)
         if viewset and hasattr(viewset, 'get_user_permissions'):
             permissions = viewset.get_user_permissions(user)
-            if permissions and not viewset.permissions.list:
+            if permissions and not permissions.list:
                 continue
         relative_url = get_relative_url(url)
         active = is_prefix_of(path, relative_url)
