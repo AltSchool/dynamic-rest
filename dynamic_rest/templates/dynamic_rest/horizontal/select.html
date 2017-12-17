@@ -2,7 +2,7 @@
 
 <div class="form-group row">
   {% if field.label %}
-    <label class="col-sm-2 control-label {% if style.hide_label %}sr-only{% endif %}">
+    <label class="col-sm-2 form-control-label {% if style.hide_label %}sr-only{% endif %}">
         {% if field.help_text %}
             <span class="drest-has-tooltip" data-trigger="click" data-placement="right" data-toggle="tooltip" title="{{ field.help_text | safe }}">{{ field.label }}</span>
         {% else %}

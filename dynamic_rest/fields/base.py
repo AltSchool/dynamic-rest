@@ -179,7 +179,7 @@ class DynamicField(fields.Field, DynamicBase):
                 self.admin_render(instance, v)
                 for v in value
             ]
-            return ', '.join(ret)
+            return '<br/> '.join(ret)
 
         # URL link or None
         url = self.admin_get_url(instance, value)

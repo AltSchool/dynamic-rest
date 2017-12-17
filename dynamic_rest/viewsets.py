@@ -335,6 +335,12 @@ class WithDynamicViewSetBase(object):
         return None
 
     def get_serializer(self, *args, **kwargs):
+        list_fields = None
+        if self.is_list():
+            list_fields = getattr(
+                self.serializer_class.get_meta(), 'list_fields', None
+            )
+
         if 'request_fields' not in kwargs:
             kwargs['request_fields'] = self.get_request_fields()
         if 'sideloading' not in kwargs:
@@ -343,10 +349,14 @@ class WithDynamicViewSetBase(object):
             kwargs['debug'] = self.get_request_debug()
         if 'envelope' not in kwargs:
             kwargs['envelope'] = True
+        if list_fields and not kwargs['request_fields']:
+            # default to list
+            kwargs['only_fields'] = list_fields
         if self.is_update():
             kwargs['include_fields'] = '*'
         if self.is_list():
             kwargs['many'] = True
+
         serializer = super(
             WithDynamicViewSetBase, self
         ).get_serializer(

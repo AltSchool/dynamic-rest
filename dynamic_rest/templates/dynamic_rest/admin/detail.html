@@ -3,19 +3,28 @@
 <table class="table drest-table-details">
   <tbody>
     {% for key in details %}
-        {% get_field_value results.serializer results.serializer.instance key as field %}
-        <tr class="drest-field">
+        {% if is_error %}
             <td class="drest-field-label">
-                {% if field and field.help_text %}
-                    <span data-placement="right" class="drest-has-tooltip" data-toggle="tooltip" data-trigger="click" title="{{ field.help_text }}">{{ field.label }}</span>
-                {% else %}
-                    {{ field.label }}
-                {% endif %}
+                {{ key }}
             </td>
             <td class="drest-field-value">
-                {{ field | render_field_value }}
+                {% get_value_from_dict results key %}
             </td>
-        </tr>
+        {% else %}
+            {% get_field_value results.serializer results.serializer.instance key as field %}
+            <tr class="drest-field">
+                <td class="drest-field-label">
+                    {% if field and field.help_text %}
+                        <span data-placement="right" class="drest-has-tooltip" data-toggle="tooltip" data-trigger="click" title="{{ field.help_text }}">{{ field.label }}</span>
+                    {% else %}
+                        {{ field.label }}
+                    {% endif %}
+                </td>
+                <td class="drest-field-value">
+                    {{ field | render_field_value }}
+                </td>
+            </tr>
+        {% endif %}
     {% endfor %}
   </tbody>
 </table>

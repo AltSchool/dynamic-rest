@@ -268,7 +268,7 @@ class PermissionsUserSerializer(
                     'is_superuser': False
                 },
                 'list': True,
-                'update': Me()
+                'update': Me
             },
             '*': {
                 'read': True

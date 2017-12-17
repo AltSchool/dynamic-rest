@@ -71,6 +71,7 @@ class DynamicAdminRenderer(AdminRenderer):
         is_update = getattr(view, 'is_update', lambda: False)()
         is_root = view and view.__class__.__name__ == 'API'
         header = ''
+        title = settings.API_NAME or ''
         header_url = '#'
         description = ''
 
@@ -85,7 +86,7 @@ class DynamicAdminRenderer(AdminRenderer):
 
         if is_root:
             style = context['style'] = 'root'
-            header = settings.API_NAME or ''
+            title = header = settings.API_NAME or ''
             description = settings.API_DESCRIPTION
             header_url = '/'
 
@@ -119,6 +120,7 @@ class DynamicAdminRenderer(AdminRenderer):
                     pk=instance.pk
                 )
 
+            title = header
             if icon:
                 header = mark_safe('<span class="fa fa-%s"></span>&nbsp;%s' % (
                     icon,
@@ -129,6 +131,7 @@ class DynamicAdminRenderer(AdminRenderer):
                 list_fields = getattr(meta, 'list_fields', None) or meta.fields
             else:
                 list_fields = meta.fields
+
             blacklist = ('id', )
             if not isinstance(list_fields, six.string_types):
                 # respect serializer field ordering
@@ -181,8 +184,13 @@ class DynamicAdminRenderer(AdminRenderer):
         alert_class = request.query_params.get('alert-class', None)
         if is_error:
             error = response.data
-            if 'error' in error:
-                error = error['error']
+            if isinstance(error, dict):
+                if len(error.keys()) == 1:
+                    error = error[error.keys()[0]]
+                else:
+                    error = ' '.join((
+                        "%s=%s" % (str(k), str(v)) for k, v in error.items()
+                    ))
             alert = 'An error has occurred: %s' % error
             alert_class = 'danger'
         elif is_update:
@@ -202,10 +210,21 @@ class DynamicAdminRenderer(AdminRenderer):
         if alert and not alert_class:
             alert_class = 'info'
 
-        # methods
+        #
+        permissions = getattr(view, 'permissions', None)
         allowed_methods = set(
             (x.lower() for x in (view.http_method_names or ()))
         )
+        if permissions:
+            if not permissions.delete:
+                allowed_methods.discard('delete')
+            if not permissions.update:
+                allowed_methods.discard('patch')
+                allowed_methods.discard('put')
+            if not permissions.create:
+                allowed_methods.discard('post')
+            if not permissions.list:
+                back = None
 
         context['root_url'] = root_url
         context['back_url'] = back_url
@@ -213,6 +232,7 @@ class DynamicAdminRenderer(AdminRenderer):
         context['columns'] = columns
         context['fields'] = fields
         context['details'] = context['columns']
+        context['is_error'] = is_error
         context['description'] = description
         context['singular_name'] = singular_name
         context['plural_name'] = plural_name
@@ -220,6 +240,7 @@ class DynamicAdminRenderer(AdminRenderer):
         context['login_url'] = login_url
         context['logout_url'] = logout_url
         context['header'] = header
+        context['title'] = title
         context['header_url'] = header_url
         context['search_value'] = search_value
         context['search_key'] = search_key

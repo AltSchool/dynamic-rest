@@ -77,12 +77,12 @@ class Filter(object):
             return self.spec
 
         user = self.user
-        if isinstance(self.spec, Me):
+        if isinstance(self.spec, Me) or self.spec is Me:
             return Q(pk=user.pk)
 
         if isinstance(self.spec, dict):
             spec = {
-                k: user if isinstance(v, Me) else v
+                k: user if isinstance(v, Me) or v is Me else v
                 for k, v in self.spec.items()
             }
             return Q(**spec)

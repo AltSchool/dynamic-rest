@@ -363,8 +363,6 @@ class DynamicRouter(DefaultRouter):
 
         if not hasattr(viewset, 'serializer_class'):
             return routes
-        if not hasattr(viewset, 'list_related'):
-            return routes
 
         serializer = viewset.serializer_class()
         fields = getattr(serializer, 'get_link_fields', lambda: [])()
@@ -372,15 +370,22 @@ class DynamicRouter(DefaultRouter):
         route_name = '{basename}-{methodnamehyphen}'
 
         for field_name, field in six.iteritems(fields):
-            methodname = 'list_related'
+            has_list_related = hasattr(viewset, 'list_related')
+            has_create_related = hasattr(viewset, 'create_related')
             url = (
                 r'^{prefix}/{lookup}/(?P<field_name>%s)'
                 '{trailing_slash}$' % field_name
             )
-            routes.append(Route(
-                url=url,
-                mapping={'get': methodname},
-                name=replace_methodname(route_name, field_name),
-                initkwargs={}
-            ))
+            mapping = {}
+            if has_list_related:
+                mapping['get'] = 'list_related'
+            if has_create_related:
+                mapping['post'] = 'create_related'
+            if mapping:
+                routes.append(Route(
+                    url=url,
+                    mapping=mapping,
+                    name=replace_methodname(route_name, field_name),
+                    initkwargs={}
+                ))
         return routes
