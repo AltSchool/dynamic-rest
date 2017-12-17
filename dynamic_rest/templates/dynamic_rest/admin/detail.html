@@ -3,7 +3,7 @@
 <table class="table drest-table-details">
   <tbody>
     {% for key in details %}
-        {% if is_error %}
+        {% if not results.serializer %}
             <td class="drest-field-label">
                 {{ key }}
             </td>

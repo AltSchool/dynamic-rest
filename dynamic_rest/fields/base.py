@@ -57,6 +57,19 @@ class DynamicField(fields.Field, DynamicBase):
         self.kwargs = kwargs
         super(DynamicField, self).__init__(*args, **kwargs)
 
+    def run_validation(self, data):
+        if self.setter:
+            if data == fields.empty:
+                data = [] if self.kwargs.get('many') else None
+
+            def fn(instance):
+                setter = getattr(self.parent, self.setter)
+                setter(instance, data)
+
+            self.parent.add_post_save(fn)
+            raise fields.SkipField()
+        return super(DynamicField, self).run_validation(data)
+
     def bind(self, *args, **kwargs):
         """Bind to the parent serializer."""
         if self.bound:  # Prevent double-binding
