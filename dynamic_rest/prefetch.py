@@ -140,9 +140,8 @@ class FastQueryCompatMixin(object):
         '''
         return self
 
-    def exclude(self, *fields):
-        # TODO: test this
-        self.queryset = self.queryset.exclude(*fields)
+    def exclude(self, *args, **kwargs):
+        self.queryset = self.queryset.exclude(*args, **kwargs)
         return self
 
     def count(self):
