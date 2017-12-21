@@ -32,7 +32,6 @@ class FastObject(dict):
         elif name == '*':
             return self
         else:
-            return None
             raise AttributeError(name)
 
     def __getattr__(self, name):

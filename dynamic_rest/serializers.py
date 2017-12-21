@@ -575,7 +575,14 @@ class WithDynamicSerializerMixin(
                         attribute = instance[field.source]
                     except KeyError:
                         # slower, but does more stuff
-                        attribute = getattr(instance, field.source)
+                        # Also, some temp debugging
+                        if hasattr(instance, field.source):
+                            attribute = getattr(instance, field.source)
+                        else:
+                            print "Missing %s from %s" % (
+                                field.field_name,
+                                self.__class__.__name__
+                            )
             else:
                 try:
                     attribute = field.get_attribute(instance)
