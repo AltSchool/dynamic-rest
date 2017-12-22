@@ -565,7 +565,7 @@ class WithDynamicSerializerMixin(
 
         for field in fields:
             if is_fast:
-                if field in id_fields and field.field_name not in instance:
+                if field in id_fields and field.source not in instance:
                     # TODO - make better.
                     attribute = instance.get(field.source + '_id')
                     ret[field.field_name] = attribute
