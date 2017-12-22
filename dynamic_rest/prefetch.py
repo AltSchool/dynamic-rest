@@ -151,9 +151,6 @@ class FastQueryCompatMixin(object):
         self.queryset = self.queryset.extra(*args, **kwargs)
         return self
 
-    def get(self, *args,  **kwargs):
-        return self.queryset.get(*args, **kwargs)
-
     def filter(self, *args, **kwargs):
         self.queryset = self.queryset.filter(*args, **kwargs)
         return self
@@ -165,6 +162,12 @@ class FastQueryCompatMixin(object):
     def distinct(self, *args, **kwargs):
         self.queryset = self.queryset.distinct(*args, **kwargs)
         return self
+
+    def get(self, *args,  **kwargs):
+        return self.queryset.get(*args, **kwargs)
+
+    def first(self, *args, **kwargs):
+        return self.queryset.first()
 
     @property
     def query(self):
