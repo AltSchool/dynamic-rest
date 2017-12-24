@@ -8,21 +8,23 @@
                 {% get_value_from_dict fields column as field %}
                 {% if field %}
                     <th>
-                        {% if field.help_text %}
-                            <span class="drest-has-tooltip" data-placement="right" data-toggle="tooltip" data-trigger="click" title="{{ field.help_text }}">{{ field.label }}</span>
-                        {% else %}
-                            {{ field.label }}
-                        {% endif %}
-                        {% if column in sortable_fields %}
-                            {% get_sort_query_value column sorted_field sorted_ascending as sort_query_value %}
-                            <a href="{% replace_query_param url "sort[]" sort_query_value %}">
-                                {% if column == sorted_field %}
-                                    <span class="text-primary fa {% if sorted_ascending %}fa-sort-up{% else %}fa-sort-down{% endif %}"></span>
-                                {% else %}
-                                    <span class="text-muted fa fa-sort"></span>
-                                {% endif %}
-                            </a>
-                        {% endif %}
+                        <span>
+                            {% if field.help_text %}
+                                <span class="drest-has-tooltip" data-placement="right" data-toggle="tooltip" data-trigger="click" title="{{ field.help_text }}">{{ field.label }}</span>
+                            {% else %}
+                                {{ field.label }}
+                            {% endif %}
+                            {% if column in sortable_fields %}
+                                {% get_sort_query_value column sorted_field sorted_ascending as sort_query_value %}
+                                <a href="{% replace_query_param url "sort[]" sort_query_value %}">
+                                    {% if column == sorted_field %}
+                                        <span class="text-primary fa {% if sorted_ascending %}fa-sort-up{% else %}fa-sort-down{% endif %}"></span>
+                                    {% else %}
+                                        <span class="text-muted fa fa-sort"></span>
+                                    {% endif %}
+                                </a>
+                            {% endif %}
+                        </span>
                     </th>
                 {% else %}
                     <th>{{ column }}</th>
