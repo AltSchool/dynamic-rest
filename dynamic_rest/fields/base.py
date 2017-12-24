@@ -251,8 +251,10 @@ class DynamicField(fields.Field, DynamicBase):
     def model_field(self):
         if not hasattr(self, '_model_field'):
             try:
+                source = self.source or self.field_name
                 self._model_field = get_model_field(
-                    self.parent_model, self.source
+                    self.parent_model,
+                    source
                 )
             except:
                 self._model_field = None
