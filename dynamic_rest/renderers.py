@@ -235,7 +235,7 @@ class DynamicAdminRenderer(AdminRenderer):
         context['fields'] = fields
         context['sortable_fields'] = set([
             c for c in columns if (
-                getattr(fields.get(c), 'source', '*') != '*'
+                getattr(fields.get(c), 'model_field', None)
                 and not isinstance(fields.get(c), DynamicRelationField)
             )
         ])
