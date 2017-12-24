@@ -264,7 +264,7 @@ class DynamicAdminRenderer(AdminRenderer):
         context['header'] = header
         context['title'] = title
         context['header_url'] = header_url
-        context['url'] = request.path
+        context['url'] = request.get_full_path()
         context['search_value'] = search_value
         context['search_key'] = search_key
         context['search_help'] = search_help
