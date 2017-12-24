@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+from django.http.request import QueryDict
+from urlparse import urlparse, urlunparse
 import json
 from uuid import UUID
 from django import template
@@ -79,3 +81,20 @@ def get_field_value(serializer, instance, key, idx=None):
 def render_field_value(field):
     value = getattr(field, 'get_rendered_value', lambda *x: field)()
     return mark_safe(value)
+
+
+@register.simple_tag
+def get_sort_query_value(field, sorted_field, sorted_ascending):
+    if field != sorted_field:
+        return field
+    else:
+        return '-%s' % field if sorted_ascending else field
+
+
+@register.simple_tag
+def replace_query_param(url, key, value):
+    (scheme, netloc, path, params, query, fragment) = urlparse(url)
+    query_dict = QueryDict(query).copy()
+    query_dict[key] = value
+    query = query_dict.urlencode()
+    return urlunparse((scheme, netloc, path, params, query, fragment))

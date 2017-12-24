@@ -11,8 +11,10 @@ from dynamic_rest.conf import settings
 from dynamic_rest import fields
 
 
+DynamicRelationField = fields.DynamicRelationField
+
 mapping = copy.deepcopy(HTMLFormRenderer.default_style.mapping)
-mapping[fields.DynamicRelationField] = {
+mapping[DynamicRelationField] = {
     'base_template': 'relation.html'
 }
 mapping[fields.DynamicListField] = {
@@ -231,6 +233,26 @@ class DynamicAdminRenderer(AdminRenderer):
         context['back'] = back
         context['columns'] = columns
         context['fields'] = fields
+        context['sortable_fields'] = set([
+            c for c in columns if (
+                getattr(fields.get(c), 'source', '*') != '*'
+                and not isinstance(fields.get(c), DynamicRelationField)
+            )
+        ])
+        sorted_ascending = None
+        if hasattr(view, 'get_request_feature'):
+            sorted_field = view.get_request_feature(view.SORT)
+            sorted_field = sorted_field[0] if sorted_field else None
+            if sorted_field:
+                if sorted_field.startswith('-'):
+                    sorted_field = sorted_field[1:]
+                    sorted_ascending = False
+                else:
+                    sorted_ascending = True
+        else:
+            sorted_field = None
+        context['sorted_field'] = sorted_field
+        context['sorted_ascending'] = sorted_ascending
         context['details'] = context['columns']
         context['is_error'] = is_error
         context['description'] = description
@@ -242,6 +264,7 @@ class DynamicAdminRenderer(AdminRenderer):
         context['header'] = header
         context['title'] = title
         context['header_url'] = header_url
+        context['url'] = request.path
         context['search_value'] = search_value
         context['search_key'] = search_key
         context['search_help'] = search_help
