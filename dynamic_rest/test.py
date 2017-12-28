@@ -260,6 +260,7 @@ class ViewSetTestCase(TestCase):
                 pk_field = serializer.get_field('pk')
                 if pk_field:
                     pk_field = pk_field.field_name
+                    self.assertTrue(name in content, content)
                     pk = content[name][pk_field]
                     self.assertTrue(
                         model.objects.filter(pk=pk).exists(),

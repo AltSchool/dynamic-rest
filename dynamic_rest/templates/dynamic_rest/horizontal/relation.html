@@ -67,7 +67,7 @@
             data: initials,
             placeholder: {
                 id: "",
-                placeholder: "Type the name of a " + resourceName
+                placeholder: "Start typing the name of a " + resourceName
             },
             allowClear: {% if not field.required or field.allow_null%}true{% else %}false{% endif %},
             ajax: {
@@ -80,6 +80,7 @@
                     per_page: per_page,
                   };
                   result[searchKey] = params.term;
+                  result['exclude[]'] = '*';
                   result['include[]'] = includes;
                   return result;
                 },

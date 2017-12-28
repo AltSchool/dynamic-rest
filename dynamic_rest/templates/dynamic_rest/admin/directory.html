@@ -1,0 +1,28 @@
+{% load rest_framework %}
+<table class="table drest-table-details">
+    <tbody>
+        {% if request.user.is_authenticated %}
+            <tr><td>
+                Welcome, {{request.user.name}}!
+            </td></tr>
+            <tr><td>
+                <a href="{{ logout_url }}">
+                    <span class="drest-icon-left fa fa-sign-out"></span>
+                    <span>Logout</span>
+                </a>
+            </td></tr>
+        {% endif %}
+        {% for key, value in directory.items %}
+            {% with url=value.0 icon=value.1 %}
+                <tr><td>
+                    <a href="{{ url }}">
+                        {% if icon %}
+                            <span class="drest-icon-left fa fa-{{ icon }}"></span>
+                        {% endif %}
+                        <span>{{ key }}</span>
+                    </a>
+                </td></tr>
+            {% endwith %}
+        {% endfor %}
+    </tbody>
+</table>

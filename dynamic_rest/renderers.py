@@ -228,6 +228,8 @@ class DynamicAdminRenderer(AdminRenderer):
             if not permissions.list:
                 back = None
 
+        from dynamic_rest.routers import get_directory
+        context['directory'] = get_directory(request, icons=True)
         context['root_url'] = root_url
         context['back_url'] = back_url
         context['back'] = back
@@ -263,6 +265,7 @@ class DynamicAdminRenderer(AdminRenderer):
         context['logout_url'] = logout_url
         context['header'] = header
         context['title'] = title
+        context['api_name'] = settings.API_NAME
         context['header_url'] = header_url
         context['url'] = request.get_full_path()
         context['search_value'] = search_value

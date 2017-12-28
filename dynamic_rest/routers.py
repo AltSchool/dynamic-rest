@@ -1,6 +1,5 @@
 """This module contains custom router classes."""
 from collections import OrderedDict
-import re
 
 from django.utils import six
 from django.shortcuts import redirect
@@ -12,85 +11,24 @@ from dynamic_rest.meta import get_model_table
 from dynamic_rest.conf import settings
 from dynamic_rest.compat import (
     get_script_prefix,
-    reverse,
-    NoReverseMatch
 )
 
-directory = {}
+from django.core.urlresolvers import resolve
+
 resource_map = {}
 resource_name_map = {}
 
 
-def get_directory(request, show_all=True):
-    """Get API directory as a nested list of lists."""
-    def get_url(url):
-        try:
-            return reverse(url) if url else url
-        except NoReverseMatch:
-            return '#'
-
-    def is_prefix_of(path, url):
-        return path.startswith(url) if url and path else False
-
-    def get_relative_url(url):
-        if url is None:
-            return url
-        match = re.match(r'(?:https?://[^/]+)/?(.*)', url)
-        if match:
-            return '/' + match.group(1)
-        else:
-            return url
-
-    user = request.user
-    path = request.path
-
-    directory_list = []
-
-    def sort_key(r):
-        return r[0]
-
-    # TODO(ant): support arbitrarily nested
-    # structure, for now it is capped at a single level
-    # for UX reasons
-    for group_name, endpoints in sorted(
-        six.iteritems(directory),
-        key=sort_key
-    ):
-        endpoints_list = []
-        for endpoint_name, endpoint in sorted(
-            six.iteritems(endpoints),
-            key=sort_key
-        ):
-            if endpoint_name[:1] == '_':
-                continue
-            viewset = endpoint.get('_viewset', None)
-            if viewset and hasattr(viewset, 'get_user_permissions'):
-                permissions = viewset.get_user_permissions(user)
-                if permissions and not permissions.list:
-                    continue
-            endpoint_url = get_url(endpoint.get('_url', None))
-            relative_url = get_relative_url(endpoint_url)
-            active = is_prefix_of(path, relative_url)
-            relevant = is_prefix_of(relative_url, path)
-            if relevant or show_all:
-                endpoints_list.append(
-                    (endpoint_name, endpoint_url, [], active)
-                )
-
-        url = get_url(endpoints.get('_url', None))
-        viewset = endpoints.get('_viewset', None)
-        if viewset and hasattr(viewset, 'get_user_permissions'):
-            permissions = viewset.get_user_permissions(user)
-            if permissions and not permissions.list:
-                continue
-        relative_url = get_relative_url(url)
-        active = is_prefix_of(path, relative_url)
-        relevant = is_prefix_of(relative_url, path)
-        if url is None or relevant or show_all:
-            directory_list.append(
-                (group_name, url, endpoints_list, active)
-            )
-    return directory_list
+def get_directory(request, icons=False):
+    """Get API directory as a dictionary of name -> URL"""
+    view = resolve(request.path)
+    view = view.func
+    if hasattr(view, 'view_class'):
+        view = view.view_class
+    elif hasattr(view, 'cls'):
+        view = view.cls
+    router = view._router
+    return router.get_directory(request, icons=icons)
 
 
 def modify_list_route(routes):
@@ -116,7 +54,7 @@ class DynamicRouter(DefaultRouter):
     def get_api_root_view(self, **kwargs):
         """Return API root view, using the global directory."""
         class API(views.APIView):
-            _ignore_model_permissions = True
+            _router = self
 
             def get_view_name(self, *args, **kwargs):
                 return settings.API_NAME
@@ -132,81 +70,57 @@ class DynamicRouter(DefaultRouter):
                             request.path
                         )
                     )
-                directory_list = get_directory(
-                    request,
-                    show_all=False
-                )
-                result = OrderedDict()
-                for group_name, url, endpoints, _ in directory_list:
-                    if url:
-                        result[group_name] = url
-                    else:
-                        for endpoint_name, url, _, _ in endpoints:
-                            result[endpoint_name.title()] = url
+                result = get_directory(request)
                 return Response(result)
 
-        return API.as_view()
+        view = API.as_view()
+        return view
+
+    def get_directory(self, request, icons=False):
+        result = OrderedDict()
+        user = request.user
+        for prefix, viewset, basename in self.registry:
+            if hasattr(viewset, 'get_user_permissions'):
+                permissions = viewset.get_user_permissions(user)
+                if permissions and not permissions.list:
+                    continue
+            if not hasattr(viewset, 'serializer_class'):
+                continue
+
+            serializer_class = viewset.serializer_class
+            url = serializer_class.get_url()
+            name = serializer_class.get_plural_name()
+            name = name.title().replace('_', ' ')
+            if icons:
+                icon = serializer_class.get_icon()
+                result[name] = (url, icon)
+            else:
+                result[name] = url
+        return result
 
     def register(self, prefix, viewset, base_name=None, namespace=None):
-        """Add any registered route into a global API directory.
-
-        If the prefix includes a path separator,
-        store the URL in the directory under the first path segment.
-        Otherwise, store it as-is.
-
-        For example, if there are two registered prefixes,
-        'v1/users' and 'groups', `directory` will look liks:
-
-        {
-            'v1': {
-                'users': {
-                    '_url': 'users-list'
-                    '_viewset': <class 'UserViewSet'>
-                },
-            }
-            'groups': {
-               '_url': 'groups-list'
-               '_viewset': <class 'GroupViewSet'>
-            }
-        }
-        """
-        prefix_parts = prefix.split('/')
         if base_name is None:
             base_name = prefix
-        if namespace:
-            prefix_parts = [namespace] + prefix_parts
+        if namespace is not None:
             base_name = '%s-%s' % (namespace, base_name)
 
-        super(DynamicRouter, self).register(prefix, viewset, base_name)
+        result = super(DynamicRouter, self).register(
+            prefix, viewset, base_name
+        )
 
-        if len(prefix_parts) > 1:
-            prefix = prefix_parts[0]
-            endpoint = '/'.join(prefix_parts[1:])
-        else:
-            endpoint = prefix
-            prefix = None
-
-        if prefix and prefix not in directory:
-            current = directory[prefix] = {}
-        else:
-            current = directory.get(prefix, directory)
-
-        list_name = self.routes[0].name
-        url_name = list_name.format(basename=base_name)
-        if endpoint not in current:
-            current[endpoint] = {}
-        current[endpoint]['_url'] = url_name
-
+        url_name = self.routes[0].name.format(basename=base_name)
         serializer_class = getattr(viewset, 'serializer_class', None)
+        viewset._router = self
         if serializer_class:
             # Set URL on the serializer class so that it can determine its
             # endpoint URL.
             # If a serializer class is associated with multiple views,
             # it will take on the URL of the last view.
             # TODO: is this a problem?
+            serializer_class._router = self
             serializer_class._url = url_name
 
-        current[endpoint]['_viewset'] = viewset
+        return result
 
     def register_resource(self, viewset, namespace=None):
         """

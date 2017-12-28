@@ -1,6 +1,9 @@
 .has-error .help-block {
     color: #d9534f!important
 }
+.drest-icon-left {
+    width: 30px;
+}
 .drest-content-container {
     display: none;
     position: fixed;
@@ -29,6 +32,7 @@
 .drest-nav-left, .drest-nav-right {
     flex: 0 0 auto;
     width: 100px;
+    position: relative;
     align-items: center;
     justify-content: center;
     padding: 0;

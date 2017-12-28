@@ -44,14 +44,14 @@
                 <nav class="navbar navbar-inverse bg-primary fixed-top">
                     <div class="navbar-nav drest-nav">
                         <div class="navbar-brand drest-nav-left">
-                            <a href="{{ root_url }}">
+                            <div {% if style != 'root' %}data-toggle="modal" data-target="#directoryModal"{% endif %} id="drest-navbar-menu-btn">
                                 {% block brand %}
                                     <img class="drest-logo" src="{% static "dynamic_rest/img/logo.svg" %}" alt="Logo" />
                                 {% endblock %}
-                            </a>
+                            </div>
                         </div>
                         <div class="nav-item drest-nav-center active">
-                                <a class="nav-link" href="#">
+                                <span class="nav-link">
                                     {% if header %}
                                         {% if description %}
                                             <span class="drest-has-tooltip" data-trigger="click" data-toggle="tooltip" data-placement="bottom" title="{{ description }}">{{ header }}</span>
@@ -59,32 +59,15 @@
                                             <span>{{ header }}</span>
                                         {% endif %}
                                     {% endif %}
-                                </a>
+                                </span>
                         </div>
 
                         <div class="nav-item drest-nav-right">
-                            {% if request.user.is_authenticated %}
-                                {% if logout_url %}
-                                    <a class="nav-link" href="{{logout_url}}">
-                                        <div class="drest-btn">
-                                            <span class="fa fa-sign-out drest-btn-icon"></span>
-                                            <span class="drest-btn-label">
-                                                Logout
-                                            </span>
-                                        </div>
-                                    </a>
-                                {% endif %}
-                            {% else %}
-                                {% if login_url %}
-                                    <a class="nav-link" href="{{login_url}}">
-                                        <div class="drest-btn">
-                                            <span class="fa fa-sign-in drest-btn-icon"></span>
-                                            <span class="drest-btn-label">
-                                                Login
-                                            </span>
-                                        </div>
-                                    </a>
-                                {% endif %}
+                            {% if allow_filter %}
+                                <div data-toggle="modal" data-target="#filtersModal" class="btn btn-primary drest-btn {% if search_value %}active{% endif%}">
+                                    <span class="fa fa-search drest-btn-icon"></span>
+                                    <span class="drest-btn-label">Search</span>
+                                </div>
                             {% endif %}
                         </div>
                     </div>
@@ -104,7 +87,7 @@
                                 {% include "dynamic_rest/admin/list.html" %}
                             {% else %}
                                 {% if style == 'root' %}
-                                    {% include "dynamic_rest/admin/root.html" %}
+                                    {% include "dynamic_rest/admin/directory.html" %}
                                 {% else %}
                                     {% include "dynamic_rest/admin/detail.html" %}
                                 {% endif %}
@@ -118,7 +101,7 @@
                 {% if alert %}
                     <div class="alert alert-dismissable drest-nav-alert alert-{{alert_class}}">
                         <span>{{ alert }}</span>
-                        <span><a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a></span>
+                        <span class="close" data-dismiss="alert" aria-label="close">&times;</span>
                     </div>
                 {% endif %}
             {% endblock %}
@@ -131,12 +114,6 @@
                                 <div data-toggle="modal" data-target="#deleteModal" class="drest-btn btn btn-danger">
                                     <span class="drest-btn-icon fa fa-remove" aria-hidden="true"></span>
                                     <span class="drest-btn-label">Delete</span>
-                                </div>
-                            {% endif %}
-                            {% if allow_filter %}
-                                <div data-toggle="modal" data-target="#filtersModal" class="btn btn-secondary drest-btn {% if search_value %}active{% endif%}">
-                                    <span class="fa fa-search drest-btn-icon"></span>
-                                    <span class="drest-btn-label">{% if search_value %}"{{ search_value }}"{% else %}Filter{% endif %}</span>
                                 </div>
                             {% endif %}
                         </div>
@@ -169,11 +146,29 @@
                 </nav>
             {% endblock %} <!-- /footer -->
 
+            {% block directory_modal %}
+                <div class="modal fade" id="directoryModal">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-primary">
+                                <h4 class="modal-title">{{ api_name }}<h4>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                {% include "dynamic_rest/admin/directory.html" %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            {% endblock %}
             {% block create_modal %}
                 <div class="modal fade" id="createModal">
                     <div class="modal-dialog">
                         <div class="modal-content">
-                            <div class="modal-header bg-primary">
+                            <div class="modal-header bg-info">
                                 <h4 class="modal-title">Create {{ singular_name }}</h4>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
@@ -229,7 +224,7 @@
                 <div class="modal fade" id="editModal">
                     <div class="modal-dialog">
                         <div class="modal-content">
-                            <div class="modal-header bg-primary">
+                            <div class="modal-header bg-info">
                                 <h4 class="modal-title">Edit {{ singular_name }}</h4>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
@@ -256,7 +251,7 @@
                     <div class="modal" id="errorModal">
                         <div class="modal-dialog">
                             <div class="modal-content">
-                                <div class="modal-header bg-primary">
+                                <div class="modal-header bg-info">
                                     <h4 class="modal-title">{{ error_title }}</h4>
                                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                         <span aria-hidden="true">&times;</span>
@@ -283,7 +278,7 @@
                 <div class="modal fade" id="filtersModal">
                     <div class="modal-dialog">
                         <div class="modal-content">
-                            <div class="modal-header bg-primary">
+                            <div class="modal-header bg-info">
                                 <h4 class="modal-title">Search {{plural_name}}</h4>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
@@ -321,6 +316,8 @@
                 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
                 <script src="{% static "dynamic_rest/js/stacktable.js" %}"></script>
                 <script src="{% static "rest_framework/js/ajax-form.js" %}"></script>
+
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/spin.js/2.3.2/spin.min.js"></script>
                 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.3/js/select2.full.min.js"></script>
 
                 <script>
@@ -343,6 +340,34 @@
                         });
                         $('[data-toggle="tooltip"]').tooltip();
                         $('.drest-content-container').show();
+
+                        var spin = function() {
+                                var opts = {
+                                  lines: 7,
+                                  length: 0, // The length of each line
+                                  width: 20, // The line thickness
+                                  radius: 25, // The radius of the inner circle
+                                  scale: 0.8, // Scales overall size of the spinner
+                                  corners: 1, // Corner roundness (0..1)
+                                  color: '#000000', // CSS color or array of colors
+                                  fadeColor: 'transparent', // CSS color or array of colors
+                                  opacity: 0, // Opacity of the lines
+                                  rotate: 0, // The rotation offset
+                                  direction: 1, // 1: clockwise, -1: counterclockwise
+                                  speed: 1.5, // Rounds per second
+                                  trail: 95, // Afterglow percentage
+                                  fps: 20, // Frames per second when using setTimeout() as a fallback in IE 9
+                                  zIndex: 2e9, // The z-index (defaults to 2000000000)
+                                  className: 'spinner', // The CSS class to assign to the spinner
+                                  top: '50%', // Top position relative to parent
+                                  left: '50%', // Left position relative to parent
+                                  shadow: null, // Box-shadow for the lines
+                                  position: 'absolute' // Element positioning
+                                };
+                                var spinner = new Spinner(opts).spin(document.body);
+                      };
+                      $('a').click(spin);
+                      $('button[type="submit"]').click(spin);
                     });
                 </script>
             {% endblock %} <!-- /script -->

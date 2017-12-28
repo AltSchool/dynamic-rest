@@ -340,7 +340,7 @@ class WithDynamicViewSetBase(object):
             list_fields = getattr(
                 self.serializer_class.get_meta(), 'list_fields', None
             )
-
+            kwargs['many'] = True
         if 'request_fields' not in kwargs:
             kwargs['request_fields'] = self.get_request_fields()
         if 'sideloading' not in kwargs:
@@ -354,9 +354,6 @@ class WithDynamicViewSetBase(object):
             kwargs['only_fields'] = list_fields
         if self.is_update():
             kwargs['include_fields'] = '*'
-        if self.is_list():
-            kwargs['many'] = True
-
         serializer = super(
             WithDynamicViewSetBase, self
         ).get_serializer(
