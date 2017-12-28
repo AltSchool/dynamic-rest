@@ -64,10 +64,16 @@
 
                         <div class="nav-item drest-nav-right">
                             {% if allow_filter %}
-                            <div data-toggle="modal" data-target="#filtersModal" class="btn btn-primary drest-btn">
+                                <div data-toggle="modal" data-target="#filtersModal" class="btn btn-primary drest-btn">
                                     <span class="fa fa-search drest-btn-icon"></span>
                                     <span class="drest-btn-label">Find</span>
-                            </div>
+                                </div>
+                            {% endif %}
+                            {% if back %}
+                                <a class="nav-link drest-btn" href="{{back_url}}">
+                                    <span class="fa fa-arrow-left drest-btn-icon"></span>
+                                    <span class="drest-btn-label">{{back}}</span>
+                                </a>
                             {% endif %}
                         </div>
                     </div>
@@ -120,12 +126,6 @@
                         <div class="nav-item">
                             {% if paginator %}
                                 {% get_pagination_html paginator %}
-                            {% endif %}
-                            {% if back %}
-                                <a class="nav-link drest-btn" href="{{back_url}}">
-                                    <span class="fa fa-arrow-left drest-btn-icon"></span>
-                                    <span class="drest-btn-label">{{back}}</span>
-                                </a>
                             {% endif %}
                         </div>
                         <div class="nav-item drest-nav-right">

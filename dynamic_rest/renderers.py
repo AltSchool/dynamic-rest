@@ -74,7 +74,6 @@ class DynamicAdminRenderer(AdminRenderer):
         is_directory = view and view.__class__.__name__ == 'API'
         header = ''
         title = settings.API_NAME or ''
-        header_url = '#'
         description = ''
 
         results = context.get('results')
@@ -90,7 +89,6 @@ class DynamicAdminRenderer(AdminRenderer):
             style = context['style'] = 'directory'
             title = header = settings.API_NAME or ''
             description = settings.API_DESCRIPTION
-            header_url = '/'
 
         back_url = None
         back = None
@@ -103,7 +101,7 @@ class DynamicAdminRenderer(AdminRenderer):
             plural_name = serializer.get_plural_name().title()
             description = serializer.get_description()
             icon = serializer.get_icon()
-            header = serializer.get_plural_name().title()
+            header = serializer.get_plural_name().title().replace('_', ' ')
             name_field = serializer.get_name_field()
 
             if style == 'list':
@@ -115,11 +113,8 @@ class DynamicAdminRenderer(AdminRenderer):
                 header = '%d %s' % (count, header)
             elif not is_error:
                 back_url = serializer.get_url()
-                back = plural_name
-                header = results.get(name_field)
-                header_url = serializer.get_url(
-                    pk=instance.pk
-                )
+                back = 'List'
+                header = serializer.get_name().title().replace('_', ' ')
 
             title = header
             if icon:
@@ -264,7 +259,6 @@ class DynamicAdminRenderer(AdminRenderer):
         context['header'] = header
         context['title'] = title
         context['api_name'] = settings.API_NAME
-        context['header_url'] = header_url
         context['url'] = request.get_full_path()
         context['search_value'] = search_value
         context['search_key'] = search_key
