@@ -44,7 +44,7 @@
                 <nav class="navbar navbar-inverse bg-primary fixed-top">
                     <div class="navbar-nav drest-nav">
                         <div class="navbar-brand drest-nav-left">
-                            <div {% if style != 'root' %}data-toggle="modal" data-target="#directoryModal"{% endif %} id="drest-navbar-menu-btn">
+                            <div {% if style != 'directory' %}data-toggle="modal" data-target="#directoryModal"{% endif %} id="drest-navbar-menu-btn">
                                 {% block brand %}
                                     <img class="drest-logo" src="{% static "dynamic_rest/img/logo.svg" %}" alt="Logo" />
                                 {% endblock %}
@@ -64,10 +64,10 @@
 
                         <div class="nav-item drest-nav-right">
                             {% if allow_filter %}
-                                <div data-toggle="modal" data-target="#filtersModal" class="btn btn-primary drest-btn {% if search_value %}active{% endif%}">
+                            <div data-toggle="modal" data-target="#filtersModal" class="btn btn-primary drest-btn">
                                     <span class="fa fa-search drest-btn-icon"></span>
                                     <span class="drest-btn-label">Search</span>
-                                </div>
+                            </div>
                             {% endif %}
                         </div>
                     </div>
@@ -86,7 +86,7 @@
                             {% if style == 'list' %}
                                 {% include "dynamic_rest/admin/list.html" %}
                             {% else %}
-                                {% if style == 'root' %}
+                                {% if style == 'directory' %}
                                     {% include "dynamic_rest/admin/directory.html" %}
                                 {% else %}
                                     {% include "dynamic_rest/admin/detail.html" %}
@@ -151,7 +151,10 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-primary">
-                                <h4 class="modal-title">{{ api_name }}<h4>
+                                <h4 class="modal-title">
+                                    <span class="fa fa-map-o"></span>
+                                    <span>{{ api_name }}</span>
+                                <h4>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
@@ -169,7 +172,10 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-info">
-                                <h4 class="modal-title">Create {{ singular_name }}</h4>
+                                <h4 class="modal-title">
+                                    <span class="fa fa-plus"></span>
+                                    <span>Create {{ singular_name }}</span>
+                                </h4>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
@@ -196,7 +202,10 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-danger">
-                                <h4 class="modal-title">Delete {{ singular_name }}</h4>
+                                <h4 class="modal-title">
+                                    <span class="fa fa-remove"></span>
+                                    <span>Delete "{{ title }}"</span>
+                                </h4>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
@@ -225,7 +234,10 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-info">
-                                <h4 class="modal-title">Edit {{ singular_name }}</h4>
+                                <h4 class="modal-title">
+                                    <span class="fa fa-pencil"></span>
+                                    <span>Edit "{{ title }}"</span>
+                                </h4>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
@@ -279,7 +291,12 @@
                     <div class="modal-dialog">
                         <div class="modal-content">
                             <div class="modal-header bg-info">
-                                <h4 class="modal-title">Search {{plural_name}}</h4>
+                                <div class="modal-title">
+                                    <h4>
+                                        <span class="fa fa-search"></span>
+                                        <span>Search {{plural_name}}</span>
+                                    </h4>
+                                </div>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
                                 </button>

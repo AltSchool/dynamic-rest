@@ -1,6 +1,10 @@
 .has-error .help-block {
     color: #d9534f!important
 }
+.drest-column-header {
+    font-size: 11px;
+    white-space: nowrap;
+}
 .drest-icon-left {
     width: 30px;
 }

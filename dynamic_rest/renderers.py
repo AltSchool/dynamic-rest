@@ -71,7 +71,7 @@ class DynamicAdminRenderer(AdminRenderer):
         name_field = None
         meta = None
         is_update = getattr(view, 'is_update', lambda: False)()
-        is_root = view and view.__class__.__name__ == 'API'
+        is_directory = view and view.__class__.__name__ == 'API'
         header = ''
         title = settings.API_NAME or ''
         header_url = '#'
@@ -86,15 +86,14 @@ class DynamicAdminRenderer(AdminRenderer):
         if isinstance(instance, list):
             instance = None
 
-        if is_root:
-            style = context['style'] = 'root'
+        if is_directory:
+            style = context['style'] = 'directory'
             title = header = settings.API_NAME or ''
             description = settings.API_DESCRIPTION
             header_url = '/'
 
         back_url = None
         back = None
-        root_url = settings.API_ROOT_URL
 
         if serializer:
             meta = serializer.get_meta()
@@ -230,7 +229,6 @@ class DynamicAdminRenderer(AdminRenderer):
 
         from dynamic_rest.routers import get_directory
         context['directory'] = get_directory(request, icons=True)
-        context['root_url'] = root_url
         context['back_url'] = back_url
         context['back'] = back
         context['columns'] = columns
