@@ -453,7 +453,7 @@ class WithDynamicViewSetBase(object):
         # and use it to render the data
         serializer = field.get_serializer(
             instance=related,
-            envelope=True
+            envelope=True,
         )
         return Response(serializer.data)
 

@@ -140,6 +140,8 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         root = self.root_serializer
         if not root or not self.field_name or not enabled:
             # Not enough info to use cache.
+            if 'context' not in init_args:
+                init_args['context'] = self.context
             return self.serializer_class(*args, **init_args)
 
         if not hasattr(root, '_descendant_serializer_cache'):
@@ -158,6 +160,8 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         cache_key = hash(pickle.dumps(key_dict))
 
         if cache_key not in root._descendant_serializer_cache:
+            if 'context' not in init_args:
+                init_args['context'] = self.context
             szr = self.serializer_class(
                 *args,
                 **init_args
