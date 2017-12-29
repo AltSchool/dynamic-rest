@@ -219,6 +219,8 @@ class WithDynamicViewSetBase(object):
         prefix = name[:-1]
         offset = len(prefix)
         for name, value in params:
+            if all([v == '' for v in value]):
+                continue
             if name.startswith(prefix):
                 if name.endswith('}'):
                     name = name[offset:-1]

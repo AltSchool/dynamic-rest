@@ -1,0 +1,16 @@
+<div class="form-group row">
+    <label class="col-sm-2 form-control-label">
+        {% if help_text %}
+            <span class="drest-has-tooltip" data-trigger="click" data-placement="right" data-toggle="tooltip" title="{{ help_text | safe }}">{{ label }}</span>
+        {% else %}
+          {{ label }}
+        {% endif %}
+    </label>
+
+        <div class="col-sm-10 row drest-no-margin">
+            <span class="col-sm-1 text-center drest-no-padding form-control-label">Min</span>
+            <input class="col-sm-5 form-control filter" name="{{ key }}" type="{{ range_type }}" placeholder="###" {% if value and value.0 %}value="{{ value.0 }}"{% endif %}></inputA>
+            <span class="col-sm-1 text-center form-control-label drest-no-padding">Max</span>
+            <input class="col-sm-5 form-control filter" name="{{ key }}" type="{{ range_type }}" placeholder="###" {% if value and value.1 %}value="{{ value.1 }}"{% endif %}></input>
+        </div>
+</div>

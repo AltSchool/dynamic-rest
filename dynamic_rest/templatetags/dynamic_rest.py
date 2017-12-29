@@ -40,9 +40,12 @@ def as_id_to_name(field):
             if hasattr(v, 'instance'):
                 instance = v.instance
             else:
-                instance = serializer.get_model().objects.get(
-                    pk=str(v)
-                )
+                if v is None:
+                    continue
+                else:
+                    instance = serializer.get_model().objects.get(
+                        pk=str(v)
+                    )
             result[str(instance.pk)] = get_attribute(instance, source_attrs)
     return mark_safe(json.dumps(result))
 
@@ -64,7 +67,7 @@ def drest_settings(key):
 
 @register.filter
 def to_json(value):
-    return json.dumps(value)
+    return mark_safe(json.dumps(value))
 
 
 @register.filter
@@ -98,3 +101,8 @@ def replace_query_param(url, key, value):
     query_dict[key] = value
     query = query_dict.urlencode()
     return urlunparse((scheme, netloc, path, params, query, fragment))
+
+
+@register.simple_tag
+def render_filter(flt):
+    return mark_safe(flt.render())

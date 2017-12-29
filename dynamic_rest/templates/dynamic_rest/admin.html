@@ -64,9 +64,9 @@
 
                         <div class="nav-item drest-nav-right">
                             {% if allow_filter %}
-                                <div data-toggle="modal" data-target="#filtersModal" class="btn btn-primary drest-btn">
+                                <div data-toggle="modal" data-target="#filtersModal" class="btn btn-primary drest-btn {% if num_filters %}active{% endif %}">
                                     <span class="fa fa-search drest-btn-icon"></span>
-                                    <span class="drest-btn-label">Find</span>
+                                    <span class="drest-btn-label">{% if num_filters %}{{ num_filters }}{% else %}Find{% endif %}</span>
                                 </div>
                             {% endif %}
                             {% if back %}
@@ -204,7 +204,7 @@
                             <div class="modal-header bg-danger">
                                 <h4 class="modal-title">
                                     <span class="fa fa-remove"></span>
-                                    <span>Delete "{{ title }}"</span>
+                                    <span>Delete {{ title }}</span>
                                 </h4>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
@@ -236,7 +236,7 @@
                             <div class="modal-header bg-info">
                                 <h4 class="modal-title">
                                     <span class="fa fa-pencil"></span>
-                                    <span>Edit "{{ title }}"</span>
+                                    <span>Edit {{ title }}</span>
                                 </h4>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                     <span aria-hidden="true">&times;</span>
@@ -304,18 +304,9 @@
                             <form class="filter-form" method="get" action="{{ request.get_full_path }}">
                                 <div class="modal-body">
                                     <fieldset>
-                                        <div class="row form-group">
-                                            <label class="col-sm-2 form-control-label">
-                                                {% if search_help %}
-                                                    <span class="drest-has-tooltip" data-placement="right" data-trigger="click" data-toggle="tooltip" data-placement="bottom" title="{{ search_help }}">Search</span>
-                                                {% else %}
-                                                    Search
-                                                {% endif %}
-                                            </label>
-                                            <div class="col-sm-10">
-                                                <input name="{{ search_key }}" class="form-control" type="text" value="{{ search_value }}"/>
-                                            </div>
-                                        </div
+                                        {% for filter in filters.values %}
+                                            {% render_filter filter %}
+                                        {% endfor %}
                                     </fieldset>
                                 </div>
                                 <div class="modal-footer bg-faded">

@@ -1,6 +1,12 @@
 .has-error .help-block {
     color: #d9534f!important
 }
+.drest-no-margin {
+    margin: 0 !important;
+}
+.drest-no-padding {
+    padding: 0 !important;
+}
 .drest-column-header {
     font-size: 11px;
     white-space: nowrap;
@@ -64,11 +70,9 @@
 .drest-btn-label {
     display: inline-block;
 }
-@media screen and (max-width: 420px) {
-    .drest-nav .nav-link {
-        padding: 0;
-    }
-    .navbar-brand.drest-nav-left {
+@media screen and (max-width: 600px) {
+    .drest-nav-right,.drest-nav-left {
+        width: 30px;
     }
     .drest-btn {
         display: flex;
@@ -79,8 +83,10 @@
     .drest-btn-label {
         font-size: 9px;
     }
-    .drest-nav-right,.drest-nav-left {
-        width: 30px;
+}
+@media screen and (max-width: 420px) {
+    .drest-nav .nav-link {
+        padding: 0;
     }
 }
 .drest-content .table {
@@ -185,4 +191,7 @@
 }
 .table.drest-table-details td, .table.drest-table-details th {
     border: 0;
+}
+.select2-search__field {
+    width: 100% !important;
 }

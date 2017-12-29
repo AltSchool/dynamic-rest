@@ -68,7 +68,6 @@ class DynamicAdminRenderer(AdminRenderer):
         )
 
         # add context
-        name_field = None
         meta = None
         is_update = getattr(view, 'is_update', lambda: False)()
         is_directory = view and view.__class__.__name__ == 'API'
@@ -92,17 +91,16 @@ class DynamicAdminRenderer(AdminRenderer):
 
         back_url = None
         back = None
+        filters = {}
 
         if serializer:
+            filters = serializer.get_filters()
             meta = serializer.get_meta()
-            search_key = serializer.get_search_key()
-            search_help = getattr(meta, 'search_help', None)
             singular_name = serializer.get_name().title()
             plural_name = serializer.get_plural_name().title()
             description = serializer.get_description()
             icon = serializer.get_icon()
             header = serializer.get_plural_name().title().replace('_', ' ')
-            name_field = serializer.get_name_field()
 
             if style == 'list':
                 if paginator:
@@ -139,14 +137,7 @@ class DynamicAdminRenderer(AdminRenderer):
             fields = serializer.get_all_fields()
         else:
             fields = {}
-            search_key = search_help = None
             singular_name = plural_name = ''
-
-        # search value
-        search_value = (
-            request.query_params.get(search_key, '')
-            if search_key else ''
-        )
 
         # login and logout
         login_url = ''
@@ -224,6 +215,15 @@ class DynamicAdminRenderer(AdminRenderer):
 
         from dynamic_rest.routers import get_directory
         context['directory'] = get_directory(request, icons=True)
+        context['filters'] = filters
+        context['num_filters'] = sum([
+            1 if (
+                any([ff is not None for ff in f.value])
+                if isinstance(f.value, list)
+                else f.value is not None
+            ) else 0
+            for f in filters.values()
+        ])
         context['back_url'] = back_url
         context['back'] = back
         context['columns'] = columns
@@ -260,12 +260,9 @@ class DynamicAdminRenderer(AdminRenderer):
         context['title'] = title
         context['api_name'] = settings.API_NAME
         context['url'] = request.get_full_path()
-        context['search_value'] = search_value
-        context['search_key'] = search_key
-        context['search_help'] = search_help
         context['allow_filter'] = (
             'get' in allowed_methods and style == 'list'
-        ) and search_key
+        ) and bool(filters)
         context['allow_delete'] = (
             'delete' in allowed_methods and style == 'detail'
             and bool(instance)

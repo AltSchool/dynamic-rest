@@ -1,0 +1,13 @@
+<div class="form-group row {% if field.errors %}has-error{% endif %}">
+    <label class="col-sm-2 form-control-label {% if style.hide_label %}sr-only{% endif %}">
+        {% if help_text %}
+            <span class="drest-has-tooltip" data-trigger="click" data-placement="right" data-toggle="tooltip" title="{{ help_text | safe }}">{{ label }}</span>
+        {% else %}
+          {{ label }}
+        {% endif %}
+    </label>
+
+    <div class="col-sm-10">
+        <input class="form-control" name="{{ key }}" type="text" placeholder="Enter text..." {% if value %}value="{{ value }}"{% endif %}/>
+    </div>
+</div>

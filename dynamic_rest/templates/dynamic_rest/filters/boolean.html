@@ -1,0 +1,54 @@
+<div class="form-group row">
+    <label class="col-2 form-control-label">
+        {% if help_text %}
+            <span class="drest-has-tooltip" data-trigger="click" data-placement="right" data-toggle="tooltip" title="{{ help_text | safe }}">{{ label }}</span>
+        {% else %}
+            {{ label }}
+        {% endif %}
+    </label>
+
+    <div class="float-sm-right col-sm-10">
+        <select class="form-control filter" name="{{ key }}" {% if many %}multiple="multiple"{% endif %}></select>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function(){
+        var fieldName = '{{ key }}';
+        var many = {% if many %}true{% else %}false{% endif %};
+        var value = {{ value | to_json }};
+        var selected = [];
+        var data = [];
+        var values = {
+            "1": "True",
+            "0": "False",
+        };
+        for (var v in values) {
+            var value = values[v];
+            var isSelected = value.indexOf(value) > -1;
+            initials.push({
+                id: v,
+                text: value,
+                name: value,
+                selected: isSelected
+            });
+            if (isSelected) {
+                selected.push(s);
+            }
+        }
+        if (!many) {
+            selected = selected[0];
+        }
+        var $select2 = $("select.filter[name='" + fieldName + "']");
+        var select2 = $select2[0];
+        $select2.select2({
+            data: data,
+            placeholder: {
+                id: "",
+                placeholder: many ? "Choose one or more" : "Choose one"
+            },
+            allowClear: true,
+        });
+        $(select2).val(selected).trigger('change');
+    });
+</script>

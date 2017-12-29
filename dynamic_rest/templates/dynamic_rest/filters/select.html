@@ -1,0 +1,60 @@
+{% load i18n %}
+{% load rest_framework %}
+{% load dynamic_rest %}
+
+<div class="row form-group">
+    <label class="col-sm-2 form-control-label {% if style.hide_label %}sr-only{% endif %}">
+        {% if help_text %}
+            <span class="drest-has-tooltip" data-trigger="click" data-placement="right" data-toggle="tooltip" title="{{ help_text | safe }}">{{ label }}</span>
+        {% else %}
+            {{ label }}
+        {% endif %}
+    </label>
+
+    <div class="col-sm-10">
+        <select class="form-control filter" {% if many %}multiple="multiple"{% endif %} style="width: 100%" class="form-control" name="{{ key }}">
+        </select>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        var many = {% if many %}true{% else %}false{% endif %};
+        var value = {{ value | to_json }};
+        var choices = {{ choices | to_json }};
+        // get field/serializer info
+        var fieldName = '{{ key }}';
+        var initials = [];
+        var selected = [];
+        var isSelected;
+        for (var v in choices) {
+            var val = choices[v];
+            v = v ? v.toString() : v;
+            if (many) {
+                isSelected = value.indexOf(v) > -1;
+            } else {
+                isSelected = value === v;
+            }
+            initials.push({
+                id: v,
+                text: val,
+                name: val,
+                selected: isSelected
+            });
+            if (isSelected) {
+                selected.push(v);
+            }
+        }
+        if (!many) {
+            selected = selected[0];
+        }
+        var $select2 = $("select.filter[name='" + fieldName + "']");
+        var select2 = $select2[0];
+        $select2.select2({
+            data: initials,
+            placeholder: many ? "Choose one or more" : "Choose one",
+            allowClear: true
+        });
+        $(select2).val(selected).trigger('change');
+    });
+</script>

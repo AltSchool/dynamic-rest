@@ -253,6 +253,9 @@ class PermissionsUserSerializer(
         read_only_fields = (
             'is_superuser',
         )
+        filters = {
+            'first_name': 'first_name',
+        }
         permissions = {
             'manager': {
                 'delete': {
@@ -268,11 +271,11 @@ class PermissionsUserSerializer(
                     'is_superuser': False
                 },
                 'list': True,
-                'update': Me
+                'update': Me,
             },
             '*': {
                 'read': True
-            }
+            },
         }
 
 

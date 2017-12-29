@@ -2,6 +2,7 @@
 import copy
 import inspect
 
+from collections import OrderedDict
 import inflection
 from django.db import models, transaction
 from django.utils import six
@@ -12,6 +13,7 @@ from rest_framework.reverse import reverse
 from rest_framework.exceptions import ValidationError
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 
+from dynamic_rest.filters import Filter
 from dynamic_rest.permissions import PermissionsSerializerMixin
 from dynamic_rest.conf import settings
 from dynamic_rest.fields import DynamicRelationField
@@ -106,6 +108,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     @property
     def fields(self):
         return self.child.fields
+
+    def get_filters(self):
+        return self.child.get_filters()
 
     def get_meta(self):
         return self.child.get_meta()
@@ -375,6 +380,13 @@ class WithDynamicSerializerMixin(
             if not isinstance(self.request_fields.get(name), dict):
                 # not sideloading this field
                 self.request_fields[name] = True
+
+    def get_filters(self):
+        filters = getattr(self.get_meta(), 'filters', {})
+        return OrderedDict((
+            (name, Filter(name, value, serializer=self)) for name, value in
+            filters.items()
+        ))
 
     def get_field_value(self, key, instance=None):
         if instance == '':

@@ -865,7 +865,7 @@ class TestUsersAPI(APITestCase):
         # set up test specs
         tests = {
             True: ['true', 'True', '1', 'okies'],
-            False: ['false', 'False', '0', '']
+            False: ['false', 'False', '0']
         }
 
         # run through test scenarios

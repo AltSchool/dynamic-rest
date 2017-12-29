@@ -1,0 +1,108 @@
+{% load i18n %}
+{% load rest_framework %}
+{% load dynamic_rest %}
+
+<div class="row form-group">
+    <label class="col-sm-2 form-control-label {% if style.hide_label %}sr-only{% endif %}">
+        {% if help_text %}
+            <span class="drest-has-tooltip" data-trigger="click" data-placement="right" data-toggle="tooltip" title="{{ help_text | safe }}">{{ label }}</span>
+        {% else %}
+            {{ label }}
+        {% endif %}
+    </label>
+
+    <div class="col-sm-10">
+        <select class="form-control filter" {% if many %}multiple="multiple"{% endif %} style="width: 100%" class="form-control" name="{{ key }}"></select>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        var per_page = 25;
+        // set initial values
+        var many = {% if many %}true{% else %}false{% endif %};
+        var values = {{ field | as_id_to_name }};
+        var selected = [];
+        var initials = [];
+        // get field/serializer info
+        var fieldName = '{{ key }}';
+        var nameField = '{{ field.get_name_field }}';
+        var searchKey = '{{ field.get_search_key }}';
+        var pkField = '{{ field.get_pk_field }}';
+        var resourceName = '{{ field.serializer.get_name }}';
+        var pluralName = '{{ field.get_plural_name }}';
+        var url = '{{ field.get_url }}';
+        var includes = [pkField];
+        if (pkField !== nameField) {
+            includes.push(nameField);
+        }
+        for (var v in values) {
+            var val = values[v];
+            initials.push({
+                id: v,
+                text: val,
+                name: val,
+                selected: true
+            });
+            selected.push(v);
+        }
+        if (!many) {
+            selected = selected[0];
+        }
+        var $select2 = $("select.filter[name='" + fieldName + "']");
+        var select2 = $select2[0];
+        $select2.select2({
+            data: initials,
+            placeholder: {
+                id: "",
+                placeholder: many ? "Choose one or more" : "Choose one"
+            },
+            allowClear: true,
+            ajax: {
+                url: url,
+                dataType: "json",
+                delay: 250,
+                data: function(params) {
+                  var result = {
+                    page: params.page,
+                    per_page: per_page,
+                  };
+                  result[searchKey] = params.term;
+                  result['exclude[]'] = '*';
+                  result['include[]'] = includes;
+                  return result;
+                },
+                processResults: function(data, params) {
+                  params.page = params.page || 1;
+                  var meta = data.meta;
+                  var result = {
+                    results: data[pluralName],
+                    pagination: {
+                      more: meta ? meta.page < meta.total_pages : false
+                    }
+                  };
+                  return result;
+                }
+            },
+            escapeMarkup: function(markup) {
+                return markup;
+            },
+            templateResult: function(item) {
+                if (item.placeholder) return item.placeholder;
+                if (nameField == 'pk') {
+                    return item.links ? item.links.self : item.id;
+                }
+                return item[nameField];
+            },
+            templateSelection: function(item) {
+                if (item.placeholder) return item.placeholder;
+                if (nameField == 'pk') {
+                    return item.links ? item.links.self : item.id;
+                }
+                return item[nameField];
+            },
+            minimumInputLength: 1,
+        });
+        $(select2).val(selected).trigger('change');
+    });
+</script>
