@@ -184,8 +184,18 @@ class DynamicFilterBackend(BaseFilterBackend):
         self.request = request
         self.view = view
 
+        # enable addition of extra filters (i.e., a Q())
+        # so custom filters can be added to the queryset without
+        # running into https://code.djangoproject.com/ticket/18437
+        # which, without this, would mean that filters added to the queryset
+        # after this is called may not behave as expected
+        extra_filters = getattr(self.view, 'extra_drest_filters', None)
+
         self.DEBUG = settings.DEBUG
-        return self._build_queryset(queryset=queryset)
+        return self._build_queryset(
+            queryset=queryset,
+            extra_filters=extra_filters,
+        )
 
     """
     This function was renamed and broke downstream dependencies that haven't
@@ -443,7 +453,8 @@ class DynamicFilterBackend(BaseFilterBackend):
         serializer=None,
         filters=None,
         queryset=None,
-        requirements=None
+        requirements=None,
+        extra_filters=None,
     ):
         """Build a queryset that pulls in all data required by this request.
 
@@ -530,6 +541,10 @@ class DynamicFilterBackend(BaseFilterBackend):
             excludes=filters.get('_exclude'),
             serializer=serializer
         )
+
+        # add additional filters specified by calling view
+        if extra_filters:
+            query = extra_filters if not query else extra_filters & query
 
         if query:
             # Convert internal django ValidationError to
