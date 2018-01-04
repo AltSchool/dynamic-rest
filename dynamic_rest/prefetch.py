@@ -55,7 +55,7 @@ class FastPrefetch(object):
         if isinstance(queryset, QuerySet):
             queryset = FastQuery(queryset)
 
-        assert isinstance(queryset, FastQuery)
+        assert (queryset is None or isinstance(queryset, FastQuery))
 
         self.field = field
         self.query = queryset

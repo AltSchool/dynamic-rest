@@ -18,7 +18,10 @@ from dynamic_rest.bases import (
     resettable_cached_property
 )
 from dynamic_rest.conf import settings
-from dynamic_rest.fields import DynamicRelationField
+from dynamic_rest.fields import (
+    DynamicRelationField,
+    DynamicGenericRelationField,
+)
 from dynamic_rest.links import merge_link_object
 from dynamic_rest.meta import get_model_table
 from dynamic_rest.processors import SideloadingProcessor
@@ -564,7 +567,7 @@ class WithDynamicSerializerMixin(
         id_fields = self._readable_id_fields
 
         for field in fields:
-            if is_fast:
+            if is_fast and not isinstance(field, DynamicGenericRelationField):
                 if field in id_fields and field.source not in instance:
                     # TODO - make better.
                     attribute = instance.get(field.source + '_id')
