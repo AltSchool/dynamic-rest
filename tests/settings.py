@@ -28,17 +28,12 @@ else:
         'PORT': ''
     }
 
-MIDDLEWARE = [
-    'debug_toolbar.middleware.DebugToolbarMiddleware'
-]
-
 INSTALLED_APPS = (
     'rest_framework',
     'django.contrib.staticfiles',
     'django.contrib.contenttypes',
     'django.contrib.auth',
     'django.contrib.sites',
-    'debug_toolbar',
     'dynamic_rest',
     'tests',
 )
