@@ -189,7 +189,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         # running into https://code.djangoproject.com/ticket/18437
         # which, without this, would mean that filters added to the queryset
         # after this is called may not behave as expected
-        extra_filters = getattr(self.view, 'extra_drest_filters', None)
+        extra_filters = self.view.get_extra_filters(request)
 
         self.DEBUG = settings.DEBUG
         return self._build_queryset(

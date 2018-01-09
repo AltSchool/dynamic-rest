@@ -60,13 +60,6 @@ class WithDynamicViewSetMixin(object):
     Attributes:
       features: A list of features supported by the viewset.
       meta: Extra data that is added to the response by the DynamicRenderer.
-
-      extra_filters:
-        Add this to the view to enable addition of extra filters (i.e., a Q())
-        so custom filters can be added to the queryset without
-        running into https://code.djangoproject.com/ticket/18437
-        which, without this, would mean that filters added to the queryset
-        after this is called may not behave as expected.
     """
 
     DEBUG = 'debug'
@@ -92,7 +85,6 @@ class WithDynamicViewSetMixin(object):
         SIDELOADING
     )
     meta = None
-    extra_filters = None
     filter_backends = (DynamicFilterBackend, DynamicSortingFilter)
 
     def initialize_request(self, request, *args, **kargs):
@@ -391,6 +383,14 @@ class WithDynamicViewSetMixin(object):
             return Response({}, status=200)
 
         return Response(serializer.data)
+
+    def get_extra_filters(self, request):
+        # Override this method to enable addition of extra filters
+        # (i.e., a Q()) so custom filters can be added to the queryset without
+        # running into https://code.djangoproject.com/ticket/18437
+        # which, without this, would mean that filters added to the queryset
+        # after this is called may not behave as expected.
+        return None
 
 
 class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
