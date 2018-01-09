@@ -6,7 +6,7 @@ from django.db.models import ManyToManyField
 
 from dynamic_rest.related import RelatedObject
 
-DJANGO110 = VERSION >= (1, 10)
+DJANGO19 = VERSION >= (1, 9)
 
 
 def is_model_field(model, field_name):
@@ -39,13 +39,13 @@ def get_model_field(model, field_name):
     """
     meta = model._meta
     try:
-        if DJANGO110:
+        if DJANGO19:
             field = meta.get_field(field_name)
         else:
             field = meta.get_field_by_name(field_name)[0]
         return field
     except:
-        if DJANGO110:
+        if DJANGO19:
             related_objs = (
                 f for f in meta.get_fields()
                 if (f.one_to_many or f.one_to_one)
