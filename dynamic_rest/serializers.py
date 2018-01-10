@@ -582,9 +582,11 @@ class WithDynamicSerializerMixin(
                         if hasattr(instance, field.source):
                             attribute = getattr(instance, field.source)
                         else:
-                            print 'Missing %s from %s' % (
-                                field.field_name,
-                                self.__class__.__name__
+                            print(
+                                'Missing %s from %s' % (
+                                    field.field_name,
+                                    self.__class__.__name__
+                                )
                             )
             else:
                 try:
