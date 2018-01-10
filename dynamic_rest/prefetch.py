@@ -192,7 +192,7 @@ class FastQuery(FastQueryCompatMixin, object):
         self.model = queryset.model
         self.prefetches = {}
         self.fields = None
-        self.pk_field = queryset.model._meta.pk.name
+        self.pk_field = queryset.model._meta.pk.attname
         self._data = None
         self._my_ids = None
 
