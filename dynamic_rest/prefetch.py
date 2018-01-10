@@ -289,7 +289,7 @@ class FastQuery(FastQueryCompatMixin, object):
 
     def _get_my_ids(self, data):
         if self._my_ids is None:
-            pk_field = self.queryset.model._meta.pk.name
+            pk_field = self.queryset.model._meta.pk.attname
             self._my_ids = {o[pk_field] for o in data}
 
         return self._my_ids
