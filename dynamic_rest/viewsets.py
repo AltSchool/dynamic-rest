@@ -384,6 +384,14 @@ class WithDynamicViewSetMixin(object):
 
         return Response(serializer.data)
 
+    def get_extra_filters(self, request):
+        # Override this method to enable addition of extra filters
+        # (i.e., a Q()) so custom filters can be added to the queryset without
+        # running into https://code.djangoproject.com/ticket/18437
+        # which, without this, would mean that filters added to the queryset
+        # after this is called may not behave as expected.
+        return None
+
 
 class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
 

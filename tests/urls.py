@@ -16,6 +16,7 @@ router.register_resource(viewsets.HorseViewSet)
 router.register_resource(viewsets.PermissionViewSet)
 router.register(r'zebras', viewsets.ZebraViewSet)  # not canonical
 router.register(r'user_locations', viewsets.UserLocationViewSet)
+router.register(r'alternate_locations', viewsets.AlternateLocationViewSet)
 
 # the above routes are duplicated to test versioned prefixes
 router.register_resource(viewsets.CatViewSet, namespace='v2')  # canonical
