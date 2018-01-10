@@ -368,7 +368,7 @@ class FastQuery(FastQueryCompatMixin, object):
         my_ids = self._get_my_ids(data)
 
         base_qs = prefetch.query.queryset  # base queryset on remote model
-        remote_pk_field = base_qs.model._meta.pk.name  # get pk field name
+        remote_pk_field = base_qs.model._meta.pk.attname  # get pk field name
         reverse_field = reverse_m2m_field_name(field)
 
         if reverse_field is None:
