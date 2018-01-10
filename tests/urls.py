@@ -11,6 +11,7 @@ router.register_resource(viewsets.LocationViewSet)
 
 router.register(r'cars', viewsets.CarViewSet)
 router.register(r'cats', viewsets.CatViewSet)
+router.register(r'users_with_lookup', viewsets.UserViewSetWithLookup)
 router.register_resource(viewsets.DogViewSet)
 router.register_resource(viewsets.HorseViewSet)
 router.register_resource(viewsets.PermissionViewSet)

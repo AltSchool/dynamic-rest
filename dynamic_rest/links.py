@@ -13,8 +13,9 @@ def merge_link_object(serializer, data, instance):
     """
 
     link_object = {}
+    lookup_field = getattr(serializer.Meta, 'lookup_field', 'pk')
 
-    if not getattr(instance, 'pk', None):
+    if not getattr(instance, lookup_field, None):
         # If instance doesn't have a `pk` field, we'll assume it doesn't
         # have a canonical resource URL to hang a link off of.
         # This generally only affectes Ephemeral Objects.
@@ -34,7 +35,7 @@ def merge_link_object(serializer, data, instance):
                 # using resource-relative urls for links.
                 base_url = DynamicRouter.get_canonical_path(
                     serializer.get_resource_key(),
-                    instance.pk
+                    getattr(instance, lookup_field)
                 ) or ''
             link = '%s%s/' % (base_url, name)
         # Default to DREST-generated relation endpoints.
