@@ -9,7 +9,6 @@ from rest_framework import fields
 from rest_framework.exceptions import NotFound, ParseError
 from rest_framework.serializers import SerializerMethodField
 
-from dynamic_rest import prefetch
 from dynamic_rest.bases import (
     CacheableFieldMixin,
     DynamicSerializerBase,
@@ -269,7 +268,17 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         )
 
     def get_attribute(self, instance):
-        return instance
+        serializer = self.serializer
+        model = serializer.get_model()
+        # attempt to optimize by reading the related ID directly
+        # from the current instance rather than from the related object
+        if not self.kwargs['many'] and serializer.id_only():
+            return instance
+        else:
+            try:
+                return getattr(instance, self.source)
+            except model.DoesNotExist:
+                return None
 
     def to_representation(self, instance):
         """Represent the relationship, either as an ID or object."""
@@ -283,26 +292,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             if hasattr(instance, source_id):
                 return getattr(instance, source_id)
 
-        use_fastquery = isinstance(instance, (
-            prefetch.FastObject,
-            prefetch.SlowObject,
-            prefetch.FastList
-        ))
-
-        if use_fastquery:
-            related = instance
-        elif model is None:
-            related = getattr(instance, source)
-        else:
-            try:
-                related = getattr(instance, source)
-            except model.DoesNotExist:
-                return None
-
-        if related is None:
-            return None
-
-        return serializer.to_representation(related)
+        return serializer.to_representation(instance)
         '''
         try:
             return serializer.to_representation(related)

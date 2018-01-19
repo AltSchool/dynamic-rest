@@ -244,6 +244,14 @@ class FastQuery(FastQueryCompatMixin, object):
         use_models = has_fastquery and self.model.use_fastquery == False
 
         if use_models:
+            prefetches = [
+                Prefetch(
+                    prefetch.field,
+                    queryset=prefetch.query.queryset
+                ) for prefetch in self.prefetches.values()
+            ]
+            if len(prefetches) > 0:
+                qs = qs.prefetch_related(*prefetches)
             self._data = FastList(
                 map(lambda obj: SlowObject(
                     obj, pk_field=self.pk_field
