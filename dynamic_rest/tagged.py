@@ -20,10 +20,19 @@ class TaggedDict(object):
     """
 
     def __init__(self, *args, **kwargs):
+
+
+
         self.serializer = kwargs.pop('serializer')
         self.instance = kwargs.pop('instance')
+
+
         self.embed = kwargs.pop('embed', False)
         self.pk_value = kwargs.pop('pk_value', None)
+
+        # if hasattr(self.instance, 'file'):
+        #     from IPython import embed; embed();
+
         if not isinstance(self, dict):
             raise Exception(
                 "TaggedDict constructed not as a dict"
@@ -40,7 +49,7 @@ class TaggedDict(object):
         )
 
     def __repr__(self):
-        return dict.__repr__(self)
+        return dict.__repr__(self.instance)
 
     def __reduce__(self):
         return (dict, (dict(self),))

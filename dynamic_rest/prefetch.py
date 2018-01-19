@@ -3,6 +3,7 @@ import copy
 
 from django.db import connection, models
 from django.db.models import Prefetch, QuerySet
+from django.forms.models import model_to_dict
 
 from dynamic_rest.meta import (
     get_model_field_and_type,
@@ -40,6 +41,40 @@ class FastObject(dict):
         except KeyError:
             # Fast approach failed, fall back on slower logic.
             return self._slow_getattr(name)
+
+class SlowObject(dict):
+
+    def __init__(self, slow_object=None, *args, **kwargs):
+        self.pk_field = kwargs.pop('pk_field', 'id')
+        self.data = slow_object
+        return super(SlowObject, self).__init__(slow_object.__dict__, *args)
+
+    @property
+    def pk(self):
+        return self[self.pk_field]
+
+    def __getitem__(self, value):
+
+        if hasattr(self.data, str(value)):
+            return getattr(self.data, str(value))
+
+        # for the purposse of mapping serialized model + '_id' fields back to
+        # internal models, we need to check if that pattern is present
+        is_nested_obj = value.split('_')
+        test_attr = '_'.join(is_nested_obj[:-1])
+        attr_exists = hasattr(self.data, test_attr)
+        if is_nested_obj[-1] == 'id' and attr_exists:
+            return getattr(self.data, test_attr).id
+
+        return None
+
+    def __iter__(self):
+        return iter([self.data])
+
+    def __getattr__(self, value):
+        # EAFP
+        return getattr(self.data, str(value))
+
 
 
 class FastList(list):
@@ -205,13 +240,24 @@ class FastQuery(FastQueryCompatMixin, object):
         # TODO: check if queryset already has values() called
         # TODO: use self.fields
         qs = self.queryset._clone()
-        data = list(qs.values())
 
-        self.merge_prefetch(data)
+        has_fastquery = hasattr(self.model, 'use_fastquery')
+        use_models = has_fastquery and self.model.use_fastquery == False
 
-        self._data = FastList(
-            map(lambda obj: FastObject(obj, pk_field=self.pk_field), data)
-        )
+        if use_models:
+            self._data = FastList(
+                map(lambda obj: SlowObject(
+                    obj, pk_field=self.pk_field
+                ), qs.all())
+            )
+        else:
+            data = list(qs.values())
+
+            self.merge_prefetch(data)
+            self._data = FastList(
+                map(lambda obj: FastObject(obj, pk_field=self.pk_field), data)
+            )
+
         return self._data
 
     def __iter__(self):
@@ -272,6 +318,16 @@ class FastQuery(FastQueryCompatMixin, object):
             field, rel_type = get_model_field_and_type(
                 model, prefetch.field
             )
+
+            # notes
+            # Out[77]: u'assets/x5tyrt24afgwrb4ss3i4a36tv4-gzfjhGB.jpg'
+
+            # In [78]: b = model.objects.get(id=z.id['id'])
+
+            # In [79]: b.file.name
+            # Out[79]: u'assets/x5tyrt24afgwrb4ss3i4a36tv4-gzfjhGB.jpg'
+            # from IPython import embed; embed()
+
             if not rel_type:
                 # Not a relational field... weird.
                 # TODO: maybe raise?
@@ -329,8 +385,13 @@ class FastQuery(FastQueryCompatMixin, object):
         filter_args = {remote_filter_key: my_ids}
 
         # Fetch remote objects
+
         remote_objects = prefetch.query.filter(**filter_args).execute()
         id_map = self._make_id_map(data, pk_field=self.pk_field)
+
+        # print "####"
+        # print data
+        # print id_map
 
         field_name = prefetch.field
         reverse_found = set()  # IDs of local objects that were reversed
@@ -339,10 +400,15 @@ class FastQuery(FastQueryCompatMixin, object):
             # get local object. There *should* always be a matching
             # local object because the remote objects were filtered
             # for those that referenced the local IDs.
+
             reverse_ref = remote_obj[remote_field]
             local_obj = id_map[reverse_ref]
 
             if m2o_mode:
+
+                print "????"
+                print local_obj
+                print field_name
                 # in many-to-one mode, this is a list
                 if field_name not in local_obj:
                     local_obj[field_name] = FastList([])
