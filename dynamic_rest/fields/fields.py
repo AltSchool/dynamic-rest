@@ -56,6 +56,7 @@ class DynamicField(CacheableFieldMixin, fields.Field):
     def to_internal_value(self, data):
         return data
 
+
 class DynamicComputedField(DynamicField):
     pass
 
@@ -71,9 +72,12 @@ class DynamicMethodField(SerializerMethodField, DynamicField):
 class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
 
     """Field proxy for a nested serializer.
+
     Supports passing in the child serializer as a class or string,
     and resolves to the class after binding to the parent serializer.
+
     Will proxy certain arguments to the child serializer.
+
     Attributes:
         SERIALIZER_KWARGS: list of arguments that are passed
             to the child serializer.
@@ -117,11 +121,9 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         super(DynamicRelationField, self).__init__(**kwargs)
         self.kwargs['many'] = self.many = many
 
-
     def get_model(self):
         """Get the child serializer's model."""
         return getattr(self.serializer_class.Meta, 'model', None)
-
 
     def bind(self, *args, **kwargs):
         """Bind to the parent serializer."""
@@ -156,7 +158,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
 
         self.model_field = model_field
 
-
     @resettable_cached_property
     def root_serializer(self):
         """Return the root serializer (serializer for the primary resource)."""
@@ -174,7 +175,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
                     return None
             else:
                 return node
-
 
     def _get_cached_serializer(self, args, init_args):
         enabled = settings.ENABLE_SERIALIZER_CACHE
@@ -283,9 +283,13 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             if hasattr(instance, source_id):
                 return getattr(instance, source_id)
 
-        if isinstance(instance, (prefetch.FastObject, prefetch.FastList)):
-            related = instance
-        elif isinstance(instance, (prefetch.SlowObject, prefetch.FastList)):
+        use_fastquery = isinstance(instance, (
+            prefetch.FastObject,
+            prefetch.SlowObject,
+            prefetch.FastList
+        ))
+
+        if use_fastquery:
             related = instance
         elif model is None:
             related = getattr(instance, source)
@@ -349,6 +353,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
     @property
     def serializer_class(self):
         """Get the class of the child serializer.
+
         Resolves string imports.
         """
         serializer_class = self._serializer_class

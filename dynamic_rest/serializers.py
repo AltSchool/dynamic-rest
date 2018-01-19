@@ -60,8 +60,6 @@ class DynamicListSerializer(
 
     def to_representation(self, data):
         iterable = data.all() if isinstance(data, models.Manager) else data
-        print "ZZZZZ"
-        print iterable
         return [self.child.to_representation(item) for item in iterable]
 
     def get_model(self):
@@ -562,8 +560,7 @@ class WithDynamicSerializerMixin(
         ret = {}
         fields = self._readable_fields
 
-        # is_fast = isinstance(instance, (prefetch.FastObject, prefetch.SlowObject))
-        is_fast = isinstance(instance, (prefetch.FastObject,))
+        is_fast = isinstance(instance, prefetch.FastObject)
         id_fields = self._readable_id_fields
 
         for field in fields:
@@ -634,11 +631,6 @@ class WithDynamicSerializerMixin(
                 'type': self.get_plural_name()
             }
 
-        # tag dict is stripping the blue out of the file field
-        # if hasattr(instance, 'file'):
-        #     from IPython import embed; embed()
-
-
         # tag the representation with the serializer and instance
         return tag_dict(
             representation,
@@ -690,7 +682,6 @@ class WithDynamicSerializerMixin(
 
     @resettable_cached_property
     def data(self):
-
         if not hasattr(self, '_processed_data'):
             data = super(WithDynamicSerializerMixin, self).data
             data = SideloadingProcessor(

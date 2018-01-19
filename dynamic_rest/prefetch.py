@@ -3,7 +3,6 @@ import copy
 
 from django.db import connection, models
 from django.db.models import Prefetch, QuerySet
-from django.forms.models import model_to_dict
 
 from dynamic_rest.meta import (
     get_model_field_and_type,
@@ -318,16 +317,6 @@ class FastQuery(FastQueryCompatMixin, object):
             field, rel_type = get_model_field_and_type(
                 model, prefetch.field
             )
-
-            # notes
-            # Out[77]: u'assets/x5tyrt24afgwrb4ss3i4a36tv4-gzfjhGB.jpg'
-
-            # In [78]: b = model.objects.get(id=z.id['id'])
-
-            # In [79]: b.file.name
-            # Out[79]: u'assets/x5tyrt24afgwrb4ss3i4a36tv4-gzfjhGB.jpg'
-            # from IPython import embed; embed()
-
             if not rel_type:
                 # Not a relational field... weird.
                 # TODO: maybe raise?
@@ -385,13 +374,8 @@ class FastQuery(FastQueryCompatMixin, object):
         filter_args = {remote_filter_key: my_ids}
 
         # Fetch remote objects
-
         remote_objects = prefetch.query.filter(**filter_args).execute()
         id_map = self._make_id_map(data, pk_field=self.pk_field)
-
-        # print "####"
-        # print data
-        # print id_map
 
         field_name = prefetch.field
         reverse_found = set()  # IDs of local objects that were reversed
@@ -400,15 +384,10 @@ class FastQuery(FastQueryCompatMixin, object):
             # get local object. There *should* always be a matching
             # local object because the remote objects were filtered
             # for those that referenced the local IDs.
-
             reverse_ref = remote_obj[remote_field]
             local_obj = id_map[reverse_ref]
 
             if m2o_mode:
-
-                print "????"
-                print local_obj
-                print field_name
                 # in many-to-one mode, this is a list
                 if field_name not in local_obj:
                     local_obj[field_name] = FastList([])

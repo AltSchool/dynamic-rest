@@ -591,20 +591,14 @@ class FastDynamicFilterBackend(DynamicFilterBackend):
         return FastPrefetch(source, queryset=queryset)
 
     def _get_queryset(self, queryset=None, serializer=None):
-        print "####"
-        print queryset
-        # s3assets.Asset.objects
         queryset = super(FastDynamicFilterBackend, self)._get_queryset(
             queryset=queryset,
             serializer=serializer
         )
 
-        print "####"
-
         if not isinstance(queryset, FastQuery):
             queryset = FastQuery(queryset)
 
-        print queryset
         return queryset
 
     def _serializer_filter(self, serializer=None, queryset=None):

@@ -9,8 +9,6 @@ from dynamic_rest.conf import settings
 from dynamic_rest.tagged import TaggedDict
 
 
-test_set = {}
-
 class SideloadingProcessor(object):
     """A processor that sideloads serializer data.
 
@@ -26,9 +24,6 @@ class SideloadingProcessor(object):
             serializer: a DREST serializer
             data: the serializer's representation
         """
-
-        if hasattr(data, 'Attachments'):
-            from IPython import embed; embed();
 
         if isinstance(serializer, ListSerializer):
             serializer = serializer.child
@@ -86,9 +81,6 @@ class SideloadingProcessor(object):
                 serializer = obj.serializer
                 name = serializer.get_plural_name()
                 instance = getattr(obj, 'instance', serializer.instance)
-                print "0000"
-                print serializer.instance
-                print instance
                 instance_pk = instance.pk if instance else None
                 pk = getattr(obj, 'pk_value', instance_pk) or instance_pk
 
@@ -136,5 +128,3 @@ class SideloadingProcessor(object):
                 # replace the object with a reference
                 if parent is not None and parent_key is not None:
                     parent[parent_key] = pk
-
-
