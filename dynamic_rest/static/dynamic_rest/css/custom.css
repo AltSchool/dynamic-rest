@@ -112,6 +112,9 @@
     vertical-align: inherit;
     text-transform: uppercase;
 }
+.drest-field > td {
+    vertical-align: middle;
+}
 .drest-content-container .drest-content th {
     border-bottom: 1px solid #999;
 }

@@ -92,8 +92,36 @@ class DynamicAdminRenderer(AdminRenderer):
         back_url = None
         back = None
         filters = {}
+        create_related_forms = {}
 
         if serializer:
+            if instance:
+                for related_name, field in serializer.get_link_fields(
+                ).items():
+                    inverse_field_name = field.get_inverse_field_name()
+                    related_serializer = field.get_serializer(
+                        request_fields=None,
+                        exclude_fields=[inverse_field_name]
+                    )
+                    has_permission = (
+                        not getattr(related_serializer, 'permissions', None) or
+                        related_serializer.permissions.create
+                    )
+                    can_add_more = field.many or not results.get(related_name)
+                    has_source = field.source != '*'
+                    if (
+                        has_source and
+                        can_add_more and
+                        bool(inverse_field_name) and
+                        has_permission
+                    ):
+                        create_related_forms[related_name] = (
+                            related_serializer,
+                            self.render_form_for_serializer(
+                                related_serializer
+                            )
+                        )
+
             filters = serializer.get_filters()
             meta = serializer.get_meta()
             singular_name = serializer.get_name().title()
@@ -246,6 +274,8 @@ class DynamicAdminRenderer(AdminRenderer):
                     sorted_ascending = True
         else:
             sorted_field = None
+
+        context['create_related_forms'] = create_related_forms
         context['sorted_field'] = sorted_field
         context['sorted_ascending'] = sorted_ascending
         context['details'] = context['columns']

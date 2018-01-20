@@ -389,6 +389,61 @@ class WithDynamicViewSetBase(object):
             [prefix + val for val in values]
         )
 
+    def create_related(self, request, pk=None, field_name=None):
+        """Create an instance of a related object.
+
+        This is only possible if:
+        - The related field has an inverse relation on the related serializer
+        - The user has permission to create on the given serializer
+
+        The signature of the endpoint is taken from the serializer, except the
+        inverse field is filled with the PK value of the current record.
+        """
+
+        primary_serializer = self.get_serializer(include_fields='*')
+        related_field = primary_serializer.fields.get(field_name)
+        if not related_field:
+            raise exceptions.ValidationError(
+                '"%s" is not a valid field' % field_name
+            )
+        if related_field.source == '*':
+            raise exceptions.ValidationError(
+                '"%s" is not a model-bound field' % field_name
+            )
+        inverse_field_name = related_field.get_inverse_field_name()
+        if not inverse_field_name:
+            raise exceptions.ValidationError(
+                '"%s" has no inverse field' % field_name
+            )
+
+        related_serializer = related_field.serializer
+        related_serializer_name = related_serializer.get_name()
+        inverse_field = related_serializer.get_field(inverse_field_name)
+        data = request.data
+        if hasattr(data, '_mutable'):
+            data._mutable = True
+
+        if len(data.keys()) == 1 and data.keys()[0] == related_serializer_name:
+            data = data[related_serializer_name]
+
+        # set the current record as the related object using the inverse field
+        data[inverse_field_name] = [pk] if inverse_field.many else pk
+        # make sure the inverse field is included
+        related_serializer = related_field.get_serializer(
+            data=data,
+            request_fields=None,
+            include_fields=[inverse_field_name],
+            envelope=True,
+            many=False
+        )
+        # force the inverse field to write
+        inverse_field = related_serializer.fields.get(inverse_field_name)
+        inverse_field.read_only = False
+        related_serializer.is_valid(raise_exception=True)
+        self.perform_create(related_serializer)
+        headers = self.get_success_headers(related_serializer.data)
+        return Response(related_serializer.data, status=201, headers=headers)
+
     def list_related(self, request, pk=None, field_name=None):
         """Fetch related object(s), as if sideloaded (used to support
         link objects).

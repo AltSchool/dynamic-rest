@@ -1,4 +1,5 @@
 from __future__ import absolute_import
+import inflection
 
 from django.http.request import QueryDict
 from urlparse import urlparse, urlunparse
@@ -84,6 +85,11 @@ def get_field_value(serializer, instance, key, idx=None):
 def render_field_value(field):
     value = getattr(field, 'get_rendered_value', lambda *x: field)()
     return mark_safe(value)
+
+
+@register.filter
+def humanize(value):
+    return inflection.humanize(value)
 
 
 @register.simple_tag

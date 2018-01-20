@@ -96,6 +96,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
     def get_all_fields(self):
         return self.child.get_all_fields()
 
+    def get_link_fields(self):
+        return self.child.get_link_fields()
+
     def get_id_fields(self):
         return self.child.get_id_fields()
 
@@ -880,7 +883,10 @@ class WithDynamicSerializerMixin(
             serializer_fields,
             immutable_field_names,
             'read_only',
-            value=False if self.get_request_method() == 'POST' else True
+            value=(
+                True if self.get_request_method() in ('PUT', 'PATCH')
+                else False
+            )
         )
 
         return serializer_fields
@@ -906,11 +912,6 @@ class WithDynamicSerializerMixin(
                         # Skip sideloaded fields
                         name in self.fields and
                         self.is_field_sideloaded(name)
-                    ) and not (
-                        # Skip included single relations
-                        # TODO: Use links, when we can generate canonical URLs
-                        name in self.fields and
-                        not getattr(field, 'many', False)
                     )
                 }
 

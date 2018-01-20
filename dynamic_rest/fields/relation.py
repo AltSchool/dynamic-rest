@@ -45,6 +45,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             embed=False,
             sideloading=None,
             debug=False,
+            inverse=None,
             **kwargs
     ):
         """
@@ -59,6 +60,8 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
                 This overrides the "embed" option if set.
             debug: if True, representation will include a meta key with extra
                 instance information.
+            inverse: can be set to identify an inverse field on the serializer.
+                This can be used to support `create_related` functionality
             embed: If True, always embed related object(s). Will not sideload,
                 and will include the full object unless specifically excluded.
         """
@@ -66,6 +69,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         self.queryset = queryset
         self.sideloading = sideloading
         self.debug = debug
+        self.inverse = inverse
         self.embed = embed if sideloading is None else not sideloading
         if 'link' in kwargs:
             self.link = kwargs.pop('link')
@@ -94,6 +98,33 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
     def get_model(self):
         """Get the serializer's model."""
         return self.serializer_class.get_model()
+
+    def get_inverse_field_name(self):
+        if self.inverse:
+            return self.inverse
+
+        serializer = self.parent
+        serializer_class = type(serializer)
+        if hasattr(serializer, 'child'):
+            serializer = serializer.child
+
+        related_serializer = self.serializer
+        related_fields = related_serializer.get_all_fields()
+
+        candidates = []
+        for name, field in related_fields.items():
+            if (
+                isinstance(field, DynamicRelationField) and
+                field.serializer_class == serializer_class
+            ):
+                candidates.append(name)
+
+        if len(candidates) == 1:
+            # only return a valid inverse name
+            # if there is a unique relation field referencing
+            # the current serializer
+            return candidates[0]
+        return None
 
     def get_value(self, dictionary):
         """Extract value from QueryDict.

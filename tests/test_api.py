@@ -1031,11 +1031,23 @@ class TestRelationsAPI(APITestCase):
     def setUp(self):
         self.fixture = create_fixture()
 
+    def test_create_related(self):
+        data = {
+            'name': 'Foo'
+        }
+        response = self.client.post(
+            '/users/1/location/',
+            data=data,
+            format='json'
+        )
+        self.assertEqual(201, response.status_code, response.content)
+        user = User.objects.get(pk=1)
+        self.assertIsNotNone(user.location)
+        self.assertEquals(user.location.name, 'Foo')
+
     def test_generated_relation_fields(self):
-        # Links for single-relations is currentlydisabled.
-        # See WithDynamicSerializerMixin.get_link_fields()
         r = self.client.get('/users/1/location/')
-        self.assertEqual(404, r.status_code)
+        self.assertEqual(200, r.status_code)
 
         r = self.client.get('/users/1/permissions/')
         self.assertEqual(200, r.status_code, r.content)
