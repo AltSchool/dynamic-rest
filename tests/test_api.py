@@ -993,6 +993,56 @@ class TestLocationsAPI(APITestCase):
             self.assertEqual(200, response.status_code)
 
 
+@override_settings(
+    DYNAMIC_REST={
+        'ENABLE_LINKS': False
+    }
+)
+class TestAlternateLocationsAPI(APITestCase):
+
+    """Test extra_drest_filters view attribute"""
+
+    def setUp(self):
+        self.fixture = create_fixture()
+
+    def test_extra_drest_filter_combines_with_drest_filters(self):
+        # sanity check: standard filter returns 1 result
+        r = self.client.get('/alternate_locations/?filter{users.last_name}=1')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.data['locations']), 1)
+        location = r.data['locations'][0]
+        self.assertEqual(location['name'], '0')
+
+        # using the custom filter gives same result
+        r = self.client.get('/alternate_locations/?user_name=0')
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.data['locations']), 1)
+        location = r.data['locations'][0]
+        self.assertEqual(location['name'], '0')
+
+        # now combine filters, such that no user could satisfy both
+        # verify that we get no locations back
+        r = self.client.get(
+            '/alternate_locations/?user_name=0&filter{users.last_name}=1'
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.data['locations']), 0)
+
+    def test_separate_filter_doesnt_combine_with_drest_filters(self):
+        # This establishes that doing a naive `.filter` results
+        # in multiple joins, giving an unexpected result:
+        # the Location has 2 users, each satisfying one of the
+        # two filters.
+        r = self.client.get(
+            '/alternate_locations/?user_name_separate=0'
+            '&filter{users.last_name}=1'
+        )
+        self.assertEqual(r.status_code, 200)
+        self.assertEqual(len(r.data['locations']), 1)
+        location = r.data['locations'][0]
+        self.assertEqual(location['name'], '0')
+
+
 class TestRelationsAPI(APITestCase):
 
     """Test auto-generated relation endpoints."""
