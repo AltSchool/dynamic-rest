@@ -1,4 +1,5 @@
 from rest_framework import exceptions
+from django.db.models import Q
 
 from dynamic_rest.viewsets import DynamicModelViewSet
 from tests.models import (
@@ -101,6 +102,26 @@ class LocationViewSet(DynamicModelViewSet):
     model = Location
     serializer_class = LocationSerializer
     queryset = Location.objects.all()
+
+
+class AlternateLocationViewSet(DynamicModelViewSet):
+    model = Location
+    serializer_class = LocationSerializer
+    queryset = Location.objects.all()
+
+    def filter_queryset(self, queryset):
+        user_name_separate_filter = self.request.query_params.get(
+            'user_name_separate'
+        )
+        if user_name_separate_filter:
+            queryset = queryset.filter(user__name=user_name_separate_filter)
+        return super(AlternateLocationViewSet, self).filter_queryset(queryset)
+
+    def get_extra_filters(self, request):
+        user_name = request.query_params.get('user_name')
+        if user_name:
+            return Q(user__name=user_name)
+        return None
 
 
 class UserLocationViewSet(DynamicModelViewSet):

@@ -283,7 +283,13 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             if hasattr(instance, source_id):
                 return getattr(instance, source_id)
 
-        if isinstance(instance, (prefetch.FastObject, prefetch.FastList)):
+        use_fastquery = isinstance(instance, (
+            prefetch.FastObject,
+            prefetch.SlowObject,
+            prefetch.FastList
+        ))
+
+        if use_fastquery:
             related = instance
         elif model is None:
             related = getattr(instance, source)

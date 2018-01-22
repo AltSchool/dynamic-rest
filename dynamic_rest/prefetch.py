@@ -41,6 +41,40 @@ class FastObject(dict):
             # Fast approach failed, fall back on slower logic.
             return self._slow_getattr(name)
 
+class SlowObject(dict):
+
+    def __init__(self, slow_object=None, *args, **kwargs):
+        self.pk_field = kwargs.pop('pk_field', 'id')
+        self.data = slow_object
+        return super(SlowObject, self).__init__(slow_object.__dict__, *args)
+
+    @property
+    def pk(self):
+        return self[self.pk_field]
+
+    def __getitem__(self, value):
+
+        if hasattr(self.data, str(value)):
+            return getattr(self.data, str(value))
+
+        # for the purposse of mapping serialized model + '_id' fields back to
+        # internal models, we need to check if that pattern is present
+        is_nested_obj = value.split('_')
+        test_attr = '_'.join(is_nested_obj[:-1])
+        attr_exists = hasattr(self.data, test_attr)
+        if is_nested_obj[-1] == 'id' and attr_exists:
+            return getattr(self.data, test_attr).id
+
+        return None
+
+    def __iter__(self):
+        return iter([self.data])
+
+    def __getattr__(self, value):
+        # EAFP
+        return getattr(self.data, str(value))
+
+
 
 class FastList(list):
     # shim for related m2m record sets
@@ -205,13 +239,23 @@ class FastQuery(FastQueryCompatMixin, object):
         # TODO: check if queryset already has values() called
         # TODO: use self.fields
         qs = self.queryset._clone()
-        data = list(qs.values())
 
-        self.merge_prefetch(data)
+        use_fastquery = getattr(self.model, 'USE_FASTQUERY', True)
 
-        self._data = FastList(
-            map(lambda obj: FastObject(obj, pk_field=self.pk_field), data)
-        )
+        if use_fastquery:
+            data = list(qs.values())
+
+            self.merge_prefetch(data)
+            self._data = FastList(
+                map(lambda obj: FastObject(obj, pk_field=self.pk_field), data)
+            )
+        else:
+            self._data = FastList(
+                map(lambda obj: SlowObject(
+                    obj, pk_field=self.pk_field
+                ), qs.all())
+            )
+
         return self._data
 
     def __iter__(self):
