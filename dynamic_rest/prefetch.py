@@ -240,21 +240,20 @@ class FastQuery(FastQueryCompatMixin, object):
         # TODO: use self.fields
         qs = self.queryset._clone()
 
-        has_fastquery = hasattr(self.model, 'use_fastquery')
-        use_models = has_fastquery and self.model.use_fastquery == False
+        use_fastquery = getattr(self.model, 'USE_FASTQUERY', True)
 
-        if use_models:
-            self._data = FastList(
-                map(lambda obj: SlowObject(
-                    obj, pk_field=self.pk_field
-                ), qs.all())
-            )
-        else:
+        if use_fastquery:
             data = list(qs.values())
 
             self.merge_prefetch(data)
             self._data = FastList(
                 map(lambda obj: FastObject(obj, pk_field=self.pk_field), data)
+            )
+        else:
+            self._data = FastList(
+                map(lambda obj: SlowObject(
+                    obj, pk_field=self.pk_field
+                ), qs.all())
             )
 
         return self._data
