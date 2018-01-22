@@ -270,26 +270,47 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
     def get_attribute(self, instance):
         serializer = self.serializer
         model = serializer.get_model()
+
         # attempt to optimize by reading the related ID directly
         # from the current instance rather than from the related object
         if not self.kwargs['many'] and serializer.id_only():
             return instance
-        else:
+        elif model is not None:
             try:
                 return getattr(instance, self.source)
             except model.DoesNotExist:
                 return None
+        else:
+            return instance
 
     def to_representation(self, instance):
         """Represent the relationship, either as an ID or object."""
         serializer = self.serializer
+        model = serializer.get_model()
         source = self.source
+
         if not self.kwargs['many'] and serializer.id_only():
             # attempt to optimize by reading the related ID directly
             # from the current instance rather than from the related object
             source_id = '%s_id' % source
+            # try the faster way first:
             if hasattr(instance, source_id):
                 return getattr(instance, source_id)
+            elif model is not None:
+                # this is probably a one-to-one field, or a reverse related
+                # lookup, so let's look it up the slow way and let the
+                # serializer handle the id dereferencing
+                try:
+                    instance = getattr(instance, source)
+                except model.DoesNotExist:
+                    instance = None
+
+        # dereference ephemeral objects
+        if model is None:
+            instance = getattr(instance, source)
+
+        if instance is None:
+            return None
 
         return serializer.to_representation(instance)
         '''
