@@ -89,7 +89,7 @@ class FastPrefetch(object):
         if isinstance(queryset, QuerySet):
             queryset = FastQuery(queryset)
 
-        assert isinstance(queryset, FastQuery)
+        assert (queryset is None or isinstance(queryset, FastQuery))
 
         self.field = field
         self.query = queryset
@@ -226,7 +226,7 @@ class FastQuery(FastQueryCompatMixin, object):
         self.model = queryset.model
         self.prefetches = {}
         self.fields = None
-        self.pk_field = queryset.model._meta.pk.name
+        self.pk_field = queryset.model._meta.pk.attname
         self._data = None
         self._my_ids = None
 
@@ -334,7 +334,7 @@ class FastQuery(FastQueryCompatMixin, object):
 
     def _get_my_ids(self, data):
         if self._my_ids is None:
-            pk_field = self.queryset.model._meta.pk.name
+            pk_field = self.queryset.model._meta.pk.attname
             self._my_ids = {o[pk_field] for o in data}
 
         return self._my_ids
@@ -413,7 +413,7 @@ class FastQuery(FastQueryCompatMixin, object):
         my_ids = self._get_my_ids(data)
 
         base_qs = prefetch.query.queryset  # base queryset on remote model
-        remote_pk_field = base_qs.model._meta.pk.name  # get pk field name
+        remote_pk_field = base_qs.model._meta.pk.attname  # get pk field name
         reverse_field = reverse_m2m_field_name(field)
 
         if reverse_field is None:
@@ -460,52 +460,3 @@ class FastQuery(FastQueryCompatMixin, object):
     def merge_m2o(self, data, field, prefetch):
         # Same as o2or but allow for many reverse objects.
         return self.merge_o2or(data, field, prefetch, m2o_mode=True)
-
-
-class QueryCount(object):
-    def __init__(self, expected_queries):
-        self.expected_queries = expected_queries
-
-    def __enter__(self):
-        self.starting_query_count = len(connection.queries)
-
-    def __exit__(self, *args, **kwargs):
-        num_queries = len(connection.queries) - self.starting_query_count
-        assert num_queries == self.expected_queries, (
-            "Expected %d queries, there were %d" % (
-                self.expected_queries,
-                num_queries
-            )
-        )
-        print("Success! %d queries" % num_queries)
-
-
-def test():
-    from tests.models import User
-
-    out = []
-
-    # with QueryCount(2):
-    '''
-    q = FastQuery(Location.objects.all())
-    q.prefetch_related(
-        FastPrefetch(
-            'user_set',
-            FastQuery(User.objects.all()).prefetch_related(
-                'profile',
-                'groups',
-            )
-        ),
-
-        'annoying_cats',
-    )
-    out.append(q.execute())
-    '''
-
-    from django.db.models import Prefetch
-    from tests.models import Group
-    q = FastQuery(User.objects.all())
-    q.prefetch_related(Prefetch('groups', Group.objects.all()))
-    out = q.execute()
-
-    return out
