@@ -8,6 +8,7 @@ from django.db import models
 from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import exceptions, fields, serializers
+from rest_framework.relations import RelatedField
 from rest_framework.fields import SkipField
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 
@@ -539,7 +540,10 @@ class WithDynamicSerializerMixin(
         return {
             field for field in fields
             if (
-                isinstance(field, DynamicRelationField)
+                isinstance(
+                    field,
+                    (DynamicRelationField, RelatedField)
+                )
                 and not isinstance(
                     self.request_fields.get(field.field_name), dict
                 )
@@ -567,7 +571,15 @@ class WithDynamicSerializerMixin(
         id_fields = self._readable_id_fields
 
         for field in fields:
-            if is_fast and not isinstance(field, DynamicGenericRelationField):
+            # we exclude dynamic fields here because the proper fastquery
+            # dereferencing happens in the `get_attribute` method now
+            if (
+                is_fast and
+                not isinstance(
+                    field,
+                    (DynamicGenericRelationField, DynamicRelationField)
+                )
+            ):
                 if field in id_fields and field.source not in instance:
                     # TODO - make better.
                     attribute = instance.get(field.source + '_id')
