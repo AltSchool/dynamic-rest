@@ -194,8 +194,10 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         self.DEBUG = settings.DEBUG
 
-
-        return self._build_queryset(queryset=queryset)
+        return self._build_queryset(
+            queryset=queryset,
+            extra_filters=extra_filters,
+        )
 
     """
     This function was renamed and broke downstream dependencies that haven't

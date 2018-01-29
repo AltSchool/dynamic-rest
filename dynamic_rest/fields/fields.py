@@ -6,10 +6,9 @@ import pickle
 from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import fields
-from rest_framework.exceptions import NotFound, ParseError
+from rest_framework.exceptions import ValidationError, ParseError
 from rest_framework.serializers import SerializerMethodField
 
-from dynamic_rest import prefetch
 from dynamic_rest.bases import (
     CacheableFieldMixin,
     DynamicSerializerBase,
@@ -269,40 +268,51 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         )
 
     def get_attribute(self, instance):
-        return instance
+        serializer = self.serializer
+        model = serializer.get_model()
+
+        # attempt to optimize by reading the related ID directly
+        # from the current instance rather than from the related object
+        if not self.kwargs['many'] and serializer.id_only():
+            return instance
+        elif model is not None:
+            try:
+                return getattr(instance, self.source)
+            except model.DoesNotExist:
+                return None
+        else:
+            return instance
 
     def to_representation(self, instance):
         """Represent the relationship, either as an ID or object."""
         serializer = self.serializer
         model = serializer.get_model()
         source = self.source
+
         if not self.kwargs['many'] and serializer.id_only():
             # attempt to optimize by reading the related ID directly
             # from the current instance rather than from the related object
             source_id = '%s_id' % source
+            # try the faster way first:
             if hasattr(instance, source_id):
                 return getattr(instance, source_id)
+            elif model is not None:
+                # this is probably a one-to-one field, or a reverse related
+                # lookup, so let's look it up the slow way and let the
+                # serializer handle the id dereferencing
+                try:
+                    instance = getattr(instance, source)
+                except model.DoesNotExist:
+                    instance = None
 
-        use_fastquery = isinstance(instance, (
-            prefetch.FastObject,
-            prefetch.SlowObject,
-            prefetch.FastList
-        ))
+        # dereference ephemeral objects
+        if model is None:
+            instance = getattr(instance, source)
 
-        if use_fastquery:
-            related = instance
-        elif model is None:
-            related = getattr(instance, source)
-        else:
-            try:
-                related = getattr(instance, source)
-            except model.DoesNotExist:
-                return None
-
-        if related is None:
+        if instance is None:
             return None
 
-        return serializer.to_representation(related)
+        return serializer.to_representation(instance)
         '''
         try:
             return serializer.to_representation(related)
@@ -330,7 +340,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         try:
             instance = related_model.objects.get(pk=data)
         except related_model.DoesNotExist:
-            raise NotFound(
+            raise ValidationError(
                 "'%s object with ID=%s not found" %
                 (related_model.__name__, data)
             )

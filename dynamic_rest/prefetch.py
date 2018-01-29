@@ -1,7 +1,7 @@
 from collections import defaultdict
 import copy
 
-from django.db import connection, models
+from django.db import models
 from django.db.models import Prefetch, QuerySet
 
 from dynamic_rest.meta import (
@@ -41,6 +41,13 @@ class FastObject(dict):
             # Fast approach failed, fall back on slower logic.
             return self._slow_getattr(name)
 
+    def __setattr__(self, name, value):
+        if name != 'pk_field' and name != 'pk':
+            self[name] = value
+        else:
+            super(FastObject, self).__setattr__(name, value)
+
+
 class SlowObject(dict):
 
     def __init__(self, slow_object=None, *args, **kwargs):
@@ -73,7 +80,6 @@ class SlowObject(dict):
     def __getattr__(self, value):
         # EAFP
         return getattr(self.data, str(value))
-
 
 
 class FastList(list):
@@ -250,6 +256,21 @@ class FastQuery(FastQueryCompatMixin, object):
                 map(lambda obj: FastObject(obj, pk_field=self.pk_field), data)
             )
         else:
+            def make_prefetch(fast_prefetch):
+                queryset = None
+                if fast_prefetch.query is not None:
+                    queryset = fast_prefetch.query.queryset
+                return Prefetch(
+                    fast_prefetch.field,
+                    queryset=queryset
+                )
+            prefetches = [
+                make_prefetch(
+                    prefetch
+                ) for prefetch in self.prefetches.values()
+            ]
+            if len(prefetches) > 0:
+                qs = qs.prefetch_related(*prefetches)
             self._data = FastList(
                 map(lambda obj: SlowObject(
                     obj, pk_field=self.pk_field
