@@ -278,7 +278,6 @@ class WithDynamicSerializerMixin(
         only_fields = set(only_fields or [])
         include_fields = include_fields or []
         exclude_fields = exclude_fields or []
-        all_fields = set(self.get_all_fields().keys())
 
         if only_fields:
             exclude_fields = '*'
@@ -292,8 +291,10 @@ class WithDynamicSerializerMixin(
                     if val or val == {}
                 ]
             )
+            all_fields = set(self.get_all_fields().keys())  # this is slow
             exclude_fields = all_fields - include_fields
         elif include_fields == '*':
+            all_fields = set(self.get_all_fields().keys())  # this is slow
             include_fields = all_fields
 
         for name in exclude_fields:
