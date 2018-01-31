@@ -3,6 +3,7 @@ import json
 import datetime
 from uuid import UUID
 from django.test import TestCase
+from django.utils import six
 from model_mommy import mommy
 from rest_framework.fields import empty
 from rest_framework.test import APIClient
@@ -112,6 +113,11 @@ class ViewSetTestCase(TestCase):
 
     def get_post_params(self, instance=None):
         def format_value(v):
+            if (
+                isinstance(v, list) and
+                not isinstance(v, six.string_types)
+            ):
+                return [format_value(vv) for vv in v]
             if isinstance(
                 v,
                 (UUID, datetime.datetime, datetime.date)
