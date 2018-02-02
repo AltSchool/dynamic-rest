@@ -236,8 +236,6 @@ class FastQuery(FastQueryCompatMixin, object):
         self._data = None
         self._my_ids = None
 
-    # TODO: probably override __iter__ or something
-    # instead of having an explicit 'execute()' method
     def execute(self):
         if self._data is not None:
             return self._data
