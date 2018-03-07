@@ -1,5 +1,6 @@
 from collections import defaultdict
 import copy
+import traceback
 
 from django.db import models
 from django.db.models import Prefetch, QuerySet
@@ -167,8 +168,7 @@ class FastQueryCompatMixin(object):
                     )
                 self.prefetches[arg.field] = arg
         except Exception as e:  # noqa
-            import pdb
-            pdb.set_trace()
+            traceback.print_exc()
 
         return self
 
@@ -204,7 +204,19 @@ class FastQueryCompatMixin(object):
         return self
 
     def get(self, *args,  **kwargs):
-        return self.queryset.get(*args, **kwargs)
+        # Convert FastPrefetches back to Django Prefetch objects
+        prefetches = []
+        for field, fprefetch in self.prefetches.items():
+            prefetches.append(
+                Prefetch(field, queryset=fprefetch.query.queryset)
+            )
+
+        queryset = self.queryset
+        if prefetches:
+            queryset = queryset.prefetch_related(*prefetches)
+
+        # Returns ORM object
+        return queryset.get(*args, **kwargs)
 
     def first(self, *args, **kwargs):
         return self.queryset.first()
