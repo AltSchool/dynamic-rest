@@ -76,6 +76,7 @@ class DynamicAdminRenderer(AdminRenderer):
         description = ''
 
         results = context.get('results')
+
         style = context.get('style')
         paginator = context.get('paginator')
         columns = context.get('columns')

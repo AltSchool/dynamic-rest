@@ -217,11 +217,16 @@ class DynamicField(fields.Field, DynamicBase):
                 </span>
             """.format('fa', icon, result)
 
+        if url:
+            url = 'href="%s"' % url
+        else:
+            url = ''
+
         result = '<{0} {3} class="{1}">{2}</{0}>'.format(
             tag,
             ' '.join(classes),
             result,
-            ('href="%s"' % url) if url else ''
+            url
         )
 
         return result

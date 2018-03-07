@@ -409,6 +409,7 @@ class WithDynamicSerializerMixin(
         else:
             value = getattr(value, 'instance', value)
         error = self.errors.get(key) if hasattr(self, '_errors') else None
+
         if isinstance(field, JSONField):
             return DynamicJSONBoundField(
                 field, value, error, prefix='', instance=instance
@@ -1090,8 +1091,16 @@ class WithDynamicSerializerMixin(
                 **kwargs
             )
         except exceptions.APIException as e:
+            if self.debug:
+                import traceback
+                traceback.print_exc()
+
             raise
         except Exception as e:
+            if self.debug:
+                import traceback
+                traceback.print_exc()
+
             error = e.args[0] if e.args else str(e)
             if not isinstance(error, dict):
                 error = {'error': error}
