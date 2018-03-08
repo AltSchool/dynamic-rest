@@ -207,8 +207,9 @@ class FastQueryCompatMixin(object):
         # Convert FastPrefetches back to Django Prefetch objects
         prefetches = []
         for field, fprefetch in self.prefetches.items():
+            qs = fprefetch.query.queryset if fprefetch.query else None
             prefetches.append(
-                Prefetch(field, queryset=fprefetch.query.queryset)
+                Prefetch(field, queryset=qs)
             )
 
         queryset = self.queryset
