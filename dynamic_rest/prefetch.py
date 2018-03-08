@@ -204,7 +204,27 @@ class FastQueryCompatMixin(object):
         return self
 
     def get(self, *args,  **kwargs):
-        # Convert FastPrefetches back to Django Prefetch objects
+        # Returns ORM object
+        queryset = self._get_django_queryset()
+        return queryset.get(*args, **kwargs)
+
+    def first(self, *args, **kwargs):
+        # Returns ORM object
+        queryset = self._get_django_queryset()
+        return queryset.first()
+
+    @property
+    def query(self):
+        return self.queryset.query
+
+    def _clone(self):
+        new = copy.copy(self)
+        new.queryset = new.queryset._clone()
+        return new
+
+    def _get_django_queryset(self):
+        """Return Django QuerySet with prefetches properly configured."""
+
         prefetches = []
         for field, fprefetch in self.prefetches.items():
             qs = fprefetch.query.queryset if fprefetch.query else None
@@ -216,20 +236,7 @@ class FastQueryCompatMixin(object):
         if prefetches:
             queryset = queryset.prefetch_related(*prefetches)
 
-        # Returns ORM object
-        return queryset.get(*args, **kwargs)
-
-    def first(self, *args, **kwargs):
-        return self.queryset.first()
-
-    @property
-    def query(self):
-        return self.queryset.query
-
-    def _clone(self):
-        new = copy.copy(self)
-        new.queryset = new.queryset._clone()
-        return new
+        return queryset
 
     def annotate(self, *args, **kwargs):
         self.queryset = self.queryset.annotate(*args, **kwargs)

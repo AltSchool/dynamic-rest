@@ -7,7 +7,7 @@ from tests.models import Group, Location, Profile, User, Cat
 from tests.setup import create_fixture
 
 
-class TestPrefetch(APITestCase):
+class TestFastQuery(APITestCase):
 
     def setUp(self):
         self.fixture = create_fixture()
@@ -182,4 +182,21 @@ class TestPrefetch(APITestCase):
             )
         )
         obj = q.get(pk=3)
-        self.assertFalse(obj.friendly_cats.count())
+        self.assertEquals(0, obj.friendly_cats.count())
+
+    def test_first_with_prefetch(self):
+        # FastQuery.filter() should apply prefetch filters correctly
+        self.assertTrue(
+            Cat.objects.filter(home=1, backup_home=3).exists()
+        )
+        q = FastQuery(Location.objects.all())
+        q = q.filter(pk=3)
+        q.prefetch_related(
+            FastPrefetch(
+                'friendly_cats',
+                Cat.objects.filter(home__gt=1)
+            )
+        )
+
+        obj = q.first()
+        self.assertEquals(0, obj.friendly_cats.count())
