@@ -462,6 +462,15 @@ class DynamicFilterBackend(BaseFilterBackend):
     def _serializer_filter(self, serializer=None, queryset=None):
         return serializer.filter_queryset(queryset)
 
+    def _get_id_fields(self, serializer, fields, is_root):
+        """ Return FK field names, with `_id` appended. """
+        get_id_fields = getattr(serializer, 'get_id_fields', lambda a: [])
+        if not is_root:
+            # For sideloads, return all ID fields they may be needed
+            # to related them to parent objects.
+            fields = None
+        return get_id_fields(fields)
+
     def _build_queryset(
         self,
         serializer=None,
@@ -538,7 +547,7 @@ class DynamicFilterBackend(BaseFilterBackend):
             not self.view.is_update() and
             not self.view.is_delete()
         ):
-            id_fields = getattr(serializer, 'get_id_fields', lambda: [])()
+            id_fields = self._get_id_fields(serializer, fields, is_root_level)
             # only include local model fields
             only = [
                 field for field in set(
@@ -546,6 +555,11 @@ class DynamicFilterBackend(BaseFilterBackend):
                 ) if is_model_field(model, field) and
                 not is_field_remote(model, field)
             ]
+            '''
+            print "Requirements: %s" % requirements
+            print "Fields: %s" % fields.keys()
+            print "Only: %s" % only
+            '''
             queryset = queryset.only(*only)
 
         # add request filters
@@ -621,6 +635,10 @@ class FastDynamicFilterBackend(DynamicFilterBackend):
             queryset.queryset
         )
         return queryset
+
+    def _get_id_fields(self, serializer, fields, is_root_level):
+        get_id_fields = getattr(serializer, 'get_id_fields', lambda a: [])
+        return get_id_fields(fields)
 
 
 class DynamicSortingFilter(OrderingFilter):

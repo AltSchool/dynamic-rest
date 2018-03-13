@@ -626,7 +626,10 @@ class WithDynamicSerializerMixin(
             Otherwise, a tagged data dict representation.
         """
         if self.id_only():
-            return instance.pk
+            try:
+                return instance.pk
+            except AttributeError:
+                return instance
         else:
             if self.enable_optimization:
                 representation = self._faster_to_representation(instance)
@@ -720,7 +723,7 @@ class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
     def get_model(cls):
         return getattr(cls.Meta, 'model', None)
 
-    def get_id_fields(self):
+    def get_id_fields(self, fields=None):
         """
         Called to return a list of fields consisting of, at minimum,
         the PK field name. The output of this method is used to
@@ -732,6 +735,11 @@ class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
 
         out = [model._meta.pk.name]  # get PK field name
 
+        if fields is not None:
+            sources = [f.source for f in fields.values()]
+        else:
+            sources = None  # return all
+
         # If this is being called, it means it
         # is a many-relation  to its parent.
         # Django wants the FK to the parent,
@@ -741,6 +749,8 @@ class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
         # TODO: We also might need to return all non-nullable fields,
         #    or else it is possible Django will issue another request.
         for field in model._meta.fields:
+            if sources is not None and field.name not in sources:
+                continue
             if isinstance(field, models.ForeignKey):
                 out.append(field.name + '_id')
 

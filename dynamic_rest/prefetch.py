@@ -173,10 +173,8 @@ class FastQueryCompatMixin(object):
         return self
 
     def only(self, *fields):
-        # TODO: support this for realz
-        '''
-        self.fields = set(self.fields) + set(fields)
-        '''
+        self.fields |= set(fields)
+        self.queryset = self.queryset.only(*fields)
         return self
 
     def exclude(self, *args, **kwargs):
@@ -251,7 +249,7 @@ class FastQuery(FastQueryCompatMixin, object):
         self.queryset = queryset
         self.model = queryset.model
         self.prefetches = {}
-        self.fields = None
+        self.fields = set()
         self.pk_field = queryset.model._meta.pk.attname
         self._data = None
         self._my_ids = None
@@ -267,7 +265,10 @@ class FastQuery(FastQueryCompatMixin, object):
         use_fastquery = getattr(self.model, 'USE_FASTQUERY', True)
 
         if use_fastquery:
-            data = list(qs.values())
+            # print "Fields: %s" % self.fields
+            # print qs.query.__str__()
+            data = list(qs.values(*list(self.fields)))
+            # print data[0] if data else ''
 
             self.merge_prefetch(data)
             self._data = FastList(
@@ -412,7 +413,10 @@ class FastQuery(FastQueryCompatMixin, object):
         filter_args = {remote_filter_key: my_ids}
 
         # Fetch remote objects
-        remote_objects = prefetch.query.filter(**filter_args).execute()
+        query = prefetch.query
+        if query.fields:
+            query = query.only(remote_field)
+        remote_objects = query.filter(**filter_args).execute()
         id_map = self._make_id_map(data, pk_field=self.pk_field)
 
         field_name = prefetch.field
