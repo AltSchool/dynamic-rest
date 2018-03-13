@@ -292,7 +292,6 @@ class FastQuery(FastQueryCompatMixin, object):
             ]
             if len(prefetches) > 0:
                 qs = qs.prefetch_related(*prefetches)
-
             self._data = FastList(
                 map(lambda obj: SlowObject(
                     obj, pk_field=self.pk_field
