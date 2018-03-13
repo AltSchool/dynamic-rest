@@ -142,6 +142,9 @@ class FastPrefetch(object):
                 field_name=prefetch.prefetch_through
             )
 
+    def split(self, *args):
+        return []
+
 
 class FastQueryCompatMixin(object):
     """ Mixins for FastQuery to provide QuerySet-compatibility APIs.
@@ -289,12 +292,12 @@ class FastQuery(FastQueryCompatMixin, object):
             ]
             if len(prefetches) > 0:
                 qs = qs.prefetch_related(*prefetches)
+
             self._data = FastList(
                 map(lambda obj: SlowObject(
                     obj, pk_field=self.pk_field
                 ), qs.all())
             )
-
         return self._data
 
     def __iter__(self):
