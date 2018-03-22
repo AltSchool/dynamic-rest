@@ -188,7 +188,14 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             'args': args,
             'init_args': init_args
         }
-        cache_key = hash(pickle.dumps(key_dict))
+        try:
+            cache_key = hash(pickle.dumps(key_dict))
+        except:
+            # uncachable data like file streams
+            if 'context' not in init_args:
+                init_args['context'] = self.context
+            return self.serializer_class(*args, **init_args)
+
 
         if cache_key not in root._descendant_serializer_cache:
             if 'context' not in init_args:
