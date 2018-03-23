@@ -8,8 +8,8 @@ class DynamicFileField(
 ):
     def admin_render(self, instance=None, value=None):
         return '<a class="no-spin" target="_blank" href="%s">%s%s</a>' % (
-            '<span class="fa fa-download"></span>',
             value.url,
+            '<span class="fa fa-download"></span>',
             str(value)
         )
 
