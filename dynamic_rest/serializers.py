@@ -6,6 +6,7 @@ from collections import OrderedDict
 import inflection
 from django.db import models, transaction
 from django.utils import six
+from django.db.models.fields.files import FieldFile
 from django.utils.functional import cached_property
 from rest_framework import exceptions, fields, serializers
 from rest_framework.fields import SkipField, JSONField
@@ -402,12 +403,13 @@ class WithDynamicSerializerMixin(
             value = field.to_representation(
                 field.get_attribute(instance)
             )
-        if isinstance(value, list):
-            value = [
-                getattr(v, 'instance', v) for v in value
-            ]
-        else:
-            value = getattr(value, 'instance', value)
+        if not isinstance(value, FieldFile):
+            if isinstance(value, list):
+                value = [
+                    getattr(v, 'instance', v) for v in value
+                ]
+            else:
+                value = getattr(value, 'instance', value)
         error = self.errors.get(key) if hasattr(self, '_errors') else None
 
         if isinstance(field, JSONField):

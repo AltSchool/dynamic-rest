@@ -10,7 +10,6 @@ for cls_name in (
     'DecimalField',
     'DictField',
     'EmailField',
-    'FileField',
     'FilePathField',
     'FloatField',
     'HiddenField',

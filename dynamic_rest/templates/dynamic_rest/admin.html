@@ -404,7 +404,7 @@
                                 };
                                 var spinner = new Spinner(opts).spin(document.body);
                       };
-                      $('a').click(spin);
+                      $('a').not('.no-spin').click(spin);
                       $('button[type="submit"]').click(spin);
                     });
                 </script>
