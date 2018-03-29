@@ -1,3 +1,4 @@
+import sys
 from setuptools import find_packages, setup
 
 NAME = 'dynamic-rest'
@@ -10,7 +11,7 @@ setup(
     description=DESCRIPTION,
     include_package_data=True,
     dependency_links=open('dependency_links.txt').readlines(),
-    install_requires=open('install_requires.txt').readlines(),
+    install_requires=open('install_requires.txt').readlines() if sys.version_info.major == 2 else open('install_requires_python3.txt').readlines(),
     long_description=open('README.rst').read(),
     name=NAME,
     packages=find_packages(),

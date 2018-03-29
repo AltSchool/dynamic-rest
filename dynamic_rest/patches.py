@@ -16,6 +16,7 @@ def patch_prefetch_one_level():
     with all comments stripped out.
     """
     import copy
+    import django
 
     def prefetch_one_level(instances, prefetcher, lookup, level):
         rel_qs, rel_obj_attr, instance_attr, single, cache_name = (
@@ -56,4 +57,6 @@ def patch_prefetch_one_level():
 
     # apply the patch
     from django.db.models import query
-    query.prefetch_one_level = prefetch_one_level
+
+    if django.VERSION < (1, 9):
+        query.prefetch_one_level = prefetch_one_level

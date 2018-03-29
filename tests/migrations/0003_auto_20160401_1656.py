@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 
 from django.db import migrations, models
+import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
@@ -21,7 +22,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='user',
             name='favorite_pet_type',
-            field=models.ForeignKey(blank=True, to='contenttypes.ContentType', null=True),  # noqa
+            field=models.ForeignKey(blank=True, on_delete=django.db.models.deletion.CASCADE, to='contenttypes.ContentType', null=True),  # noqa
             preserve_default=True,
         ),
     ]

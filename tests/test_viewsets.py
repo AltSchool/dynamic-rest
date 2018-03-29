@@ -142,7 +142,7 @@ class TestMergeDictConvertsToDict(TestCase):
         # Wrote UserNoMergeDictViewSet to raise an exception (return 400)
         # if request.data ends up as MergeDict, is not a dict, or
         # is a dict of lists.
-        request = Request(self.rf.post('/groups/', data))
+        request = self.rf.post('/groups/', data)
         try:
             response = self.view(request)
             self.assertEqual(response.status_code, 201)
