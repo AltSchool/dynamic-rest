@@ -6,16 +6,20 @@ import pickle
 from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import fields
-from rest_framework.exceptions import NotFound, ParseError
+from rest_framework.exceptions import ValidationError, ParseError
 from rest_framework.serializers import SerializerMethodField
 
-from dynamic_rest.bases import DynamicSerializerBase
+from dynamic_rest.bases import (
+    CacheableFieldMixin,
+    DynamicSerializerBase,
+    resettable_cached_property
+)
 from dynamic_rest.conf import settings
 from dynamic_rest.fields.common import WithRelationalFieldMixin
 from dynamic_rest.meta import is_field_remote, get_model_field
 
 
-class DynamicField(fields.Field):
+class DynamicField(CacheableFieldMixin, fields.Field):
 
     """
     Generic field base to capture additional custom field attributes.
@@ -57,7 +61,11 @@ class DynamicComputedField(DynamicField):
 
 
 class DynamicMethodField(SerializerMethodField, DynamicField):
-    pass
+
+    def reset(self):
+        super(DynamicMethodField, self).reset()
+        if self.method_name == 'get_' + self.field_name:
+            self.method_name = None
 
 
 class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
@@ -149,12 +157,9 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
 
         self.model_field = model_field
 
-    @property
+    @resettable_cached_property
     def root_serializer(self):
         """Return the root serializer (serializer for the primary resource)."""
-        if hasattr(self, '_root_serializer'):
-            return self._root_serializer
-
         if not self.parent:
             # Don't cache, so that we'd recompute if parent is set.
             return None
@@ -168,10 +173,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
                 if node in seen:
                     return None
             else:
-                self._root_serializer = node
-                break
-
-        return self._root_serializer
+                return node
 
     def _get_cached_serializer(self, args, init_args):
         enabled = settings.ENABLE_SERIALIZER_CACHE
@@ -202,6 +204,8 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
                 **init_args
             )
             root._descendant_serializer_cache[cache_key] = szr
+        else:
+            root._descendant_serializer_cache[cache_key].reset()
 
         return root._descendant_serializer_cache[cache_key]
 
@@ -249,14 +253,10 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
 
         return self._get_cached_serializer(args, init_args)
 
-    @property
+    @resettable_cached_property
     def serializer(self):
-        if hasattr(self, '_serializer'):
-            return self._serializer
-
         serializer = self.get_serializer()
         serializer.parent = self
-        self._serializer = serializer
         return serializer
 
     @cached_property
@@ -268,30 +268,52 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         )
 
     def get_attribute(self, instance):
-        return instance
+        serializer = self.serializer
+        model = serializer.get_model()
+
+        # attempt to optimize by reading the related ID directly
+        # from the current instance rather than from the related object
+        if not self.kwargs['many'] and serializer.id_only():
+            return instance
+        elif model is not None:
+            try:
+                return getattr(instance, self.source)
+            except model.DoesNotExist:
+                return None
+        else:
+            return instance
 
     def to_representation(self, instance):
         """Represent the relationship, either as an ID or object."""
         serializer = self.serializer
         model = serializer.get_model()
         source = self.source
+
         if not self.kwargs['many'] and serializer.id_only():
             # attempt to optimize by reading the related ID directly
             # from the current instance rather than from the related object
             source_id = '%s_id' % source
+            # try the faster way first:
             if hasattr(instance, source_id):
                 return getattr(instance, source_id)
+            elif model is not None:
+                # this is probably a one-to-one field, or a reverse related
+                # lookup, so let's look it up the slow way and let the
+                # serializer handle the id dereferencing
+                try:
+                    instance = getattr(instance, source)
+                except model.DoesNotExist:
+                    instance = None
 
+        # dereference ephemeral objects
         if model is None:
-            related = getattr(instance, source)
-        else:
-            try:
-                related = getattr(instance, source)
-            except model.DoesNotExist:
-                return None
+            instance = getattr(instance, source)
 
-        if related is None:
+        if instance is None:
             return None
+
+        return serializer.to_representation(instance)
+        '''
         try:
             return serializer.to_representation(related)
         except Exception as e:
@@ -308,6 +330,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
                     repr(related)
                 )
             )
+        '''
 
     def to_internal_value_single(self, data, serializer):
         """Return the underlying object, given the serialized form."""
@@ -317,7 +340,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         try:
             instance = related_model.objects.get(pk=data)
         except related_model.DoesNotExist:
-            raise NotFound(
+            raise ValidationError(
                 "'%s object with ID=%s not found" %
                 (related_model.__name__, data)
             )

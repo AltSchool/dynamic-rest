@@ -2,7 +2,7 @@
 
 from django.core.exceptions import ValidationError as InternalValidationError
 from django.core.exceptions import ImproperlyConfigured
-from django.db.models import Q, Prefetch
+from django.db.models import Q, Prefetch, Manager
 from django.utils import six
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
@@ -20,6 +20,7 @@ from dynamic_rest.meta import (
     get_related_model
 )
 from dynamic_rest.patches import patch_prefetch_one_level
+from dynamic_rest.prefetch import FastQuery, FastPrefetch
 from dynamic_rest.related import RelatedObject
 
 patch_prefetch_one_level()
@@ -184,8 +185,19 @@ class DynamicFilterBackend(BaseFilterBackend):
         self.request = request
         self.view = view
 
+        # enable addition of extra filters (i.e., a Q())
+        # so custom filters can be added to the queryset without
+        # running into https://code.djangoproject.com/ticket/18437
+        # which, without this, would mean that filters added to the queryset
+        # after this is called may not behave as expected
+        extra_filters = self.view.get_extra_filters(request)
+
         self.DEBUG = settings.DEBUG
-        return self._build_queryset(queryset=queryset)
+
+        return self._build_queryset(
+            queryset=queryset,
+            extra_filters=extra_filters,
+        )
 
     """
     This function was renamed and broke downstream dependencies that haven't
@@ -306,6 +318,9 @@ class DynamicFilterBackend(BaseFilterBackend):
                 q &= ~Q(**{k: v})
         return q
 
+    def _create_prefetch(self, source, queryset):
+        return Prefetch(source, queryset=queryset)
+
     def _build_implicit_prefetches(
         self,
         model,
@@ -327,9 +342,9 @@ class DynamicFilterBackend(BaseFilterBackend):
                 remainder
             ) if related_model else None
 
-            prefetches[source] = Prefetch(
+            prefetches[source] = self._create_prefetch(
                 source,
-                queryset=queryset
+                queryset
             )
 
         return prefetches
@@ -408,9 +423,9 @@ class DynamicFilterBackend(BaseFilterBackend):
             #       the same source. This could break in some cases,
             #       but is mostly an issue on writes when we use all
             #       fields by default.
-            prefetches[source] = Prefetch(
+            prefetches[source] = self._create_prefetch(
                 source,
-                queryset=prefetch_queryset
+                prefetch_queryset
             )
 
         return prefetches
@@ -438,12 +453,22 @@ class DynamicFilterBackend(BaseFilterBackend):
                     requirement[-1] = '*'
                 requirements.insert(requirement, TreeMap(), update=True)
 
+    def _get_queryset(self, queryset=None, serializer=None):
+        if serializer and queryset is None:
+            queryset = serializer.Meta.model.objects
+
+        return queryset
+
+    def _serializer_filter(self, serializer=None, queryset=None):
+        return serializer.filter_queryset(queryset)
+
     def _build_queryset(
         self,
         serializer=None,
         filters=None,
         queryset=None,
-        requirements=None
+        requirements=None,
+        extra_filters=None,
     ):
         """Build a queryset that pulls in all data required by this request.
 
@@ -460,12 +485,11 @@ class DynamicFilterBackend(BaseFilterBackend):
         """
 
         is_root_level = False
-        if serializer:
-            if queryset is None:
-                queryset = serializer.Meta.model.objects
-        else:
+        if not serializer:
             serializer = self.view.get_serializer()
             is_root_level = True
+
+        queryset = self._get_queryset(queryset=queryset, serializer=serializer)
 
         model = getattr(serializer.Meta, 'model', None)
 
@@ -531,6 +555,10 @@ class DynamicFilterBackend(BaseFilterBackend):
             serializer=serializer
         )
 
+        # add additional filters specified by calling view
+        if extra_filters:
+            query = extra_filters if not query else extra_filters & query
+
         if query:
             # Convert internal django ValidationError to
             # APIException-based one in order to resolve validation error
@@ -554,16 +582,44 @@ class DynamicFilterBackend(BaseFilterBackend):
         # serializers for different subsets of a model or to
         # implement permissions which work even in sideloads
         if hasattr(serializer, 'filter_queryset'):
-            queryset = serializer.filter_queryset(queryset)
+            queryset = self._serializer_filter(
+                serializer=serializer,
+                queryset=queryset
+            )
 
         # add prefetches and remove duplicates if necessary
         prefetch = prefetches.values()
-        queryset = queryset.prefetch_related(*prefetch)
+        if prefetch:
+            queryset = queryset.prefetch_related(*prefetch)
+        elif isinstance(queryset, Manager):
+            queryset = queryset.all()
         if has_joins(queryset) or not is_root_level:
             queryset = queryset.distinct()
 
         if self.DEBUG:
             queryset._using_prefetches = prefetches
+        return queryset
+
+
+class FastDynamicFilterBackend(DynamicFilterBackend):
+    def _create_prefetch(self, source, queryset):
+        return FastPrefetch(source, queryset=queryset)
+
+    def _get_queryset(self, queryset=None, serializer=None):
+        queryset = super(FastDynamicFilterBackend, self)._get_queryset(
+            queryset=queryset,
+            serializer=serializer
+        )
+
+        if not isinstance(queryset, FastQuery):
+            queryset = FastQuery(queryset)
+
+        return queryset
+
+    def _serializer_filter(self, serializer=None, queryset=None):
+        queryset.queryset = serializer.filter_queryset(
+            queryset.queryset
+        )
         return queryset
 
 
