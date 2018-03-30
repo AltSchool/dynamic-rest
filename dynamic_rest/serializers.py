@@ -875,6 +875,7 @@ class WithDynamicSerializerMixin(
             False,
         )
 
+        method = self.get_request_method()
         # Toggle read_only flags for immutable fields.
         # Note: This overrides `read_only` if both are set, to allow
         #       inferred DRF fields to be made immutable.
@@ -886,12 +887,19 @@ class WithDynamicSerializerMixin(
             serializer_fields,
             immutable_field_names,
             'read_only',
-            value=(
-                True if self.get_request_method() in ('PUT', 'PATCH')
-                else False
-            )
+            value=method in ('PUT', 'PATCH')
         )
-
+        # Toggle read_only for only-update fields
+        only_update_field_names = self._get_flagged_field_names(
+            serializer_fields,
+            'only_update'
+        )
+        self.flag_fields(
+            serializer_fields,
+            only_update_field_names,
+            'read_only',
+            value=method in ('POST')
+        )
         return serializer_fields
 
     def is_field_sideloaded(self, field_name):

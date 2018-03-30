@@ -14,8 +14,6 @@ class DynamicFileField(
         )
 
     def prepare_value(self, instance):
-        model = self.parent_model
         source = self.source or self.field_name
         value = getattr(instance, source)
         return value
-

@@ -29,6 +29,7 @@ class DynamicField(fields.Field, DynamicBase):
             requires: List of fields that this field depends on.
                 Processed by the view layer during queryset build time.
             immutable: True if the field cannot be updated
+            only_update: True if the field cannot be set at creation
             get_classes: a parent serializer method name that should
                 return a list of classes to apply
             getter: name of a method to call on the parent serializer for
@@ -43,6 +44,7 @@ class DynamicField(fields.Field, DynamicBase):
         self.deferred = kwargs.pop('deferred', None)
         self.field_type = kwargs.pop('field_type', None)
         self.immutable = kwargs.pop('immutable', False)
+        self.only_update = kwargs.pop('only_update', False)
         self.get_classes = kwargs.pop('get_classes', None)
         self.getter = kwargs.pop('getter', None)
         self.setter = kwargs.pop('setter', None)

@@ -196,7 +196,6 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
                 init_args['context'] = self.context
             return self.serializer_class(*args, **init_args)
 
-
         if cache_key not in root._descendant_serializer_cache:
             if 'context' not in init_args:
                 init_args['context'] = self.context
