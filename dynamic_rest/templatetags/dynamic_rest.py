@@ -1,9 +1,10 @@
 from __future__ import absolute_import
 import inflection
+import os
+import json
 
 from django.http.request import QueryDict
 from urlparse import urlparse, urlunparse
-import json
 from uuid import UUID
 from django import template
 from django.utils.safestring import mark_safe
@@ -112,3 +113,10 @@ def replace_query_param(url, key, value):
 @register.simple_tag
 def render_filter(flt):
     return mark_safe(flt.render())
+
+@register.filter
+def get_related_url(serializer, related_name):
+    return os.path.join(
+        serializer.get_url(),
+        related_name
+    )

@@ -257,6 +257,7 @@ class DynamicAdminRenderer(AdminRenderer):
         context['back'] = back
         context['columns'] = columns
         context['fields'] = fields
+        context['serializer'] = serializer
         context['sortable_fields'] = set([
             c for c in columns if (
                 getattr(fields.get(c), 'model_field', None)
