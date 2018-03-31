@@ -152,7 +152,7 @@
                                 <div class="modal-header bg-info">
                                     <h4 class="modal-title">
                                         <span class="fa fa-plus"></span>
-                                        <span>Create {{ serializer_and_form.0.get_name | humanize }} on {{ singular_name }}</span>
+                                        <span>Create {{ serializer_and_form.0.get_name | humanize }}</span>
                                     </h4>
                                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                                         <span aria-hidden="true">&times;</span>
@@ -162,6 +162,14 @@
                                     <div class="modal-body">
                                         <fieldset>
                                             {% csrf_token %}
+                                            <div class="form-group row">
+                                                <label class="form-control-label col-sm-2">
+                                                    {{ singular_name }}
+                                                </label>
+                                                <div class="col-sm-10">
+                                                    <input class="form-control" type="text" disabled name="{{ related_name }}" value="{{ name }}"></input>
+                                                </div>
+                                            </div>
                                             {{ serializer_and_form.1 }}
                                         </fieldset>
                                     </div>

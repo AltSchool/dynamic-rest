@@ -95,8 +95,17 @@ class DynamicAdminRenderer(AdminRenderer):
         filters = {}
         create_related_forms = {}
 
+        instance_name = None
+
         if serializer:
             if instance:
+                try:
+                    name_field_name = serializer.get_name_field()
+                    name_field = serializer.get_field(name_field_name)
+                    name_source = name_field.source or name_field_name
+                    instance_name = getattr(instance, name_source, str(instance.pk))
+                except:
+                    instance_name = None
                 for related_name, field in serializer.get_link_fields(
                 ).items():
                     inverse_field_name = field.get_inverse_field_name()
@@ -244,6 +253,7 @@ class DynamicAdminRenderer(AdminRenderer):
                 back = None
 
         from dynamic_rest.routers import get_directory
+        context['instance_name'] = instance_name
         context['directory'] = get_directory(request, icons=True)
         context['filters'] = filters
         context['num_filters'] = sum([
