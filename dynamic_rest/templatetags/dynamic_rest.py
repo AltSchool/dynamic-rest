@@ -11,10 +11,13 @@ from django.utils.safestring import mark_safe
 from django.utils import six
 from dynamic_rest.conf import settings
 from rest_framework.fields import get_attribute
+
 try:
     from rest_framework.templatetags.rest_framework import format_value
-except:
-    format_value = lambda x: x
+except:  # noqa
+    def format_value(x):
+        return x
+
 
 register = template.Library()
 
@@ -114,9 +117,11 @@ def replace_query_param(url, key, value):
 def render_filter(flt):
     return mark_safe(flt.render())
 
+
 @register.filter
 def get_related_url(serializer, related_name):
+    instance = serializer.instance
     return os.path.join(
-        serializer.get_url(),
+        serializer.get_url(instance.pk),
         related_name
     )

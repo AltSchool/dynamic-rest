@@ -206,7 +206,7 @@ class DynamicField(fields.Field, DynamicBase):
         # label or None
         label = self.admin_get_label(instance, value)
         if not label:
-            label = '<span class="text-muted">&ndash;</span>'
+            label = ''
 
         tag = 'a' if url else 'span'
         result = label or value

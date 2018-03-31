@@ -94,6 +94,9 @@ class DynamicListSerializer(WithResourceKeyMixin, serializers.ListSerializer):
         super(DynamicListSerializer, self).__init__(*args, **kwargs)
         self.child.parent = self
 
+    def set_request_method(self, method):
+        return self.child.set_request_method(method)
+
     def get_all_fields(self):
         return self.child.get_all_fields()
 
@@ -762,11 +765,17 @@ class WithDynamicSerializerMixin(
             default
         )
 
+    def set_request_method(self, method=None):
+        self._request_method = method
+
     def get_request_method(self):
-        return self.get_request_attribute(
-            'method',
-            ''
-        ).upper()
+        if getattr(self, '_request_method', None):
+            return self._request_method
+        else:
+            return self.get_request_attribute(
+                'method',
+                ''
+            ).upper()
 
     def get_all_fields(self):
         """Returns the entire serializer field set.

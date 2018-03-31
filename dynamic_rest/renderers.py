@@ -104,6 +104,7 @@ class DynamicAdminRenderer(AdminRenderer):
                         request_fields=None,
                         exclude_fields=[inverse_field_name]
                     )
+                    related_serializer.set_request_method('POST')
                     has_permission = (
                         not getattr(related_serializer, 'permissions', None) or
                         related_serializer.permissions.create
