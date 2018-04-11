@@ -1,5 +1,6 @@
 """This module contains custom filter backends."""
 
+import django
 from django.core.exceptions import ValidationError as InternalValidationError
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q, Prefetch, Manager
@@ -23,7 +24,8 @@ from dynamic_rest.patches import patch_prefetch_one_level
 from dynamic_rest.prefetch import FastQuery, FastPrefetch
 from dynamic_rest.related import RelatedObject
 
-patch_prefetch_one_level()
+if django.VERSION < (2, 0, 0):
+    patch_prefetch_one_level()
 
 
 def has_joins(queryset):
