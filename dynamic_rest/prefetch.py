@@ -227,7 +227,8 @@ class FastQueryCompatMixin(object):
 
         prefetches = []
         for field, fprefetch in self.prefetches.items():
-            qs = fprefetch.query.queryset if fprefetch.query else None
+            has_query = hasattr(fprefetch, 'query')
+            qs = fprefetch.query.queryset if has_query else None
             prefetches.append(
                 Prefetch(field, queryset=qs)
             )
