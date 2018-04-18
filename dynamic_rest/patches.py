@@ -58,5 +58,5 @@ def patch_prefetch_one_level():
     # apply the patch
     from django.db.models import query
 
-    if django.VERSION < (1, 9):
+    if django.VERSION < (2, 0, 0):
         query.prefetch_one_level = prefetch_one_level
