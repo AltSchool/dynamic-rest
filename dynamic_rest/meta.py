@@ -114,7 +114,7 @@ def get_model_field_and_type(model, field_name):
     return field, '',
 
 
-def is_field_remote(model, field_name):
+def is_field_remote(self, field_name):
     """Check whether a given model field is a remote field.
 
     A remote field is the inverse of a one-to-many or a
@@ -127,12 +127,14 @@ def is_field_remote(model, field_name):
     Returns:
         True if `field_name` is a remote field, False otherwise.
     """
-    if not hasattr(model, '_meta'):
-        # ephemeral model with no metaclass
+    try:
+        model_field = self.get_field(field_name)
+        return isinstance(
+            model_field,
+            (models.ManyToManyField, RelatedObject)
+        )
+    except AttributeError:
         return False
-
-    model_field = get_model_field(model, field_name)
-    return isinstance(model_field, (ManyToManyField, RelatedObject))
 
 
 def get_related_model(field):

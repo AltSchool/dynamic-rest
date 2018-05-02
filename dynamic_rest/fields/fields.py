@@ -3,6 +3,8 @@
 import importlib
 import pickle
 
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils import six
 from django.utils.functional import cached_property
 from rest_framework import fields
@@ -17,9 +19,10 @@ from dynamic_rest.bases import (
 from dynamic_rest.conf import settings
 from dynamic_rest.fields.common import WithRelationalFieldMixin
 from dynamic_rest.meta import is_field_remote, get_model_field
+from dynamic_rest.base import DynamicBase
 
 
-class DynamicField(CacheableFieldMixin, fields.Field):
+class DynamicField(CacheableFieldMixin, fields.Field, DynamicBase):
 
     """
     Generic field base to capture additional custom field attributes.
@@ -42,12 +45,62 @@ class DynamicField(CacheableFieldMixin, fields.Field):
             requires: List of fields that this field depends on.
                 Processed by the view layer during queryset build time.
         """
+        source = kwargs.get('source', None)
         self.requires = requires
         self.deferred = deferred
         self.field_type = field_type
         self.immutable = immutable
+        self.getter = kwargs.pop('getter', None)
+        self.setter = kwargs.pop('setter', None)
+        if self.getter or self.setter:
+            # dont bind to fields
+            kwargs['source'] = '*'
+        elif source == '*':
+            # use default getter/setter
+            self.getter = self.getter or '*'
+            self.setter = self.setter or '*'
         self.kwargs = kwargs
         super(DynamicField, self).__init__(**kwargs)
+
+    def prepare_value(self, instance):
+        if instance is None:
+            return None
+        value = None
+        many = self.kwargs.get('many', False)
+        getter = self.getter
+        if getter:
+            # use custom getter to get the value
+            getter = getattr(self.parent, getter)
+            if isinstance(instance, list):
+                value = [getter(i) for i in instance]
+            else:
+                value = getter(instance)
+        else:
+            # use source to get the value
+            source = self.source or self.field_name
+            sources = source.split('.')
+            value = instance
+            for source in sources:
+                if source == '*':
+                    break
+                try:
+                    value = getattr(value, source)
+                except (ObjectDoesNotExist, AttributeError):
+                    return None
+        if (
+            value and
+            many and
+            callable(getattr(value, 'all', None))
+        ):
+            # get list from manager
+            value = value.all()
+
+        if value and many:
+            value = list(value)
+        if isinstance(value, QuerySet):
+            value = list(value)
+
+        return value
 
     def to_representation(self, value):
         return value
@@ -130,32 +183,46 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             return
         super(DynamicRelationField, self).bind(*args, **kwargs)
         self.bound = True
-        parent_model = getattr(self.parent.Meta, 'model', None)
 
-        remote = is_field_remote(parent_model, self.source)
+        print "####"
+        print self.field_name
 
-        try:
-            model_field = get_model_field(parent_model, self.source)
-        except:
-            # model field may not be available for m2o fields with no
-            # related_name
-            model_field = None
+        source = self.source or self.field_name
+        if source == '*':
+            if self.getter == '*':
+                self.getter = 'get_%s' % self.field_name
+            if self.setter == '*':
+                self.setter = 'set_%s' % self.field_name
+            return
 
-        # Infer `required` and `allow_null`
-        if 'required' not in self.kwargs and (
-                remote or (
-                    model_field and (
-                        model_field.has_default() or model_field.null
-                    )
-                )
-        ):
-            self.required = False
-        if 'allow_null' not in self.kwargs and getattr(
-                model_field, 'null', False
-        ):
-            self.allow_null = True
+        # parent_model = getattr(self.parent.Meta, 'model', None)
 
-        self.model_field = model_field
+        parent_model = self.parent_model
+        if parent_model:
+            remote = is_field_remote(parent_model, source)
+            model_field = self.model_field
+            generic = isinstance(model_field, GenericForeignKey)
+            if not generic:
+                try:
+                    # Infer `required` and `allow_null`
+                    if 'required' not in self.kwargs and (
+                            remote or (
+                                model_field and (
+                                    model_field.has_default() if hasattr(model_field, 'has_default') else model_field.null
+                                    # model_field.has_default() or model_field.null
+                                )
+                            )
+                    ):
+                        self.required = False
+
+                except:
+                    from IPython import embed
+                    embed()
+
+                if 'allow_null' not in self.kwargs and getattr(
+                    model_field, 'null', False
+                ):
+                    self.allow_null = True
 
     @resettable_cached_property
     def root_serializer(self):
@@ -286,33 +353,41 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
     def to_representation(self, instance):
         """Represent the relationship, either as an ID or object."""
         serializer = self.serializer
-        model = serializer.get_model()
         source = self.source
-
-        if not self.kwargs['many'] and serializer.id_only():
+        if (
+            not self.getter and
+            not self.many and
+            serializer.id_only()
+        ):
             # attempt to optimize by reading the related ID directly
             # from the current instance rather than from the related object
             source_id = '%s_id' % source
-            # try the faster way first:
-            if hasattr(instance, source_id):
-                return getattr(instance, source_id)
-            elif model is not None:
-                # this is probably a one-to-one field, or a reverse related
-                # lookup, so let's look it up the slow way and let the
-                # serializer handle the id dereferencing
-                try:
-                    instance = getattr(instance, source)
-                except model.DoesNotExist:
-                    instance = None
+            value = getattr(instance, source_id, None)
+            if value:
+                return value
 
-        # dereference ephemeral objects
-        if model is None:
-            instance = getattr(instance, source)
+        value = self.prepare_value(instance)
 
-        if instance is None:
+        if value is None:
             return None
 
-        return serializer.to_representation(instance)
+        try:
+            return serializer.to_representation(value)
+        except Exception as e:
+            # Provide more context to help debug these cases
+            if getattr(serializer, 'debug', False):
+                import traceback
+                traceback.print_exc()
+            raise APIException(
+                "Failed to serialize %s.%s: %s\nObj: %s" %
+                (
+                    self.parent.__class__.__name__,
+                    self.source,
+                    str(e),
+                    repr(value)
+                )
+            )
+
 
     def to_internal_value_single(self, data, serializer):
         """Return the underlying object, given the serialized form."""
@@ -341,6 +416,32 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
                 ) for instance in data
             ]
         return self.to_internal_value_single(data, self.serializer)
+
+    @property
+    def parent_model(self):
+        if not hasattr(self, '_parent_model'):
+            parent = self.parent
+            if isinstance(parent, fields.ListField):
+                parent = parent.parent
+            if parent:
+                self._parent_model = getattr(parent.Meta, 'model', None)
+            else:
+                return None
+        return self._parent_model
+
+    @property
+    def model_field(self):
+        if not hasattr(self, '_model_field'):
+            try:
+                source = self.source or self.field_name
+                self._model_field = get_model_field(
+                    self.parent_model,
+                    source
+                )
+            except:
+                self._model_field = None
+        return self._model_field
+
 
     @property
     def serializer_class(self):

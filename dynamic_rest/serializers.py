@@ -74,6 +74,9 @@ class DynamicListSerializer(
         """Get the child's name."""
         return self.child.get_name()
 
+    def get_class_getter(self):
+        return self.child.get_class_getter()
+
     def get_plural_name(self):
         """Get the child's plural name."""
         return self.child.get_plural_name()
@@ -526,6 +529,11 @@ class WithDynamicSerializerMixin(
                     not getattr(field, 'many', False)
                 )
             }
+
+    @classmethod
+    def get_class_getter(self):
+        meta = self.get_meta()
+        return getattr(meta, 'get_classes', None)
 
     @cached_property
     def _readable_fields(self):
