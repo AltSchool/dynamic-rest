@@ -273,6 +273,11 @@ class PermissionsUserSerializer(
                 'list': True,
                 'update': Me,
             },
+            'is_superuser': {
+                'write_fields': (
+                    'is_superuser',
+                )
+            },
             '*': {
                 'read': True
             },

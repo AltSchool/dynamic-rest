@@ -103,7 +103,9 @@ class DynamicAdminRenderer(AdminRenderer):
                     name_field_name = serializer.get_name_field()
                     name_field = serializer.get_field(name_field_name)
                     name_source = name_field.source or name_field_name
-                    instance_name = getattr(instance, name_source, str(instance.pk))
+                    instance_name = getattr(
+                        instance, name_source, str(instance.pk)
+                    )
                 except:
                     instance_name = None
                 for related_name, field in serializer.get_link_fields(

@@ -73,22 +73,31 @@ class Filter(object):
             return Q()
         if self.no_access:
             return Q(pk=None)
-        if isinstance(self.spec, Q):
-            return self.spec
 
         user = self.user
-        if isinstance(self.spec, Me) or self.spec is Me:
+        spec = self.spec
+
+        if callable(spec):
+            try:
+                spec = spec(user)
+            except TypeError:
+                pass
+
+        if isinstance(spec, Q):
+            return spec
+
+        if isinstance(spec, Me) or spec is Me:
             return Q(pk=user.pk)
 
-        if isinstance(self.spec, dict):
+        if isinstance(spec, dict):
             spec = {
                 k: user if isinstance(v, Me) or v is Me else v
-                for k, v in self.spec.items()
+                for k, v in spec.items()
             }
             return Q(**spec)
 
         raise Exception(
-            "Not sure how to deal with: %s" % self.spec
+            "Not sure how to deal with: %s" % spec
         )
 
     @property
@@ -99,7 +108,9 @@ class Filter(object):
     def full_access(self):
         return self.spec is True
 
+
 Filter.FULL_ACCESS = Filter(True)
+
 Filter.NO_ACCESS = Filter(False)
 
 
@@ -110,6 +121,14 @@ class Role(object):
     def __init__(self, spec, user):
         self.user = user
         self.spec = spec
+
+    @cached_property
+    def write_fields(self):
+        return self.get('write_fields')
+
+    @cached_property
+    def read_fields(self):
+        return self.get('read_fields')
 
     @cached_property
     def list(self):
@@ -170,6 +189,14 @@ class Permissions(object):
             for k, v in self.spec.items()
             if self.has_role(k)
         ]
+
+    @cached_property
+    def write_fields(self):
+        return self.get('write_fields')
+
+    @cached_property
+    def read_fields(self):
+        return self.get('read_fields')
 
     @cached_property
     def list(self):
@@ -246,8 +273,8 @@ class PermissionsSerializerMixin(object):
 
 class PermissionsViewSetMixin(object):
     @classmethod
-    def get_user_permissions(cls, user):
-        if not user or user.is_superuser:
+    def get_user_permissions(cls, user, even_if_superuser=False):
+        if not user or (not even_if_superuser and user.is_superuser):
             return None
 
         permissions = getattr(
@@ -271,6 +298,24 @@ class PermissionsViewSetMixin(object):
             return super(PermissionsViewSetMixin, self).list(request, **kwargs)
         else:
             raise exceptions.PermissionDenied()
+
+    def get_serializer(self, *args, **kwargs):
+        permissions = self.get_user_permissions(
+            self.request.user,
+            even_if_superuser=True
+        )
+        serializer = super(PermissionsViewSetMixin, self).get_serializer(
+            *args,
+            **kwargs
+        )
+        if permissions:
+            write_fields = permissions.write_fields
+            if write_fields.spec:
+                for field_name in write_fields.spec:
+                    field = serializer.fields.get(field_name)
+                    if field:
+                        field.read_only = False
+        return serializer
 
     def get_queryset(self):
         permissions = self.permissions

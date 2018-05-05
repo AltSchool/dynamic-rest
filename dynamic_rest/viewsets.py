@@ -137,7 +137,7 @@ class WithDynamicViewSetBase(object):
                 for d in request.data.dicts[1:]:
                     data_as_dict.update(d)
                 request._full_data = data_as_dict
-        except:
+        except:  # noqa
             pass
 
         return request
@@ -177,7 +177,7 @@ class WithDynamicViewSetBase(object):
                     obj = self.get_object()
                     name_field = serializer.get_name_field()
                     name = str(getattr(obj, name_field))
-                except:
+                except:  # noqa
                     name = serializer.get_name()
         else:
             name = self.__class__.__name__
@@ -436,7 +436,7 @@ class WithDynamicViewSetBase(object):
             envelope=True,
             many=False
         )
-        # force the inverse field to write
+        # set the inverse field to allow writes
         inverse_field = related_serializer.fields.get(inverse_field_name)
         inverse_field.read_only = False
         related_serializer.is_valid(raise_exception=True)

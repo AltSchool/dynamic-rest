@@ -167,12 +167,16 @@ class TestPermissionsUsersAPI(APITestCase):
         # update
         data = content['user']
         data['username'] = 'foobar'
+        # can also update the read-only is_superuser field!
+        data['is_superuser'] = True
         response = self.client.put(
             '/p/users/%s/' % self.default_user.id,
             data=data,
             format='json'
         )
         self.assertEquals(200, response.status_code, response.content)
+        content = json.loads(response.content)
+        self.assertEquals(content['user']['is_superuser'], True)
         # create
         data.pop('id', None)
         data['username'] = 'newbar'
