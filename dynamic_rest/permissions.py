@@ -14,6 +14,12 @@ class Filter(object):
         return str(self.spec)
 
     def __init__(self, spec, user=None):
+        if callable(spec):
+            try:
+                spec = spec(user)
+            except TypeError:
+                pass
+
         self.spec = spec
         self.user = user
 
@@ -76,12 +82,6 @@ class Filter(object):
 
         user = self.user
         spec = self.spec
-
-        if callable(spec):
-            try:
-                spec = spec(user)
-            except TypeError:
-                pass
 
         if isinstance(spec, Q):
             return spec
@@ -220,10 +220,14 @@ class Permissions(object):
 
     def get(self, name):
         roles = self.roles
-        f = Filter.NO_ACCESS
+        f = None
         for role in roles:
-            f |= getattr(role, name)
-        return f
+            r = getattr(role, name)
+            if f is None:
+                f = r
+            else:
+                f |= r
+        return f if f is not None else Filter.NO_ACCESS
 
 
 class PermissionsSerializerMixin(object):

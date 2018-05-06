@@ -1,6 +1,5 @@
 from rest_framework.serializers import CharField
 
-from dynamic_rest.permissions import Me
 from dynamic_rest.fields import (
     CountField,
     DynamicField,
@@ -13,6 +12,7 @@ from dynamic_rest.serializers import (
     DynamicModelSerializer
 )
 from django.contrib.auth import models as auth
+from django.db.models import Q
 from tests.models import (
     Car,
     Cat,
@@ -271,7 +271,7 @@ class PermissionsUserSerializer(
                     'is_superuser': False
                 },
                 'list': True,
-                'update': Me,
+                'update': lambda u: Q(pk=u.pk),
             },
             'is_superuser': {
                 'write_fields': (
