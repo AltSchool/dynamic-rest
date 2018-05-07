@@ -96,7 +96,7 @@ class Filter(object):
             }
             return Q(**spec)
 
-        if isinstance(spec, list):
+        if isinstance(spec, (list, tuple)):
             return set(spec)
 
         raise Exception(
