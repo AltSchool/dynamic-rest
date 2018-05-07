@@ -96,6 +96,9 @@ class Filter(object):
             }
             return Q(**spec)
 
+        if isinstance(spec, list):
+            return set(spec)
+
         raise Exception(
             "Not sure how to deal with: %s" % spec
         )
