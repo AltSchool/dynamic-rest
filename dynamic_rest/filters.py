@@ -676,11 +676,6 @@ class DynamicSortingFilter(OrderingFilter):
         Overwrites the DRF default remove_invalid_fields method to return
         both the valid orderings and any invalid orderings.
         """
-        # get valid field names for sorting
-        valid_fields_map = {
-            name: source for name, source in self.get_valid_fields(
-                queryset, view)
-        }
 
         valid_orderings = []
         invalid_orderings = []
@@ -691,22 +686,58 @@ class DynamicSortingFilter(OrderingFilter):
             stripped_term = term.lstrip('-')
             # add back the '-' add the end if necessary
             reverse_sort_term = '' if len(stripped_term) is len(term) else '-'
-            if stripped_term in valid_fields_map:
-                name = reverse_sort_term + valid_fields_map[stripped_term]
-                valid_orderings.append(name)
+            ordering = self.ordering_for(stripped_term, view)
+
+            if ordering:
+                valid_orderings.append(reverse_sort_term + ordering)
             else:
                 invalid_orderings.append(term)
 
         return valid_orderings, invalid_orderings
 
-    def get_valid_fields(self, queryset, view, context={}):
-        """Return valid fields for ordering.
-
-        Overwrites DRF's get_valid_fields method so that valid_fields returns
-        serializer fields, not model fields.
+    def ordering_for(self, term, view):
         """
-        valid_fields = getattr(view, 'ordering_fields', self.ordering_fields)
+        Return ordering (model field chain) for term (serializer field chain)
+        or None if invalid
 
+        Raise ImproperlyConfigured if serializer_class not set on view
+        """
+        if not self._is_allowed_term(term, view):
+            return None
+
+        serializer = self._get_serializer_class(view)()
+        serializer_chain = term.split('.')
+
+        model_chain = []
+
+        for segment in serializer_chain[:-1]:
+            field = serializer.get_all_fields().get(segment)
+
+            if not (field and field.source != '*' and
+                    isinstance(field, DynamicRelationField)):
+                return None
+
+            model_chain.append(field.source or segment)
+
+            serializer = field.serializer_class()
+
+        last_segment = serializer_chain[-1]
+        last_field = serializer.get_all_fields().get(last_segment)
+
+        if not last_field or last_field.source == '*':
+            return None
+
+        model_chain.append(last_field.source or last_segment)
+
+        return '__'.join(model_chain)
+
+    def _is_allowed_term(self, term, view):
+        valid_fields = getattr(view, 'ordering_fields', self.ordering_fields)
+        all_fields_allowed = valid_fields is None or valid_fields == '__all__'
+
+        return all_fields_allowed or term in valid_fields
+
+    def _get_serializer_class(self, view):
         # prefer the overriding method
         if hasattr(view, 'get_serializer_class'):
             try:
@@ -727,21 +758,4 @@ class DynamicSortingFilter(OrderingFilter):
             )
             raise ImproperlyConfigured(msg % self.__class__.__name__)
 
-        if valid_fields is None or valid_fields == '__all__':
-            # Default to allowing filtering on serializer fields
-            valid_fields = [
-                (field_name, field.source or field_name)
-                for field_name, field in serializer_class().fields.items()
-                if not getattr(
-                    field, 'write_only', False
-                ) and not field.source == '*'
-            ]
-        else:
-            valid_fields = [
-                (field_name, field.source or field_name)
-                for field_name, field in serializer_class().fields.items()
-                if not getattr(field, 'write_only', False) and
-                not field.source == '*' and field_name in valid_fields
-            ]
-
-        return valid_fields
+        return serializer_class
