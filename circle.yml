@@ -7,6 +7,7 @@ dependencies:
         - pyenv install -s 3.3.3
         - pyenv install -s 3.4.3
         - pyenv install -s 3.5.0
+        - pyenv install -s 3.6.6
         - pyenv local 2.7.10 3.3.3 3.4.3 3.5.0
 
 test:
