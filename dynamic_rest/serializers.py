@@ -167,6 +167,7 @@ class WithDynamicSerializerMixin(
         if not meta:
             meta = type('Meta', (), {})
             cls.Meta = meta
+
         list_serializer_class = getattr(
             meta,
             'list_serializer_class',
