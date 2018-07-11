@@ -28,6 +28,11 @@ DYNAMIC_REST = {
     # `deferred=False` is explicitly set on the field.
     'DEFER_MANY_RELATIONS': False,
 
+    # LIST_SERIALIZER_CLASS: Globally override the list serializer class.
+    # Default is `DynamicListSerializer` and also can be overridden for
+    # each serializer class by setting `Meta.list_serializer_class`.
+    'LIST_SERIALIZER_CLASS': None,
+
     # MAX_PAGE_SIZE: global setting for max page size.
     # Can be overriden at the viewset level.
     'MAX_PAGE_SIZE': None,

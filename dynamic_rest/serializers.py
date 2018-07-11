@@ -168,7 +168,10 @@ class WithDynamicSerializerMixin(
             meta = type('Meta', (), {})
             cls.Meta = meta
         list_serializer_class = getattr(
-            meta, 'list_serializer_class', DynamicListSerializer)
+            meta,
+            'list_serializer_class',
+            settings.LIST_SERIALIZER_CLASS or DynamicListSerializer
+        )
         if not issubclass(list_serializer_class, DynamicListSerializer):
             list_serializer_class = DynamicListSerializer
         meta.list_serializer_class = list_serializer_class
