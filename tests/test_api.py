@@ -858,6 +858,28 @@ class TestUsersAPI(APITestCase):
 
                 )
 
+    def test_sort_relation_field(self):
+        url = '/users/?sort[]=location.name'
+        with self.assertNumQueries(1):
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEquals(
+            [1, 1, 2, 3],
+            [row['location'] for row in data['users']]
+        )
+
+    def test_sort_relation_field_reverse(self):
+        url = '/users/?sort[]=-location.name'
+        with self.assertNumQueries(1):
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code)
+        data = json.loads(response.content.decode('utf-8'))
+        self.assertEquals(
+            [3, 2, 1, 1],
+            [row['location'] for row in data['users']]
+        )
+
 
 @override_settings(
     DYNAMIC_REST={
@@ -1311,7 +1333,7 @@ class TestDogsAPI(APITestCase):
     def setUp(self):
         self.fixture = create_fixture()
 
-    def test_sort(self):
+    def test_sort_implied_all(self):
         url = '/dogs/?sort[]=name'
         # 2 queries - one for getting dogs, one for the meta (count)
         with self.assertNumQueries(2):
@@ -1473,7 +1495,7 @@ class TestHorsesAPI(APITestCase):
     def setUp(self):
         self.fixture = create_fixture()
 
-    def test_sort(self):
+    def test_sort_custom_default(self):
         url = '/horses'
         # 1 query - one for getting horses
         # (the viewset as features specified, so no meta is returned)
@@ -1515,7 +1537,7 @@ class TestZebrasAPI(APITestCase):
     def setUp(self):
         self.fixture = create_fixture()
 
-    def test_sort(self):
+    def test_sort_explicit_all(self):
         url = '/zebras?sort[]=-name'
         # 1 query - one for getting zebras
         # (the viewset as features specified, so no meta is returned)

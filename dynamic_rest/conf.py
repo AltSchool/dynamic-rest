@@ -1,3 +1,5 @@
+import inspect
+
 from django.conf import settings as django_settings
 from django.test.signals import setting_changed
 
@@ -27,6 +29,11 @@ DYNAMIC_REST = {
     # DEFER_MANY_RELATIONS: automatically defer many-relations, unless
     # `deferred=False` is explicitly set on the field.
     'DEFER_MANY_RELATIONS': False,
+
+    # LIST_SERIALIZER_CLASS: Globally override the list serializer class.
+    # Default is `DynamicListSerializer` and also can be overridden for
+    # each serializer class by setting `Meta.list_serializer_class`.
+    'LIST_SERIALIZER_CLASS': None,
 
     # MAX_PAGE_SIZE: global setting for max page size.
     # Can be overriden at the viewset level.
@@ -59,12 +66,19 @@ DYNAMIC_REST = {
 }
 
 
+# Attributes where the value should be a class (or path to a class)
+CLASS_ATTRS = [
+    'LIST_SERIALIZER_CLASS',
+]
+
+
 class Settings(object):
 
-    def __init__(self, name, defaults, settings):
+    def __init__(self, name, defaults, settings, class_attrs=None):
         self.name = name
         self.defaults = defaults
         self.keys = set(defaults.keys())
+        self.class_attrs = class_attrs
 
         self._cache = {}
         self._reload(getattr(settings, self.name, {}))
@@ -75,6 +89,18 @@ class Settings(object):
         """Reload settings after a change."""
         self.settings = value
         self._cache = {}
+
+    def _load_class(self, attr, val):
+        if inspect.isclass(val):
+            return val
+        elif isinstance(val, str):
+            parts = val.split('.')
+            module_path = '.'.join(parts[:-1])
+            class_name = parts[-1]
+            mod = __import__(module_path, fromlist=[class_name])
+            return getattr(mod, class_name)
+        elif val:
+            raise Exception("%s must be string or a class" % attr)
 
     def __getattr__(self, attr):
         """Get a setting."""
@@ -88,6 +114,9 @@ class Settings(object):
             else:
                 val = self.defaults[attr]
 
+            if attr in self.class_attrs and val:
+                val = self._load_class(attr, val)
+
             # Cache the result
             self._cache[attr] = val
 
@@ -100,4 +129,4 @@ class Settings(object):
             self._reload(value)
 
 
-settings = Settings('DYNAMIC_REST', DYNAMIC_REST, django_settings)
+settings = Settings('DYNAMIC_REST', DYNAMIC_REST, django_settings, CLASS_ATTRS)
