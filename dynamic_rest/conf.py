@@ -17,6 +17,12 @@ DYNAMIC_REST = {
     # ENABLE_SERIALIZER_CACHE: enable/disable caching of related serializers
     'ENABLE_SERIALIZER_CACHE': True,
 
+    # ENABLE_SERIALIZER_OBJECT_CACHE: enable/disable caching of serialized
+    # objects within a serializer instance/context. This can yield
+    # significant performance improvements in cases where the same objects
+    # are sideloaded repeatedly.
+    'ENABLE_SERIALIZER_OBJECT_CACHE': True,
+
     # ENABLE_SERIALIZER_OPTIMIZATIONS: enable/disable representation speedups
     'ENABLE_SERIALIZER_OPTIMIZATIONS': True,
 

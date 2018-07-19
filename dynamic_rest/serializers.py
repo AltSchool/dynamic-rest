@@ -621,32 +621,29 @@ class WithDynamicSerializerMixin(
 
         return ret
 
-    def to_representation(self, instance):
-        """Modified to_representation method.
+    @resettable_cached_property
+    def obj_cache(self):
+        # Note: This gets cached by resettable_cached_property so this
+        #       function only needs to return the initial value.
+        return {}
 
-        Arguments:
-            instance: A model instance or data object.
-        Returns:
-            Instance ID if the serializer is meant to represent its ID.
-            Otherwise, a tagged data dict representation.
-        """
-        if self.id_only():
-            return instance.pk
+    def _to_representation(self, instance):
+        """Uncached `to_representation`."""
+
+        if self.enable_optimization:
+            representation = self._faster_to_representation(instance)
         else:
-            if self.enable_optimization:
-                representation = self._faster_to_representation(instance)
-            else:
-                representation = super(
-                    WithDynamicSerializerMixin,
-                    self
-                ).to_representation(instance)
+            representation = super(
+                WithDynamicSerializerMixin,
+                self
+            ).to_representation(instance)
 
-            if settings.ENABLE_LINKS:
-                # TODO: Make this function configurable to support other
-                #       formats like JSON API link objects.
-                representation = merge_link_object(
-                    self, representation, instance
-                )
+        if settings.ENABLE_LINKS:
+            # TODO: Make this function configurable to support other
+            #       formats like JSON API link objects.
+            representation = merge_link_object(
+                self, representation, instance
+            )
 
         if self.debug:
             representation['_meta'] = {
@@ -661,6 +658,27 @@ class WithDynamicSerializerMixin(
             instance=instance,
             embed=self.embed
         )
+
+    def to_representation(self, instance):
+        """Modified to_representation method. Optionally may cache objects.
+
+        Arguments:
+            instance: A model instance or data object.
+        Returns:
+            Instance ID if the serializer is meant to represent its ID.
+            Otherwise, a tagged data dict representation.
+        """
+        if self.id_only():
+            return instance.pk
+
+        pk = instance.pk
+        if not settings.ENABLE_SERIALIZER_OBJECT_CACHE:
+            return self._to_representation(instance)
+        else:
+            if pk not in self.obj_cache:
+                self.obj_cache[pk] = self._to_representation(instance)
+            return self.obj_cache[pk]
+
 
     def to_internal_value(self, data):
         value = super(WithDynamicSerializerMixin, self).to_internal_value(data)
