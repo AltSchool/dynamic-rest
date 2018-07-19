@@ -1,10 +1,12 @@
 import unittest
+from mock import patch
 from collections import OrderedDict
 
 from django.test import TestCase, override_settings
 from django.utils import six
 
 from dynamic_rest.fields import DynamicRelationField
+from dynamic_rest.processors import register_post_processor
 from dynamic_rest.serializers import DynamicListSerializer, EphemeralObject
 from tests.models import User
 from tests.serializers import (
@@ -503,6 +505,23 @@ class TestDynamicSerializer(TestCase):
         r3 = s.get_all_fields()['home'].serializer.id_only()
         self.assertEqual(r1, r2)
         self.assertEqual(r2, r3)
+
+    @patch.dict('dynamic_rest.processors.POST_PROCESSORS', {})
+    def test_post_processors(self):
+
+        @register_post_processor
+        def test_post_processor(data):
+            data['post_processed'] = True
+            return data
+
+        serializer = UserSerializer(
+            self.fixture.users,
+            many=True,
+            envelope=True,
+            request_fields={'groups': {}},
+        )
+        data = serializer.data
+        self.assertTrue(data.get('post_processed'))
 
 
 class TestListSerializer(TestCase):

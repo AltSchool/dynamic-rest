@@ -25,7 +25,7 @@ from dynamic_rest.fields import (
 )
 from dynamic_rest.links import merge_link_object
 from dynamic_rest.meta import get_model_table
-from dynamic_rest.processors import SideloadingProcessor
+from dynamic_rest.processors import SideloadingProcessor, post_process
 from dynamic_rest.tagged import tag_dict
 
 OPTS = {
@@ -93,6 +93,7 @@ class DynamicListSerializer(
             data,
             serializer=self
         )
+        processed_data = post_process(processed_data)
         return processed_data
 
     def update(self, queryset, validated_data):
@@ -709,10 +710,11 @@ class WithDynamicSerializerMixin(
             data = SideloadingProcessor(
                 self, data
             ).data if self.envelope else data
-            self._processed_data = ReturnDict(
+            processed_data = ReturnDict(
                 data,
                 serializer=self
             )
+            self._processed_data = post_process(processed_data)
         return self._processed_data
 
 
