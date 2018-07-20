@@ -679,7 +679,6 @@ class WithDynamicSerializerMixin(
                 self.obj_cache[pk] = self._to_representation(instance)
             return self.obj_cache[pk]
 
-
     def to_internal_value(self, data):
         value = super(WithDynamicSerializerMixin, self).to_internal_value(data)
         id_attr = getattr(self.Meta, 'update_lookup_field', 'id')
