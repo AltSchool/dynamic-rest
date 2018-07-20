@@ -100,7 +100,7 @@ class DynamicListSerializer(
         lookup_attr = getattr(self.child.Meta, 'update_lookup_field', 'id')
 
         lookup_objects = {
-            entry.pop(lookup_attr): entry
+            str(entry.pop(lookup_attr)): entry
             for entry in validated_data
         }
 
@@ -124,7 +124,7 @@ class DynamicListSerializer(
 
         updated_objects = []
         for object_to_update in objects_to_update:
-            lookup_key = getattr(object_to_update, lookup_attr)
+            lookup_key = str(getattr(object_to_update, lookup_attr))
             data = lookup_objects.get(lookup_key)
             # Use model serializer to actually update the model
             # in case that method is overwritten.
