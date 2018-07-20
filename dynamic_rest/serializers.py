@@ -671,8 +671,8 @@ class WithDynamicSerializerMixin(
         if self.id_only():
             return instance.pk
 
-        pk = instance.pk
-        if not settings.ENABLE_SERIALIZER_OBJECT_CACHE:
+        pk = getattr(instance, 'pk', None)
+        if not settings.ENABLE_SERIALIZER_OBJECT_CACHE or pk is None:
             return self._to_representation(instance)
         else:
             if pk not in self.obj_cache:
