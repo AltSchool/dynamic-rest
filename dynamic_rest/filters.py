@@ -192,11 +192,14 @@ class DynamicFilterBackend(BaseFilterBackend):
         # after this is called may not behave as expected
         extra_filters = self.view.get_extra_filters(request)
 
+        disable_prefetches = self.view.is_update()
+
         self.DEBUG = settings.DEBUG
 
         return self._build_queryset(
             queryset=queryset,
             extra_filters=extra_filters,
+            disable_prefetches=disable_prefetches,
         )
 
     """
@@ -469,6 +472,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         queryset=None,
         requirements=None,
         extra_filters=None,
+        disable_prefetches=False,
     ):
         """Build a queryset that pulls in all data required by this request.
 
@@ -589,7 +593,7 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         # add prefetches and remove duplicates if necessary
         prefetch = prefetches.values()
-        if prefetch:
+        if prefetch and not disable_prefetches:
             queryset = queryset.prefetch_related(*prefetch)
         elif isinstance(queryset, Manager):
             queryset = queryset.all()
