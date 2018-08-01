@@ -579,6 +579,7 @@ class WithDynamicSerializerMixin(
         id_fields = self._readable_id_fields
 
         for field in fields:
+            attribute = None
             # we exclude dynamic fields here because the proper fastquery
             # dereferencing happens in the `get_attribute` method now
             if (
