@@ -579,6 +579,8 @@ class WithDynamicSerializerMixin(
         id_fields = self._readable_id_fields
 
         for field in fields:
+            attribute = None
+
             # we exclude dynamic fields here because the proper fastquery
             # dereferencing happens in the `get_attribute` method now
             if (
@@ -602,6 +604,8 @@ class WithDynamicSerializerMixin(
                         if hasattr(instance, field.source):
                             attribute = getattr(instance, field.source)
                         else:
+                            # Fall back on DRF behavior
+                            attribute = field.get_attribute(instance)
                             print(
                                 'Missing %s from %s' % (
                                     field.field_name,
