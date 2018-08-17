@@ -7,6 +7,7 @@ import inflection
 from django.db import models
 from django.utils import six
 from django.utils.functional import cached_property
+from rest_framework import __version__ as drf_version
 from rest_framework import exceptions, fields, serializers
 from rest_framework.relations import RelatedField
 from rest_framework.fields import SkipField
@@ -32,6 +33,7 @@ OPTS = {
     'ENABLE_FIELDS_CACHE': os.environ.get('ENABLE_FIELDS_CACHE', False)
 }
 FIELDS_CACHE = {}
+DRF_VERSION = drf_version.split('.')
 
 
 class WithResourceKeyMixin(object):
@@ -577,6 +579,8 @@ class WithDynamicSerializerMixin(
         id_fields = self._readable_id_fields
 
         for field in fields:
+            attribute = None
+
             # we exclude dynamic fields here because the proper fastquery
             # dereferencing happens in the `get_attribute` method now
             if (
@@ -600,6 +604,8 @@ class WithDynamicSerializerMixin(
                         if hasattr(instance, field.source):
                             attribute = getattr(instance, field.source)
                         else:
+                            # Fall back on DRF behavior
+                            attribute = field.get_attribute(instance)
                             print(
                                 'Missing %s from %s' % (
                                     field.field_name,
@@ -621,32 +627,29 @@ class WithDynamicSerializerMixin(
 
         return ret
 
-    def to_representation(self, instance):
-        """Modified to_representation method.
+    @resettable_cached_property
+    def obj_cache(self):
+        # Note: This gets cached by resettable_cached_property so this
+        #       function only needs to return the initial value.
+        return {}
 
-        Arguments:
-            instance: A model instance or data object.
-        Returns:
-            Instance ID if the serializer is meant to represent its ID.
-            Otherwise, a tagged data dict representation.
-        """
-        if self.id_only():
-            return instance.pk
+    def _to_representation(self, instance):
+        """Uncached `to_representation`."""
+
+        if self.enable_optimization:
+            representation = self._faster_to_representation(instance)
         else:
-            if self.enable_optimization:
-                representation = self._faster_to_representation(instance)
-            else:
-                representation = super(
-                    WithDynamicSerializerMixin,
-                    self
-                ).to_representation(instance)
+            representation = super(
+                WithDynamicSerializerMixin,
+                self
+            ).to_representation(instance)
 
-            if settings.ENABLE_LINKS:
-                # TODO: Make this function configurable to support other
-                #       formats like JSON API link objects.
-                representation = merge_link_object(
-                    self, representation, instance
-                )
+        if settings.ENABLE_LINKS:
+            # TODO: Make this function configurable to support other
+            #       formats like JSON API link objects.
+            representation = merge_link_object(
+                self, representation, instance
+            )
 
         if self.debug:
             representation['_meta'] = {
@@ -661,6 +664,26 @@ class WithDynamicSerializerMixin(
             instance=instance,
             embed=self.embed
         )
+
+    def to_representation(self, instance):
+        """Modified to_representation method. Optionally may cache objects.
+
+        Arguments:
+            instance: A model instance or data object.
+        Returns:
+            Instance ID if the serializer is meant to represent its ID.
+            Otherwise, a tagged data dict representation.
+        """
+        if self.id_only():
+            return instance.pk
+
+        pk = getattr(instance, 'pk', None)
+        if not settings.ENABLE_SERIALIZER_OBJECT_CACHE or pk is None:
+            return self._to_representation(instance)
+        else:
+            if pk not in self.obj_cache:
+                self.obj_cache[pk] = self._to_representation(instance)
+            return self.obj_cache[pk]
 
     def to_internal_value(self, data):
         value = super(WithDynamicSerializerMixin, self).to_internal_value(data)
@@ -689,10 +712,12 @@ class WithDynamicSerializerMixin(
             **kwargs
         )
         view = self._context.get('view')
-        if update and view:
-            # Reload the object on update
-            # to get around prefetch cache issues
-            instance = self.instance = view.get_object()
+        if view and update:
+            if int(DRF_VERSION[0]) <= 3 and int(DRF_VERSION[1]) < 5:
+                # Reload the object on update
+                # to get around prefetch cache issues
+                # Fixed in DRF in 3.5.0
+                instance = self.instance = view.get_object()
         return instance
 
     def id_only(self):
