@@ -1,12 +1,12 @@
 version: 2.0
 
 jobs:
-  test:
+  build:
     working_directory: ~/dynamic-rest
     parallelism: 1
 
     docker:
-      - image: circleci/python:2.7.10
+      - image: circleci/python:2.7.15-jessie
     steps:
       - checkout
       - run:
@@ -17,10 +17,10 @@ jobs:
           command: sudo apt-get install python3-dev
       - run:
           name: Install from requirements.txt
-          command: pip install --src ${HOME}/.local/src --user --exists-action w -r requirements.txt --process-dependency-links
+          command: pip install --user --exists-action w -r requirements.txt
       - run:
           name: Run Setup
-          command: python setup.py develop
+          command: python setup.py develop --user
       - run:
           name: Install pyenv
           command: |
@@ -45,7 +45,7 @@ jobs:
 
 workflows:
   version: 2
-  test:
+  build-and-test:
     jobs:
-      - test:
+      - build:
           context: org-global
