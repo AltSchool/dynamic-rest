@@ -1,0 +1,51 @@
+version: 2.0
+
+jobs:
+  test:
+    working_directory: ~/dynamic-rest
+    parallelism: 1
+
+    docker:
+      - image: circleci/python:2.7.10
+    steps:
+      - checkout
+      - run:
+          name: Update PATH variable
+          command: echo 'export PATH="${HOME}/.local/bin:${PATH}"' >> ${BASH_ENV}
+      - run:
+          name: Install python3-devel
+          command: sudo apt-get install python3-dev
+      - run:
+          name: Install from requirements.txt
+          command: pip install --src ${HOME}/.local/src --user --exists-action w -r requirements.txt --process-dependency-links
+      - run:
+          name: Run Setup
+          command: python setup.py develop
+      - run:
+          name: Install pyenv
+          command: |
+            curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash
+            sudo ln -s $HOME/.pyenv/bin/pyenv /usr/local/bin/pyenv && eval "$(pyenv init -)"
+            eval "$(pyenv virtualenv-init -)"
+      - run:
+          name: Install python versions for testing
+          command: |
+            pyenv versions
+            pyenv install -s 2.7.10
+            pyenv install -s 3.3.3
+            pyenv install -s 3.4.3
+            pyenv install -s 3.5.0
+            pyenv local 2.7.10 3.3.3 3.4.3 3.5.0
+      - run:
+          name: Run Integration tests
+          command: ENABLE_INTEGRATION_TESTS=True py.test tests/integration
+      - run:
+          name: Run Tox Tests
+          command: tox
+
+workflows:
+  version: 2
+  test:
+    jobs:
+      - test:
+          context: org-global
