@@ -31,11 +31,13 @@ jobs:
           name: Install python versions for testing
           command: |
             pyenv versions
-            pyenv install -s 2.7.15
-            pyenv install -s 3.4.9
-            pyenv install -s 3.5.6
-            pyenv install -s 3.6.6
-            pyenv local  2.7.15  3.4.9  3.5.6  3.6.6
+            python_versions=$(cat .circleci/python-versions.txt)
+            echo "Python versions to install: $python_versions"
+            for python_version in $python_versions; do
+                echo "INSTALLING: Python $python_version"
+                pyenv install -s $python_version
+            done
+            pyenv local  $python_versions
       - run:
           name: Run Integration tests
           command: ENABLE_INTEGRATION_TESTS=True py.test tests/integration
