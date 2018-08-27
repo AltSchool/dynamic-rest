@@ -30,7 +30,7 @@ jobs:
       - restore_cache:
           name: Restore PyEnv Cache
           keys:
-              - v1-pyenv-cache-{{ checksum ".circleci/python-versions.txt" }}
+              - v1.1-pyenv-cache-{{ checksum ".circleci/python-versions.txt" }}
       - run:
           name: Install python versions for testing
           command: |
@@ -45,7 +45,7 @@ jobs:
             pyenv local  $python_versions
       - save_cache:
           name: Save PyEnv Cache
-          key: v1-pyenv-cache-{{ checksum ".circleci/python-versions.txt"}}
+          key: v1.1-pyenv-cache-{{ checksum ".circleci/python-versions.txt"}}
           paths:
               - "~/.pyenv"
 
