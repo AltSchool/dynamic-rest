@@ -32,10 +32,10 @@ jobs:
           command: |
             pyenv versions
             pyenv install -s 2.7.15
-            pyenv install -s 3.3.7
             pyenv install -s 3.4.9
             pyenv install -s 3.5.6
-            pyenv local 2.7.15 3.3.7 3.4.9 3.5.6
+            pyenv install -s 3.6.6
+            pyenv local  2.7.15  3.4.9  3.5.6  3.6.6
       - run:
           name: Run Integration tests
           command: ENABLE_INTEGRATION_TESTS=True py.test tests/integration
