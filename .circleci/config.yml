@@ -27,15 +27,28 @@ jobs:
             curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash
             sudo ln -s $HOME/.pyenv/bin/pyenv /usr/local/bin/pyenv && eval "$(pyenv init -)"
             eval "$(pyenv virtualenv-init -)"
+      - restore_cache:
+          name: Restore PyEnv Cache
+          keys:
+              - v1.1-pyenv-cache-{{ checksum ".circleci/python-versions.txt" }}
       - run:
           name: Install python versions for testing
           command: |
+            echo "PyEnv Versions already installed:"
             pyenv versions
-            pyenv install -s 2.7.10
-            pyenv install -s 3.3.3
-            pyenv install -s 3.4.3
-            pyenv install -s 3.5.0
-            pyenv local 2.7.10 3.3.3 3.4.3 3.5.0
+            python_versions=$(cat .circleci/python-versions.txt)
+            echo "Python versions to install: $python_versions"
+            for python_version in $python_versions; do
+                echo "INSTALLING: Python $python_version"
+                pyenv install -s $python_version
+            done
+            pyenv local  $python_versions
+      - save_cache:
+          name: Save PyEnv Cache
+          key: v1.1-pyenv-cache-{{ checksum ".circleci/python-versions.txt"}}
+          paths:
+              - "~/.pyenv"
+
       - run:
           name: Run Integration tests
           command: ENABLE_INTEGRATION_TESTS=True py.test tests/integration
