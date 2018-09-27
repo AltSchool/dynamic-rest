@@ -12,7 +12,7 @@ from django.utils import six
 from rest_framework import views
 from rest_framework.response import Response
 from rest_framework.reverse import reverse
-from rest_framework.routers import DefaultRouter, Route, replace_methodname
+from rest_framework.routers import DefaultRouter, Route
 
 from dynamic_rest.meta import get_model_table
 from dynamic_rest.conf import settings
@@ -20,6 +20,18 @@ from dynamic_rest.conf import settings
 directory = {}
 resource_map = {}
 resource_name_map = {}
+
+
+def replace_methodname(format_string, methodname):
+    """
+    Partially format a format_string, swapping out any
+    '{methodname}' or '{methodnamehyphen}' components.
+    """
+    methodnamehyphen = methodname.replace('_', '-')
+    ret = format_string
+    ret = ret.replace('{methodname}', methodname)
+    ret = ret.replace('{methodnamehyphen}', methodnamehyphen)
+    return ret
 
 
 def get_directory(request):
@@ -325,6 +337,7 @@ class DynamicRouter(DefaultRouter):
             routes.append(Route(
                 url=url,
                 mapping={'get': methodname},
+                detail=False,
                 name=replace_methodname(route_name, field_name),
                 initkwargs={}
             ))
