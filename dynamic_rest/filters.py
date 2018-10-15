@@ -6,7 +6,7 @@ from django.db.models import Q, Prefetch, Manager
 from django.utils import six
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from rest_framework.fields import BooleanField, NullBooleanField
+from rest_framework.fields import BooleanField, NullBooleanField, JSONField
 from rest_framework.filters import BaseFilterBackend, OrderingFilter
 
 from dynamic_rest.utils import is_truthy
@@ -123,6 +123,12 @@ class FilterNode(object):
             rewritten.append(model_field_name)
 
             if i == last:
+                break
+
+            # Can do subqueries on JSON fields, which are represented as
+            # dicts.  If so, break out here and let Django handle the query.
+            if isinstance(field, JSONField):
+                rewritten.extend(self.field[i+1:])
                 break
 
             # Recurse into nested field
