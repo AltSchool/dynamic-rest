@@ -1,5 +1,6 @@
 """This module contains custom filter backends."""
 
+import json
 from django.core.exceptions import ValidationError as InternalValidationError
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q, Prefetch, Manager
@@ -136,7 +137,7 @@ class FilterNode(object):
                     j += 1
                 if self.operator:
                     rewritten.append(self.operator)
-                return ('__'.join(rewritten), self.field)
+                return ('__'.join(rewritten), field)
             if isinstance(s, serializers.ListSerializer):
                 s = s.child
             if not s:
@@ -304,15 +305,24 @@ class DynamicFilterBackend(BaseFilterBackend):
           Q() instance or None if no inclusion or exclusion filters
           were specified.
         """
-
         def rewrite_filters(filters, serializer):
             out = {}
             for k, node in six.iteritems(filters):
                 filter_key, field = node.generate_query_key(serializer)
                 if isinstance(field, (BooleanField, NullBooleanField)):
                     node.value = is_truthy(node.value)
-                out[filter_key] = node.value
 
+                # Who knows what the type of node.value is if it's JSON?
+                # it'll always come to us as `unicode` type. Therefore, let's try to json parse it:
+                if isinstance(field, JSONField):
+                    try:
+                        node.value = json.loads(node.value)
+                        # it's a numeric type! json.loads will return the proper type
+                    except ValueError:
+                        # it's a string (json.loads('some string') will fail
+                        # just leave it as is (that is, a unicode string)
+                        pass
+                out[filter_key] = node.value
             return out
 
         q = q or Q()
