@@ -1,6 +1,4 @@
 """This module contains custom filter backends."""
-
-import json
 from django.core.exceptions import ValidationError as InternalValidationError
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q, Prefetch, Manager
@@ -237,7 +235,6 @@ class DynamicFilterBackend(BaseFilterBackend):
         out = TreeMap()
 
         for spec, value in six.iteritems(filters_map):
-
             # Inclusion or exclusion?
             if spec[0] == '-':
                 spec = spec[1:]
@@ -302,42 +299,40 @@ class DynamicFilterBackend(BaseFilterBackend):
           q: Q() object (optional)
 
         Returns:
-          Q() instance or None if no inclusion or exclusion filters
-          were specified.
+          Tuple of:
+              * Q() instance or None if no inclusion or exclusion filters
+                were specified.
+              * dictionary of {(field,): (operator, value)} for any json fields
         """
         def rewrite_filters(filters, serializer):
             out = {}
+            json_out = {}
             for k, node in six.iteritems(filters):
                 filter_key, field = node.generate_query_key(serializer)
                 if isinstance(field, (BooleanField, NullBooleanField)):
                     node.value = is_truthy(node.value)
 
-                # Who knows what the type of node.value is if it's JSON?
-                # it'll always come to us as `unicode` type. Therefore, let's try to json parse it:
                 if isinstance(field, JSONField):
-                    try:
-                        node.value = json.loads(node.value)
-                        # it's a numeric type! json.loads will return the proper type
-                    except ValueError:
-                        # it's a string (json.loads('some string') will fail
-                        # just leave it as is (that is, a unicode string)
-                        pass
-                out[filter_key] = node.value
-            return out
+                    json_out[tuple(node.field)] = (node.operator, node.value)
+                else:
+                    out[filter_key] = node.value
+            return out, json_out
 
         q = q or Q()
 
+        json_extras = None
+
         if not includes and not excludes:
-            return None
+            return None, None
 
         if includes:
-            includes = rewrite_filters(includes, serializer)
+            includes, json_extras = rewrite_filters(includes, serializer)
             q &= Q(**includes)
         if excludes:
-            excludes = rewrite_filters(excludes, serializer)
+            excludes, json_extras = rewrite_filters(excludes, serializer)
             for k, v in six.iteritems(excludes):
                 q &= ~Q(**{k: v})
-        return q
+        return q, json_extras
 
     def _create_prefetch(self, source, queryset):
         return Prefetch(source, queryset=queryset)
@@ -571,7 +566,7 @@ class DynamicFilterBackend(BaseFilterBackend):
             queryset = queryset.only(*only)
 
         # add request filters
-        query = self._filters_to_query(
+        query, json_extras = self._filters_to_query(
             includes=filters.get('_include'),
             excludes=filters.get('_exclude'),
             serializer=serializer
@@ -581,12 +576,38 @@ class DynamicFilterBackend(BaseFilterBackend):
         if extra_filters:
             query = extra_filters if not query else extra_filters & query
 
-        if query:
+        if query or json_extras:
             # Convert internal django ValidationError to
             # APIException-based one in order to resolve validation error
             # from 500 status code to 400.
             try:
                 queryset = queryset.filter(query)
+
+                if json_extras:
+                    extra_queries = []
+                    for json_field_names, (operator, value) in six.iteritems(json_extras):
+                        if not operator:
+                            query_operator = '='
+                            value = "'{}'".format(value)
+                        elif operator in ('startswith', 'istartswith'):
+                            query_operator = 'ILIKE' if operator[0] == 'i' else 'LIKE'
+                            value = "'{}%%'".format(value)
+                        elif operator in ('endswith', 'iendswith'):
+                            query_operator = 'ILIKE' if operator[0] == 'i' else 'LIKE'
+                            value = "'%%{}'".format(value)
+                        elif operator in ('contains', 'icontains'):
+                            query_operator = 'ILIKE' if operator[0] == 'i' else 'LIKE'
+                            value = "'%%{}%%'".format(value)
+                        else:
+                            raise InternalValidationError('Unsupported filter operation for nested JSON fields: {}'.format(operator))
+
+                        extra_query = []
+                        extra_query.append(json_field_names[0] + '->>')
+                        extra_query.append('->>'.join(["'{}'".format(k) for k in json_field_names[1:]]))
+                        extra_query.append(query_operator)
+                        extra_query.append(value)
+                        extra_queries.append(' '.join(extra_query))
+                    queryset = queryset.extra(where=extra_queries)
             except InternalValidationError as e:
                 raise ValidationError(
                     dict(e) if hasattr(e, 'error_dict') else list(e)
