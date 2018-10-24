@@ -122,17 +122,15 @@ class FilterNode(object):
             # and field.source would be None
             rewritten.append(model_field_name)
 
-            if i == last:
-                break
-
             # Recurse into nested field
-            s = getattr(field, 'serializer', None)
-            if isinstance(s, serializers.ListSerializer):
-                s = s.child
-            if not s:
-                raise ValidationError(
-                    "Invalid nested filter field: %s" % field_name
-                )
+            nested_serializer = getattr(field, 'serializer', None)
+            if nested_serializer:
+                if isinstance(nested_serializer, serializers.ListSerializer):
+                    nested_serializer = nested_serializer.child
+            else:
+                # this is not a nested field, but a Transform instead
+                rewritten.extend(self.field[i+1:])
+                break
 
         if self.operator:
             rewritten.append(self.operator)
@@ -161,10 +159,6 @@ class DynamicFilterBackend(BaseFilterBackend):
         'istartswith',
         'endswith',
         'iendswith',
-        'year',
-        'month',
-        'day',
-        'week_day',
         'regex',
         'range',
         'gt',
