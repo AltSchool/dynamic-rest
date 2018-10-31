@@ -352,10 +352,13 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         return prefetches
 
+    def _make_model_queryset(self, model):
+        return model.objects.all()
+
     def _build_implicit_queryset(self, model, requirements):
         """Build a queryset based on implicit requirements."""
 
-        queryset = model.objects.all()
+        queryset = self._make_model_queryset(model)
         prefetches = {}
         self._build_implicit_prefetches(
             model,
@@ -619,6 +622,12 @@ class FastDynamicFilterBackend(DynamicFilterBackend):
             queryset = FastQuery(queryset)
 
         return queryset
+
+    def _make_model_queryset(self, model):
+        queryset = super(FastDynamicFilterBackend, self)._make_model_queryset(
+            model
+        )
+        return FastQuery(queryset)
 
     def _serializer_filter(self, serializer=None, queryset=None):
         queryset.queryset = serializer.filter_queryset(
