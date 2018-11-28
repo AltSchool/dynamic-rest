@@ -537,6 +537,16 @@ You can use the `sort[]` feature to order your response by one or more fields. D
     ...
 ```
 
+For descending order, simply add a `-` sign. To sort by name in descending order for example
+
+```
+-->
+    GET /users/?sort[]=-name
+<--
+    200 OK
+    ...
+```
+
 ## Directory panel
 
 We love the DRF browsable API, but wish that it included a directory that would let you see your entire list of endpoints at a glance from any page.
