@@ -2,6 +2,7 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import QueryDict
 from django.utils import six
+from django.db import transaction, IntegrityError
 from rest_framework import exceptions, status, viewsets
 from rest_framework.exceptions import ValidationError
 from rest_framework.renderers import BrowsableAPIRenderer
@@ -16,6 +17,7 @@ from dynamic_rest.utils import is_truthy
 
 UPDATE_REQUEST_METHODS = ('PUT', 'PATCH', 'POST')
 DELETE_REQUEST_METHOD = 'DELETE'
+PATCH = 'PATCH'
 
 
 class QueryParams(QueryDict):
@@ -64,6 +66,7 @@ class WithDynamicViewSetMixin(object):
 
     DEBUG = 'debug'
     SIDELOADING = 'sideloading'
+    PATCH_ALL = 'patch-all'
     INCLUDE = 'include[]'
     EXCLUDE = 'exclude[]'
     FILTER = 'filter{}'
@@ -82,7 +85,8 @@ class WithDynamicViewSetMixin(object):
         PAGE,
         PER_PAGE,
         SORT,
-        SIDELOADING
+        SIDELOADING,
+        PATCH_ALL
     )
     meta = None
     filter_backends = (DynamicFilterBackend, DynamicSortingFilter)
@@ -254,6 +258,24 @@ class WithDynamicViewSetMixin(object):
         self._request_fields = request_fields
         return request_fields
 
+    def get_request_patch_all(self):
+        patch_all = self.get_request_feature(self.PATCH_ALL)
+        if not patch_all:
+            return None
+        patch_all = patch_all.lower()
+        if patch_all == 'query':
+            pass
+        elif is_truthy(patch_all):
+            patch_all = True
+        else:
+            raise exceptions.ParseError(
+                '"%s" is not valid for %s' % (
+                    patch_all,
+                    self.PATCH_ALL
+                )
+            )
+        return patch_all
+
     def get_request_debug(self):
         debug = self.get_request_feature(self.DEBUG)
         return is_truthy(debug) if debug is not None else None
@@ -397,6 +419,7 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
 
     ENABLE_BULK_PARTIAL_CREATION = settings.ENABLE_BULK_PARTIAL_CREATION
     ENABLE_BULK_UPDATE = settings.ENABLE_BULK_UPDATE
+    ENABLE_PATCH_ALL = settings.ENABLE_PATCH_ALL
 
     def _get_bulk_payload(self, request):
         plural_name = self.get_serializer_class().get_plural_name()
@@ -418,36 +441,146 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         self.perform_update(serializer)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
+    def _validate_patch_all(self, data):
+        if not isinstance(data, dict):
+            raise ValidationError(
+                'Patch-all data must be in object form'
+            )
+        serializer = self.get_serializer()
+        fields = serializer.get_all_fields()
+        validated = {}
+        for name, value in six.iteritems(data):
+            field = fields.get(name, None)
+            if field is None:
+                raise ValidationError(
+                    'Unknown field: "%s"' % name
+                )
+            source = field.source or name
+            if source == '*':
+                raise ValidationError(
+                    'Cannot update field: "%s"' % name
+                )
+            validated[source] = value
+        return validated
+
+    def _patch_all_query(self, queryset, data):
+        # update by queryset
+        try:
+            return queryset.update(**data)
+        except Exception as e:
+            raise ValidationError(
+                'Failed to bulk-update records:\n'
+                '%s\n'
+                'Data: %s' % (
+                    str(e),
+                    str(data)
+                )
+            )
+
+    def _patch_all_loop(self, queryset, data):
+        # update by transaction loop
+        updated = 0
+        try:
+            with transaction.atomic():
+                for record in queryset:
+                    for k, v in six.iteritems(data):
+                        setattr(record, k, v)
+                    record.save()
+                    updated += 1
+                return updated
+        except IntegrityError as e:
+            raise ValidationError(
+                'Failed to update records:\n'
+                '%s\n'
+                'Data: %s' % (
+                    str(e),
+                    str(data)
+                )
+            )
+
+    def _patch_all(self, data, query=False):
+        queryset = self.filter_queryset(self.get_queryset())
+        data = self._validate_patch_all(data)
+        updated = (
+            self._patch_all_query(queryset, data) if query
+            else self._patch_all_loop(queryset, data)
+        )
+        return Response({
+            'meta': {
+                'updated': updated
+            }
+        }, status=status.HTTP_200_OK)
+
     def update(self, request, *args, **kwargs):
-        """Either update  a single or many model instances. Use list to
-        indicate bulk update.
+        """Update one or more model instances.
+
+        If ENABLE_BULK_UPDATE is set, multiple previously-fetched records
+        may be updated in a single call, provided their IDs.
+
+        If ENABLE_PATCH_ALL is set, multiple records
+        may be updated in a single PATCH call, even without knowing their IDs.
+
+        *WARNING*: ENABLE_PATCH_ALL should be considered an advanced feature
+        and used with caution. This feature must be enabled at the viewset level
+        and must also be requested explicitly by the client
+        via the "patch_all" query parameter.
+
+        This parameter can have one of the following values:
+
+            true (or 1): records will be fetched and then updated in a transaction loop
+              - The `Model.save` method will be called and model signals will run
+              - This can be slow if there are too many signals or many records in the query
+              - This is considered the more safe and default behavior
+            query: records will be updated in a single query
+              - The `QuerySet.update` method will be called and model signals will not run
+              - This will be fast, but may break data constraints that are controlled by signals
+              - This is considered unsafe but useful in certain situations
 
         Examples:
 
-        PATCH /dogs/1/
-        {
-            'fur': 'white'
-        }
+        Update one dog:
 
-        PATCH /dogs/
-        {
-            'dogs': [
+            PATCH /dogs/1/
+            {
+                'fur': 'white'
+            }
+
+        Update many dogs by ID:
+
+            PATCH /dogs/
+            [
                 {'id': 1, 'fur': 'white'},
                 {'id': 2, 'fur': 'black'},
                 {'id': 3, 'fur': 'yellow'}
             ]
-        }
 
-        PATCH /dogs/?filter{fur.contains}=brown
-        [
-            {'id': 3, 'fur': 'gold'}
-        ]
-        """
+        Update all dogs in a query:
+
+            PATCH /dogs/?filter{fur.contains}=brown&patch-all=true
+            {
+                'fur': 'gold'
+            }
+        """  # noqa
         if self.ENABLE_BULK_UPDATE:
-            partial = 'partial' in kwargs
-            bulk_payload = self._get_bulk_payload(request)
-            if bulk_payload:
-                return self._bulk_update(bulk_payload, partial)
+            patch_all = self.get_request_patch_all()
+            if (
+                self.ENABLE_PATCH_ALL and
+                patch_all
+            ):
+                # patch all update
+                data = request.data
+                return self._patch_all(
+                    data,
+                    query=(patch_all == 'query')
+                )
+            else:
+                # bulk payload update
+                partial = 'partial' in kwargs
+                bulk_payload = self._get_bulk_payload(request)
+                if bulk_payload:
+                    return self._bulk_update(bulk_payload, partial)
+
+        # singular update
         return super(DynamicModelViewSet, self).update(request, *args,
                                                        **kwargs)
 

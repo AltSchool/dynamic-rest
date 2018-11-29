@@ -151,6 +151,7 @@ class DogViewSet(DynamicModelViewSet):
     model = Dog
     serializer_class = DogSerializer
     queryset = Dog.objects.all()
+    ENABLE_PATCH_ALL = True
 
 
 class HorseViewSet(DynamicModelViewSet):
