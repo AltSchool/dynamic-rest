@@ -525,7 +525,6 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         and must also be requested explicitly by the client
         via the "patch-all" query parameter.
 
-
         This parameter can have one of the following values:
 
             true (or 1): records will be fetched and then updated in a transaction loop
