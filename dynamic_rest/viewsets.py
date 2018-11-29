@@ -523,7 +523,8 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         *WARNING*: ENABLE_PATCH_ALL should be considered an advanced feature
         and used with caution. This feature must be enabled at the viewset level
         and must also be requested explicitly by the client
-        via the "patch_all" query parameter.
+        via the "patch-all" query parameter.
+
 
         This parameter can have one of the following values:
 
@@ -535,6 +536,10 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
               - The `QuerySet.update` method will be called and model signals will not run
               - This will be fast, but may break data constraints that are controlled by signals
               - This is considered unsafe but useful in certain situations
+
+        The server's successful response to a patch-all request
+        will NOT include any individual records. Instead, the response content will contain
+        a "meta" object with an "updated" count of updated records.
 
         Examples:
 
