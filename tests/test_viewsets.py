@@ -233,7 +233,7 @@ class BulkUpdateTestCase(TestCase):
         self.assertEqual(
             response.status_code, status.HTTP_400_BAD_REQUEST
         )
-        self.assertTrue('fury' in response.content)
+        self.assertTrue('fury' in response.content.decode('utf-8'))
 
         # non-source field
         data = {'is_red': True, 'fur': 'red'}
@@ -245,7 +245,7 @@ class BulkUpdateTestCase(TestCase):
         self.assertEqual(
             response.status_code, status.HTTP_400_BAD_REQUEST
         )
-        self.assertTrue('is_red' in response.content)
+        self.assertTrue('is_red' in response.content.decode('utf-8'))
 
     def test_patch_all(self):
         # the correct format for a patch-all request
