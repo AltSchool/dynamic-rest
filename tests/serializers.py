@@ -258,9 +258,13 @@ class DogSerializer(DynamicModelSerializer):
 
     class Meta:
         model = Dog
-        fields = ('id', 'name', 'origin', 'fur')
+        fields = ('id', 'name', 'origin', 'fur', 'is_red')
 
     fur = CharField(source='fur_color')
+    is_red = DynamicMethodField(deferred=True, requires=['fur_color'])
+
+    def get_is_red(self, instance):
+        return instance.fur_color == 'red'
 
 
 class HorseSerializer(DynamicModelSerializer):

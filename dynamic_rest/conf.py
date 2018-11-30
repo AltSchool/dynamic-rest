@@ -32,6 +32,9 @@ DYNAMIC_REST = {
     # ENABLE_BULK_UPDATE: enable/disable update in bulk
     'ENABLE_BULK_UPDATE': True,
 
+    # ENABLE_PATCH_ALL: enable/disable patch by queryset
+    'ENABLE_PATCH_ALL': False,
+
     # DEFER_MANY_RELATIONS: automatically defer many-relations, unless
     # `deferred=False` is explicitly set on the field.
     'DEFER_MANY_RELATIONS': False,

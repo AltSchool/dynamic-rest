@@ -198,9 +198,10 @@ class BulkUpdateTestCase(TestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(Dog.objects.get(id=3).fur_color == 'gold')
 
-    def test_bulk_update_fail_without_lookup_attribute(self):
+    def test_bulk_update_fail_without_query_param(self):
         '''
-        Test that PATCH request will fail if lookup attribute wasn't provided.
+        Test that an update-all PATCH request will fail
+        if not explicitly using update-all syntax
         '''
         data = [{'fur': 'grey'}]
         response = self.client.patch(
@@ -209,6 +210,64 @@ class BulkUpdateTestCase(TestCase):
             content_type='application/json'
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_patch_all_validation(self):
+        # wrong format
+        data = [{'fur': 'grey'}]
+        response = self.client.patch(
+            '/dogs/?patch-all=true',
+            json.dumps(data),
+            content_type='application/json'
+        )
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST
+        )
+
+        # wrong field
+        data = {'fury': 'grey'}
+        response = self.client.patch(
+            '/dogs/?patch-all=true',
+            json.dumps(data),
+            content_type='application/json'
+        )
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST
+        )
+        self.assertTrue('fury' in response.content.decode('utf-8'))
+
+        # non-source field
+        data = {'is_red': True, 'fur': 'red'}
+        response = self.client.patch(
+            '/dogs/?patch-all=true',
+            json.dumps(data),
+            content_type='application/json'
+        )
+        self.assertEqual(
+            response.status_code, status.HTTP_400_BAD_REQUEST
+        )
+        self.assertTrue('is_red' in response.content.decode('utf-8'))
+
+    def test_patch_all(self):
+        # the correct format for a patch-all request
+        data = {'fur': 'grey'}
+        response = self.client.patch(
+            '/dogs/?patch-all=true',
+            json.dumps(data),
+            content_type='application/json'
+        )
+        self.assertEqual(
+            response.status_code, status.HTTP_200_OK, response.content
+        )
+        content = json.loads(response.content.decode('utf-8'))
+        num_dogs = Dog.objects.all().count()
+        self.assertEqual(
+            num_dogs,
+            content['meta']['updated']
+        )
+        self.assertEqual(
+            num_dogs,
+            Dog.objects.filter(fur_color='grey').count(),
+        )
 
 
 class BulkCreationTestCase(TestCase):

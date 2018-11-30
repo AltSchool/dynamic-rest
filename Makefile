@@ -76,7 +76,7 @@ integration: install lint
 
 test_just: install lint
 	$(call header,"Running unit tests")
-	@$(INSTALL_DIR)/bin/py.test --cov=$(APP_NAME) -k $(TEST) --ignore=build --ignore=benchmarks
+	@$(INSTALL_DIR)/bin/py.test --cov=$(APP_NAME) -k $(TEST) --ignore=build --ignore=benchmarks --nomigrations
 
 # Run all tests (tox)
 tox: install
