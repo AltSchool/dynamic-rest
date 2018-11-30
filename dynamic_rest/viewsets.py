@@ -456,7 +456,7 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
                     'Unknown field: "%s"' % name
                 )
             source = field.source or name
-            if source == '*':
+            if source == '*' or field.read_only:
                 raise ValidationError(
                     'Cannot update field: "%s"' % name
                 )
@@ -567,11 +567,8 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         """  # noqa
         if self.ENABLE_BULK_UPDATE:
             patch_all = self.get_request_patch_all()
-            if (
-                self.ENABLE_PATCH_ALL and
-                patch_all
-            ):
-                # patch all update
+            if self.ENABLE_PATCH_ALL and patch_all:
+                # patch-all update
                 data = request.data
                 return self._patch_all(
                     data,
