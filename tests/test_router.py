@@ -90,5 +90,8 @@ class TestDynamicRouter(APITestCase):
                     'get': 'retrieve'
                 }
             ],
-            [route.mapping for route in DefaultRouter.routes if isinstance(route, Route)]
+            [
+                route.mapping for route in DefaultRouter.routes
+                if isinstance(route, Route)
+            ]
         )
