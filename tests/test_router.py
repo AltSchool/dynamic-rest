@@ -79,8 +79,16 @@ class TestDynamicRouter(APITestCase):
 
         method(
             [
-                {'post': 'create', 'get': 'list'},
-                {'put': 'update', 'patch': 'partial_update', 'delete': 'destroy', 'get': 'retrieve'}
+                {
+                    'post': 'create',
+                    'get': 'list'
+                },
+                {
+                    'put': 'update',
+                    'patch': 'partial_update',
+                    'delete': 'destroy',
+                    'get': 'retrieve'
+                }
             ],
             [route.mapping for route in DefaultRouter.routes if isinstance(route, Route)]
         )
