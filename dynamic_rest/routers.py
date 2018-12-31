@@ -1,4 +1,5 @@
 """This module contains custom router classes."""
+import copy
 from collections import OrderedDict
 
 # Backwards compatability for django < 1.10.x
@@ -75,7 +76,7 @@ def modify_list_route(routes):
 
 
 class DynamicRouter(DefaultRouter):
-    routes = list(DefaultRouter.routes)
+    routes = copy.deepcopy(DefaultRouter.routes)
     modify_list_route(routes)
 
     def __init__(self, *args, **kwargs):
