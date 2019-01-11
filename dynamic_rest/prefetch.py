@@ -488,7 +488,8 @@ class FastQuery(FastQueryCompatMixin, object):
         to_field = prefetch.field
         object_map = defaultdict(FastList)
         for remote_id, local_id in joins:
-            object_map[local_id].append(id_map[remote_id])
+            if remote_id in id_map:
+                object_map[local_id].append(id_map[remote_id])
 
         # Merge into working data set.
         for row in data:
