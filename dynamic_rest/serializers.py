@@ -2,7 +2,6 @@
 import copy
 import inspect
 import os
-from uuid import UUID
 
 import inflection
 from django.db import models
@@ -103,7 +102,7 @@ class DynamicListSerializer(
         lookup_attr = getattr(self.child.Meta, 'update_lookup_field', 'id')
 
         lookup_objects = {
-            entry.pop(lookup_attr): entry
+            str(entry.pop(lookup_attr)): entry
             for entry in validated_data
         }
 
@@ -115,9 +114,14 @@ class DynamicListSerializer(
         # Since this method is given a queryset which can have many
         # model instances, first find all objects to update
         # and only then update the models.
-        objects_to_update = queryset.filter(
-            **{'{}__in'.format(lookup_attr): lookup_keys}
-        )
+        try:
+            objects_to_update = queryset.filter(
+                **{'{}__in'.format(lookup_attr): lookup_keys}
+            )
+        except Exception:
+            raise exceptions.ValidationError(
+                'Invalid lookup keys: %s' % ', '.join(lookup_keys)
+            )
 
         if len(lookup_keys) != objects_to_update.count():
             raise exceptions.ValidationError(
@@ -128,8 +132,7 @@ class DynamicListSerializer(
         updated_objects = []
         for object_to_update in objects_to_update:
             lookup_key = getattr(object_to_update, lookup_attr)
-            if isinstance(lookup_key, UUID):
-                lookup_key = str(lookup_key)
+            lookup_key = str(lookup_key)
             data = lookup_objects.get(lookup_key)
             # Use model serializer to actually update the model
             # in case that method is overwritten.

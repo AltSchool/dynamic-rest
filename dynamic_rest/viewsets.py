@@ -582,8 +582,18 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
                     return self._bulk_update(bulk_payload, partial)
 
         # singular update
-        return super(DynamicModelViewSet, self).update(request, *args,
-                                                       **kwargs)
+        try:
+            return super(DynamicModelViewSet, self).update(request, *args,
+                                                           **kwargs)
+        except AssertionError as e:
+            if 'lookup_field' in str(e):
+                # return 400s instead of 500s for update calls
+                # without proper lookup
+                raise exceptions.ValidationError(
+                    'Could not identify record to update'
+                )
+            else:
+                raise
 
     def _create_many(self, data):
         items = []
