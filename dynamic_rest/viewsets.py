@@ -582,8 +582,20 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
                     return self._bulk_update(bulk_payload, partial)
 
         # singular update
-        return super(DynamicModelViewSet, self).update(request, *args,
-                                                       **kwargs)
+        try:
+            return super(DynamicModelViewSet, self).update(request, *args,
+                                                           **kwargs)
+        except AssertionError as e:
+            err = str(e)
+            if 'Fix your URL conf' in err:
+                # this error is returned by DRF if a client
+                # makes an update request (PUT or PATCH) without an ID
+                # since DREST supports bulk updates with IDs contained in data,
+                # we return a 400 instead of a 500 for this case,
+                # as this is not considered a misconfiguration
+                raise exceptions.ValidationError(err)
+            else:
+                raise
 
     def _create_many(self, data):
         items = []

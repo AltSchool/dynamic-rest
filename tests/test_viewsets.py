@@ -176,7 +176,8 @@ class BulkUpdateTestCase(TestCase):
         )
 
     def test_bulk_update_drest_style(self):
-        data = {'dogs': [{'id': 1, 'fur': 'grey'}, {'id': 2, 'fur': 'grey'}]}
+        # test to make sure both string '2' and integer 1 resolve correctly
+        data = {'dogs': [{'id': 1, 'fur': 'grey'}, {'id': '2', 'fur': 'grey'}]}
         response = self.client.patch(
             '/dogs/',
             json.dumps(data),
@@ -203,13 +204,13 @@ class BulkUpdateTestCase(TestCase):
         Test that an update-all PATCH request will fail
         if not explicitly using update-all syntax
         '''
-        data = [{'fur': 'grey'}]
-        response = self.client.patch(
-            '/dogs/?filter{fur.contains}=brown',
-            json.dumps(data),
-            content_type='application/json'
-        )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        for data in [{'fur': 'grey'}], []:
+            response = self.client.patch(
+                '/dogs/?filter{fur.contains}=brown',
+                json.dumps(data),
+                content_type='application/json'
+            )
+            self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_patch_all_validation(self):
         # wrong format
