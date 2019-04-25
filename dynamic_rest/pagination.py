@@ -30,10 +30,17 @@ class DynamicPageNumberPagination(PageNumberPagination):
 
     def get_paginated_response(self, data):
         meta = self.get_page_metadata()
-        return Response(OrderedDict([
-            ('count', self.page.paginator.count),
-            ('next', self.get_next_link()),
-            ('previous', self.get_previous_link()),
-            ('results', data),
-            ('meta', meta)
-        ]))
+        if isinstance(data, list):
+            data = OrderedDict([
+                ('count', self.page.paginator.count),
+                ('next', self.get_next_link()),
+                ('previous', self.get_previous_link()),
+                ('results', data),
+                ('meta', meta)
+            ])
+        else:
+            if 'meta' in data:
+                data['meta'].update(meta)
+            else:
+                data['meta'] = meta
+        return Response(data)
