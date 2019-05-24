@@ -6,7 +6,7 @@ jobs:
     parallelism: 1
 
     docker:
-      - image: circleci/python:3.7.3
+      - image: circleci/python:2.7.15-jessie
     steps:
       - checkout
       - run:
@@ -42,6 +42,19 @@ jobs:
                 echo "INSTALLING: Python $python_version"
                 pyenv install -s $python_version
             done
+            pyenv local  $python_versions
+      - run:
+          name: Install Python 3.7.x
+          command: |
+            sudo apt-get update
+            sudo apt-get upgrade
+            sudo apt-get dist-upgrade
+            sudo apt-get install build-essential checkinstall python-dev python-setuptools python-pip python-smbus
+            sudo apt-get install libncursesw5-dev libgdbm-dev libc6-dev
+            sudo apt-get install zlib1g-dev libsqlite3-dev tk-dev
+            sudo apt-get install libssl-dev openssl
+            sudo apt-get install libffi-dev
+            pyenv install 3.7.3
             pyenv local  $python_versions
       - save_cache:
           name: Save PyEnv Cache
