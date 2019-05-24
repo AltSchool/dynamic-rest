@@ -62,9 +62,9 @@ but it can be used to provide fast and flexible CRUD operations to any consumer 
 
 # Requirements
 
-* Python (2.7, 3.3, 3.4, 3.5)
-* Django (1.8, 1.9, 1.10, 1.11)
-* Django REST Framework (3.1, 3.2, 3.3, 3.4, 3.5, 3.6)
+* Python (2.7, 3.4, 3.5, 3.6)
+* Django (1.8, 1.9, 1.10, 1.11, 2.0, 2.1)
+* Django REST Framework (3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9)
 
 # Installation
 
@@ -686,6 +686,20 @@ Not all versions of Python, Django, and DRF are compatible. Here are the combina
 | 3.5    | 1.11   | 3.4 | YES |
 | 3.5    | 1.11   | 3.5 | YES |
 | 3.5    | 1.11   | 3.6 | YES |
+| 3.5    | 2.0    | 3.7 | YES |
+| 3.5    | 2.0    | 3.8 | YES |
+| 3.5    | 2.0    | 3.9 | YES |
+| 3.5    | 2.1    | 3.7 | YES |
+| 3.5    | 2.1    | 3.8 | YES |
+| 3.5    | 2.1    | 3.9 | YES |
+| 3.6    | 1.11   | 3.7 | YES |
+| 3.6    | 2.0    | 3.7 | YES |
+| 3.6    | 2.1    | 3.7 | YES |
+| 3.6    | 1.11   | 3.8 | YES |
+| 3.6    | 2.0    | 3.8 | YES |
+| 3.6    | 2.1    | 3.8 | YES |
+| 3.6    | 2.0    | 3.9 | YES |
+| 3.6    | 2.1    | 3.9 | YES |
 
 * 1: Django 1.9 is not compatible with DRF 3.1
 * 2: Django 1.9 is not compatible with Python 3.3
