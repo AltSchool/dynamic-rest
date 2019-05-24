@@ -6,7 +6,7 @@ jobs:
     parallelism: 1
 
     docker:
-      - image: circleci/python:2.7.15-jessie
+      - image: circleci/python:3.7.3
     steps:
       - checkout
       - run:
