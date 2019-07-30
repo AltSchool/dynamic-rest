@@ -27,7 +27,7 @@ class DJBlueprintsTestCase(TestCase):
         # generate an API endpoint for the generated model
         application.execute('generate api v0 foo --not-interactive')
         # start the server
-        server = application.execute('serve 9123', async=True)
+        server = application.execute('serve 9123', run_async=True)
         time.sleep(2)
 
         # verify a simple POST flow for the "foo" resource
