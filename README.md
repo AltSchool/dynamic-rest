@@ -29,7 +29,7 @@ See http://dynamic-rest.readthedocs.org for full documentation.
   - [Directory panel](#directory-panel)
   - [Optimizations](#optimizations)
 - [Settings](#settings)
-- [Compatibility table](#compatibility-table)
+- [Compatibility](#compatibility)
 - [Contributing](#contributing)
 - [License](#license)
 
@@ -625,87 +625,16 @@ DYNAMIC_REST = {
 }
 ```
 
-# Compatibility table
+# Compatibility 
 
-Not all versions of Python, Django, and DRF are compatible. Here are the combinations you can use reliably with DREST (all tested by our tox configuration):
+We actively support the following:
 
-| Python | Django | DRF | OK  |
-| ------ | ------ | --- | --- |
-| 2.7    | 1.8    | 3.1 | YES |
-| 2.7    | 1.8    | 3.2 | YES |
-| 2.7    | 1.8    | 3.3 | YES |
-| 2.7    | 1.8    | 3.4 | YES |
-| 2.7    | 1.9    | 3.1 | NO<sup>1</sup> |
-| 2.7    | 1.9    | 3.2 | YES |
-| 2.7    | 1.9    | 3.3 | YES |
-| 2.7    | 1.9    | 3.4 | YES |
-| 2.7    | 1.10   | 3.2 | NO<sup>3</sup> |
-| 2.7    | 1.10   | 3.3 | NO<sup>3</sup> |
-| 2.7    | 1.10   | 3.4 | YES |
-| 2.7    | 1.10   | 3.5 | YES |
-| 2.7    | 1.10   | 3.6 | YES |
-| 2.7    | 1.11   | 3.4 | YES |
-| 2.7    | 1.11   | 3.5 | YES |
-| 2.7    | 1.11   | 3.6 | YES |
-| 3.3    | 1.8    | 3.1 | YES |
-| 3.3    | 1.8    | 3.2 | YES |
-| 3.3    | 1.8    | 3.3 | YES |
-| 3.3    | 1.8    | 3.4 | YES |
-| 3.3    | 1.9    | x.x | NO<sup>2</sup> |
-| 3.3    | 1.10   | x.x | NO<sup>4</sup> |
-| 3.3    | 1.11   | x.x | NO<sup>5</sup> |
-| 3.4    | 1.8    | 3.1 | YES |
-| 3.4    | 1.8    | 3.2 | YES |
-| 3.4    | 1.8    | 3.3 | YES |
-| 3.4    | 1.8    | 3.4 | YES |
-| 3.4    | 1.9    | 3.1 | NO<sup>1</sup> |
-| 3.4    | 1.9    | 3.2 | YES |
-| 3.4    | 1.9    | 3.3 | YES |
-| 3.4    | 1.9    | 3.4 | YES |
-| 3.4    | 1.10   | 3.2 | NO<sup>3</sup> |
-| 3.4    | 1.10   | 3.3 | NO<sup>3</sup> |
-| 3.4    | 1.10   | 3.4 | YES |
-| 3.4    | 1.10   | 3.5 | YES |
-| 3.4    | 1.10   | 3.6 | YES |
-| 3.4    | 1.11   | 3.3 | NO<sup>3</sup> |
-| 3.4    | 1.11   | 3.4 | YES |
-| 3.4    | 1.11   | 3.5 | YES |
-| 3.5    | 1.8    | 3.1 | YES |
-| 3.5    | 1.8    | 3.2 | YES |
-| 3.5    | 1.8    | 3.3 | YES |
-| 3.5    | 1.8    | 3.4 | YES |
-| 3.5    | 1.9    | 3.1 | NO<sup>1</sup> |
-| 3.5    | 1.9    | 3.2 | YES |
-| 3.5    | 1.9    | 3.3 | YES |
-| 3.5    | 1.9    | 3.4 | YES |
-| 3.5    | 1.10   | 3.2 | NO<sup>3</sup> |
-| 3.5    | 1.10   | 3.3 | NO<sup>3</sup> |
-| 3.5    | 1.10   | 3.4 | YES |
-| 3.5    | 1.10   | 3.5 | YES |
-| 3.5    | 1.10   | 3.6 | YES |
-| 3.5    | 1.11   | 3.4 | YES |
-| 3.5    | 1.11   | 3.5 | YES |
-| 3.5    | 1.11   | 3.6 | YES |
-| 3.5    | 2.0    | 3.7 | YES |
-| 3.5    | 2.0    | 3.8 | YES |
-| 3.5    | 2.0    | 3.9 | YES |
-| 3.5    | 2.1    | 3.7 | YES |
-| 3.5    | 2.1    | 3.8 | YES |
-| 3.5    | 2.1    | 3.9 | YES |
-| 3.6    | 1.11   | 3.7 | YES |
-| 3.6    | 2.0    | 3.7 | YES |
-| 3.6    | 2.1    | 3.7 | YES |
-| 3.6    | 1.11   | 3.8 | YES |
-| 3.6    | 2.0    | 3.8 | YES |
-| 3.6    | 2.1    | 3.8 | YES |
-| 3.6    | 2.0    | 3.9 | YES |
-| 3.6    | 2.1    | 3.9 | YES |
+* Python: 2.7, 3.5, 3.6, 3.7 
+* Django: 1.11, 2.0, 2.2
+* Django Rest Framework: 3.4 ~ 3.10
 
-* 1: Django 1.9 is not compatible with DRF 3.1
-* 2: Django 1.9 is not compatible with Python 3.3
-* 3: Django 1.10 is only compatible with DRF 3.4+
-* 4: Django 1.10 requires Python 2.7, 3.4, 3.5
-* 5: Django 1.11 requires Python 2.7, 3.4, 3.5, 3.6
+**Note:** Some combinations are not supported. For up-to-date information on actively supported/tested combinations, see the tox.ini file. 
+
 # Contributing
 
 See [Contributing](CONTRIBUTING.md).

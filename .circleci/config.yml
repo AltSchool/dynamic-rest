@@ -6,7 +6,7 @@ jobs:
     parallelism: 1
 
     docker:
-      - image: circleci/python:2.7.15-jessie
+      - image: circleci/python:2.7.16-stretch
     steps:
       - checkout
       - run:
@@ -54,7 +54,7 @@ jobs:
           command: ENABLE_INTEGRATION_TESTS=True py.test tests/integration
       - run:
           name: Run Tox Tests
-          command: tox
+          command: tox --parallel=4
 
 workflows:
   version: 2
