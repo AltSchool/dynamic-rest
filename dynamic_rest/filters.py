@@ -173,6 +173,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         'lte',
         'isnull',
         'eq',
+        'iexact',
         None,
     )
 
