@@ -59,11 +59,15 @@ class LocationSerializer(DynamicModelSerializer):
             'cats', 'friendly_cats', 'bad_cats'
         )
 
+    def filter_queryset(self, query):
+        return query.exclude(name='Atlantis')
+
     users = DynamicRelationField(
         'UserSerializer',
         source='user_set',
         many=True,
-        deferred=True)
+        deferred=True
+    )
     user_count = CountField('users', required=False, deferred=True)
     address = DynamicField(source='blob', required=False, deferred=True)
     cats = DynamicRelationField(
