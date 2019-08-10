@@ -15,6 +15,8 @@ from dynamic_rest.meta import (
 
 class FastObject(dict):
 
+    IS_FAST = True
+
     def __init__(self, *args, **kwargs):
         self.pk_field = kwargs.pop('pk_field', 'id')
         return super(FastObject, self).__init__(*args)

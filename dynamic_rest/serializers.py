@@ -21,8 +21,9 @@ from dynamic_rest.bases import (
 )
 from dynamic_rest.conf import settings
 from dynamic_rest.fields import (
-    DynamicRelationField,
     DynamicGenericRelationField,
+    DynamicMethodField,
+    DynamicRelationField,
 )
 from dynamic_rest.links import merge_link_object
 from dynamic_rest.meta import get_model_table
@@ -548,7 +549,7 @@ class WithDynamicSerializerMixin(
             if not field.write_only
         ]
 
-    @cached_property
+    @resettable_cached_property
     def _readable_id_fields(self):
         fields = self._readable_fields
         return {
@@ -563,6 +564,21 @@ class WithDynamicSerializerMixin(
                 )
             )
         }
+
+    @resettable_cached_property
+    def _readable_static_fields(self):
+        return {
+            field for field in self._readable_fields
+            if not isinstance(field, (
+                DynamicGenericRelationField,
+                DynamicMethodField,
+                DynamicRelationField
+            ))
+        } | self._readable_id_fields
+
+    @resettable_cached_property
+    def _simple_fields(self):
+        return set(getattr(self.Meta, 'simple_fields', []))
 
     def _faster_to_representation(self, instance):
         """Modified to_representation with optimizations.
@@ -581,21 +597,22 @@ class WithDynamicSerializerMixin(
         ret = {}
         fields = self._readable_fields
 
-        is_fast = isinstance(instance, prefetch.FastObject)
+        is_fast = getattr(instance, 'IS_FAST', False)
         id_fields = self._readable_id_fields
+
+        # static fields are non-Dynamic fields
+        static_fields = self._readable_static_fields
+
+        # fields declared as being "simple" (i.e. doesn't require
+        # field.to_representation() to be serializable)
+        simple_field_names = self._simple_fields
 
         for field in fields:
             attribute = None
 
             # we exclude dynamic fields here because the proper fastquery
             # dereferencing happens in the `get_attribute` method now
-            if (
-                is_fast and
-                not isinstance(
-                    field,
-                    (DynamicGenericRelationField, DynamicRelationField)
-                )
-            ):
+            if (is_fast and field in static_fields):
                 if field in id_fields and field.source not in instance:
                     # TODO - make better.
                     attribute = instance.get(field.source + '_id')
@@ -628,6 +645,9 @@ class WithDynamicSerializerMixin(
                 # We skip `to_representation` for `None` values so that
                 # fields do not have to explicitly deal with that case.
                 ret[field.field_name] = None
+            elif field.field_name in simple_field_names:
+                ret[field.field_name] = attribute
+                continue
             else:
                 ret[field.field_name] = field.to_representation(attribute)
 
