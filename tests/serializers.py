@@ -63,7 +63,8 @@ class LocationSerializer(DynamicModelSerializer):
         'UserSerializer',
         source='user_set',
         many=True,
-        deferred=True)
+        deferred=True
+    )
     user_count = CountField('users', required=False, deferred=True)
     address = DynamicField(source='blob', required=False, deferred=True)
     cats = DynamicRelationField(
@@ -72,6 +73,9 @@ class LocationSerializer(DynamicModelSerializer):
         'CatSerializer', many=True, deferred=True)
     bad_cats = DynamicRelationField(
         'CatSerializer', source='annoying_cats', many=True, deferred=True)
+
+    def filter_queryset(self, query):
+        return query.exclude(name='Atlantis')
 
 
 class PermissionSerializer(DynamicModelSerializer):

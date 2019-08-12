@@ -518,6 +518,18 @@ class DynamicFilterBackend(BaseFilterBackend):
             requirements
         )
 
+        # Implicit requirements (i.e. via `requires`) can potentially
+        # include fields that haven't been explicitly included.
+        # Such fields would not be in `fields`, so they need to be added.
+        implicitly_included = set(requirements.keys()) - set(fields.keys())
+        if implicitly_included:
+            all_fields = serializer.get_all_fields()
+            fields.update({
+                field: all_fields[field]
+                for field in implicitly_included
+                if field in all_fields
+            })
+
         if filters is None:
             filters = self._get_requested_filters()
 

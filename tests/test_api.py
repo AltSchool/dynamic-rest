@@ -827,6 +827,51 @@ class TestUsersAPI(APITestCase):
                 }]
             }, json.loads(response.content.decode('utf-8')))
 
+    def test_implicit_vs_explicit_prefetch(self):
+        """
+        LocationSerializer has a built-in filter to hide Atlantis.
+        UserSerializer can explicitly include Location, and it can also
+        implicitly require Location through the `number_of_cats` field.
+        This test ensures that LocationSerializer.filter_queryset() is
+        being respected regardless of whether `User.location` is being
+        included implicitly or explicitly.
+        """
+        atlantis = Location.objects.create(name='Atlantis')
+        atlantian = User.objects.create(
+            name='Atlantian',
+            last_name='Human',
+            location=atlantis
+        )
+        Cat.objects.create(
+            name='Gato',
+            home=atlantis,
+            backup_home=self.fixture.locations[0],
+        )
+
+        url = (
+            '/users/%s/?'
+            'include[]=number_of_cats&'
+            'include[]=location.'
+        ) % atlantian.pk
+        response1 = self._get_json(url)
+
+        url = (
+            '/users/%s/?'
+            'include[]=number_of_cats&'
+            'exclude[]=location'
+        ) % atlantian.pk
+        response2 = self._get_json(url)
+
+        # Atlantis is hidden, therefore its cats are also hidden
+        self.assertEqual(
+            response1['user']['number_of_cats'],
+            0
+        )
+        self.assertEqual(
+            response1['user']['number_of_cats'],
+            response2['user']['number_of_cats']
+        )
+
     def test_boolean_filters_on_boolean_field(self):
         # create one dead user
         User.objects.create(name='Dead', last_name='Mort', is_dead=True)
