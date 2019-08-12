@@ -13,13 +13,13 @@ from rest_framework.relations import RelatedField
 from rest_framework.fields import SkipField
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 
-from dynamic_rest import prefetch
 from dynamic_rest.bases import (
     CacheableFieldMixin,
     DynamicSerializerBase,
     resettable_cached_property
 )
 from dynamic_rest.conf import settings
+from dynamic_rest.routers import DynamicRouter
 from dynamic_rest.fields import (
     DynamicGenericRelationField,
     DynamicMethodField,
@@ -516,6 +516,12 @@ class WithDynamicSerializerMixin(
 
     def get_link_fields(self):
         return self._link_fields
+
+    @cached_property
+    def canonical_base_path(self):
+        return DynamicRouter.get_canonical_base_path(
+            self.get_resource_key()
+        )
 
     @resettable_cached_property
     def _link_fields(self):
