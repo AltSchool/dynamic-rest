@@ -262,7 +262,7 @@ class DynamicRouter(DefaultRouter):
         Returns: Absolute URL as string.
         """
 
-        base_path = DynamicRouter.get_canonical_base_path()
+        base_path = DynamicRouter.get_canonical_base_path(resource_key)
         if pk:
             return '%s/%s/' % (base_path, pk)
         else:
