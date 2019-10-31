@@ -251,13 +251,13 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         if self.embed and self._is_dynamic:
             init_args['embed'] = True
 
-        return self._get_cached_serializer(args, init_args)
+        serializer = self._get_cached_serializer(args, init_args)
+        serializer.parent = self
+        return serializer
 
     @resettable_cached_property
     def serializer(self):
-        serializer = self.get_serializer()
-        serializer.parent = self
-        return serializer
+        return self.get_serializer()
 
     @cached_property
     def _is_dynamic(self):

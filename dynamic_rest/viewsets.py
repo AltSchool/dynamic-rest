@@ -395,7 +395,6 @@ class WithDynamicViewSetMixin(object):
         # is we need to set `envelope=True` to get the sideload-processor
         # applied.
         related_szr = field.get_serializer(envelope=True)
-        related_szr.parent = field.parent  # ensures context is inherited
         try:
             # TODO(ryo): Probably should use field.get_attribute() but that
             #            seems to break a bunch of things. Investigate later.
