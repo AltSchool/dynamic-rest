@@ -197,6 +197,9 @@ class UserSerializer(DynamicModelSerializer):
     favorite_pet = DynamicGenericRelationField(required=False)
 
     def get_number_of_cats(self, user):
+        if not self.context.get('request'):
+            # Used in test_api.py::test_relation_includes_context
+            raise Exception("No request object in context")
         location = user.location
         return len(location.cat_set.all()) if location else 0
 

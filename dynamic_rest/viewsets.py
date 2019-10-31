@@ -391,12 +391,15 @@ class WithDynamicViewSetMixin(object):
             return Response("Not found", status=404)
 
         # Serialize the related data. Use the field's serializer to ensure
-        # it's configured identically to the sideload case.
-        serializer = field.get_serializer(envelope=True)
+        # it's configured identically to the sideload case. One difference
+        # is we need to set `envelope=True` to get the sideload-processor
+        # applied.
+        related_szr = field.get_serializer(envelope=True)
+        related_szr.parent = field.parent  # ensures context is inherited
         try:
             # TODO(ryo): Probably should use field.get_attribute() but that
             #            seems to break a bunch of things. Investigate later.
-            serializer.instance = getattr(obj, field.source)
+            related_szr.instance = getattr(obj, field.source)
         except ObjectDoesNotExist:
             # See:
             # http://jsonapi.org/format/#fetching-relationships-responses-404
@@ -404,7 +407,7 @@ class WithDynamicViewSetMixin(object):
             # is empty" and therefore must return a 200.
             return Response({}, status=200)
 
-        return Response(serializer.data)
+        return Response(related_szr.data)
 
     def get_extra_filters(self, request):
         # Override this method to enable addition of extra filters

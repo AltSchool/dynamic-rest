@@ -1152,6 +1152,16 @@ class TestRelationsAPI(APITestCase):
         content = json.loads(r.content.decode('utf-8'))
         self.assertTrue('locations' in content)
 
+    def test_relation_includes_context(self):
+        r = self.client.get('/locations/1/users/?include[]=number_of_cats')
+        self.assertEqual(200, r.status_code)
+
+        # Note: the DynamicMethodField for `number_of_cats` checks to
+        # ensure context is set, and raises if not. If the request
+        # succeeded and `number_of_cats` is returned, it means that check
+        # passed.
+        self.assertTrue('number_of_cats' in r.data['users'][0])
+
     def test_relation_excludes(self):
         r = self.client.get('/locations/1/users/?exclude[]=location')
         self.assertEqual(200, r.status_code)
