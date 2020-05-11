@@ -54,7 +54,7 @@ jobs:
           command: ENABLE_INTEGRATION_TESTS=True py.test tests/integration
       - run:
           name: Run Tox Tests
-          command: tox --parallel=4
+          command: tox --parallel=4 -q
 
 workflows:
   version: 2
