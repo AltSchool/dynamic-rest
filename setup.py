@@ -10,9 +10,7 @@ SCRIPTS = ['manage.py']
 setup(
     description=DESCRIPTION,
     include_package_data=True,
-    install_requires=open('install_requires.txt'
-                          if sys.version_info.major == 2
-                          else 'install_requires_python3.txt').readlines(),
+    install_requires=open('install_requires_python3.txt').readlines(),
     long_description=open('README.rst').read(),
     name=NAME,
     packages=find_packages(),
@@ -24,8 +22,6 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
