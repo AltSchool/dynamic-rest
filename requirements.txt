@@ -9,4 +9,4 @@ pytest==3.2.5  # last supported version python 2
 psycopg2==2.7.3.2
 tox-pyenv==1.1.0
 tox==3.14.6
-djay==0.0.8
+djay==0.0.9

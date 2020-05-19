@@ -1,5 +1,5 @@
 from unittest import TestCase, skipIf
-from dj.test import TemporaryApplication
+from djay.test import TemporaryApplication
 from django.conf import settings
 import requests
 import time
