@@ -9,11 +9,12 @@ jobs:
       - image: circleci/python:3.6.9
     steps:
       - checkout
-      - run:
-          name: Update PATH variable
-          command: echo 'export PATH="${HOME}/.local/bin:${PATH}"' >> ${BASH_ENV}
+      # - run:
+      #     name: Update PATH variable
+      #     command: echo 'export PATH="${HOME}/.local/bin:${PATH}"' >> ${BASH_ENV}
       - run:
           name: Install from requirements.txt
+          # command: pip install -r requirements.txt
           command: pip install --user --exists-action w -r requirements.txt
       - run:
           name: Run Setup
