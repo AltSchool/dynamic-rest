@@ -7,30 +7,30 @@ on:
     branches: [ master ]
 
 jobs:
-  # build:
-  #   runs-on: ubuntu-latest
-  #   strategy:
-  #     matrix:
-  #       python-version: [3.5, 3.6, 3.7]
-  #       dj-version: ["1.11.*", "2.0.*", "2.1.*", "2.2.*"]
-  #       drf-version: ["3.8.*", "3.9.*", "3.10.*", "3.11.*"]
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.5, 3.6, 3.7]
+        dj-version: ["1.11.*", "2.0.*", "2.1.*", "2.2.*"]
+        drf-version: ["3.8.*", "3.9.*", "3.10.*", "3.11.*"]
 
-  #   steps:
-  #   - uses: actions/checkout@v2
-  #   - name: Set up Python ${{ matrix.python-version }}
-  #     uses: actions/setup-python@v1
-  #     with:
-  #       python-version: ${{ matrix.python-version }}
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
 
-  #   - name: Install Dependencies
-  #     run: |
-  #       python -m pip install --upgrade pip
-  #       pip install -r requirements.test.txt
-  #       pip install 'django==${{ matrix.dj-version }}' 'djangorestframework==${{ matrix.drf-version }}'
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.test.txt
+        pip install 'django==${{ matrix.dj-version }}' 'djangorestframework==${{ matrix.drf-version }}'
 
-  #   - name: Run Tests
-  #     run: |
-  #       ./runtests.py --fast --coverage -rw
+    - name: Run Tests
+      run: |
+        ./runtests.py --fast --coverage -rw
 
   lint:
     runs-on: ubuntu-latest
@@ -39,7 +39,7 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Set up Python37
-      uses: actions/setup-python@v1
+      uses: actions/setup-python@v2
       with:
         python-version: 3.7
 
@@ -51,31 +51,3 @@ jobs:
     - name: Lint Code
       run: |
         flake8 dynamic_rest tests
-
-  integration:
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v2
-
-    - name: Set up Python36
-      uses: actions/setup-python@v2
-      with:
-        python-version: 3.6.9
-
-    # - name: Update PATH variable
-    #   run: |
-    #     echo 'export PATH="${HOME}/.local/bin:${PATH}"' >> ${BASH_ENV}
-    - name: Install Dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install --user --exists-action w -r requirements.txt
-        # pip install -r requirements.txt
-
-    - name: Run setup
-      run: |
-        python setup.py develop --user
-
-    - name: Run Integration Tests
-      run: |
-        ENABLE_INTEGRATION_TESTS=True py.test tests/integration
