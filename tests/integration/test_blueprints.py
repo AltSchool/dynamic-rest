@@ -1,10 +1,14 @@
 from unittest import TestCase, skipIf
-from djay.test import TemporaryApplication
 from django.conf import settings
 import requests
 import time
 import json
 import os
+
+try:
+    from djay.test import TemporaryApplication
+except ImportError:
+    from dj.test import TemporaryApplication
 
 
 class DJBlueprintsTestCase(TestCase):
