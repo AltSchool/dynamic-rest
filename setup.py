@@ -9,7 +9,7 @@ SCRIPTS = ['manage.py']
 setup(
     description=DESCRIPTION,
     include_package_data=True,
-    install_requires=open('install_requires_python3.txt').readlines(),
+    install_requires=open('install_requires.txt').readlines(),
     long_description=open('README.rst').read(),
     name=NAME,
     packages=find_packages(),
