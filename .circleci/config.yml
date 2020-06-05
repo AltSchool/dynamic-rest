@@ -6,15 +6,9 @@ jobs:
     parallelism: 1
 
     docker:
-      - image: circleci/python:2.7.16-stretch
+      - image: circleci/python:3.6.9
     steps:
       - checkout
-      - run:
-          name: Update PATH variable
-          command: echo 'export PATH="${HOME}/.local/bin:${PATH}"' >> ${BASH_ENV}
-      - run:
-          name: Install python3-devel
-          command: sudo apt-get install python3-dev
       - run:
           name: Install from requirements.txt
           command: pip install --user --exists-action w -r requirements.txt
@@ -22,43 +16,5 @@ jobs:
           name: Run Setup
           command: python setup.py develop --user
       - run:
-          name: Install pyenv
-          command: |
-            curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash
-            sudo ln -s $HOME/.pyenv/bin/pyenv /usr/local/bin/pyenv && eval "$(pyenv init -)"
-            eval "$(pyenv virtualenv-init -)"
-      - restore_cache:
-          name: Restore PyEnv Cache
-          keys:
-              - v1.1-pyenv-cache-{{ checksum ".circleci/python-versions.txt" }}
-      - run:
-          name: Install python versions for testing
-          command: |
-            echo "PyEnv Versions already installed:"
-            pyenv versions
-            python_versions=$(cat .circleci/python-versions.txt)
-            echo "Python versions to install: $python_versions"
-            for python_version in $python_versions; do
-                echo "INSTALLING: Python $python_version"
-                pyenv install -s $python_version
-            done
-            pyenv local  $python_versions
-      - save_cache:
-          name: Save PyEnv Cache
-          key: v1.1-pyenv-cache-{{ checksum ".circleci/python-versions.txt"}}
-          paths:
-              - "~/.pyenv"
-
-      - run:
           name: Run Integration tests
           command: ENABLE_INTEGRATION_TESTS=True py.test tests/integration
-      - run:
-          name: Run Tox Tests
-          command: tox --parallel=4 -q
-
-workflows:
-  version: 2
-  build-and-test:
-    jobs:
-      - build:
-          context: org-global

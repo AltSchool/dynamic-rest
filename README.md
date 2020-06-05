@@ -57,14 +57,15 @@ but it can be used to provide fast and flexible CRUD operations to any consumer 
 
 ## Maintainers
 
-* [Anthony Leontiev](mailto:ant@altschool.com)
-* [Ryo Chijiiwa](mailto:ryo@altschool.com)
+* [Anthony Leontiev](mailto:ant@altitudelearning.com)
+* [Ryo Chijiiwa](mailto:ryo@altitudelearning.com)
+* [Savinay Nangalia](mailto:sav@altitudelearning.com)
 
 # Requirements
 
-* Python (2.7, 3.4, 3.5, 3.6)
-* Django (1.8, 1.9, 1.10, 1.11, 2.0, 2.1)
-* Django REST Framework (3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9)
+* Python (3.5, 3.6, 3.7)
+* Django (1.11, 2.0, 2.1, 2.2)
+* Django REST Framework (3.8, 3.9, 3.10, 3.11)
 
 # Installation
 
