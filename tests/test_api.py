@@ -925,6 +925,15 @@ class TestUsersAPI(APITestCase):
             [row['location'] for row in data['users']]
         )
 
+    def test_sort_relation_field_many(self):
+        url = '/locations/?sort[]=friendly_cats.name'
+        response = self.client.get(url)
+        self.assertEquals(200, response.status_code)
+        data = json.loads(response.content.decode('utf-8'))
+        ids = [row['id'] for row in data['locations']]
+        # no duplicates
+        self.assertEquals(len(ids), len(set(ids)))
+
 
 @override_settings(
     DYNAMIC_REST={
