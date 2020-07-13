@@ -1,6 +1,5 @@
 """This module contains utilities to support API links."""
-from django.utils import six
-
+import six
 from dynamic_rest.conf import settings
 from dynamic_rest.routers import DynamicRouter
 

@@ -1,5 +1,5 @@
 """This module contains custom data-structures."""
-from django.utils import six
+import six
 
 
 class TreeMap(dict):
