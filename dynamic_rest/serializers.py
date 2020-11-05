@@ -582,8 +582,13 @@ class WithDynamicSerializerMixin(
             ))
         } | self._readable_id_fields
 
-    @resettable_cached_property
+    @cached_property
     def _simple_fields(self):
+        """
+        Simple fields are fields that return serializable values straight
+        from the DB and therefore don't require logic on the model or Field
+        object to extract and serialize.
+        """
         if hasattr(self.Meta, 'simple_fields'):
             return set(getattr(self.Meta, 'simple_fields', []))
 
@@ -594,7 +599,7 @@ class WithDynamicSerializerMixin(
 
         simple_fields = set()
         for name, field in six.iteritems(self.get_all_fields()):
-            if field not in self._declared_fields:
+            if name not in self._declared_fields:
                 simple_fields.add(name)
 
         return simple_fields
@@ -606,6 +611,8 @@ class WithDynamicSerializerMixin(
             (Constructing ordered dict is ~100x slower than `{}`.)
         2) Ensure we use a cached list of fields
             (this optimization exists in DRF 3.2 but not 3.1)
+        3) Bypass DRF whenever possible, use simple dict lookup
+            if FastQuery is enabled (which returns dicts).
 
         Arguments:
             instance: a model instance or data object
@@ -655,6 +662,7 @@ class WithDynamicSerializerMixin(
                                 )
                             )
             else:
+                # Non-optimized standard DRF approach...
                 try:
                     attribute = field.get_attribute(instance)
                 except SkipField:
