@@ -506,6 +506,11 @@ class TestDynamicSerializer(TestCase):
         self.assertEqual(r1, r2)
         self.assertEqual(r2, r3)
 
+    def test_simple_fields(self):
+        s = LocationSerializer()
+        simple_fields = s._simple_fields()
+        import pdb;pdb.set_trace()
+
     @patch.dict('dynamic_rest.processors.POST_PROCESSORS', {})
     def test_post_processors(self):
 

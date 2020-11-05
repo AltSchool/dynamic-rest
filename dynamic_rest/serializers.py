@@ -584,7 +584,20 @@ class WithDynamicSerializerMixin(
 
     @resettable_cached_property
     def _simple_fields(self):
-        return set(getattr(self.Meta, 'simple_fields', []))
+        if hasattr(self.Meta, 'simple_fields'):
+            return set(getattr(self.Meta, 'simple_fields', []))
+
+        if not hasattr(self, '_declared_fields'):
+            # The `_declared_fields` attr should be set by DRF, but since
+            # it's a private attribute, we'll be safe.
+            return []
+
+        simple_fields = set()
+        for name, field in six.iteritems(self.get_all_fields()):
+            if field not in self._declared_fields:
+                simple_fields.add(name)
+
+        return simple_fields
 
     def _faster_to_representation(self, instance):
         """Modified to_representation with optimizations.
