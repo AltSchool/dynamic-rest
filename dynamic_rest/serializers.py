@@ -10,7 +10,16 @@ from django.utils.functional import cached_property
 from rest_framework import __version__ as drf_version
 from rest_framework import exceptions, fields, serializers
 from rest_framework.relations import RelatedField
-from rest_framework.fields import SkipField
+from rest_framework.fields import (
+    BooleanField,
+    CharField,
+    DateField,
+    DateTimeField,
+    FloatField,
+    IntegerField,
+    SkipField,
+    UUIDField,
+)
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 
 from dynamic_rest.bases import (
@@ -597,9 +606,28 @@ class WithDynamicSerializerMixin(
             # it's a private attribute, we'll be safe.
             return []
 
+        # We assume inferred fields of these types to be "simple"
+        simple_field_classes = (
+            BooleanField,  # also the base class for NullBooleanField
+            CharField,  # also the base class for others, like SlugField
+            DateField,
+            DateTimeField,
+            FloatField,
+            IntegerField,
+            UUIDField,
+        )
+
+        # This meta attr can explicitly opt fields out, e.g. if it's a
+        # compatible field type but actually needs to go thru DRF Field
+        complex_fields = set(getattr(self.Meta, 'complex_fields', []))
+
         simple_fields = set()
         for name, field in six.iteritems(self.get_all_fields()):
-            if name not in self._declared_fields:
+            if name in self._declared_fields:
+                continue
+            if name in complex_fields:
+                continue
+            if isinstance(field, simple_field_classes):
                 simple_fields.add(name)
 
         return simple_fields
@@ -674,7 +702,6 @@ class WithDynamicSerializerMixin(
                 ret[field.field_name] = None
             elif field.field_name in simple_field_names:
                 ret[field.field_name] = attribute
-                continue
             else:
                 ret[field.field_name] = field.to_representation(attribute)
 
