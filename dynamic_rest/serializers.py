@@ -591,7 +591,7 @@ class WithDynamicSerializerMixin(
             ))
         } | self._readable_id_fields
 
-    @cached_property
+    @resettable_cached_property
     def _simple_fields(self):
         """
         Simple fields are fields that return serializable values straight
@@ -610,8 +610,8 @@ class WithDynamicSerializerMixin(
         simple_field_classes = (
             BooleanField,  # also the base class for NullBooleanField
             CharField,  # also the base class for others, like SlugField
-            DateField,
-            DateTimeField,
+            # DateField,
+            # DateTimeField,
             FloatField,
             IntegerField,
             UUIDField,
@@ -667,11 +667,25 @@ class WithDynamicSerializerMixin(
             # we exclude dynamic fields here because the proper fastquery
             # dereferencing happens in the `get_attribute` method now
             if (is_fast and field in static_fields):
-                if field in id_fields and field.source not in instance:
-                    # TODO - make better.
-                    attribute = instance.get(field.source + '_id')
-                    ret[field.field_name] = attribute
-                    continue
+                if field in id_fields:
+                    if field.source not in instance:
+                        # TODO - make better.
+                        attribute = instance.get(field.source + '_id')
+                        ret[field.field_name] = attribute
+                        continue
+                    elif not instance[field.source]:
+                        ret[field.field_name] = None
+                        continue
+                    elif 'id' in instance[field.source]:
+                        # reverse of o2o field
+                        print("Beep beep! s=%s f=%s" % (
+                            self.__class__,
+                            field.field_name
+                        ))
+                        ret[field.field_name] = instance[field.source]['id']
+                        continue
+                    else:
+                        attribute = field.get_attribute(instance)
                 else:
                     try:
                         attribute = instance[field.source]
