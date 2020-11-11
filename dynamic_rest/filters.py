@@ -3,7 +3,7 @@
 from django.core.exceptions import ValidationError as InternalValidationError
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q, Prefetch, Manager
-from django.utils import six
+import six
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import BooleanField, NullBooleanField
@@ -667,8 +667,11 @@ class DynamicSortingFilter(OrderingFilter):
 
         ordering = self.get_ordering(request, queryset, view)
         if ordering:
-            return queryset.order_by(*ordering)
-
+            queryset = queryset.order_by(*ordering)
+            if any(['__' in o for o in ordering]):
+                # add distinct() to remove duplicates
+                # in case of order-by-related
+                queryset = queryset.distinct()
         return queryset
 
     def get_ordering(self, request, queryset, view):

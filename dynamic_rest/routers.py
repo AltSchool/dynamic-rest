@@ -8,7 +8,7 @@ try:
 except ImportError:
     from django.core.urlresolvers import get_script_prefix
 
-from django.utils import six
+import six
 
 import rest_framework
 from rest_framework import views

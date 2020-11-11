@@ -1,7 +1,7 @@
 """This module contains response processors."""
 from collections import defaultdict
 
-from django.utils import six
+import six
 from rest_framework.serializers import ListSerializer
 from rest_framework.utils.serializer_helpers import ReturnDict
 

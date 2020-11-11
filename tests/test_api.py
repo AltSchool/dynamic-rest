@@ -3,7 +3,7 @@ import json
 
 from django.db import connection
 from django.test import override_settings
-from django.utils import six
+import six
 from rest_framework.test import APITestCase
 
 from tests.models import Cat, Group, Location, Permission, Profile, User
@@ -924,6 +924,15 @@ class TestUsersAPI(APITestCase):
             [3, 2, 1, 1],
             [row['location'] for row in data['users']]
         )
+
+    def test_sort_relation_field_many(self):
+        url = '/locations/?sort[]=friendly_cats.name'
+        response = self.client.get(url)
+        self.assertEquals(200, response.status_code)
+        data = json.loads(response.content.decode('utf-8'))
+        ids = [row['id'] for row in data['locations']]
+        # no duplicates
+        self.assertEquals(len(ids), len(set(ids)))
 
 
 @override_settings(
