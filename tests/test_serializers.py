@@ -506,6 +506,15 @@ class TestDynamicSerializer(TestCase):
         self.assertEqual(r1, r2)
         self.assertEqual(r2, r3)
 
+    def test_simple_fields(self):
+        # Should return non-declared non-dynamic fields
+        # See WithDynamicSerializerMixin._simple_fields for more.
+        szr = LocationSerializer()
+        self.assertEqual(
+            set(['id', 'name']),
+            szr._simple_fields
+        )
+
     @patch.dict('dynamic_rest.processors.POST_PROCESSORS', {})
     def test_post_processors(self):
 

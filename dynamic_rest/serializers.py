@@ -10,19 +10,29 @@ from django.utils.functional import cached_property
 from rest_framework import __version__ as drf_version
 from rest_framework import exceptions, fields, serializers
 from rest_framework.relations import RelatedField
-from rest_framework.fields import SkipField
+from rest_framework.fields import (
+    BooleanField,
+    CharField,
+    DateField,
+    DateTimeField,
+    FloatField,
+    IntegerField,
+    SkipField,
+    UUIDField,
+)
 from rest_framework.utils.serializer_helpers import ReturnDict, ReturnList
 
-from dynamic_rest import prefetch
 from dynamic_rest.bases import (
     CacheableFieldMixin,
     DynamicSerializerBase,
     resettable_cached_property
 )
 from dynamic_rest.conf import settings
+from dynamic_rest.routers import DynamicRouter
 from dynamic_rest.fields import (
-    DynamicRelationField,
     DynamicGenericRelationField,
+    DynamicMethodField,
+    DynamicRelationField,
 )
 from dynamic_rest.links import merge_link_object
 from dynamic_rest.meta import get_model_table
@@ -516,6 +526,12 @@ class WithDynamicSerializerMixin(
     def get_link_fields(self):
         return self._link_fields
 
+    @cached_property
+    def canonical_base_path(self):
+        return DynamicRouter.get_canonical_base_path(
+            self.get_resource_key()
+        )
+
     @resettable_cached_property
     def _link_fields(self):
         """Construct dict of name:field for linkable fields."""
@@ -548,7 +564,7 @@ class WithDynamicSerializerMixin(
             if not field.write_only
         ]
 
-    @cached_property
+    @resettable_cached_property
     def _readable_id_fields(self):
         fields = self._readable_fields
         return {
@@ -564,6 +580,58 @@ class WithDynamicSerializerMixin(
             )
         }
 
+    @resettable_cached_property
+    def _readable_static_fields(self):
+        return {
+            field for field in self._readable_fields
+            if not isinstance(field, (
+                DynamicGenericRelationField,
+                DynamicMethodField,
+                DynamicRelationField
+            ))
+        } | self._readable_id_fields
+
+    @resettable_cached_property
+    def _simple_fields(self):
+        """
+        Simple fields are fields that return serializable values straight
+        from the DB and therefore don't require logic on the model or Field
+        object to extract and serialize.
+        """
+        if hasattr(self.Meta, 'simple_fields'):
+            return set(getattr(self.Meta, 'simple_fields', []))
+
+        if not hasattr(self, '_declared_fields'):
+            # The `_declared_fields` attr should be set by DRF, but since
+            # it's a private attribute, we'll be safe.
+            return []
+
+        # We assume inferred fields of these types to be "simple"
+        simple_field_classes = (
+            BooleanField,  # also the base class for NullBooleanField
+            CharField,  # also the base class for others, like SlugField
+            # DateField,
+            # DateTimeField,
+            FloatField,
+            IntegerField,
+            UUIDField,
+        )
+
+        # This meta attr can explicitly opt fields out, e.g. if it's a
+        # compatible field type but actually needs to go thru DRF Field
+        complex_fields = set(getattr(self.Meta, 'complex_fields', []))
+
+        simple_fields = set()
+        for name, field in six.iteritems(self.get_all_fields()):
+            if name in self._declared_fields:
+                continue
+            if name in complex_fields:
+                continue
+            if isinstance(field, simple_field_classes):
+                simple_fields.add(name)
+
+        return simple_fields
+
     def _faster_to_representation(self, instance):
         """Modified to_representation with optimizations.
 
@@ -571,6 +639,8 @@ class WithDynamicSerializerMixin(
             (Constructing ordered dict is ~100x slower than `{}`.)
         2) Ensure we use a cached list of fields
             (this optimization exists in DRF 3.2 but not 3.1)
+        3) Bypass DRF whenever possible, use simple dict lookup
+            if FastQuery is enabled (which returns dicts).
 
         Arguments:
             instance: a model instance or data object
@@ -581,26 +651,41 @@ class WithDynamicSerializerMixin(
         ret = {}
         fields = self._readable_fields
 
-        is_fast = isinstance(instance, prefetch.FastObject)
+        is_fast = getattr(instance, 'IS_FAST', False)
         id_fields = self._readable_id_fields
+
+        # static fields are non-Dynamic fields
+        static_fields = self._readable_static_fields
+
+        # fields declared as being "simple" (i.e. doesn't require
+        # field.to_representation() to be serializable)
+        simple_field_names = self._simple_fields
 
         for field in fields:
             attribute = None
 
             # we exclude dynamic fields here because the proper fastquery
             # dereferencing happens in the `get_attribute` method now
-            if (
-                is_fast and
-                not isinstance(
-                    field,
-                    (DynamicGenericRelationField, DynamicRelationField)
-                )
-            ):
-                if field in id_fields and field.source not in instance:
-                    # TODO - make better.
-                    attribute = instance.get(field.source + '_id')
-                    ret[field.field_name] = attribute
-                    continue
+            if (is_fast and field in static_fields):
+                if field in id_fields:
+                    if field.source not in instance:
+                        # TODO - make better.
+                        attribute = instance.get(field.source + '_id')
+                        ret[field.field_name] = attribute
+                        continue
+                    elif not instance[field.source]:
+                        ret[field.field_name] = None
+                        continue
+                    elif 'id' in instance[field.source]:
+                        # reverse of o2o field
+                        print("Beep beep! s=%s f=%s" % (
+                            self.__class__,
+                            field.field_name
+                        ))
+                        ret[field.field_name] = instance[field.source]['id']
+                        continue
+                    else:
+                        attribute = field.get_attribute(instance)
                 else:
                     try:
                         attribute = instance[field.source]
@@ -619,6 +704,7 @@ class WithDynamicSerializerMixin(
                                 )
                             )
             else:
+                # Non-optimized standard DRF approach...
                 try:
                     attribute = field.get_attribute(instance)
                 except SkipField:
@@ -628,6 +714,8 @@ class WithDynamicSerializerMixin(
                 # We skip `to_representation` for `None` values so that
                 # fields do not have to explicitly deal with that case.
                 ret[field.field_name] = None
+            elif field.field_name in simple_field_names:
+                ret[field.field_name] = attribute
             else:
                 ret[field.field_name] = field.to_representation(attribute)
 

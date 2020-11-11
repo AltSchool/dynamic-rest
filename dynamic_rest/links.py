@@ -1,7 +1,6 @@
 """This module contains utilities to support API links."""
 import six
 from dynamic_rest.conf import settings
-from dynamic_rest.routers import DynamicRouter
 
 
 def merge_link_object(serializer, data, instance):
@@ -31,10 +30,14 @@ def merge_link_object(serializer, data, instance):
             if settings.ENABLE_HOST_RELATIVE_LINKS:
                 # if the resource isn't registered, this will default back to
                 # using resource-relative urls for links.
+                base_url = serializer.canonical_base_path or ''
+                base_url += "/%s/" % instance.pk
+                '''
                 base_url = DynamicRouter.get_canonical_path(
                     serializer.get_resource_key(),
                     instance.pk
                 ) or ''
+                '''
             link = '%s%s/' % (base_url, name)
         # Default to DREST-generated relation endpoints.
         elif callable(link):

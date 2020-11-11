@@ -88,7 +88,6 @@ class Settings(object):
         self.defaults = defaults
         self.keys = set(defaults.keys())
         self.class_attrs = class_attrs
-
         self._cache = {}
         self._reload(getattr(settings, self.name, {}))
 

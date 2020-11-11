@@ -243,6 +243,14 @@ class DynamicRouter(DefaultRouter):
         resource_name_map[resource_name] = resource_key
 
     @staticmethod
+    def get_canonical_base_path(resource_key):
+        if resource_key not in resource_map:
+            # Note: Maybe raise?
+            return None
+
+        return get_script_prefix() + resource_map[resource_key]['path']
+
+    @staticmethod
     def get_canonical_path(resource_key, pk=None):
         """
         Return canonical resource path.
@@ -254,11 +262,7 @@ class DynamicRouter(DefaultRouter):
         Returns: Absolute URL as string.
         """
 
-        if resource_key not in resource_map:
-            # Note: Maybe raise?
-            return None
-
-        base_path = get_script_prefix() + resource_map[resource_key]['path']
+        base_path = DynamicRouter.get_canonical_base_path(resource_key)
         if pk:
             return '%s/%s/' % (base_path, pk)
         else:

@@ -65,7 +65,7 @@ clean: clean_working_directory
 	@rm -rf $(INSTALL_DIR)
 
 # Run tests
-test: install lint
+test: install
 	$(call header,"Running unit tests")
 	@$(INSTALL_DIR)/bin/py.test --cov=$(APP_NAME) tests/$(TEST)
 
