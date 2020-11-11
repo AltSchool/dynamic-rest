@@ -10,7 +10,7 @@ Introduction
 
 This document will take you through the basics (and not-so-basics) of developing Dynamic REST APIs. `Dynamic REST <https://github.com/AltSchool/dynamic-rest>`_ (or "DREST") is an extension to `Django REST Framework <http://www.django-rest-framework.org/>`_ ("DRF") that makes it easier to implement uniform REST APIs with powerful features like field inclusion/exclusion, flexible filtering, pagination, and efficient "sideloading" of related/nested data.
 
-Setup
+Demo Setup
 -----
 
 Before starting the tutorial, you’ll need to set up Dynamic REST in your dev environment. Refer to the README for details, but it should look something like::
@@ -21,6 +21,36 @@ Before starting the tutorial, you’ll need to set up Dynamic REST in your dev e
     $ make server
 
 This should start up Django at http://localhost:9002.
+
+PIP Setup
+-----
+
+For setting up Dynamic REST in your dev environment using pip use the steps described in README.md:
+
+1) Install using `pip`::
+
+    $ pip install dynamic-rest
+
+(or add `dynamic-rest` to `requirements.txt` or `setup.py`)
+
+2) Add `rest_framework` and `dynamic_rest` to `INSTALLED_APPS` in `settings.py`::
+
+    INSTALLED_APPS = (
+        ...
+        'rest_framework',
+        'dynamic_rest'
+    )
+
+
+3) If you want to use the Directory panel, replace DRF's browsable API renderer with DREST's
+in your settings::
+ 
+    REST_FRAMEWORK = {
+        'DEFAULT_RENDERER_CLASSES': [
+            'rest_framework.renderers.JSONRenderer',
+            'dynamic_rest.renderers.DynamicBrowsableAPIRenderer',
+        ],
+    }
 
 .. _minimal_api:
 
