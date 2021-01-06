@@ -8,12 +8,13 @@ from tests.models import (
     Event,
     Group,
     Horse,
+    JsonFieldModel,
     Location,
     Part,
     Permission,
     User,
-    Zebra
-    )
+    Zebra,
+)
 
 
 def create_fixture():
@@ -25,31 +26,46 @@ def create_fixture():
     # Create 4 dogs.
     # Create 2 Country
     # Create 1 Car has 2 Parts each from different Country
+    # Create 1 JsonFieldModel
 
     types = [
-        'users', 'groups', 'locations', 'permissions',
-        'events', 'cats', 'dogs', 'horses', 'zebras',
-        'cars', 'countries', 'parts',
+        "users",
+        "groups",
+        "locations",
+        "permissions",
+        "events",
+        "cats",
+        "dogs",
+        "horses",
+        "zebras",
+        "cars",
+        "countries",
+        "parts",
+        "json_field_models",
     ]
-    Fixture = namedtuple('Fixture', types)
+    Fixture = namedtuple("Fixture", types)
 
     fixture = Fixture(
-        users=[], groups=[], locations=[], permissions=[],
-        events=[], cats=[], dogs=[], horses=[], zebras=[],
-        cars=[], countries=[], parts=[]
+        users=[],
+        groups=[],
+        locations=[],
+        permissions=[],
+        events=[],
+        cats=[],
+        dogs=[],
+        horses=[],
+        zebras=[],
+        cars=[],
+        countries=[],
+        parts=[],
+        json_field_models=[],
     )
 
     for i in range(0, 4):
-        fixture.users.append(
-            User.objects.create(
-                name=str(i),
-                last_name=str(i)))
+        fixture.users.append(User.objects.create(name=str(i), last_name=str(i)))
 
     for i in range(0, 4):
-        fixture.permissions.append(
-            Permission.objects.create(
-                name=str(i),
-                code=i))
+        fixture.permissions.append(Permission.objects.create(name=str(i), code=i))
 
     for i in range(0, 2):
         fixture.groups.append(Group.objects.create(name=str(i)))
@@ -58,97 +74,63 @@ def create_fixture():
         fixture.locations.append(Location.objects.create(name=str(i)))
 
     for i in range(0, 2):
-        fixture.cats.append(Cat.objects.create(
-            name=str(i),
-            home_id=fixture.locations[i].id,
-            backup_home_id=(
-                fixture.locations[len(fixture.locations) - 1 - i].id)))
+        fixture.cats.append(
+            Cat.objects.create(
+                name=str(i),
+                home_id=fixture.locations[i].id,
+                backup_home_id=(fixture.locations[len(fixture.locations) - 1 - i].id),
+            )
+        )
 
-    dogs = [{
-        'name': 'Clifford',
-        'fur_color': 'red',
-        'origin': 'Clifford the big red dog'
-    }, {
-        'name': 'Air-Bud',
-        'fur_color': 'gold',
-        'origin': 'Air Bud 4: Seventh Inning Fetch'
-    }, {
-        'name': 'Spike',
-        'fur_color': 'brown',
-        'origin': 'Rugrats'
-    }, {
-        'name': 'Pluto',
-        'fur_color': 'brown and white',
-        'origin': 'Mickey Mouse'
-    }, {
-        'name': 'Spike',
-        'fur_color': 'light-brown',
-        'origin': 'Tom and Jerry'
-    }]
+    fixture.json_field_models.append(
+        JsonFieldModel.objects.create(
+            name=str(i), some_jsonfield={"value": "string value for icontains testing"}
+        )
+    )
 
-    horses = [{
-        'name': 'Seabiscuit',
-        'origin': 'LA'
-    }, {
-        'name': 'Secretariat',
-        'origin': 'Kentucky'
-    }]
+    dogs = [
+        {"name": "Clifford", "fur_color": "red", "origin": "Clifford the big red dog"},
+        {"name": "Air-Bud", "fur_color": "gold", "origin": "Air Bud 4: Seventh Inning Fetch"},
+        {"name": "Spike", "fur_color": "brown", "origin": "Rugrats"},
+        {"name": "Pluto", "fur_color": "brown and white", "origin": "Mickey Mouse"},
+        {"name": "Spike", "fur_color": "light-brown", "origin": "Tom and Jerry"},
+    ]
 
-    zebras = [{
-        'name': 'Ralph',
-        'origin': 'new york'
-    }, {
-        'name': 'Ted',
-        'origin': 'africa'
-    }]
+    horses = [{"name": "Seabiscuit", "origin": "LA"}, {"name": "Secretariat", "origin": "Kentucky"}]
 
-    events = [{
-        'name': 'Event 1',
-        'status': 'archived',
-        'location': 2
-    }, {
-        'name': 'Event 2',
-        'status': 'current',
-        'location': 1
-    }, {
-        'name': 'Event 3',
-        'status': 'current',
-        'location': 1
-    }, {
-        'name': 'Event 4',
-        'status': 'archived',
-        'location': 2
-    }, {
-        'name': 'Event 5',
-        'status': 'current',
-        'location': 2
-    }]
+    zebras = [{"name": "Ralph", "origin": "new york"}, {"name": "Ted", "origin": "africa"}]
+
+    events = [
+        {"name": "Event 1", "status": "archived", "location": 2},
+        {"name": "Event 2", "status": "current", "location": 1},
+        {"name": "Event 3", "status": "current", "location": 1},
+        {"name": "Event 4", "status": "archived", "location": 2},
+        {"name": "Event 5", "status": "current", "location": 2},
+    ]
 
     for dog in dogs:
-        fixture.dogs.append(Dog.objects.create(
-            name=dog.get('name'),
-            fur_color=dog.get('fur_color'),
-            origin=dog.get('origin')
-        ))
+        fixture.dogs.append(
+            Dog.objects.create(
+                name=dog.get("name"), fur_color=dog.get("fur_color"), origin=dog.get("origin")
+            )
+        )
 
     for horse in horses:
-        fixture.horses.append(Horse.objects.create(
-            name=horse.get('name'),
-            origin=horse.get('origin')
-        ))
+        fixture.horses.append(
+            Horse.objects.create(name=horse.get("name"), origin=horse.get("origin"))
+        )
 
     for zebra in zebras:
-        fixture.zebras.append(Zebra.objects.create(
-            name=zebra.get('name'),
-            origin=zebra.get('origin')
-        ))
+        fixture.zebras.append(
+            Zebra.objects.create(name=zebra.get("name"), origin=zebra.get("origin"))
+        )
 
     for event in events:
-        fixture.events.append(Event.objects.create(
-            name=event['name'],
-            status=event['status'],
-            location_id=event['location']
-        ))
+        fixture.events.append(
+            Event.objects.create(
+                name=event["name"], status=event["status"], location_id=event["location"]
+            )
+        )
     fixture.events[1].users.add(fixture.users[0])
     fixture.events[1].users.add(fixture.users[1])
     fixture.events[2].users.add(fixture.users[0])
@@ -158,7 +140,7 @@ def create_fixture():
     fixture.events[4].users.add(fixture.users[1])
     fixture.events[4].users.add(fixture.users[2])
 
-    fixture.locations[0].blob = 'here'
+    fixture.locations[0].blob = "here"
     fixture.locations[0].save()
 
     fixture.users[0].location = fixture.locations[0]
@@ -192,47 +174,30 @@ def create_fixture():
     fixture.groups[0].permissions.add(fixture.permissions[0])
     fixture.groups[1].permissions.add(fixture.permissions[1])
 
-    countries = [{
-        'id': 1,
-        'name': 'United States',
-        'short_name': 'US',
-    }, {
-        'id': 2,
-        'name': 'China',
-        'short_name': 'CN',
-    }]
+    countries = [
+        {"id": 1, "name": "United States", "short_name": "US",},
+        {"id": 2, "name": "China", "short_name": "CN",},
+    ]
 
-    cars = [{
-        'id': 1,
-        'name': 'Porshe',
-        'country': 1
-    }]
+    cars = [{"id": 1, "name": "Porshe", "country": 1}]
 
-    parts = [{
-        'car': 1,
-        'name': 'wheel',
-        'country': 1
-    }, {
-        'car': 1,
-        'name': 'tire',
-        'country': 2
-    }]
+    parts = [{"car": 1, "name": "wheel", "country": 1}, {"car": 1, "name": "tire", "country": 2}]
 
     for country in countries:
         fixture.countries.append(Country.objects.create(**country))
 
     for car in cars:
-        fixture.cars.append(Car.objects.create(
-            id=car.get('id'),
-            name=car.get('name'),
-            country_id=car.get('country')
-        ))
+        fixture.cars.append(
+            Car.objects.create(
+                id=car.get("id"), name=car.get("name"), country_id=car.get("country")
+            )
+        )
 
     for part in parts:
-        fixture.parts.append(Part.objects.create(
-            car_id=part.get('car'),
-            name=part.get('name'),
-            country_id=part.get('country')
-        ))
+        fixture.parts.append(
+            Part.objects.create(
+                car_id=part.get("car"), name=part.get("name"), country_id=part.get("country")
+            )
+        )
 
     return fixture
