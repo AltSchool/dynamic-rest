@@ -1,4 +1,4 @@
-Django>=1.11,<=3.2
+Django>=1.11,<=4
 djangorestframework>=3.8.0,<3.12.0
 inflection>=0.4.0
 requests
