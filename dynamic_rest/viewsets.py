@@ -230,7 +230,7 @@ class WithDynamicViewSetMixin(object):
         include_fields = self.get_request_feature(self.INCLUDE)
         exclude_fields = self.get_request_feature(self.EXCLUDE)
         request_fields = {}
-        for fields, include in(
+        for fields, include in (
                 (include_fields, True),
                 (exclude_fields, False)):
             if fields is None:

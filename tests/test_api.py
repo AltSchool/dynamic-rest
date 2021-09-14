@@ -1,6 +1,7 @@
 import datetime
 import json
 
+import django
 from django.db import connection
 from django.test import override_settings
 import six
@@ -618,11 +619,23 @@ class TestUsersAPI(APITestCase):
         url = '/users/?filter{date_of_birth.gt}=0&filter{date_of_birth.lt}=0'
         response = self.client.get(url)
         self.assertEqual(400, response.status_code)
-        self.assertEqual(
-            ["'0' value has an invalid date format. "
-             "It must be in YYYY-MM-DD format."],
-            response.data
-        )
+        if django.VERSION[0] > 2:
+            from rest_framework.exceptions import ErrorDetail
+            self.assertEqual(
+                [
+                    ErrorDetail(
+                        string='“0” value has an invalid date format. It must be in YYYY-MM-DD format.',
+                        code='invalid'
+                    )
+                ],
+                response.data
+            )
+        else:
+            self.assertEqual(
+                ["'0' value has an invalid date format. "
+                 "It must be in YYYY-MM-DD format."],
+                response.data
+            )
 
     def test_get_with_filter_deferred(self):
         # Filtering deferred field should work
