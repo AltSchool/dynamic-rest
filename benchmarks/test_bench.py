@@ -113,19 +113,19 @@ CHART_TEMPLATE = """
 
 
 def get_average(values):
-    l = len(values)
-    if l == 0:
+    length = len(values)
+    if length == 0:
         return 0
     elif AVERAGE_TYPE == 'mean':
-        return sum(values) / l
+        return sum(values) / length
     elif AVERAGE_TYPE == 'median':
         values = sorted(values)
         if len(values) % 2 == 1:
-            return values[((l + 1) / 2) - 1]
+            return values[((length + 1) / 2) - 1]
         else:
             return float(
                 sum(
-                    values[(l / 2) - 1:(l / 2) + 1]
+                    values[(length / 2) - 1:(length / 2) + 1]
                 )
             ) / 2.0
 
@@ -256,6 +256,7 @@ def get_random_string(size):
         random.choice(string.ascii_uppercase)
         for _ in xrange(size)
     )
+
 
 # generate test methods
 for benchmark in BENCHMARKS:
