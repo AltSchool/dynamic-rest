@@ -115,7 +115,7 @@ start: install
 # Lint the project
 lint: clean_working_directory
 	$(call header,"Linting code")
-	@find . -type f -name '*.py' -not -path '$(INSTALL_DIR)/*' -not -path './docs/*' -not -path '$(INSTALL_DIR)/*' | xargs $(INSTALL_DIR)/bin/flake8
+	@find . -type f -name '*.py' -not -path '$(INSTALL_DIR)/*' -not -path './docs/*' -not -path './env/*' -not -path '$(INSTALL_DIR)/*' | xargs $(INSTALL_DIR)/bin/flake8
 
 # Auto-format the project
 format: clean_working_directory
