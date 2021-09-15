@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 NAME = "django-dynamic-rest"
-DESCRIPTION = "Adds Dynamic API support to Django REST Framework."
+DESCRIPTION = "Dynamic API support to Django REST Framework."
 URL = "https://github.com/hunchat/django-dynamic-rest"
 VERSION = "2.1.0"
 SCRIPTS = ["manage.py"]
