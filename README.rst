@@ -1,5 +1,5 @@
 Django Dynamic REST
-============
+===================
 
 **Dynamic API extensions for Django REST Framework**
 
