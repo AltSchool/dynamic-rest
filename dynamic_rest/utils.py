@@ -1,10 +1,11 @@
-from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.utils.module_loading import import_string
 
 from hashids import Hashids
 
 from six import string_types
+
+from dynamic_rest.conf import settings
 
 
 FALSEY_STRINGS = (
