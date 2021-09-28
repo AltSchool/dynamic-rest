@@ -13,7 +13,7 @@ jobs:
           name: Install from requirements.txt
           command: pip install --user --exists-action w -r requirements.txt
       - run:
-          name: Run Setup
+          name: Run Setup.py
           command: python setup.py develop --user
       - run:
           name: Run Integration tests

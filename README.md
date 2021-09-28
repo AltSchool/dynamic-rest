@@ -63,8 +63,8 @@ over HTTP.
 # Requirements
 
 -   Python (3.6, 3.7, 3.8)
--   Django (2.0, 2.1, 2.2, 3.1, 3.2)
--   Django REST Framework (3.8, 3.9, 3.10, 3.11, 3.12)
+-   Django (2.2, 3.1, 3.2)
+-   Django REST Framework (3.11, 3.12)
 
 # Installation
 
@@ -630,8 +630,8 @@ DYNAMIC_REST = {
 We actively support the following:
 
 -   Python: 3.6, 3.7, 3.8
--   Django: 2.0, 2.1, 2.2, 3.1, 3.2
--   Django Rest Framework: 3.8, 3.9, 3.10, 3.11, 3.12
+-   Django: 2.2, 3.1, 3.2
+-   Django Rest Framework: 3.11, 3.12
 
 **Note:** Some combinations are not supported. For up-to-date information on actively supported/tested combinations, see the `tox.ini` file.
 
