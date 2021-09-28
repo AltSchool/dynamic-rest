@@ -1,11 +1,10 @@
-from django.contrib.contenttypes.models import ContentType
 from django.test import TestCase, override_settings
 
 from dynamic_rest.utils import (
     is_truthy,
     unpack,
-    external_id_from_model_and_internal_id,
     internal_id_from_model_and_external_id,
+    model_from_definition
 )
 from tests.models import User
 
@@ -40,12 +39,29 @@ class UtilsTestCase(TestCase):
 
     @override_settings(
         ENABLE_HASHID_FIELDS=True,
-        HASHIDS_SALT="If my calculations are correct, when this vaby hits 88 miles per hour, you're gonna see some serious s***.",
+        HASHIDS_SALT="If my calculations are correct, "
+                     "when this vaby hits 88 miles per hour, "
+                     "you're gonna see some serious s***.",
     )
-    def test_internal_id_from_model_and_external_id_model_object_does_not_exits(self):
+    def test_int_id_from_model_ext_id_obj_does_not_exits(
+            self):
         self.assertRaises(
             User.DoesNotExist,
             internal_id_from_model_and_external_id,
             model=User,
             external_id="skdkahh",
+        )
+
+    def test_model_from_definition(self):
+        self.assertEqual(model_from_definition('tests.models.User'), User)
+        self.assertEqual(model_from_definition(User), User)
+        self.assertRaises(
+            AssertionError,
+            model_from_definition,
+            model_definition='django.test.override_settings'
+        )
+        self.assertRaises(
+            AssertionError,
+            model_from_definition,
+            model_definition=User()
         )

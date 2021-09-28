@@ -1,8 +1,4 @@
-# Backwards compatability for django < 1.10.x
-try:
-    from django.urls import set_script_prefix, clear_script_prefix
-except ImportError:
-    from django.core.urlresolvers import set_script_prefix, clear_script_prefix
+from django.urls import set_script_prefix, clear_script_prefix
 
 
 from rest_framework.test import APITestCase

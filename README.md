@@ -1,11 +1,11 @@
 # Django Dynamic REST
 
-[![Circle CI](https://circleci.com/gh/hunchat/django-dynamic-rest.svg?style=svg)](https://circleci.com/gh/hunchat/django-dynamic-rest)
-[![PyPi](https://img.shields.io/pypi/v/django-dynamic-rest.svg)](https://pypi.python.org/pypi/django-dynamic-rest)
+[![Circle CI](https://circleci.com/gh/AltSchool/dynamic-rest.svg?style=svg)](https://circleci.com/gh/AltSchool/dynamic-rest)
+[![PyPi](https://img.shields.io/pypi/v/dynamic-rest.svg)](https://pypi.python.org/pypi/dynamic-rest)
 
 **Dynamic API extensions for Django REST Framework**
 
-See http://django-dynamic-rest.readthedocs.org for full documentation.
+See http://dynamic-rest.readthedocs.org for full documentation.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -36,10 +36,10 @@ See http://django-dynamic-rest.readthedocs.org for full documentation.
 
 # Overview
 
-Django Dynamic REST (or DDREST) extends the popular [Django REST Framework](https://django-rest-framework.org) (or DRF) with API features that
+Dynamic REST (or DREST) extends the popular [Django REST Framework](https://django-rest-framework.org) (or DRF) with API features that
 empower simple RESTful APIs with the flexibility of a graph query language.
 
-DDREST classes can be used as a drop-in replacement for DRF classes, which offer the following features on top of the standard DRF kit:
+DREST classes can be used as a drop-in replacement for DRF classes, which offer the following features on top of the standard DRF kit:
 
 -   Linked relationships
 -   Sideloaded relationships
@@ -51,30 +51,35 @@ DDREST classes can be used as a drop-in replacement for DRF classes, which offer
 -   Directory panel for your Browsable API
 -   Optimizations
 
-DDREST is the continuation of [dynamic-rest](https://github.com/AltSchool/dynamic-rest)
-written by [AltSchool](https://github.com/AltSchool) which meant to complement [Ember](https://github.com/emberjs/data)\_\_, but it can be used to provide
+DREST was originally written to complement [Ember](https://github.com/emberjs/data)\_\_, but it can be used to provide
 fast and flexible CRUD operations to any consumer that supports JSON
 over HTTP.
 
 ## Maintainers
+
+-   [Anthony Leontiev](mailto:aleontiev@tohigherground.com>)
+-   [Savinay Nangalia](mailto:snangalia@tohigherground.com)
+-   [Christina D'Astolfo](mailto:cdastolfo@tohigherground.com)
+
+## Contributors
 
 -   [Ernesto González](mailto:ernesto@hunchat.com)
 
 # Requirements
 
 -   Python (3.6, 3.7, 3.8)
--   Django (2.0, 2.1, 2.2, 3.1, 3.2)
--   Django REST Framework (3.8, 3.9, 3.10, 3.11, 3.12)
+-   Django (2.2, 3.1, 3.2)
+-   Django REST Framework (3.11, 3.12)
 
 # Installation
 
 1. Install using `pip`:
 
 ```bash
-    pip install django-dynamic-rest
+    pip install dynamic-rest
 ```
 
-(or add `django-dynamic-rest` to `requirements.txt` or `setup.py`)
+(or add `dynamic-rest` to `requirements.txt` or `setup.py`)
 
 2. Add `rest_framework` and `dynamic_rest` to `INSTALLED_APPS` in `settings.py`:
 
@@ -87,7 +92,7 @@ over HTTP.
 
 ```
 
-3. If you want to use the [Directory panel](#directory-panel), replace DRF's browsable API renderer with DDREST's
+3. If you want to use the [Directory panel](#directory-panel), replace DRF's browsable API renderer with DREST's
    in your settings:
 
 ```python
@@ -102,13 +107,13 @@ REST_FRAMEWORK = {
 # Demo
 
 This repository comes with a `tests` package that also serves as a demo application.
-This application is hosted at https://django-dynamic-rest.herokuapp.com but can also be run locally:
+This application is hosted at https://dynamic-rest.herokuapp.com but can also be run locally:
 
 1. Clone this repository:
 
 ```bash
-    git clone git@github.com:hunchat/django-dynamic-rest.git
-    cd django-dynamic-rest
+    git clone git@github.com:AltSchool/dynamic-rest.git
+    cd dynamic-rest
 ```
 
 2. From within the repository root, start the demo server:
@@ -157,12 +162,12 @@ router.register('/users', UserViewSet)
 
 ## Linked relationships
 
-One of the key features of the DDREST serializer layer is the ability to represent relationships in different ways, depending on the request context (external requirements) and the code context (internal requirements).
+One of the key features of the DREST serializer layer is the ability to represent relationships in different ways, depending on the request context (external requirements) and the code context (internal requirements).
 
 By default, a "has-one" (or "belongs-to") relationship will be represented as the value of the related object's ID.
 A "has-many" relationship will be represented as a list of all related object IDs.
 
-When a relationship is represented in this way, DDREST automatically includes relationship links for any has-many relationships in the API response that represents the object:
+When a relationship is represented in this way, DREST automatically includes relationship links for any has-many relationships in the API response that represents the object:
 
 ```
 -->
@@ -209,7 +214,7 @@ Using linked relationships provides your API consumers with a "lazy-loading" mec
 
 In some situations, it can be more efficient to load relationships eagerly, in such a way that both the primary records and their related data are loaded simultaneously. In Django, this can be accomplished by using [prefetch_related](https://docs.djangoproject.com/en/1.9/ref/models/querysets/#django.db.models.query.QuerySet.prefetch_related) or [select_related](https://docs.djangoproject.com/en/1.9/ref/models/querysets/#select-related).
 
-In DDREST, the requirement to eagerly load (or "sideload") relationships can be expressed with the `include[]` query parameter.
+In DREST, the requirement to eagerly load (or "sideload") relationships can be expressed with the `include[]` query parameter.
 
 For example, in order to fetch a user and sideload their groups:
 
@@ -332,7 +337,7 @@ For example, if you requested a list of 10 users along with their groups, and th
 
 You can use the `include[]` feature not only to sideload relationships, but also to load basic fields that are marked "deferred".
 
-In DDREST, any field or relationship can be marked deferred, which indicates to the framework that the field should only be returned when requested by `include[]`. This could be a good option for fields with large values that are not always relevant in a general context.
+In DREST, any field or relationship can be marked deferred, which indicates to the framework that the field should only be returned when requested by `include[]`. This could be a good option for fields with large values that are not always relevant in a general context.
 
 For example, a user might have a "personal_statement" field that we would want to defer. At the serializer layer, that would look like this:
 
@@ -437,7 +442,7 @@ Note that `links` will always be returned for relationships that are deferred.
 
 ## Filtering
 
-Tired of writing custom filters for all of your fields? DDREST has your back with the `filter{}` feature.
+Tired of writing custom filters for all of your fields? DREST has your back with the `filter{}` feature.
 
 You can filter a user by his name (exact match):
 
@@ -513,7 +518,7 @@ You can filter a user by his name (exact match):
     200 OK
 ```
 
-The sky is the limit! DDREST supports just about every basic filtering scenario and operator that you can use in Django:
+The sky is the limit! DREST supports just about every basic filtering scenario and operator that you can use in Django:
 
 -   in
 -   icontains
@@ -550,17 +555,17 @@ For descending order, simply add a `-` sign. To sort by name in descending order
 ## Directory panel
 
 We love the DRF browsable API, but wish that it included a directory that would let you see your entire list of endpoints at a glance from any page.
-DDREST adds that in:
+DREST adds that in:
 
 ![Directory panel][directory]
 
 ## Optimizations
 
 Supporting nested sideloading and filtering is expensive and can lead to very poor query performance if implemented naively.
-DDREST uses Django's [Prefetch](https://docs.djangoproject.com/en/1.9/ref/models/querysets/#django.db.models.Prefetch) object to prevent N+1 query situations and guarantee that your API is performant.
+DREST uses Django's [Prefetch](https://docs.djangoproject.com/en/1.9/ref/models/querysets/#django.db.models.Prefetch) object to prevent N+1 query situations and guarantee that your API is performant.
 We also optimize the serializer layer to ensure that the conversion of model objects into JSON is as fast as possible.
 
-How fast is it? Here are some [benchmarks](benchmarks) that compare DDREST response time to DRF response time. DDREST out-performs DRF on every benchmark:
+How fast is it? Here are some [benchmarks](benchmarks) that compare DREST response time to DRF response time. DREST out-performs DRF on every benchmark:
 
 Linear benchmark: rendering a flat list
 ![Linear Benchmark][benchmark-linear]
@@ -573,7 +578,7 @@ Cubic benchmark: rendering a list of lists of lists
 
 # Settings
 
-DDREST is configurable, and all settings should be nested under a single block in your `settings.py` file.
+DREST is configurable, and all settings should be nested under a single block in your `settings.py` file.
 Here are our [defaults](dynamic_rest/conf.py):
 
 ```python
@@ -630,8 +635,8 @@ DYNAMIC_REST = {
 We actively support the following:
 
 -   Python: 3.6, 3.7, 3.8
--   Django: 2.0, 2.1, 2.2, 3.1, 3.2
--   Django Rest Framework: 3.8, 3.9, 3.10, 3.11, 3.12
+-   Django: 2.2, 3.1, 3.2
+-   Django Rest Framework: 3.11, 3.12
 
 **Note:** Some combinations are not supported. For up-to-date information on actively supported/tested combinations, see the `tox.ini` file.
 

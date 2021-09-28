@@ -6,7 +6,6 @@ from dynamic_rest.utils import model_from_definition
 class DynamicSerializerBase(object):
 
     """Base class for all DREST serializers."""
-
     pass
 
 
@@ -18,7 +17,7 @@ def resettable_cached_property(func):
     """
 
     def wrapper(self):
-        if not hasattr(self, "_resettable_cached_properties"):
+        if not hasattr(self, '_resettable_cached_properties'):
             self._resettable_cached_properties = {}
         if func.__name__ not in self._resettable_cached_properties:
             self._resettable_cached_properties[func.__name__] = func(self)
@@ -35,7 +34,7 @@ def cacheable_object(cls):
     """
 
     def reset(self):
-        if hasattr(self, "_resettable_cached_properties"):
+        if hasattr(self, '_resettable_cached_properties'):
             self._resettable_cached_properties = {}
 
     cls.reset = reset
@@ -59,18 +58,19 @@ class CacheableFieldMixin(object):
 
     @resettable_cached_property
     def context(self):
-        return getattr(self.root, "_context", {})
+        return getattr(self.root, '_context', {})
 
 
 class GetModelMixin(object):
     """
     Mixin to retrieve model hashid
 
-    Implementation from https://github.com/evenicoulddoit/django-rest-framework-serializer-extensions
+    Implementation from
+    https://github.com/evenicoulddoit/django-rest-framework-serializer-extensions
     """
 
     def __init__(self, *args, **kwargs):
-        self.model = kwargs.pop("model", None)
+        self.model = kwargs.pop('model', None)
         super(GetModelMixin, self).__init__(*args, **kwargs)
 
     def get_model(self):
@@ -86,7 +86,7 @@ class GetModelMixin(object):
         dot-delimited string path to it.
         """
         if self.model is None:
-            custom_fn_name = "get_{0}_model".format(self.field_name)
+            custom_fn_name = 'get_{0}_model'.format(self.field_name)
 
             if hasattr(self.parent, custom_fn_name):
                 return getattr(self.parent, custom_fn_name)()

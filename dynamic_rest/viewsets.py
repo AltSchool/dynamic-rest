@@ -138,7 +138,7 @@ class WithDynamicViewSetMixin(object):
                 for d in request.data.dicts[1:]:
                     data_as_dict.update(d)
                 request._full_data = data_as_dict
-        except:
+        except BaseException:
             pass
 
         return request

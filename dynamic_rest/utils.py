@@ -1,3 +1,4 @@
+from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.utils.module_loading import import_string
 
@@ -9,9 +10,9 @@ from dynamic_rest.conf import settings
 
 
 FALSEY_STRINGS = (
-    "0",
-    "false",
-    "",
+    '0',
+    'false',
+    '',
 )
 
 
@@ -26,7 +27,7 @@ def unpack(content):
         # empty values pass through
         return content
 
-    keys = [k for k in content.keys() if k != "meta"]
+    keys = [k for k in content.keys() if k != 'meta']
     unpacked = content[keys[0]]
     return unpacked
 
@@ -39,10 +40,11 @@ def external_id_from_model_and_internal_id(model, internal_id):
 
     if hashids is None:
         raise AssertionError(
-            "To use hashids features you must set ENABLE_HASHID_FIELDS to true "
-            "and provide a HASHIDS_SALT in your dynamic_rest settings."
-        )
-    return hashids.encode(ContentType.objects.get_for_model(model).id, internal_id)
+            "To use hashids features you must set "
+            "ENABLE_HASHID_FIELDS to true "
+            "and provide a HASHIDS_SALT in your dynamic_rest settings.")
+    return hashids.encode(
+        ContentType.objects.get_for_model(model).id, internal_id)
 
 
 def internal_id_from_model_and_external_id(model, external_id):
@@ -57,9 +59,9 @@ def internal_id_from_model_and_external_id(model, external_id):
 
     if hashids is None:
         raise AssertionError(
-            "To use hashids features you must set ENABLE_HASHID_FIELDS to true "
-            "and provide a HASHIDS_SALT in your dynamic_rest settings."
-        )
+            "To use hashids features you must set "
+            "ENABLE_HASHID_FIELDS to true "
+            "and provide a HASHIDS_SALT in your dynamic_rest settings.")
 
     try:
         content_type_id, instance_id = hashids.decode(external_id)
@@ -87,7 +89,8 @@ def model_from_definition(model_definition):
     Returns:
         (django.db.models.Model)
 
-    Implementation from https://github.com/evenicoulddoit/django-rest-framework-serializer-extensions
+    Implementation from
+    https://github.com/evenicoulddoit/django-rest-framework-serializer-extensions
     """
     if isinstance(model_definition, str):
         model = import_string(model_definition)
@@ -97,6 +100,7 @@ def model_from_definition(model_definition):
     try:
         assert issubclass(model, models.Model)
     except (AssertionError, TypeError):
-        raise AssertionError('"{0}"" is not a Django model'.format(model_definition))
+        raise AssertionError(
+            '"{0}"" is not a Django model'.format(model_definition))
 
     return model

@@ -624,7 +624,8 @@ class TestUsersAPI(APITestCase):
             self.assertEqual(
                 [
                     ErrorDetail(
-                        string='“0” value has an invalid date format. It must be in YYYY-MM-DD format.',
+                        string='“0” value has an invalid date format. '
+                               'It must be in YYYY-MM-DD format.',
                         code='invalid'
                     )
                 ],

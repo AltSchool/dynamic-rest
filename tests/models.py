@@ -6,20 +6,26 @@ from django.db import models
 class User(models.Model):
     name = models.TextField()
     last_name = models.TextField()
-    groups = models.ManyToManyField("Group", related_name="users")
-    permissions = models.ManyToManyField("Permission", related_name="users")
+    groups = models.ManyToManyField('Group', related_name='users')
+    permissions = models.ManyToManyField('Permission', related_name='users')
     date_of_birth = models.DateField(null=True, blank=True)
     # 'related_name' intentionally left unset in location field below:
     location = models.ForeignKey(
-        "Location", null=True, blank=True, on_delete=models.CASCADE
+        'Location',
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE
     )
     favorite_pet_type = models.ForeignKey(
-        ContentType, null=True, blank=True, on_delete=models.CASCADE
+        ContentType,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE
     )
     favorite_pet_id = models.TextField(null=True, blank=True)
     favorite_pet = GenericForeignKey(
-        "favorite_pet_type",
-        "favorite_pet_id",
+        'favorite_pet_type',
+        'favorite_pet_id',
     )
     is_dead = models.BooleanField(null=True, default=False)
 
@@ -32,15 +38,23 @@ class Profile(models.Model):
 
 class Cat(models.Model):
     name = models.TextField()
-    home = models.ForeignKey("Location", on_delete=models.CASCADE)
+    home = models.ForeignKey('Location', on_delete=models.CASCADE)
     backup_home = models.ForeignKey(
-        "Location", related_name="friendly_cats", on_delete=models.CASCADE
+        'Location',
+        related_name='friendly_cats',
+        on_delete=models.CASCADE
     )
     hunting_grounds = models.ManyToManyField(
-        "Location", related_name="annoying_cats", related_query_name="getoffmylawn"
+        'Location',
+        related_name='annoying_cats',
+        related_query_name='getoffmylawn'
     )
     parent = models.ForeignKey(
-        "Cat", null=True, blank=True, related_name="kittens", on_delete=models.CASCADE
+        'Cat',
+        null=True,
+        blank=True,
+        related_name='kittens',
+        on_delete=models.CASCADE
     )
 
 
@@ -62,7 +76,7 @@ class Zebra(models.Model):
 
 class Group(models.Model):
     name = models.TextField(unique=True)
-    permissions = models.ManyToManyField("Permission", related_name="groups")
+    permissions = models.ManyToManyField('Permission', related_name='groups')
 
 
 class Permission(models.Model):
@@ -82,11 +96,14 @@ class Event(models.Model):
     """
 
     name = models.TextField()
-    status = models.TextField(default="current")
+    status = models.TextField(default='current')
     location = models.ForeignKey(
-        "Location", null=True, blank=True, on_delete=models.CASCADE
+        'Location',
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE
     )
-    users = models.ManyToManyField("User")
+    users = models.ManyToManyField('User')
 
 
 class A(models.Model):
@@ -94,12 +111,12 @@ class A(models.Model):
 
 
 class B(models.Model):
-    a = models.OneToOneField("A", related_name="b", on_delete=models.CASCADE)
+    a = models.OneToOneField('A', related_name='b', on_delete=models.CASCADE)
 
 
 class C(models.Model):
-    b = models.ForeignKey("B", related_name="cs", on_delete=models.CASCADE)
-    d = models.ForeignKey("D", on_delete=models.CASCADE)
+    b = models.ForeignKey('B', related_name='cs', on_delete=models.CASCADE)
+    d = models.ForeignKey('D', on_delete=models.CASCADE)
 
 
 class D(models.Model):

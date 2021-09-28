@@ -1,7 +1,6 @@
 """Module containing Django meta helpers."""
 from itertools import chain
 
-from django import VERSION
 from django.db.models import ManyToOneRel  # tested in 1.9
 from django.db.models import OneToOneRel  # tested in 1.9
 from django.db.models import (
@@ -12,8 +11,6 @@ from django.db.models import (
 )
 
 from dynamic_rest.related import RelatedObject
-
-DJANGO19 = VERSION >= (1, 9)
 
 
 def is_model_field(model, field_name):
@@ -46,25 +43,17 @@ def get_model_field(model, field_name):
     """
     meta = model._meta
     try:
-        if DJANGO19:
-            field = meta.get_field(field_name)
-        else:
-            field = meta.get_field_by_name(field_name)[0]
-        return field
-    except:
-        if DJANGO19:
-            related_objs = (
-                f for f in meta.get_fields()
-                if (f.one_to_many or f.one_to_one)
-                and f.auto_created and not f.concrete
-            )
-            related_m2m_objs = (
-                f for f in meta.get_fields(include_hidden=True)
-                if f.many_to_many and f.auto_created
-            )
-        else:
-            related_objs = meta.get_all_related_objects()
-            related_m2m_objs = meta.get_all_related_many_to_many_objects()
+        return meta.get_field(field_name)
+    except BaseException:
+        related_objs = (
+            f for f in meta.get_fields()
+            if (f.one_to_many or f.one_to_one)
+            and f.auto_created and not f.concrete
+        )
+        related_m2m_objs = (
+            f for f in meta.get_fields(include_hidden=True)
+            if f.many_to_many and f.auto_created
+        )
 
         related_objects = {
             o.get_accessor_name(): o
@@ -100,10 +89,10 @@ def get_model_field_and_type(model, field_name):
 
     # Django 1.9
     type_map = [
-        (OneToOneField,  'o2o'),
-        (OneToOneRel,  'o2or'),  # is subclass of m2o so check first
-        (ManyToManyField,  'm2m'),
-        (ManyToOneRel,  'm2o'),
+        (OneToOneField, 'o2o'),
+        (OneToOneRel, 'o2or'),  # is subclass of m2o so check first
+        (ManyToManyField, 'm2m'),
+        (ManyToOneRel, 'm2o'),
         (ManyToManyRel, 'm2m'),
         (ForeignKey, 'fk'),  # check last
     ]
@@ -155,7 +144,7 @@ def reverse_m2m_field_name(m2m_field):
     try:
         # Django 1.9
         return m2m_field.remote_field.name
-    except:
+    except BaseException:
         # Django 1.7
         if hasattr(m2m_field, 'rel'):
             return m2m_field.rel.related_name
@@ -171,7 +160,7 @@ def reverse_o2o_field_name(o2or_field):
     try:
         # Django 1.9
         return o2or_field.remote_field.attname
-    except:
+    except BaseException:
         # Django 1.7
         return o2or_field.field.attname
 
@@ -180,7 +169,7 @@ def get_remote_model(field):
     try:
         # Django 1.9
         return field.remote_field.model
-    except:
+    except BaseException:
         # Django 1.7
         if hasattr(field, 'field'):
             return field.field.model
@@ -195,5 +184,5 @@ def get_remote_model(field):
 def get_model_table(model):
     try:
         return model._meta.db_table
-    except:
+    except BaseException:
         return None

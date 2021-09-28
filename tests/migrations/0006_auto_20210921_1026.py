@@ -13,16 +13,22 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='cat',
             name='hunting_grounds',
-            field=models.ManyToManyField(related_name='annoying_cats', related_query_name='getoffmylawn', to='tests.Location'),
+            field=models.ManyToManyField(
+                related_name='annoying_cats',
+                related_query_name='getoffmylawn',
+                to='tests.Location'),
         ),
         migrations.AlterField(
             model_name='event',
             name='status',
-            field=models.TextField(default='current'),
+            field=models.TextField(
+                default='current'),
         ),
         migrations.AlterField(
             model_name='user',
             name='is_dead',
-            field=models.BooleanField(default=False, null=True),
+            field=models.BooleanField(
+                default=False,
+                null=True),
         ),
     ]
