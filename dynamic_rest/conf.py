@@ -55,11 +55,6 @@ DYNAMIC_REST = {
     # Enables caching of serializer fields to speed up serializer usage
     # Needs to also be configured on a per-serializer basis
     "ENABLE_FIELDS_CACHE": False,
-    # Enables use of hashid fields
-    "ENABLE_HASHID_FIELDS": False,
-    # Salt value to salt hash ids.
-    # Needs to be non-nullable if 'ENABLE_HASHID_FIELDS' is set to True
-    "HASHIDS_SALT": None,
 }
 
 

@@ -14,15 +14,10 @@ from dynamic_rest.bases import (
     CacheableFieldMixin,
     DynamicSerializerBase,
     resettable_cached_property,
-    GetModelMixin,
 )
 from dynamic_rest.conf import settings
 from dynamic_rest.fields.common import WithRelationalFieldMixin
 from dynamic_rest.meta import is_field_remote, get_model_field
-from dynamic_rest.utils import (
-    external_id_from_model_and_internal_id,
-    internal_id_from_model_and_external_id,
-)
 
 
 class DynamicField(CacheableFieldMixin, fields.Field):
@@ -405,29 +400,3 @@ class CountField(DynamicComputedField):
                 pass
 
         return len(data)
-
-
-class DynamicHashIdField(GetModelMixin, DynamicField):
-    """
-    Represents an external ID (computed with hashids).
-
-    Requires the source of the field to be an internal ID, and to provide
-    a "model" keyword argument. Together these will produce the external ID.
-
-    Based on https://github.com/evenicoulddoit/django-rest-framework-serializer-extensions
-    implementation of HashIdField.
-    """
-
-    default_error_messages = {
-        "malformed_hash_id": "That is not a valid HashId",
-    }
-
-    def to_representation(self, value):
-        return external_id_from_model_and_internal_id(self.get_model(), value)
-
-    def to_internal_value(self, value):
-        model = self.get_model()
-        try:
-            return internal_id_from_model_and_external_id(model, value)
-        except ObjectDoesNotExist:
-            self.fail("malformed_hash_id")

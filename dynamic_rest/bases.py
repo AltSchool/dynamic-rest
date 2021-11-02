@@ -1,8 +1,5 @@
 """This module contains base classes for DREST."""
 
-from dynamic_rest.utils import model_from_definition
-
-
 class DynamicSerializerBase(object):
 
     """Base class for all DREST serializers."""
@@ -60,46 +57,3 @@ class CacheableFieldMixin(object):
     @resettable_cached_property
     def context(self):
         return getattr(self.root, "_context", {})
-
-
-class GetModelMixin(object):
-    """
-    Mixin to retrieve model hashid
-
-    Implementation from https://github.com/evenicoulddoit/django-rest-framework-serializer-extensions
-    """
-
-    def __init__(self, *args, **kwargs):
-        self.model = kwargs.pop("model", None)
-        super(GetModelMixin, self).__init__(*args, **kwargs)
-
-    def get_model(self):
-        """
-        Return the model to generate the HashId for.
-
-        By default, this will equal the model defined within the Meta of the
-        ModelSerializer, but can be redefined either during initialisation
-        of the Field, or by providing a get_<field_name>_model method on the
-        parent serializer.
-
-        The Meta can either explicitly define a model, or provide a
-        dot-delimited string path to it.
-        """
-        if self.model is None:
-            custom_fn_name = "get_{0}_model".format(self.field_name)
-
-            if hasattr(self.parent, custom_fn_name):
-                return getattr(self.parent, custom_fn_name)()
-            else:
-                try:
-                    return self.parent.Meta.model
-                except AttributeError:
-                    raise AssertionError(
-                        'No "model" value passed to field "{0}"'.format(
-                            type(self).__name__
-                        )
-                    )
-        elif isinstance(self.model, str):
-            return model_from_definition(self.model)
-        else:
-            return self.model

@@ -23,13 +23,11 @@ from dynamic_rest.conf import settings
 from dynamic_rest.fields import (
     DynamicRelationField,
     DynamicGenericRelationField,
-    DynamicHashIdField,
 )
 from dynamic_rest.links import merge_link_object
 from dynamic_rest.meta import get_model_table
 from dynamic_rest.processors import SideloadingProcessor, post_process
 from dynamic_rest.tagged import tag_dict
-from dynamic_rest.utils import external_id_from_model_and_internal_id
 
 OPTS = {"ENABLE_FIELDS_CACHE": os.environ.get("ENABLE_FIELDS_CACHE", False)}
 FIELDS_CACHE = {}
@@ -149,7 +147,6 @@ class WithDynamicSerializerMixin(
         - name - string
         - plural_name - string
         - defer_many_relations - bool
-        - hash_ids - bool
         - fields - list of strings
         - deferred_fields - list of strings
         - immutable_fields - list of strings
@@ -538,21 +535,6 @@ class WithDynamicSerializerMixin(
             )
         }
 
-    def _get_hash_ids(self):
-        """
-        Check whether ids should be hashed or not.
-
-        It's determined by the hash_ids boolean Meta field. It defaults to False.
-
-        Returns:
-            Boolean.
-        """
-
-        if hasattr(self.Meta, "hash_ids"):
-            return self.Meta.hash_ids
-        else:
-            return False
-
     def _faster_to_representation(self, instance):
         """Modified to_representation with optimizations.
 
@@ -658,10 +640,6 @@ class WithDynamicSerializerMixin(
             Otherwise, a tagged data dict representation.
         """
         if self.id_only():
-            if self._get_hash_ids():
-                return external_id_from_model_and_internal_id(
-                    self.get_model(), instance.pk
-                )
             return instance.pk
 
         pk = getattr(instance, "pk", None)
