@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import json
 import pkg_resources
 import random
+import statistics
 import string
 from collections import defaultdict
 from datetime import datetime
@@ -113,21 +114,12 @@ CHART_TEMPLATE = """
 
 
 def get_average(values):
-    l = len(values)
-    if l == 0:
+    if len(values) == 0:
         return 0
     elif AVERAGE_TYPE == 'mean':
-        return sum(values) / l
+        return statistics.mean(values)
     elif AVERAGE_TYPE == 'median':
-        values = sorted(values)
-        if len(values) % 2 == 1:
-            return values[((l + 1) / 2) - 1]
-        else:
-            return float(
-                sum(
-                    values[(l / 2) - 1:(l / 2) + 1]
-                )
-            ) / 2.0
+        return statistics.median(values)
 
 
 class BenchmarkTest(APITestCase):
@@ -256,6 +248,7 @@ def get_random_string(size):
         random.choice(string.ascii_uppercase)
         for _ in xrange(size)
     )
+
 
 # generate test methods
 for benchmark in BENCHMARKS:

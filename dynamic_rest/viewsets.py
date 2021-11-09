@@ -138,7 +138,7 @@ class WithDynamicViewSetMixin(object):
                 for d in request.data.dicts[1:]:
                     data_as_dict.update(d)
                 request._full_data = data_as_dict
-        except:
+        except BaseException:
             pass
 
         return request
@@ -230,7 +230,7 @@ class WithDynamicViewSetMixin(object):
         include_fields = self.get_request_feature(self.INCLUDE)
         exclude_fields = self.get_request_feature(self.EXCLUDE)
         request_fields = {}
-        for fields, include in(
+        for fields, include in (
                 (include_fields, True),
                 (exclude_fields, False)):
             if fields is None:

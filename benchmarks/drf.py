@@ -71,6 +71,7 @@ class UserWithAllViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserWithAllSerializer
 
+
 # DRF routing
 
 router = routers.DefaultRouter()

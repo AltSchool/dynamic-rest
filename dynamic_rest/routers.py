@@ -190,7 +190,7 @@ class DynamicRouter(DefaultRouter):
             resource_key = serializer.get_resource_key()
             resource_name = serializer.get_name()
             path_name = serializer.get_plural_name()
-        except:
+        except BaseException:
             import traceback
             traceback.print_exc()
             raise Exception(
