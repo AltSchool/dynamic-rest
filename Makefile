@@ -12,11 +12,13 @@ endef
 
 pypi_upload_test: install
 	$(call header,"Uploading new version to PyPi - test")
-	@. $(INSTALL_DIR)/bin/activate; python setup.py sdist twine upload --repository testpypi dist/*
+	@. $(INSTALL_DIR)/bin/activate; python setup.py sdist
+	@twine upload --repository testpypi dist/*
 
 pypi_upload: install
 	$(call header,"Uploading new version to PyPi")
-	@. $(INSTALL_DIR)/bin/activate; python setup.py sdist twine upload dist/*
+	@. $(INSTALL_DIR)/bin/activate; python setup.py sdist
+	@twine upload dist/*
 
 docs: install
 	$(call header,"Building docs")
