@@ -10,21 +10,15 @@ endef
 
 .PHONY: docs
 
-pypi_register_test: install
-	$(call header,"Registering with PyPi - test")
-	@. $(INSTALL_DIR)/bin/activate; python setup.py register -r pypitest
-
-pypi_register: install
-	$(call header,"Registering with PyPi")
-	@. $(INSTALL_DIR)/bin/activate; python setup.py register -r pypi
-
 pypi_upload_test: install
 	$(call header,"Uploading new version to PyPi - test")
-	@. $(INSTALL_DIR)/bin/activate; python setup.py sdist upload -r pypitest
+	@. $(INSTALL_DIR)/bin/activate; python setup.py sdist
+	@twine upload --repository testpypi dist/*
 
 pypi_upload: install
 	$(call header,"Uploading new version to PyPi")
-	@. $(INSTALL_DIR)/bin/activate; python setup.py sdist upload -r pypi
+	@. $(INSTALL_DIR)/bin/activate; python setup.py sdist
+	@twine upload dist/*
 
 docs: install
 	$(call header,"Building docs")
