@@ -27,7 +27,7 @@ class User(models.Model):
         'favorite_pet_type',
         'favorite_pet_id',
     )
-    is_dead = models.NullBooleanField(default=False)
+    is_dead = models.BooleanField(null=True, default=False)
 
 
 class Profile(models.Model):
@@ -94,8 +94,9 @@ class Event(models.Model):
     Event model -- Intentionally missing serializer and viewset, so they
     can be added as part of a codelab.
     """
+
     name = models.TextField()
-    status = models.TextField(default="current")
+    status = models.TextField(default='current')
     location = models.ForeignKey(
         'Location',
         null=True,

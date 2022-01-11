@@ -55,6 +55,7 @@ class UserViewSet(viewsets.DynamicModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
+
 # DREST router
 
 router = routers.DynamicRouter()

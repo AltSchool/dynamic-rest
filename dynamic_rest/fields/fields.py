@@ -4,6 +4,7 @@ import importlib
 import pickle
 
 import six
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils.functional import cached_property
 from rest_framework import fields
 from rest_framework.exceptions import ValidationError, ParseError
@@ -12,15 +13,19 @@ from rest_framework.serializers import SerializerMethodField
 from dynamic_rest.bases import (
     CacheableFieldMixin,
     DynamicSerializerBase,
-    resettable_cached_property
+    resettable_cached_property,
+    GetModelMixin,
 )
 from dynamic_rest.conf import settings
 from dynamic_rest.fields.common import WithRelationalFieldMixin
 from dynamic_rest.meta import is_field_remote, get_model_field
+from dynamic_rest.utils import (
+    external_id_from_model_and_internal_id,
+    internal_id_from_model_and_external_id,
+)
 
 
 class DynamicField(CacheableFieldMixin, fields.Field):
-
     """
     Generic field base to capture additional custom field attributes.
     """
@@ -61,7 +66,6 @@ class DynamicComputedField(DynamicField):
 
 
 class DynamicMethodField(SerializerMethodField, DynamicField):
-
     def reset(self):
         super(DynamicMethodField, self).reset()
         if self.method_name == 'get_' + self.field_name:
@@ -85,14 +89,14 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
     SERIALIZER_KWARGS = set(('many', 'source'))
 
     def __init__(
-            self,
-            serializer_class,
-            many=False,
-            queryset=None,
-            embed=False,
-            sideloading=None,
-            debug=False,
-            **kwargs
+        self,
+        serializer_class,
+        many=False,
+        queryset=None,
+        embed=False,
+        sideloading=None,
+        debug=False,
+        **kwargs
     ):
         """
         Arguments:
@@ -136,18 +140,18 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
 
         try:
             model_field = get_model_field(parent_model, self.source)
-        except:
+        except BaseException:
             # model field may not be available for m2o fields with no
             # related_name
             model_field = None
 
         # Infer `required` and `allow_null`
         if 'required' not in self.kwargs and (
-                remote or (
-                    model_field and (
-                        model_field.has_default() or model_field.null
-                    )
+            remote or (
+                model_field and (
+                    model_field.has_default() or model_field.null
                 )
+            )
         ):
             self.required = False
         if 'allow_null' not in self.kwargs and getattr(
@@ -194,7 +198,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             'parent': self.parent.__class__.__name__,
             'field': self.field_name,
             'args': args,
-            'init_args': init_args
+            'init_args': init_args,
         }
         cache_key = hash(pickle.dumps(key_dict))
 
@@ -421,3 +425,30 @@ class CountField(DynamicComputedField):
                 pass
 
         return len(data)
+
+
+class DynamicHashIdField(GetModelMixin, DynamicField):
+    """
+    Represents an external ID (computed with hashids).
+
+    Requires the source of the field to be an internal ID, and to provide
+    a "model" keyword argument. Together these will produce the external ID.
+
+    Based on
+    https://github.com/evenicoulddoit/django-rest-framework-serializer-extensions
+    implementation of HashIdField.
+    """
+
+    default_error_messages = {
+        'malformed_hash_id': 'That is not a valid HashId',
+    }
+
+    def to_representation(self, value):
+        return external_id_from_model_and_internal_id(self.get_model(), value)
+
+    def to_internal_value(self, value):
+        model = self.get_model()
+        try:
+            return internal_id_from_model_and_external_id(model, value)
+        except ObjectDoesNotExist:
+            self.fail('malformed_hash_id')

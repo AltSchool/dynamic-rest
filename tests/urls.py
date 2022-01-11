@@ -1,4 +1,4 @@
-from django.conf.urls import include, url
+from django.urls import include, path
 
 from dynamic_rest.routers import DynamicRouter
 from tests import viewsets
@@ -23,5 +23,5 @@ router.register_resource(viewsets.CatViewSet, namespace='v2')  # canonical
 router.register(r'v1/user_locations', viewsets.UserLocationViewSet)
 
 urlpatterns = [
-    url(r'^', include(router.urls))
+    path('', include(router.urls))
 ]

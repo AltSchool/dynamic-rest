@@ -107,7 +107,7 @@ class DynamicGenericRelationField(
             if isinstance(r, TaggedDict):
                 r.pk_value = pk_value
             return r
-        except:
+        except BaseException:
             # This feature should be considered to be in Beta so don't break
             # if anything unexpected happens.
             # TODO: Remove once we have more confidence.

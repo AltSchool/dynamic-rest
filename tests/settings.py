@@ -16,6 +16,7 @@ DATABASES = {}
 if os.environ.get('DATABASE_URL'):
     # remote database
     import dj_database_url
+
     DATABASES['default'] = dj_database_url.config()
 else:
     # local sqlite database file
@@ -25,7 +26,7 @@ else:
         'USER': '',
         'PASSWORD': '',
         'HOST': '',
-        'PORT': ''
+        'PORT': '',
     }
 
 INSTALLED_APPS = (
@@ -38,30 +39,41 @@ INSTALLED_APPS = (
     'tests',
 )
 
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 REST_FRAMEWORK = {
+    'DEFAULT_PAGINATION_CLASS':
+        'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 50,
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
-        'dynamic_rest.renderers.DynamicBrowsableAPIRenderer'
-    )
+        'dynamic_rest.renderers.DynamicBrowsableAPIRenderer',
+    ),
 }
 
 ROOT_URLCONF = 'tests.urls'
 
 STATICFILES_DIRS = (
-    os.path.abspath(os.path.join(BASE_DIR, '../dynamic_rest/static')),
+    os.path.abspath(
+        os.path.join(
+            BASE_DIR, '../dynamic_rest/static'
+        )
+    ),
 )
 
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': os.path.abspath(os.path.join(BASE_DIR,
-                                '../dynamic_rest/templates')),
+        'DIRS': os.path.abspath(
+            os.path.join(BASE_DIR, '../dynamic_rest/templates')
+        ),
         'APP_DIRS': True,
     }
 ]
 
 DYNAMIC_REST = {
     'ENABLE_LINKS': True,
-    'DEBUG': os.environ.get('DYNAMIC_REST_DEBUG', 'false').lower() == 'true'
+    'DEBUG': os.environ.get('DYNAMIC_REST_DEBUG', 'false').lower() == 'true',
+    'ENABLE_HASHID_FIELDS': True,
+    'HASHIDS_SALT': "It's your kids, Marty!",
 }
