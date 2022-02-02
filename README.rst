@@ -43,4 +43,4 @@ Requirements
 
 -  Python (3.6, 3.7, 3.8)
 -  Django (2.2, 3.1, 3.2)
--  Django REST Framework (3.10, 3.11, 3.12)
+-  Django REST Framework (3.11, 3.12, 3.13)
