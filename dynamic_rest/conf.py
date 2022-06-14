@@ -60,10 +60,9 @@ DYNAMIC_REST = {
     # Can be overriden at the viewset level.
     'PAGE_SIZE_QUERY_PARAM': 'per_page',
 
-    # NO_COUNT_QUERY_PARAM: global setting for the query parameter that disables counts
+    # EXCLUDE_COUNT_QUERY_PARAM: global setting for the query parameter that disables counts
     # during pagination
-    # Can be overriden at the viewset level.
-    'NO_COUNT_QUERY_PARAM': 'exclude_count',
+    'EXCLUDE_COUNT_QUERY_PARAM': 'exclude_count',
 
     # ADDITIONAL_PRIMARY_RESOURCE_PREFIX: String to prefix additional
     # instances of the primary resource when sideloading.
