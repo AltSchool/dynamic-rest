@@ -1,3 +1,6 @@
+# adapter from Django's django.core.paginator
+# adds support for the "exclude_count" parameter
+
 from math import ceil
 
 from django.utils.functional import cached_property
@@ -58,7 +61,7 @@ class DynamicPaginator(Paginator):
         bottom = (number - 1) * self.per_page
         top = bottom + self.per_page
         if self.exclude_count:
-            # fetch one extra item to determine if more pages are available
+            # always fetch one extra item to determine if more pages are available
             top = top + 1
         else:
             # skip validating against count
