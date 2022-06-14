@@ -60,7 +60,7 @@ class DynamicPageNumberPagination(PageNumberPagination):
 
     @cached_property
     def exclude_count(self):
-        return self.request.query_params.get(self.EXCLUDE_COUNT_QUERY_PARAM)
+        return self.request.query_params.get(self.exclude_count_query_param)
 
     def paginate_queryset(self, queryset, request, **other):
         """
