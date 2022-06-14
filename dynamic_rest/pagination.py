@@ -51,8 +51,8 @@ class DynamicPageNumberPagination(PageNumberPagination):
             result['results'] = data
             result['meta'] = meta
         else:
-            result = {}
-            if 'meta' in data:
+            result = data
+            if 'meta' in result:
                 result['meta'].update(meta)
             else:
                 result['meta'] = meta

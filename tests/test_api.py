@@ -1099,7 +1099,7 @@ class TestAlternateLocationsAPI(APITestCase):
         # sanity check: standard filter returns 1 result
         r = self.client.get('/alternate_locations/?filter{users.last_name}=1')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data['locations']), 1)
+        self.assertEqual(len(r.data.get('locations', [])), 1, r.data)
         location = r.data['locations'][0]
         self.assertEqual(location['name'], '0')
 

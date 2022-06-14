@@ -3,8 +3,10 @@
 
 from math import ceil
 
+import inspect
 from django.utils.functional import cached_property
 from django.core.paginator import Paginator
+from django.utils.inspect import method_has_no_args
 
 try:
     from django.utils.translation import gettext_lazy as _
@@ -76,13 +78,10 @@ class DynamicPaginator(Paginator):
             # always return 0, count should not be called
             return 0
 
-        try:
-            return self.object_list.count()
-        except (AttributeError, TypeError):
-            # AttributeError if object_list has no count() method.
-            # TypeError if object_list.count() requires arguments
-            # (i.e. is of type list).
-            return len(self.object_list)
+        c = getattr(self.object_list, 'count', None)
+        if callable(c) and not inspect.isbuiltin(c) and method_has_no_args(c):
+            return c()
+        return len(self.object_list)
 
     @cached_property
     def num_pages(self):
