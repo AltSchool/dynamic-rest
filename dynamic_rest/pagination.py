@@ -18,6 +18,7 @@ class DynamicPageNumberPagination(PageNumberPagination):
     Adds support for pagination metadata and overrides for
     pagination query parameters.
     """
+
     page_size_query_param = settings.PAGE_SIZE_QUERY_PARAM
     exclude_count_query_param = settings.EXCLUDE_COUNT_QUERY_PARAM
     page_query_param = settings.PAGE_QUERY_PARAM
@@ -26,8 +27,9 @@ class DynamicPageNumberPagination(PageNumberPagination):
     django_paginator_class = DynamicPaginator
 
     def get_page_metadata(self):
-        # returns page, per_page
-        # also returns total_results and total_pages, unless EXCLUDE_COUNT_QUERY_PARAM is set
+        # always returns page, per_page
+        # also returns total_results and total_pages
+        # (unless EXCLUDE_COUNT_QUERY_PARAM is set)
         meta = {
             'page': self.page.number,
             'per_page': self.get_page_size(self.request)
@@ -81,7 +83,9 @@ class DynamicPageNumberPagination(PageNumberPagination):
             return None
 
         self.request = request
-        paginator = self.django_paginator_class(queryset, page_size, exclude_count=self.exclude_count)
+        paginator = self.django_paginator_class(
+            queryset, page_size, exclude_count=self.exclude_count
+        )
         page_number = self.get_page_number(request, paginator)
 
         try:
