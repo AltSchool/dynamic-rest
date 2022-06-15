@@ -29,14 +29,9 @@ class EmptyPage(InvalidPage):
 
 class DynamicPaginator(Paginator):
 
-    def __init__(self, object_list, per_page, orphans=0,
-                 allow_empty_first_page=True, exclude_count=False):
-        self.object_list = object_list
-        self._check_object_list_is_ordered()
-        self.per_page = int(per_page)
-        self.orphans = int(orphans)
-        self.allow_empty_first_page = allow_empty_first_page
-        self.exclude_count = exclude_count
+    def __init__(self, *args, **kwargs):
+        self.exclude_count = kwargs.pop('exclude_count', False)
+        super().__init__(*args, **kwargs)
 
     def validate_number(self, number):
         """Validate the given 1-based page number."""
@@ -64,9 +59,9 @@ class DynamicPaginator(Paginator):
         if self.exclude_count:
             # always fetch one extra item
             # to determine if more pages are available
+            # and skip validation against count
             top = top + 1
         else:
-            # skip validating against count
             if top + self.orphans >= self.count:
                 top = self.count
         return self._get_page(self.object_list[bottom:top], number, self)
