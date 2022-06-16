@@ -5,7 +5,7 @@ from math import ceil
 
 import inspect
 from django.utils.functional import cached_property
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.utils.inspect import method_has_no_args
 
 try:
@@ -13,18 +13,6 @@ try:
 except ImportError:
     def _(x):
         return x
-
-
-class InvalidPage(Exception):
-    pass
-
-
-class PageNotAnInteger(InvalidPage):
-    pass
-
-
-class EmptyPage(InvalidPage):
-    pass
 
 
 class DynamicPaginator(Paginator):
