@@ -1,4 +1,4 @@
-# adapter from Django's django.core.paginator
+# adapted from Django's django.core.paginator (2.2 - 3.2+ compatible)
 # adds support for the "exclude_count" parameter
 
 from math import ceil
