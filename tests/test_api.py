@@ -1099,7 +1099,7 @@ class TestAlternateLocationsAPI(APITestCase):
         # sanity check: standard filter returns 1 result
         r = self.client.get('/alternate_locations/?filter{users.last_name}=1')
         self.assertEqual(r.status_code, 200)
-        self.assertEqual(len(r.data['locations']), 1)
+        self.assertEqual(len(r.data.get('locations', [])), 1, r.data)
         location = r.data['locations'][0]
         self.assertEqual(location['name'], '0')
 
@@ -1405,11 +1405,74 @@ class TestLinks(APITestCase):
 class TestDogsAPI(APITestCase):
 
     """
-    Tests for sorting
+    Tests for sorting and pagination
     """
 
     def setUp(self):
         self.fixture = create_fixture()
+
+    def test_sort_exclude_count(self):
+        # page 1
+        url = '/dogs/?sort[]=name&exclude_count=1&per_page=4'
+        # 1 query - one for getting dogs, 0 for count
+        with self.assertNumQueries(1):
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code)
+        expected_data = [{
+            'id': 2,
+            'name': 'Air-Bud',
+            'origin': 'Air Bud 4: Seventh Inning Fetch',
+            'fur': 'gold'
+        }, {
+            'id': 1,
+            'name': 'Clifford',
+            'origin': 'Clifford the big red dog',
+            'fur': 'red'
+        }, {
+            'id': 4,
+            'name': 'Pluto',
+            'origin': 'Mickey Mouse',
+            'fur': 'brown and white'
+        }, {
+            'id': 3,
+            'name': 'Spike',
+            'origin': 'Rugrats',
+            'fur': 'brown'
+        }]
+        expected_meta = {
+            'page': 1,
+            'per_page': 4,
+            'more_pages': True
+        }
+        actual_response = json.loads(
+            response.content.decode('utf-8'))
+        actual_data = actual_response.get('dogs')
+        actual_meta = actual_response.get('meta')
+        self.assertEquals(expected_data, actual_data)
+        self.assertEquals(expected_meta, actual_meta)
+
+        # page 2
+        url = f'{url}&page=2'
+        with self.assertNumQueries(1):
+            response = self.client.get(url)
+        self.assertEquals(200, response.status_code)
+        expected_data = [{
+            'id': 5,
+            'name': 'Spike',
+            'origin': 'Tom and Jerry',
+            'fur': 'light-brown'
+        }]
+        expected_meta = {
+            'page': 2,
+            'per_page': 4,
+            'more_pages': False
+        }
+        actual_response = json.loads(
+            response.content.decode('utf-8'))
+        actual_data = actual_response.get('dogs')
+        actual_meta = actual_response.get('meta')
+        self.assertEquals(expected_data, actual_data)
+        self.assertEquals(expected_meta, actual_meta)
 
     def test_sort_implied_all(self):
         url = '/dogs/?sort[]=name'
