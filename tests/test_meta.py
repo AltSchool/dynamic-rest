@@ -64,4 +64,4 @@ class TestMeta(TestCase):
     def test_reverse_m2m_field_name(self):
         m2m_field = get_model_field(User, 'groups')
         reverse = reverse_m2m_field_name(m2m_field)
-        self.assertEquals('users', reverse)
+        self.assertEqual('users', reverse)
