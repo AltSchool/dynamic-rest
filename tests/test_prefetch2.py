@@ -38,7 +38,7 @@ class TestFastQuery(APITestCase):
         self.assertTrue(
             all([_['location'] for _ in result])
         )
-        self.assertEquals(
+        self.assertEqual(
             set(['blob', 'id', 'name']),
             set(result[0]['location'].keys())
         )
@@ -60,7 +60,7 @@ class TestFastQuery(APITestCase):
         self.assertTrue(
             isinstance(result[0]['groups'], list)
         )
-        self.assertEquals(
+        self.assertEqual(
             set(['id', 'name']),
             set(result[0]['groups'][0].keys())
         )
@@ -86,7 +86,7 @@ class TestFastQuery(APITestCase):
         self.assertTrue(
             all([_['user'] for _ in result])
         )
-        self.assertEquals(
+        self.assertEqual(
             self._user_keys(),
             set(result[0]['user'].keys())
         )
@@ -116,7 +116,7 @@ class TestFastQuery(APITestCase):
             result,
             key=lambda x: 1 if x['profile'] is None else 0
         )[0]
-        self.assertEquals(
+        self.assertEqual(
             set(['display_name', 'user_id', 'id', 'thumbnail_url']),
             set(user['profile'].keys())
         )
@@ -140,7 +140,7 @@ class TestFastQuery(APITestCase):
         ))
 
         self.assertIsNotNone(location)
-        self.assertEquals(
+        self.assertEqual(
             self._user_keys(),
             set(location['user_set'][0].keys())
         )
@@ -150,13 +150,13 @@ class TestFastQuery(APITestCase):
         self.assertTrue(isinstance(r, list))
 
         r = FastQuery(User.objects.order_by('id'))[1]
-        self.assertEquals(1, len(r))
-        self.assertEquals(r[0]['id'], 2)
+        self.assertEqual(1, len(r))
+        self.assertEqual(r[0]['id'], 2)
 
         r = FastQuery(User.objects.order_by('id'))[1:3]
-        self.assertEquals(2, len(r))
-        self.assertEquals(r[0]['id'], 2)
-        self.assertEquals(r[1]['id'], 3)
+        self.assertEqual(2, len(r))
+        self.assertEqual(r[0]['id'], 2)
+        self.assertEqual(r[1]['id'], 3)
 
         with self.assertRaises(TypeError):
             FastQuery(User.objects.all())[:10:2]
@@ -182,7 +182,7 @@ class TestFastQuery(APITestCase):
             )
         )
         obj = q.get(pk=3)
-        self.assertEquals(0, obj.friendly_cats.count())
+        self.assertEqual(0, obj.friendly_cats.count())
 
     def test_first_with_prefetch(self):
         # FastQuery.filter() should apply prefetch filters correctly
@@ -199,4 +199,4 @@ class TestFastQuery(APITestCase):
         )
 
         obj = q.first()
-        self.assertEquals(0, obj.friendly_cats.count())
+        self.assertEqual(0, obj.friendly_cats.count())
