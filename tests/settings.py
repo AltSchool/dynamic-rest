@@ -11,6 +11,7 @@ STATIC_ROOT = os.environ.get('STATIC_ROOT', INSTALL_DIR + 'www/static')
 ENABLE_INTEGRATION_TESTS = os.environ.get('ENABLE_INTEGRATION_TESTS', False)
 
 DEBUG = True
+USE_TZ = False
 
 DATABASES = {}
 if os.environ.get('DATABASE_URL'):
