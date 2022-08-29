@@ -269,3 +269,4 @@ for benchmark in BENCHMARKS:
             )
             test = generate_benchmark(name, title, drest, drf, size, sample)
             setattr(BenchmarkTest, test_name, test)
+            del test_name, test
