@@ -11,6 +11,7 @@ from tests.models import (
     Location,
     Part,
     Permission,
+    Recipe,
     User,
     Zebra
     )
@@ -29,14 +30,14 @@ def create_fixture():
     types = [
         'users', 'groups', 'locations', 'permissions',
         'events', 'cats', 'dogs', 'horses', 'zebras',
-        'cars', 'countries', 'parts',
+        'cars', 'countries', 'parts', 'recipes',
     ]
     Fixture = namedtuple('Fixture', types)
 
     fixture = Fixture(
         users=[], groups=[], locations=[], permissions=[],
         events=[], cats=[], dogs=[], horses=[], zebras=[],
-        cars=[], countries=[], parts=[]
+        cars=[], countries=[], parts=[], recipes=[]
     )
 
     for i in range(0, 4):
@@ -109,19 +110,19 @@ def create_fixture():
     }, {
         'name': 'Event 2',
         'status': 'current',
-        'location': 1
+        'location': 1,
     }, {
         'name': 'Event 3',
         'status': 'current',
-        'location': 1
+        'location': 1,
     }, {
         'name': 'Event 4',
         'status': 'archived',
-        'location': 2
+        'location': 2,
     }, {
         'name': 'Event 5',
         'status': 'current',
-        'location': 2
+        'location': 2,
     }]
 
     for dog in dogs:
@@ -233,6 +234,50 @@ def create_fixture():
             car_id=part.get('car'),
             name=part.get('name'),
             country_id=part.get('country')
+        ))
+
+    recipes = [{
+        'name': 'muffin',
+        'ingredients': {
+            'dough': {
+                'water': '100_g',
+                'flour': '100_g'
+            },
+            'chocolate_chips': '0_g'
+        }
+    }, {
+        'name': 'chocolate chip muffin',
+        'ingredients': {
+            'dough': {
+                'water': '100_g',
+                'flour': '100_g'
+            },
+            'chocolate_chips': '20_g'
+        }
+    }, {
+        'name': 'scone',
+        'ingredients': {
+            'dough': {
+                'water': '50_g',
+                'flour': '100_g'
+            },
+            'chocolate_chips': '0_g'
+        }
+    }, {
+        'name': 'chocolate chip scone',
+        'ingredients': {
+            'dough': {
+                'water': '50_g',
+                'flour': '100_g'
+            },
+            'chocolate_chips': '20_g'
+        }
+    }]
+
+    for recipe in recipes:
+        fixture.recipes.append(Recipe.objects.create(
+            name=recipe.get('name'),
+            ingredients=recipe.get('ingredients')
         ))
 
     return fixture
