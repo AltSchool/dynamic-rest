@@ -1,5 +1,6 @@
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.postgres.fields import JSONField
 from django.db import models
 
 
@@ -137,3 +138,8 @@ class Part(models.Model):
     car = models.ForeignKey(Car, on_delete=models.CASCADE)
     name = models.CharField(max_length=60)
     country = models.ForeignKey(Country, on_delete=models.CASCADE)
+
+
+class Recipe(models.Model):
+    name = models.CharField(max_length=60)
+    ingredients = JSONField(null=True)

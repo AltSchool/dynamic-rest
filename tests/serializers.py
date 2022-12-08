@@ -22,6 +22,7 @@ from tests.models import (
     Part,
     Permission,
     Profile,
+    Recipe,
     User,
     Zebra,
 )
@@ -323,3 +324,9 @@ class CarSerializer(DynamicModelSerializer):
         model = Car
         fields = ('id', 'name', 'country', 'parts')
         deferred_fields = ('name', 'country', 'parts')
+
+
+class RecipeSerializer(DynamicModelSerializer):
+    class Meta:
+        model = Recipe
+        fields = ('name', 'ingredients')
