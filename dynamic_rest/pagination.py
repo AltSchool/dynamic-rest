@@ -83,6 +83,12 @@ class DynamicPageNumberPagination(PageNumberPagination):
             return None
 
         self.request = request
+
+        # Trigger query execution before paginating the results.
+        # This ensures an accurate count of query size.
+        # I'm not 100% sure why yet, need to look more at SQL.
+        len(queryset)
+
         paginator = self.django_paginator_class(
             queryset, page_size, exclude_count=self.exclude_count
         )
