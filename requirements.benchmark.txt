@@ -1,5 +1,5 @@
 dj-database-url==0.3.0
-django-debug-toolbar==1.7
+django-debug-toolbar==1.11.1
 Django>=2.2,<4.2
 djangorestframework>=3.11.2,<3.15
 djay>=0.0.9
