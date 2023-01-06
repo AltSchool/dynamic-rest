@@ -8,6 +8,7 @@ STATIC_URL = '/static/'
 STATIC_ROOT = INSTALL_DIR + 'www/static'
 
 DEBUG = True
+USE_TZ = False
 
 DATABASES = {}
 if os.environ.get('DATABASE_URL'):

@@ -831,7 +831,7 @@ class TestMeta(TestCase):
         serializer = DogSerializer()
         if hasattr(serializer.Meta, 'name'):
             # bust cached value
-            del(serializer.Meta.name)
+            del serializer.Meta.name
         self.assertFalse(hasattr(serializer.Meta, 'name'))
         self.assertEqual('dog', serializer.get_name())
 
@@ -839,6 +839,6 @@ class TestMeta(TestCase):
         serializer = DogSerializer()
         if hasattr(serializer.Meta, 'plural_name'):
             # bust cached value
-            del(serializer.Meta.plural_name)
+            del serializer.Meta.plural_name
         self.assertFalse(hasattr(serializer.Meta, 'plural_name'))
         self.assertEqual('dogs', serializer.get_plural_name())
