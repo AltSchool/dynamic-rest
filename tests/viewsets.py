@@ -11,6 +11,7 @@ from tests.models import (
     Location,
     Permission,
     Profile,
+    Recipe,
     User,
     Zebra
 )
@@ -23,6 +24,7 @@ from tests.serializers import (
     LocationSerializer,
     PermissionSerializer,
     ProfileSerializer,
+    RecipeSerializer,
     UserLocationSerializer,
     UserSerializer,
     ZebraSerializer
@@ -179,3 +181,8 @@ class PermissionViewSet(DynamicModelViewSet):
 class CarViewSet(DynamicModelViewSet):
     serializer_class = CarSerializer
     queryset = Car.objects.all()
+
+
+class RecipeViewSet(DynamicModelViewSet):
+    serializer_class = RecipeSerializer
+    queryset = Recipe.objects.all()
