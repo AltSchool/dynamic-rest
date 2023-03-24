@@ -74,7 +74,7 @@ TEMPLATES = [
 
 DYNAMIC_REST = {
     'ENABLE_LINKS': True,
-    'DEBUG': os.environ.get('DYNAMIC_REST_DEBUG', 'false').lower() == 'true',
+    'DEBUG': True,  # os.environ.get('DYNAMIC_REST_DEBUG', 'false').lower() == 'true',
     'ENABLE_HASHID_FIELDS': True,
     'HASHIDS_SALT': "It's your kids, Marty!",
 }

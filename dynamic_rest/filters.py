@@ -167,6 +167,8 @@ def clause_to_q(clause, serializer):
     operator = 'eq'
     if parts[-1] in DynamicFilterBackend.VALID_FILTER_OPERATORS:
         operator = parts.pop()
+    if operator == 'eq':
+        operator = None
     node = FilterNode(parts, operator, value)
     key, _ = node.generate_query_key(serializer)
     q = Q(**{key: node.value})
@@ -262,7 +264,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         ):
             advanced_filters = self.view.get_request_feature(self.view.FILTER_JSON)
             if advanced_filters:
-                return json.loads(advanced_filters)
+                return {"_complex": json.loads(advanced_filters)}
 
         filters_map = kwargs.get('filters_map') or self.view.get_request_feature(
             self.view.FILTER
@@ -338,7 +340,9 @@ class DynamicFilterBackend(BaseFilterBackend):
           were specified.
         """
 
-        if '_include' in filters or '_exclude' in filters:
+        if (
+            '_complex' not in filters
+        ):
             includes = filters.get('_include')
             excludes = filters.get('_exclude')
             q = q or Q()
@@ -355,26 +359,26 @@ class DynamicFilterBackend(BaseFilterBackend):
                     q &= ~Q(**{k: v})
             return q
         else:
+            filters = filters.get('_complex')
             ors = filters.get('.or') or filters.get('$or')
             ands = filters.get('.and') or filters.get('$and')
-            q = q or Q()
+            if q is None:
+                q = Q()
             if ors:
-                return reduce(
+                result = reduce(
                     OR,
-                    [self._filters_to_query(f, serializer=serializer) for f in ors]
-                    + [q],
+                    [self._filters_to_query({"_complex": f}, serializer) for f in ors]
                 )
+                return result
             if ands:
                 return reduce(
                     AND,
-                    [self._filters_to_query(f, serializer=serializer) for f in ands]
-                    + [q],
+                    [self._filters_to_query({"_complex": f}, serializer) for f in ands]
                 )
-            else:
-                clauses = [
-                    clause_to_q(clause, serializer) for clause in filters.items()
-                ]
-                return q & reduce(AND, clauses) if clauses else q
+            clauses = [
+                clause_to_q(clause, serializer) for clause in filters.items()
+            ]
+            return reduce(AND, clauses) if clauses else q
 
     def _create_prefetch(self, source, queryset):
         return Prefetch(source, queryset=queryset)
@@ -562,9 +566,9 @@ class DynamicFilterBackend(BaseFilterBackend):
             filters = self._get_requested_filters()
             nested_filters = (
                 self._get_requested_filters(nested=True)
-                if '_include' not in filters and '_exclude' not in filters
-                else filters
+                if '_complex' in filters else filters
             )
+            nested_filters = getattr(nested_filters, '_complex', nested_filters)
         else:
             nested_filters = filters
 

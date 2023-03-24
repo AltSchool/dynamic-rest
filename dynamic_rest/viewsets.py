@@ -87,7 +87,8 @@ class WithDynamicViewSetMixin(object):
         PER_PAGE,
         SORT,
         SIDELOADING,
-        PATCH_ALL
+        PATCH_ALL,
+        FILTER_JSON
     )
     meta = None
     filter_backends = (DynamicFilterBackend, DynamicSortingFilter)

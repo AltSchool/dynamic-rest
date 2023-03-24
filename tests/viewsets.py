@@ -33,7 +33,8 @@ class UserViewSet(DynamicModelViewSet):
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
         DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT,
-        DynamicModelViewSet.SIDELOADING, DynamicModelViewSet.DEBUG
+        DynamicModelViewSet.SIDELOADING, DynamicModelViewSet.DEBUG,
+        DynamicModelViewSet.FILTER_JSON
     )
     model = User
     serializer_class = UserSerializer
@@ -86,7 +87,8 @@ class GroupNoMergeDictViewSet(DynamicModelViewSet):
 class GroupViewSet(DynamicModelViewSet):
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
-        DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT
+        DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT,
+        DynamicModelViewSet.FILTER_JSON
     )
     model = Group
     serializer_class = GroupSerializer
@@ -97,7 +99,8 @@ class LocationViewSet(DynamicModelViewSet):
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
         DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT,
-        DynamicModelViewSet.DEBUG, DynamicModelViewSet.SIDELOADING
+        DynamicModelViewSet.DEBUG, DynamicModelViewSet.SIDELOADING,
+        DynamicModelViewSet.FILTER_JSON
     )
     model = Location
     serializer_class = LocationSerializer
@@ -135,7 +138,8 @@ class ProfileViewSet(DynamicModelViewSet):
         DynamicModelViewSet.EXCLUDE,
         DynamicModelViewSet.FILTER,
         DynamicModelViewSet.INCLUDE,
-        DynamicModelViewSet.SORT
+        DynamicModelViewSet.SORT,
+        DynamicModelViewSet.FILTER_JSON,
     )
     model = Profile
     serializer_class = ProfileSerializer
