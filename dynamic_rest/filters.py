@@ -258,18 +258,15 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         """
 
-        if ('nested' not in kwargs or not kwargs.get('nested')) and getattr(
-            self, 'view', None
-        ):
-            advanced_filters = self.view.get_request_feature(self.view.FILTER, raw=True)
-            if advanced_filters:
-                return {"_complex": advanced_filters}
-
+        out = TreeMap()
         filters_map = kwargs.get('filters_map') or self.view.get_request_feature(
             self.view.FILTER
         )
+        if getattr(self, 'view', None):
+            advanced_filters = self.view.get_request_feature(self.view.FILTER, raw=True)
+            if advanced_filters:
+                out['_complex'] = advanced_filters
 
-        out = TreeMap()
         for spec, value in six.iteritems(filters_map):
 
             # Inclusion or exclusion?
@@ -559,20 +556,12 @@ class DynamicFilterBackend(BaseFilterBackend):
                 }
             )
 
-        nested_filters = None
         if filters is None:
             filters = self._get_requested_filters()
-            nested_filters = (
-                self._get_requested_filters(nested=True)
-                if '_complex' in filters else filters
-            )
-            nested_filters = getattr(nested_filters, '_complex', nested_filters)
-        else:
-            nested_filters = filters
 
         # build nested Prefetch queryset
         self._build_requested_prefetches(
-            prefetches, requirements, model, fields, nested_filters
+            prefetches, requirements, model, fields, filters
         )
 
         # build remaining prefetches out of internal requirements
