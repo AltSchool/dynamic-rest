@@ -430,7 +430,7 @@ class DynamicFilterBackend(BaseFilterBackend):
 
             source = field.source or name
             if '.' in source:
-                raise ValidationError('nested relationship values ' 'are not supported')
+                raise ValidationError('nested relationship values are not supported')
 
             if source in prefetches:
                 # ignore duplicated sources
