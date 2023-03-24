@@ -5,7 +5,6 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q, Prefetch, Manager
 import six
 from functools import reduce
-import json
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import BooleanField, NullBooleanField
@@ -262,16 +261,15 @@ class DynamicFilterBackend(BaseFilterBackend):
         if ('nested' not in kwargs or not kwargs.get('nested')) and getattr(
             self, 'view', None
         ):
-            advanced_filters = self.view.get_request_feature(self.view.FILTER_JSON)
+            advanced_filters = self.view.get_request_feature(self.view.FILTER, raw=True)
             if advanced_filters:
-                return {"_complex": json.loads(advanced_filters)}
+                return {"_complex": advanced_filters}
 
         filters_map = kwargs.get('filters_map') or self.view.get_request_feature(
             self.view.FILTER
         )
 
         out = TreeMap()
-
         for spec, value in six.iteritems(filters_map):
 
             # Inclusion or exclusion?

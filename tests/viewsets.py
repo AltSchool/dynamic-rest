@@ -34,7 +34,6 @@ class UserViewSet(DynamicModelViewSet):
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
         DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT,
         DynamicModelViewSet.SIDELOADING, DynamicModelViewSet.DEBUG,
-        DynamicModelViewSet.FILTER_JSON
     )
     model = User
     serializer_class = UserSerializer
@@ -88,7 +87,6 @@ class GroupViewSet(DynamicModelViewSet):
     features = (
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
         DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT,
-        DynamicModelViewSet.FILTER_JSON
     )
     model = Group
     serializer_class = GroupSerializer
@@ -100,7 +98,6 @@ class LocationViewSet(DynamicModelViewSet):
         DynamicModelViewSet.INCLUDE, DynamicModelViewSet.EXCLUDE,
         DynamicModelViewSet.FILTER, DynamicModelViewSet.SORT,
         DynamicModelViewSet.DEBUG, DynamicModelViewSet.SIDELOADING,
-        DynamicModelViewSet.FILTER_JSON
     )
     model = Location
     serializer_class = LocationSerializer
@@ -139,7 +136,6 @@ class ProfileViewSet(DynamicModelViewSet):
         DynamicModelViewSet.FILTER,
         DynamicModelViewSet.INCLUDE,
         DynamicModelViewSet.SORT,
-        DynamicModelViewSet.FILTER_JSON,
     )
     model = Profile
     serializer_class = ProfileSerializer

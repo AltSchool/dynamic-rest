@@ -420,7 +420,7 @@ class TestUsersAPI(APITestCase):
             }]
         }
         f = quote(json.dumps(f))
-        url = f'/users/?filter={f}'
+        url = f'/users/?filter{{}}={f}'
         with self.assertNumQueries(1):
             response = self.client.get(url)
         self.assertEqual(200, response.status_code)

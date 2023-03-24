@@ -2,6 +2,7 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import QueryDict
 import six
+import json
 from django.db import transaction, IntegrityError
 from rest_framework import exceptions, status, viewsets
 from rest_framework.exceptions import ValidationError
@@ -70,7 +71,6 @@ class WithDynamicViewSetMixin(object):
     INCLUDE = 'include[]'
     EXCLUDE = 'exclude[]'
     FILTER = 'filter{}'
-    FILTER_JSON = 'filter'
     SORT = 'sort[]'
     PAGE = settings.PAGE_QUERY_PARAM
     PER_PAGE = settings.PAGE_SIZE_QUERY_PARAM
@@ -88,7 +88,6 @@ class WithDynamicViewSetMixin(object):
         SORT,
         SIDELOADING,
         PATCH_ALL,
-        FILTER_JSON
     )
     meta = None
     filter_backends = (DynamicFilterBackend, DynamicSortingFilter)
@@ -155,7 +154,7 @@ class WithDynamicViewSetMixin(object):
         else:
             return renderers
 
-    def get_request_feature(self, name):
+    def get_request_feature(self, name, raw=False):
         """Parses the request for a particular feature.
 
         Arguments:
@@ -171,22 +170,32 @@ class WithDynamicViewSetMixin(object):
         elif '{}' in name:
             # object-type (keys are not consistent)
             return self._extract_object_params(
-                name) if name in self.features else {}
+                name, raw=raw) if name in self.features else {}
         else:
             # single-type
             return self.request.query_params.get(
                 name) if name in self.features else None
 
-    def _extract_object_params(self, name):
+    def _extract_object_params(self, name, raw=False):
         """
         Extract object params, return as dict
         """
 
         params = self.request.query_params.lists()
         params_map = {}
+        original_name = name
         prefix = name[:-1]
         offset = len(prefix)
+
         for name, value in params:
+            name_match = name == original_name
+            if name_match:
+                if raw and value:
+                    # filter{} as object
+                    return json.loads(value[0])
+                else:
+                    continue
+
             if name.startswith(prefix):
                 if name.endswith('}'):
                     name = name[offset:-1]
@@ -204,7 +213,7 @@ class WithDynamicViewSetMixin(object):
                 continue
             params_map[name] = value
 
-        return params_map
+        return params_map if not raw else None
 
     def get_queryset(self, queryset=None):
         """
