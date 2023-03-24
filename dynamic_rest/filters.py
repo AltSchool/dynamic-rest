@@ -4,6 +4,8 @@ from django.core.exceptions import ValidationError as InternalValidationError
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q, Prefetch, Manager
 import six
+from functools import reduce
+import json
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import BooleanField, NullBooleanField
@@ -17,13 +19,21 @@ from dynamic_rest.meta import (
     get_model_field,
     is_field_remote,
     is_model_field,
-    get_related_model
+    get_related_model,
 )
 from dynamic_rest.patches import patch_prefetch_one_level
 from dynamic_rest.prefetch import FastQuery, FastPrefetch
 from dynamic_rest.related import RelatedObject
 
 patch_prefetch_one_level()
+
+
+def OR(a, b):
+    return a | b
+
+
+def AND(a, b):
+    return a & b
 
 
 def has_joins(queryset):
@@ -39,7 +49,6 @@ def has_joins(queryset):
 
 
 class FilterNode(object):
-
     def __init__(self, field, operator, value):
         """Create an object representing a filter, to be stored in a TreeMap.
 
@@ -67,7 +76,7 @@ class FilterNode(object):
     def key(self):
         return '%s%s' % (
             '__'.join(self.field),
-            '__' + self.operator if self.operator else ''
+            '__' + self.operator if self.operator else '',
         )
 
     def generate_query_key(self, serializer):
@@ -105,9 +114,7 @@ class FilterNode(object):
                 continue
 
             if field_name not in fields:
-                raise ValidationError(
-                    "Invalid filter field: %s" % field_name
-                )
+                raise ValidationError("Invalid filter field: %s" % field_name)
 
             field = fields[field_name]
 
@@ -130,14 +137,42 @@ class FilterNode(object):
             if isinstance(s, serializers.ListSerializer):
                 s = s.child
             if not s:
-                raise ValidationError(
-                    "Invalid nested filter field: %s" % field_name
-                )
+                raise ValidationError("Invalid nested filter field: %s" % field_name)
 
         if self.operator:
             rewritten.append(self.operator)
 
         return ('__'.join(rewritten), field)
+
+
+def rewrite_filters(fs, serializer):
+    out = {}
+    for node in fs.values():
+        filter_key, field = node.generate_query_key(serializer)
+        if isinstance(field, (BooleanField, NullBooleanField)):
+            node.value = is_truthy(node.value)
+        out[filter_key] = node.value
+
+    return out
+
+
+def clause_to_q(clause, serializer):
+    key, value = clause
+    negate = False
+    q = {}
+    if key.startswith('-'):
+        negate = True
+        key = key[1:]
+    parts = key.split('.')
+    operator = 'eq'
+    if parts[-1] in DynamicFilterBackend.VALID_FILTER_OPERATORS:
+        operator = parts.pop()
+    node = FilterNode(parts, operator, value)
+    key, _ = node.generate_query_key(serializer)
+    q = Q(**{key: node.value})
+    if negate:
+        q = ~q
+    return q
 
 
 class DynamicFilterBackend(BaseFilterBackend):
@@ -207,6 +242,7 @@ class DynamicFilterBackend(BaseFilterBackend):
     This function was renamed and broke downstream dependencies that haven't
     been updated to use the new naming convention.
     """
+
     def _extract_filters(self, **kwargs):
         return self._get_requested_filters(**kwargs)
 
@@ -221,9 +257,15 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         """
 
-        filters_map = (
-            kwargs.get('filters_map') or
-            self.view.get_request_feature(self.view.FILTER)
+        if ('nested' not in kwargs or not kwargs.get('nested')) and getattr(
+            self, 'view', None
+        ):
+            advanced_filters = self.view.get_request_feature(self.view.FILTER_JSON)
+            if advanced_filters:
+                return json.loads(advanced_filters)
+
+        filters_map = kwargs.get('filters_map') or self.view.get_request_feature(
+            self.view.FILTER
         )
 
         out = TreeMap()
@@ -260,10 +302,7 @@ class DynamicFilterBackend(BaseFilterBackend):
                 pass
             elif operator in self.VALID_FILTER_OPERATORS:
                 value = value[0]
-                if (
-                    operator == 'isnull' and
-                    isinstance(value, six.string_types)
-                ):
+                if operator == 'isnull' and isinstance(value, six.string_types):
                     value = is_truthy(value)
                 elif operator == 'eq':
                     operator = None
@@ -277,7 +316,7 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         return out
 
-    def _filters_to_query(self, includes, excludes, serializer, q=None):
+    def _filters_to_query(self, filters, serializer, q=None):
         """
         Construct Django Query object from request.
         Arguments are dictionaries, which will be passed to Q() as kwargs.
@@ -290,6 +329,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         Arguments:
           includes: TreeMap representing inclusion filters.
           excludes: TreeMap representing exclusion filters.
+          filters: TreeMap with include/exclude filters OR query map
           serializer: serializer instance of top-level object
           q: Q() object (optional)
 
@@ -298,39 +338,48 @@ class DynamicFilterBackend(BaseFilterBackend):
           were specified.
         """
 
-        def rewrite_filters(filters, serializer):
-            out = {}
-            for k, node in six.iteritems(filters):
-                filter_key, field = node.generate_query_key(serializer)
-                if isinstance(field, (BooleanField, NullBooleanField)):
-                    node.value = is_truthy(node.value)
-                out[filter_key] = node.value
+        if '_include' in filters or '_exclude' in filters:
+            includes = filters.get('_include')
+            excludes = filters.get('_exclude')
+            q = q or Q()
 
-            return out
+            if not includes and not excludes:
+                return None
 
-        q = q or Q()
-
-        if not includes and not excludes:
-            return None
-
-        if includes:
-            includes = rewrite_filters(includes, serializer)
-            q &= Q(**includes)
-        if excludes:
-            excludes = rewrite_filters(excludes, serializer)
-            for k, v in six.iteritems(excludes):
-                q &= ~Q(**{k: v})
-        return q
+            if includes:
+                includes = rewrite_filters(includes, serializer)
+                q &= Q(**includes)
+            if excludes:
+                excludes = rewrite_filters(excludes, serializer)
+                for k, v in six.iteritems(excludes):
+                    q &= ~Q(**{k: v})
+            return q
+        else:
+            ors = filters.get('.or') or filters.get('$or')
+            ands = filters.get('.and') or filters.get('$and')
+            q = q or Q()
+            if ors:
+                return reduce(
+                    OR,
+                    [self._filters_to_query(f, serializer=serializer) for f in ors]
+                    + [q],
+                )
+            if ands:
+                return reduce(
+                    AND,
+                    [self._filters_to_query(f, serializer=serializer) for f in ands]
+                    + [q],
+                )
+            else:
+                clauses = [
+                    clause_to_q(clause, serializer) for clause in filters.items()
+                ]
+                return q & reduce(AND, clauses) if clauses else q
 
     def _create_prefetch(self, source, queryset):
         return Prefetch(source, queryset=queryset)
 
-    def _build_implicit_prefetches(
-        self,
-        model,
-        prefetches,
-        requirements
-    ):
+    def _build_implicit_prefetches(self, model, prefetches, requirements):
         """Build a prefetch dictionary based on internal requirements."""
 
         for source, remainder in six.iteritems(requirements):
@@ -341,15 +390,13 @@ class DynamicFilterBackend(BaseFilterBackend):
             related_field = get_model_field(model, source)
             related_model = get_related_model(related_field)
 
-            queryset = self._build_implicit_queryset(
-                related_model,
-                remainder
-            ) if related_model else None
-
-            prefetches[source] = self._create_prefetch(
-                source,
-                queryset
+            queryset = (
+                self._build_implicit_queryset(related_model, remainder)
+                if related_model
+                else None
             )
+
+            prefetches[source] = self._create_prefetch(source, queryset)
 
         return prefetches
 
@@ -361,11 +408,7 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         queryset = self._make_model_queryset(model)
         prefetches = {}
-        self._build_implicit_prefetches(
-            model,
-            prefetches,
-            requirements
-        )
+        self._build_implicit_prefetches(model, prefetches, requirements)
         prefetch = prefetches.values()
         queryset = queryset.prefetch_related(*prefetch).distinct()
         if self.DEBUG:
@@ -373,12 +416,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         return queryset
 
     def _build_requested_prefetches(
-        self,
-        prefetches,
-        requirements,
-        model,
-        fields,
-        filters
+        self, prefetches, requirements, model, fields, filters
     ):
         """Build a prefetch dictionary based on request requirements."""
 
@@ -393,10 +431,7 @@ class DynamicFilterBackend(BaseFilterBackend):
 
             source = field.source or name
             if '.' in source:
-                raise ValidationError(
-                    'nested relationship values '
-                    'are not supported'
-                )
+                raise ValidationError('nested relationship values ' 'are not supported')
 
             if source in prefetches:
                 # ignore duplicated sources
@@ -422,7 +457,7 @@ class DynamicFilterBackend(BaseFilterBackend):
                 serializer=field,
                 filters=filters.get(name, {}),
                 queryset=related_queryset,
-                requirements=required
+                requirements=required,
             )
 
             # Note: There can only be one prefetch per source, even
@@ -430,18 +465,11 @@ class DynamicFilterBackend(BaseFilterBackend):
             #       the same source. This could break in some cases,
             #       but is mostly an issue on writes when we use all
             #       fields by default.
-            prefetches[source] = self._create_prefetch(
-                source,
-                prefetch_queryset
-            )
+            prefetches[source] = self._create_prefetch(source, prefetch_queryset)
 
         return prefetches
 
-    def _get_implicit_requirements(
-        self,
-        fields,
-        requirements
-    ):
+    def _get_implicit_requirements(self, fields, requirements):
         """Extract internal prefetch requirements from serializer fields."""
         for name, field in six.iteritems(fields):
             source = field.source
@@ -513,10 +541,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         if requirements is None:
             requirements = TreeMap()
 
-        self._get_implicit_requirements(
-            fields,
-            requirements
-        )
+        self._get_implicit_requirements(fields, requirements)
 
         # Implicit requirements (i.e. via `requires`) can potentially
         # include fields that haven't been explicitly included.
@@ -524,56 +549,53 @@ class DynamicFilterBackend(BaseFilterBackend):
         implicitly_included = set(requirements.keys()) - set(fields.keys())
         if implicitly_included:
             all_fields = serializer.get_all_fields()
-            fields.update({
-                field: all_fields[field]
-                for field in implicitly_included
-                if field in all_fields
-            })
+            fields.update(
+                {
+                    field: all_fields[field]
+                    for field in implicitly_included
+                    if field in all_fields
+                }
+            )
 
+        nested_filters = None
         if filters is None:
             filters = self._get_requested_filters()
+            nested_filters = (
+                self._get_requested_filters(nested=True)
+                if '_include' not in filters and '_exclude' not in filters
+                else filters
+            )
+        else:
+            nested_filters = filters
 
         # build nested Prefetch queryset
         self._build_requested_prefetches(
-            prefetches,
-            requirements,
-            model,
-            fields,
-            filters
+            prefetches, requirements, model, fields, nested_filters
         )
 
         # build remaining prefetches out of internal requirements
         # that are not already covered by request requirements
-        self._build_implicit_prefetches(
-            model,
-            prefetches,
-            requirements
-        )
+        self._build_implicit_prefetches(model, prefetches, requirements)
 
         # use requirements at this level to limit fields selected
         # only do this for GET requests where we are not requesting the
         # entire fieldset
         if (
-            '*' not in requirements and
-            not self.view.is_update() and
-            not self.view.is_delete()
+            '*' not in requirements
+            and not self.view.is_update()
+            and not self.view.is_delete()
         ):
             id_fields = getattr(serializer, 'get_id_fields', lambda: [])()
             # only include local model fields
             only = [
-                field for field in set(
-                    id_fields + list(requirements.keys())
-                ) if is_model_field(model, field) and
-                not is_field_remote(model, field)
+                field
+                for field in set(id_fields + list(requirements.keys()))
+                if is_model_field(model, field) and not is_field_remote(model, field)
             ]
             queryset = queryset.only(*only)
 
         # add request filters
-        query = self._filters_to_query(
-            includes=filters.get('_include'),
-            excludes=filters.get('_exclude'),
-            serializer=serializer
-        )
+        query = self._filters_to_query(filters=filters, serializer=serializer)
 
         # add additional filters specified by calling view
         if extra_filters:
@@ -586,9 +608,7 @@ class DynamicFilterBackend(BaseFilterBackend):
             try:
                 queryset = queryset.filter(query)
             except InternalValidationError as e:
-                raise ValidationError(
-                    dict(e) if hasattr(e, 'error_dict') else list(e)
-                )
+                raise ValidationError(dict(e) if hasattr(e, 'error_dict') else list(e))
             except Exception as e:
                 # Some other Django error in parsing the filter.
                 # Very likely a bad query, so throw a ValidationError.
@@ -602,10 +622,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         # serializers for different subsets of a model or to
         # implement permissions which work even in sideloads
         if hasattr(serializer, 'filter_queryset'):
-            queryset = self._serializer_filter(
-                serializer=serializer,
-                queryset=queryset
-            )
+            queryset = self._serializer_filter(serializer=serializer, queryset=queryset)
 
         # add prefetches and remove duplicates if necessary
         prefetch = prefetches.values()
@@ -627,8 +644,7 @@ class FastDynamicFilterBackend(DynamicFilterBackend):
 
     def _get_queryset(self, queryset=None, serializer=None):
         queryset = super(FastDynamicFilterBackend, self)._get_queryset(
-            queryset=queryset,
-            serializer=serializer
+            queryset=queryset, serializer=serializer
         )
 
         if not isinstance(queryset, FastQuery):
@@ -637,15 +653,11 @@ class FastDynamicFilterBackend(DynamicFilterBackend):
         return queryset
 
     def _make_model_queryset(self, model):
-        queryset = super(FastDynamicFilterBackend, self)._make_model_queryset(
-            model
-        )
+        queryset = super(FastDynamicFilterBackend, self)._make_model_queryset(model)
         return FastQuery(queryset)
 
     def _serializer_filter(self, serializer=None, queryset=None):
-        queryset.queryset = serializer.filter_queryset(
-            queryset.queryset
-        )
+        queryset.queryset = serializer.filter_queryset(queryset.queryset)
         return queryset
 
 
@@ -690,9 +702,7 @@ class DynamicSortingFilter(OrderingFilter):
             # if any of the sort fields are invalid, throw an error.
             # else return the ordering
             if invalid_ordering:
-                raise ValidationError(
-                    "Invalid filter field: %s" % invalid_ordering
-                )
+                raise ValidationError("Invalid filter field: %s" % invalid_ordering)
             else:
                 return valid_ordering
 
@@ -742,8 +752,11 @@ class DynamicSortingFilter(OrderingFilter):
         for segment in serializer_chain[:-1]:
             field = serializer.get_all_fields().get(segment)
 
-            if not (field and field.source != '*' and
-                    isinstance(field, DynamicRelationField)):
+            if not (
+                field
+                and field.source != '*'
+                and isinstance(field, DynamicRelationField)
+            ):
                 return None
 
             model_chain.append(field.source or segment)

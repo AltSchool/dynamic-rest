@@ -70,6 +70,7 @@ class WithDynamicViewSetMixin(object):
     INCLUDE = 'include[]'
     EXCLUDE = 'exclude[]'
     FILTER = 'filter{}'
+    FILTER_JSON = 'filter'
     SORT = 'sort[]'
     PAGE = settings.PAGE_QUERY_PARAM
     PER_PAGE = settings.PAGE_SIZE_QUERY_PARAM
