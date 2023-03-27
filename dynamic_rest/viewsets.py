@@ -180,7 +180,6 @@ class WithDynamicViewSetMixin(object):
         """
         Extract object params, return as dict
         """
-
         params = self.request.query_params.lists()
         params_map = {}
         original_name = name

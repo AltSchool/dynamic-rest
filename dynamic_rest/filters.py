@@ -263,9 +263,7 @@ class DynamicFilterBackend(BaseFilterBackend):
             self.view.FILTER
         )
         if getattr(self, 'view', None):
-            advanced_filters = self.view.get_request_feature(self.view.FILTER, raw=True)
-            if advanced_filters:
-                out['_complex'] = advanced_filters
+            out['_complex'] = self.view.get_request_feature(self.view.FILTER, raw=True)
 
         for spec, value in six.iteritems(filters_map):
 
@@ -336,7 +334,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         """
 
         if (
-            '_complex' not in filters
+            not filters.get('_complex')
         ):
             includes = filters.get('_include')
             excludes = filters.get('_exclude')
