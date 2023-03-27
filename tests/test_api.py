@@ -6,6 +6,7 @@ from django.db import connection
 from django.test import override_settings
 import six
 from rest_framework.test import APITestCase
+from urllib.parse import quote
 
 from tests.models import Cat, Group, Location, Permission, Profile, User
 from tests.serializers import NestedEphemeralSerializer, PermissionSerializer
@@ -393,6 +394,33 @@ class TestUsersAPI(APITestCase):
 
     def test_get_with_filter_in(self):
         url = '/users/?filter{name.in}=1&filter{name.in}=2'
+        with self.assertNumQueries(1):
+            response = self.client.get(url)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            {
+                'users': [
+                    {'id': 2, 'location': 1, 'name': '1'},
+                    {'id': 3, 'location': 2, 'name': '2'},
+                ]
+            },
+            json.loads(response.content.decode('utf-8')))
+
+    def test_get_with_complex_filter(self):
+        # same filter as the above case
+        f = {
+            ".or": [{
+                "name": "1"
+            }, {
+                ".and": [{
+                    "name": "2"
+                }, {
+                    "location": 2
+                }]
+            }]
+        }
+        f = quote(json.dumps(f))
+        url = f'/users/?filter{{}}={f}'
         with self.assertNumQueries(1):
             response = self.client.get(url)
         self.assertEqual(200, response.status_code)
