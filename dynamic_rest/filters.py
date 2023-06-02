@@ -7,7 +7,7 @@ import six
 from functools import reduce
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from rest_framework.fields import BooleanField, NullBooleanField
+from rest_framework.fields import BooleanField
 from rest_framework.filters import BaseFilterBackend, OrderingFilter
 
 from dynamic_rest.utils import is_truthy
@@ -148,7 +148,7 @@ def rewrite_filters(fs, serializer):
     out = {}
     for node in fs.values():
         filter_key, field = node.generate_query_key(serializer)
-        if isinstance(field, (BooleanField, NullBooleanField)):
+        if isinstance(field, (BooleanField)):
             node.value = is_truthy(node.value)
         out[filter_key] = node.value
 
