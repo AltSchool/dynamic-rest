@@ -12,7 +12,7 @@ setup(
     install_requires=open('install_requires.txt').readlines(),
     long_description=open('README.rst').read(),
     name=NAME,
-    packages=find_packages(),
+    packages=find_packages(exclude=["benchmarks", "tests"]),
     scripts=SCRIPTS,
     url=URL,
     version=VERSION,
