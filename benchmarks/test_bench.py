@@ -1,7 +1,7 @@
 from __future__ import absolute_import
 
 import json
-import pkg_resources
+import importlib
 import random
 import statistics
 import string
@@ -13,14 +13,8 @@ from rest_framework.test import APITestCase
 from .models import Group, Permission, User
 
 
-# Python 3 compatibility
-try:
-    xrange
-except NameError:
-    xrange = range
-
-DREST_VERSION = pkg_resources.require('dynamic-rest')[0].version
-DRF_VERSION = pkg_resources.require('djangorestframework')[0].version
+DREST_VERSION = importlib.import_module('dynamic_rest').version
+DRF_VERSION = importlib.import_module('djangorestframework')[0].version
 AVERAGE_TYPE = 'median'
 
 # BENCHMARKS: configuration for benchmarks
@@ -183,7 +177,7 @@ class BenchmarkTest(APITestCase):
 
     def generate_linear(self, size):
         total = 0
-        for i in xrange(size):
+        for i in range(size):
             total += 1
             User.objects.create(
                 name=str(i)
@@ -192,12 +186,12 @@ class BenchmarkTest(APITestCase):
 
     def generate_quadratic(self, size):
         total = 0
-        for i in xrange(size):
+        for i in range(size):
             total += 1
             user = User.objects.create(
                 name=str(i)
             )
-            for j in xrange(size):
+            for j in range(size):
                 total += 1
                 group = Group.objects.create(
                     name='%d-%d' % (i, j),
@@ -208,19 +202,19 @@ class BenchmarkTest(APITestCase):
 
     def generate_cubic(self, size):
         total = 0
-        for i in xrange(size):
+        for i in range(size):
             total += 1
             user = User.objects.create(
                 name=str(i)
             )
-            for j in xrange(size):
+            for j in range(size):
                 total += 1
                 group = Group.objects.create(
                     name='%d-%d' % (i, j),
                     max_size=size
                 )
                 user.groups.add(group)
-                for k in xrange(size):
+                for k in range(size):
                     total += 1
                     permission = Permission.objects.create(
                         name='%d-%d-%d' % (i, j, k)
@@ -246,7 +240,7 @@ def generate_benchmark(name, title, drest, drf, size, sample):
 def get_random_string(size):
     return ''.join(
         random.choice(string.ascii_uppercase)
-        for _ in xrange(size)
+        for _ in range(size)
     )
 
 
@@ -263,7 +257,7 @@ for benchmark in BENCHMARKS:
 
     for size in range(min_size, max_size + 1):
         size *= multiplier
-        for sample in xrange(samples):
+        for sample in range(samples):
             test_name = 'test_%s_%s_%d_%d' % (
                 get_random_string(4), name, size, sample
             )
