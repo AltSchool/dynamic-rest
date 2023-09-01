@@ -3,7 +3,7 @@ from setuptools import find_packages, setup
 NAME = 'dynamic-rest-bse'
 DESCRIPTION = 'Dynamic API support to Django REST Framework. Temp fork for until Django is updated upstream...'
 URL = 'http://github.com/BillSchumacher/dynamic-rest'
-VERSION = '2.2.0'
+VERSION = '2.2.1'
 SCRIPTS = ['manage.py']
 
 setup(
