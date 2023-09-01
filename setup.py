@@ -1,9 +1,9 @@
 from setuptools import find_packages, setup
 
-NAME = 'dynamic-rest'
-DESCRIPTION = 'Dynamic API support to Django REST Framework.'
-URL = 'http://github.com/AltSchool/dynamic-rest'
-VERSION = '2.1.7'
+NAME = 'dynamic-rest-bse'
+DESCRIPTION = 'Dynamic API support to Django REST Framework. Temp fork for until Django is updated upstream...'
+URL = 'http://github.com/BillSchumacher/dynamic-rest'
+VERSION = '2.2.0'
 SCRIPTS = ['manage.py']
 
 setup(
