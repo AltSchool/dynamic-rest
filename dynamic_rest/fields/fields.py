@@ -303,7 +303,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             elif model is not None:
                 # this is probably a one-to-one field, or a reverse related
                 # lookup, so let's look it up the slow way and let the
-                # serializer handle the id dereferencing
+                # serializer handle the id de-referencing
                 try:
                     instance = getattr(instance, source)
                 except model.DoesNotExist:
@@ -326,9 +326,11 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         try:
             instance = related_model.objects.get(pk=data)
         except related_model.DoesNotExist:
+            # TODO: This causes issues with 400 errors
+            # Investigate usage and make it return a dict of errors instead.
             raise ValidationError(
-                "Invalid value for '%s': %s object with ID=%s not found" %
-                (self.field_name, related_model.__name__, data)
+                f"Invalid value for '{self.field_name}': {related_model.__name__}"
+                f" object with ID={data} not found"
             )
         return instance
 
@@ -337,7 +339,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         if self.kwargs['many']:
             serializer = self.serializer.child
             if not isinstance(data, list):
-                raise ParseError("'%s' value must be a list" % self.field_name)
+                raise ParseError(f"'{self.field_name}' value must be a list")
             return [
                 self.to_internal_value_single(
                     instance,
@@ -384,7 +386,7 @@ class CountField(DynamicComputedField):
         """
         Arguments:
             serializer_source: A serializer field.
-            unique: Whether or not to perform a count of distinct elements.
+            unique: Whether to perform a count of distinct elements.
         """
         self.field_type = int
         # Use `serializer_source`, which indicates a field at the API level,
@@ -394,7 +396,7 @@ class CountField(DynamicComputedField):
         # an attempt to look up this field.
         kwargs['source'] = ''
         self.unique = kwargs.pop('unique', True)
-        return super(CountField, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def get_attribute(self, obj):
         source = self.serializer_source

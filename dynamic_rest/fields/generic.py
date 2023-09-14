@@ -93,7 +93,7 @@ class DynamicGenericRelationField(
 
             # Serialize the object. Note that request_fields is set, but
             # field inclusion/exclusion is disallowed via check in bind()
-            r = serializer_class(
+            representation = serializer_class(
                 dynamic=True,
                 request_fields=self.request_fields,
                 context=self.context,
@@ -103,10 +103,10 @@ class DynamicGenericRelationField(
             )
 
             # Pass pk object that contains type and ID to TaggedDict object
-            # so that Processor can use it when the field gets sideloaded.
-            if isinstance(r, TaggedDict):
-                r.pk_value = pk_value
-            return r
+            # so that Processor can use it when the field gets side-loaded.
+            if isinstance(representation, TaggedDict):
+                representation.pk_value = pk_value
+            return representation
         except BaseException:
             # This feature should be considered to be in Beta so don't break
             # if anything unexpected happens.
