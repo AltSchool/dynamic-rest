@@ -10,11 +10,12 @@ from datetime import datetime
 
 from rest_framework.test import APITestCase
 
-from .models import Group, Permission, User
+from benchmarks_app.models import Group, Permission, User
 
 
-DREST_VERSION = importlib.import_module('dynamic_rest').version
-DRF_VERSION = importlib.import_module('djangorestframework')[0].version
+DREST_VERSION = importlib.import_module('dynamic_rest')
+DREST_VERSION = DREST_VERSION.__version__
+DRF_VERSION = importlib.import_module('rest_framework').__version__
 AVERAGE_TYPE = 'median'
 
 # BENCHMARKS: configuration for benchmarks

@@ -3,9 +3,9 @@ import os
 BASE_DIR = os.path.dirname(__file__)
 
 SECRET_KEY = 'test'
-INSTALL_DIR = '/usr/local/altschool/dynamic-rest/'
+INSTALL_DIR = os.getenv("INSTALL_DIR")
 STATIC_URL = '/static/'
-STATIC_ROOT = INSTALL_DIR + 'www/static'
+STATIC_ROOT = os.getenv("STATIC_ROOT", INSTALL_DIR)
 
 DEBUG = True
 USE_TZ = False
@@ -35,7 +35,7 @@ INSTALLED_APPS = (
     'django.contrib.sites',
     'dynamic_rest',
     'rest_framework',
-    'benchmarks',
+    'benchmarks_app',
 )
 
 ROOT_URLCONF = 'benchmarks.urls'
