@@ -137,25 +137,22 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
 
         remote = is_field_remote(parent_model, self.source)
 
-        try:
-            model_field = get_model_field(parent_model, self.source)
-        except BaseException:
-            # model field may not be available for m2o fields with no
-            # related_name
-            model_field = None
+        model_field = get_model_field(parent_model, self.source)
+
+        field_null = getattr(
+            model_field, 'null', False
+        )
 
         # Infer `required` and `allow_null`
         if 'required' not in self.kwargs and (
             remote or (
                 model_field and (
-                    model_field.has_default() or model_field.null
+                    model_field.has_default() or field_null
                 )
             )
         ):
             self.required = False
-        if 'allow_null' not in self.kwargs and getattr(
-            model_field, 'null', False
-        ):
+        if 'allow_null' not in self.kwargs and field_null:
             self.allow_null = True
 
         self.model_field = model_field

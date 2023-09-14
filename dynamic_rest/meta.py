@@ -4,6 +4,7 @@ from itertools import chain
 from django.db.models import ManyToOneRel  # tested in 1.9
 from django.db.models import OneToOneRel  # tested in 1.9
 from django.db.models import (
+    Model,
     ForeignKey,
     ManyToManyField,
     ManyToManyRel,
@@ -30,7 +31,7 @@ def is_model_field(model, field_name):
         return False
 
 
-def get_model_field(model, field_name):
+def get_model_field(model: Model | None, field_name):
     """Return a field given a model and field name.
 
     Arguments:
@@ -41,6 +42,10 @@ def get_model_field(model, field_name):
         A Django field if `field_name` is a valid field for `model`,
             None otherwise.
     """
+    if not model:
+        # TODO: This might be a bug.
+        return None
+
     meta = model._meta
     try:
         return meta.get_field(field_name)
