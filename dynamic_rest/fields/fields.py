@@ -171,8 +171,8 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         seen = set()
         while True:
             seen.add(node)
-            if getattr(node, 'parent', None):
-                node = node.parent
+            if parent_node := getattr(node, 'parent', None):
+                node = parent_node
                 if node in seen:
                     return None
             else:
@@ -182,7 +182,8 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         enabled = settings.ENABLE_SERIALIZER_CACHE
 
         root = self.root_serializer
-        if not root or not self.field_name or not enabled:
+        field_name = self.field_name
+        if not root or not field_name or not enabled:
             # Not enough info to use cache.
             return self.serializer_class(*args, **init_args)
 
@@ -192,33 +193,33 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             # here, so it's agnostic to the exact type of the root
             # serializer (i.e. it could be a DRF serializer).
             root._descendant_serializer_cache = {}
-
+        cache = root._descendant_serializer_cache
         key_dict = {
             'parent': self.parent.__class__.__name__,
-            'field': self.field_name,
+            'field': field_name,
             'args': args,
             'init_args': init_args,
         }
 
         cache_key = hash(orjson.dumps(key_dict))
 
-        if cache_key not in root._descendant_serializer_cache:
+        if cache_key not in cache:
             szr = self.serializer_class(
                 *args,
                 **init_args
             )
-            root._descendant_serializer_cache[cache_key] = szr
+            cache[cache_key] = szr
         else:
-            root._descendant_serializer_cache[cache_key].reset()
+            cache[cache_key].reset()
 
-        return root._descendant_serializer_cache[cache_key]
+        return cache[cache_key]
 
     def _inherit_parent_kwargs(self, kwargs):
         """Extract any necessary attributes from parent serializer to
         propagate down to child serializer.
         """
-
-        if not self.parent or not self._is_dynamic:
+        parent = self.parent
+        if not parent or not self._is_dynamic:
             return kwargs
 
         if 'request_fields' not in kwargs:
@@ -234,18 +235,18 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             # If 'embed' then make sure we fetch the full object.
             kwargs['request_fields'] = {}
 
-        if hasattr(self.parent, 'sideloading'):
-            kwargs['sideloading'] = self.parent.sideloading
+        if hasattr(parent, 'sideloading'):
+            kwargs['sideloading'] = parent.sideloading
 
-        if hasattr(self.parent, 'debug'):
-            kwargs['debug'] = self.parent.debug
+        if hasattr(parent, 'debug'):
+            kwargs['debug'] = parent.debug
 
         return kwargs
 
     def get_serializer(self, *args, **kwargs):
         """Get an instance of the child serializer."""
         init_args = {
-            k: v for k, v in six.iteritems(self.kwargs)
+            k: v for k, v in self.kwargs.items()
             if k in self.SERIALIZER_KWARGS
         }
 
@@ -296,7 +297,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         if not self.kwargs['many'] and serializer.id_only():
             # attempt to optimize by reading the related ID directly
             # from the current instance rather than from the related object
-            source_id = '%s_id' % source
+            source_id = f'{source}_id'
             # try the faster way first:
             if hasattr(instance, source_id):
                 return getattr(instance, source_id)
