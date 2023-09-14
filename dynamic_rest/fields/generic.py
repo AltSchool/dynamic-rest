@@ -1,5 +1,6 @@
 import traceback
 
+from django.db import models
 from rest_framework.exceptions import ValidationError
 
 from dynamic_rest.fields.common import WithRelationalFieldMixin
@@ -19,12 +20,11 @@ class DynamicGenericRelationField(
                 "DynamicGenericRelationField does not support manual"
                 " overriding of 'requires'."
             )
-
-        super(DynamicGenericRelationField, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.embed = embed
 
     def bind(self, field_name, parent):
-        super(DynamicGenericRelationField, self).bind(field_name, parent)
+        super().bind(field_name, parent)
 
         source = self.source or field_name
 
@@ -34,7 +34,7 @@ class DynamicGenericRelationField(
         #       Django magic. Disabling `.only()` by requiring '*' seem
         #       to work more reliably...
         self.requires = [
-            source + '.*',
+            f'{source}.*',
             '*'
         ]
 
@@ -43,10 +43,8 @@ class DynamicGenericRelationField(
         request_fields = self._get_request_fields_from_parent()
         if isinstance(request_fields, dict) and len(request_fields):
             raise ValidationError(
-                "%s.%s does not support field inclusion/exclusion" % (
-                    self.parent.get_name(),
-                    self.field_name
-                )
+                f"{self.parent.get_name()}.{self.field_name}"
+                " does not support field inclusion/exclusion"
             )
         self.request_fields = request_fields
 
@@ -57,13 +55,15 @@ class DynamicGenericRelationField(
         # so we handle it here.
         return not self.parent.is_field_sideloaded(self.field_name)
 
-    def get_pk_object(self, type_key, id_value):
+    @staticmethod
+    def get_pk_object(type_key, id_value):
         return {
             'type': type_key,
             'id': id_value
         }
 
-    def get_serializer_class_for_instance(self, instance):
+    @staticmethod
+    def get_serializer_class_for_instance(instance):
         return DynamicRouter.get_canonical_serializer(
             resource_key=None,
             instance=instance
@@ -114,16 +114,17 @@ class DynamicGenericRelationField(
             traceback.print_exc()
             return None
 
-    def to_internal_value(self, data):
+    def to_internal_value(self, data: dict) -> models.Model | None:
         model_name = data.get('type', None)
         model_id = data.get('id', None)
-        if model_name and model_id:
-            serializer_class = DynamicRouter.get_canonical_serializer(
-                resource_key=None,
-                resource_name=model_name
-            )
-            if serializer_class:
-                model = serializer_class.get_model()
-                return model.objects.get(id=model_id) if model else None
+        if not (model_name and model_id):
+            return None
 
-        return None
+        serializer_class = DynamicRouter.get_canonical_serializer(
+            resource_key=None,
+            resource_name=model_name
+        )
+        if not serializer_class:
+            return None
+        model = serializer_class.get_model()
+        return model.objects.get(id=model_id) if model else None
