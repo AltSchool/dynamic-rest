@@ -13,3 +13,5 @@ Sphinx==1.7.5
 tox-pyenv==1.1.0
 tox==3.25.1
 twine==3.8.0
+Django>=2.2,<4.3
+djangorestframework>=3.11.2,<3.15

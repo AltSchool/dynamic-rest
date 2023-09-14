@@ -1,12 +1,13 @@
 import os
+from pathlib import Path
 
-BASE_DIR = os.path.dirname(__file__)
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'test'
-INSTALL_DIR = '/usr/local/altschool/dynamic-rest/'
+INSTALL_DIR = os.getenv("INSTALL_DIR")
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.environ.get('STATIC_ROOT', INSTALL_DIR + 'www/static')
+STATIC_ROOT = os.environ.get('STATIC_ROOT', INSTALL_DIR if INSTALL_DIR else None)
 
 ENABLE_INTEGRATION_TESTS = os.environ.get('ENABLE_INTEGRATION_TESTS', False)
 
@@ -64,11 +65,17 @@ STATICFILES_DIRS = (
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': os.path.abspath(
-            os.path.join(BASE_DIR, '../dynamic_rest/templates')
-        ),
-        'APP_DIRS': True,
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+            ],
+        },
     }
 ]
 
