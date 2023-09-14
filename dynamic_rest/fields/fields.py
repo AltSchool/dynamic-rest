@@ -1,8 +1,7 @@
 """This module contains custom field classes."""
 
 import importlib
-import pickle
-
+import orjson
 import six
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.functional import cached_property
@@ -67,8 +66,8 @@ class DynamicComputedField(DynamicField):
 
 class DynamicMethodField(SerializerMethodField, DynamicField):
     def reset(self):
-        super(DynamicMethodField, self).reset()
-        if self.method_name == 'get_' + self.field_name:
+        super().reset()
+        if self.method_name == f'get_{self.field_name}':
             self.method_name = None
 
 
@@ -86,7 +85,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             to the child serializer.
     """
 
-    SERIALIZER_KWARGS = set(('many', 'source'))
+    SERIALIZER_KWARGS = {'many', 'source'}
 
     def __init__(
         self,
@@ -155,7 +154,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         ):
             self.required = False
         if 'allow_null' not in self.kwargs and getattr(
-                model_field, 'null', False
+            model_field, 'null', False
         ):
             self.allow_null = True
 
@@ -190,7 +189,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         if not hasattr(root, '_descendant_serializer_cache'):
             # Initialize dict to use as cache on root serializer.
             # Arguably this is a Serializer concern, but we'll do it
-            # here so it's agnostic to the exact type of the root
+            # here, so it's agnostic to the exact type of the root
             # serializer (i.e. it could be a DRF serializer).
             root._descendant_serializer_cache = {}
 
@@ -200,7 +199,8 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             'args': args,
             'init_args': init_args,
         }
-        cache_key = hash(pickle.dumps(key_dict))
+
+        cache_key = hash(orjson.dumps(key_dict))
 
         if cache_key not in root._descendant_serializer_cache:
             szr = self.serializer_class(
