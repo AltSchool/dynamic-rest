@@ -1,4 +1,6 @@
 """Generic relation field for dynamic_rest."""
+from __future__ import annotations
+
 from django.db import models
 from rest_framework.exceptions import ValidationError
 
