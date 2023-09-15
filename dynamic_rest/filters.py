@@ -1,48 +1,53 @@
 """This module contains custom filter backends."""
 
-from django.core.exceptions import ValidationError as InternalValidationError
-from django.core.exceptions import ImproperlyConfigured
-from django.db.models import Q, Prefetch, Manager
 from functools import reduce
+
+from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ValidationError as InternalValidationError
+from django.db.models import Manager, Prefetch, Q
 from rest_framework import __version__ as drf_version
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+
 try:
     from rest_framework.fields import BooleanField, NullBooleanField
 except ImportError:
     # DRF >= 3.14.0
     from rest_framework.fields import BooleanField
+
 from rest_framework.filters import BaseFilterBackend, OrderingFilter
 
-from dynamic_rest.utils import is_truthy
 from dynamic_rest.conf import settings
 from dynamic_rest.datastructures import TreeMap
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.meta import (
     get_model_field,
+    get_related_model,
     is_field_remote,
     is_model_field,
-    get_related_model,
 )
 from dynamic_rest.patches import patch_prefetch_one_level
-from dynamic_rest.prefetch import FastQuery, FastPrefetch
+from dynamic_rest.prefetch import FastPrefetch, FastQuery
 from dynamic_rest.related import RelatedObject
+from dynamic_rest.utils import is_truthy
 
 patch_prefetch_one_level()
 
-DRF_VERSION = drf_version.split('.')
+DRF_VERSION = drf_version.split(".")
 if int(DRF_VERSION[0]) >= 3 and int(DRF_VERSION[1]) >= 14:
     # NullBooleanField deprecated in DRF >= 3.14
-    DRF_BOOLEAN_FIELD = BooleanField
+    RestFrameworkBooleanField = BooleanField
 else:
-    DRF_BOOLEAN_FIELD = (BooleanField, NullBooleanField)
+    RestFrameworkBooleanField = (BooleanField, NullBooleanField)
 
 
-def OR(a, b):
+def _or(a, b):
+    """Return a or b."""
     return a | b
 
 
-def AND(a, b):
+def _and(a, b):
+    """Return a and b."""
     return a & b
 
 
@@ -59,6 +64,8 @@ def has_joins(queryset):
 
 
 class FilterNode(object):
+    """A node in a filter tree."""
+
     def __init__(self, field, operator, value):
         """Create an object representing a filter, to be stored in a TreeMap.
 
@@ -84,15 +91,16 @@ class FilterNode(object):
 
     @property
     def key(self):
-        return '%s%s' % (
-            '__'.join(self.field),
-            '__' + self.operator if self.operator else '',
+        """Key property."""
+        return (
+            f"{'__'.join(self.field)}"
+            f"{'__' + self.operator if self.operator else ''}"
         )
 
     def generate_query_key(self, serializer):
         """Get the key that can be passed to Django's filter method.
 
-        To account for serialier field name rewrites, this method
+        To account for serializer field name rewrites, this method
         translates serializer field names to model field names
         by inspecting `serializer`.
 
@@ -117,10 +125,10 @@ class FilterNode(object):
             # this if we have to.
             fields = s.fields
             if field_name not in fields:
-                fields = getattr(s, 'get_all_fields', lambda: {})()
+                fields = getattr(s, "get_all_fields", lambda: {})()
 
-            if field_name == 'pk':
-                rewritten.append('pk')
+            if field_name == "pk":
+                rewritten.append("pk")
                 continue
 
             if field_name not in fields:
@@ -143,7 +151,7 @@ class FilterNode(object):
                 break
 
             # Recurse into nested field
-            s = getattr(field, 'serializer', None)
+            s = getattr(field, "serializer", None)
             if isinstance(s, serializers.ListSerializer):
                 s = s.child
             if not s:
@@ -152,14 +160,15 @@ class FilterNode(object):
         if self.operator:
             rewritten.append(self.operator)
 
-        return '__'.join(rewritten), field
+        return "__".join(rewritten), field
 
 
 def rewrite_filters(fs, serializer):
+    """Rewrite filter keys to use model field names."""
     out = {}
     for node in fs.values():
         filter_key, field = node.generate_query_key(serializer)
-        if isinstance(field, DRF_BOOLEAN_FIELD):
+        if isinstance(field, RestFrameworkBooleanField):
             node.value = is_truthy(node.value)
         out[filter_key] = node.value
 
@@ -167,16 +176,17 @@ def rewrite_filters(fs, serializer):
 
 
 def clause_to_q(clause, serializer):
+    """Convert a filter clause to a Django Q object."""
     key, value = clause
     negate = False
-    if key.startswith('-'):
+    if key.startswith("-"):
         negate = True
         key = key[1:]
-    parts = key.split('.')
-    operator = 'eq'
+    parts = key.split(".")
+    operator = "eq"
     if parts[-1] in DynamicFilterBackend.VALID_FILTER_OPERATORS:
         operator = parts.pop()
-    if operator == 'eq':
+    if operator == "eq":
         operator = None
     node = FilterNode(parts, operator, value)
     key, _ = node.generate_query_key(serializer)
@@ -187,7 +197,6 @@ def clause_to_q(clause, serializer):
 
 
 class DynamicFilterBackend(BaseFilterBackend):
-
     """A DRF filter backend that constructs DREST querysets.
 
     This backend is responsible for interpretting and applying
@@ -198,28 +207,28 @@ class DynamicFilterBackend(BaseFilterBackend):
     """
 
     VALID_FILTER_OPERATORS = (
-        'in',
-        'any',
-        'all',
-        'icontains',
-        'contains',
-        'startswith',
-        'istartswith',
-        'endswith',
-        'iendswith',
-        'year',
-        'month',
-        'day',
-        'week_day',
-        'regex',
-        'range',
-        'gt',
-        'lt',
-        'gte',
-        'lte',
-        'isnull',
-        'eq',
-        'iexact',
+        "in",
+        "any",
+        "all",
+        "icontains",
+        "contains",
+        "startswith",
+        "istartswith",
+        "endswith",
+        "iendswith",
+        "year",
+        "month",
+        "day",
+        "week_day",
+        "regex",
+        "range",
+        "gt",
+        "lt",
+        "gte",
+        "lte",
+        "isnull",
+        "eq",
+        "iexact",
         None,
     )
 
@@ -241,7 +250,7 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         disable_prefetches = self.view.is_update()
 
-        self.DEBUG = settings.DEBUG
+        self.debug = settings.DEBUG
 
         return self._build_queryset(
             queryset=queryset,
@@ -249,49 +258,46 @@ class DynamicFilterBackend(BaseFilterBackend):
             disable_prefetches=disable_prefetches,
         )
 
-    """
-    This function was renamed and broke downstream dependencies that haven't
-    been updated to use the new naming convention.
-    """
+    # This function was renamed and broke downstream dependencies that haven't
+    # been updated to use the new naming convention.
 
     def _extract_filters(self, **kwargs):
+        """Extract filters from the request."""
         return self._get_requested_filters(**kwargs)
 
     def _get_requested_filters(self, **kwargs):
-        """
+        """Get filters from the request.
+
         Convert 'filters' query params into a dict that can be passed
         to Q. Returns a dict with two fields, 'include' and 'exclude',
         which can be used like:
 
           result = self._get_requested_filters()
           q = Q(**result['include'] & ~Q(**result['exclude'])
-
         """
-
         out = TreeMap()
-        filters_map = kwargs.get('filters_map') or self.view.get_request_feature(
+        filters_map = kwargs.get("filters_map") or self.view.get_request_feature(
             self.view.FILTER
         )
-        if getattr(self, 'view', None):
-            out['_complex'] = self.view.get_request_feature(self.view.FILTER, raw=True)
+        if getattr(self, "view", None):
+            out["_complex"] = self.view.get_request_feature(self.view.FILTER, raw=True)
 
         for spec, value in filters_map.items():
-
             # Inclusion or exclusion?
-            if spec[0] == '-':
+            if spec[0] == "-":
                 spec = spec[1:]
-                inex = '_exclude'
+                inex = "_exclude"
             else:
-                inex = '_include'
+                inex = "_include"
 
             # for relational filters, separate out relation path part
-            if '|' in spec:
-                rel, spec = spec.split('|')
-                rel = rel.split('.')
+            if "|" in spec:
+                rel, spec = spec.split("|")
+                rel = rel.split(".")
             else:
                 rel = None
 
-            parts = spec.split('.')
+            parts = spec.split(".")
 
             # Last part could be operator, e.g. "events.capacity.gte"
             if len(parts) > 1 and parts[-1] in self.VALID_FILTER_OPERATORS:
@@ -300,16 +306,16 @@ class DynamicFilterBackend(BaseFilterBackend):
                 operator = None
 
             # All operators except 'range' and 'in' should have one value
-            if operator == 'range':
+            if operator == "range":
                 value = value[:2]
-            elif operator == 'in':
+            elif operator == "in":
                 # no-op: i.e. accept `value` as an arbitrarily long list
                 pass
             elif operator in self.VALID_FILTER_OPERATORS:
                 value = value[0]
-                if operator == 'isnull' and isinstance(value, str):
+                if operator == "isnull" and isinstance(value, str):
                     value = is_truthy(value)
-                elif operator == 'eq':
+                elif operator == "eq":
                     operator = None
 
             node = FilterNode(parts, operator, value)
@@ -322,8 +328,8 @@ class DynamicFilterBackend(BaseFilterBackend):
         return out
 
     def _filters_to_query(self, filters, serializer, q=None):
-        """
-        Construct Django Query object from request.
+        """Construct Django Query object from request.
+
         Arguments are dictionaries, which will be passed to Q() as kwargs.
 
         e.g.
@@ -342,12 +348,9 @@ class DynamicFilterBackend(BaseFilterBackend):
           Q() instance or None if no inclusion or exclusion filters
           were specified.
         """
-
-        if (
-            not filters.get('_complex')
-        ):
-            includes = filters.get('_include')
-            excludes = filters.get('_exclude')
+        if not filters.get("_complex"):
+            includes = filters.get("_include")
+            excludes = filters.get("_exclude")
             q = q or Q()
 
             if not includes and not excludes:
@@ -362,33 +365,31 @@ class DynamicFilterBackend(BaseFilterBackend):
                     q &= ~Q(**{k: v})
             return q
         else:
-            filters = filters.get('_complex')
-            ors = filters.get('.or') or filters.get('$or')
-            ands = filters.get('.and') or filters.get('$and')
+            filters = filters.get("_complex")
+            ors = filters.get(".or") or filters.get("$or")
+            ands = filters.get(".and") or filters.get("$and")
             if q is None:
                 q = Q()
             if ors:
                 result = reduce(
-                    OR,
-                    [self._filters_to_query({"_complex": f}, serializer) for f in ors]
+                    _or,
+                    [self._filters_to_query({"_complex": f}, serializer) for f in ors],
                 )
                 return result
             if ands:
                 return reduce(
-                    AND,
-                    [self._filters_to_query({"_complex": f}, serializer) for f in ands]
+                    _and,
+                    [self._filters_to_query({"_complex": f}, serializer) for f in ands],
                 )
-            clauses = [
-                clause_to_q(clause, serializer) for clause in filters.items()
-            ]
-            return reduce(AND, clauses) if clauses else q
+            clauses = [clause_to_q(clause, serializer) for clause in filters.items()]
+            return reduce(_and, clauses) if clauses else q
 
     def _create_prefetch(self, source, queryset):
+        """Create a Prefetch object."""
         return Prefetch(source, queryset=queryset)
 
     def _build_implicit_prefetches(self, model, prefetches, requirements):
         """Build a prefetch dictionary based on internal requirements."""
-
         for source, remainder in requirements.items():
             if not remainder or isinstance(remainder, str):
                 # no further requirements to prefetch
@@ -408,25 +409,24 @@ class DynamicFilterBackend(BaseFilterBackend):
         return prefetches
 
     def _make_model_queryset(self, model):
+        """Make a queryset for a model."""
         return model.objects.all()
 
     def _build_implicit_queryset(self, model, requirements):
         """Build a queryset based on implicit requirements."""
-
         queryset = self._make_model_queryset(model)
         prefetches = {}
         self._build_implicit_prefetches(model, prefetches, requirements)
         prefetch = prefetches.values()
         queryset = queryset.prefetch_related(*prefetch).distinct()
-        if self.DEBUG:
-            queryset._using_prefetches = prefetches
+        if self.debug:
+            queryset._using_prefetches = prefetches  # pylint: disable=protected-access
         return queryset
 
     def _build_requested_prefetches(
         self, prefetches, requirements, model, fields, filters
     ):
         """Build a prefetch dictionary based on request requirements."""
-
         for name, field in fields.items():
             original_field = field
             if isinstance(field, DynamicRelationField):
@@ -437,19 +437,19 @@ class DynamicFilterBackend(BaseFilterBackend):
                 continue
 
             source = field.source or name
-            if '.' in source:
-                raise ValidationError('nested relationship values are not supported')
+            if "." in source:
+                raise ValidationError("nested relationship values are not supported")
 
             if source in prefetches:
                 # ignore duplicated sources
                 continue
 
             is_remote = is_field_remote(model, source)
-            is_id_only = getattr(field, 'id_only', lambda: False)()
+            is_id_only = getattr(field, "id_only", lambda: False)()
             if is_id_only and not is_remote:
                 continue
 
-            related_queryset = getattr(original_field, 'queryset', None)
+            related_queryset = getattr(original_field, "queryset", None)
 
             if callable(related_queryset):
                 related_queryset = related_queryset(field)
@@ -478,30 +478,32 @@ class DynamicFilterBackend(BaseFilterBackend):
 
     def _get_implicit_requirements(self, fields, requirements):
         """Extract internal prefetch requirements from serializer fields."""
-        for name, field in fields.items():
+        for _, field in fields.items():
             source = field.source
             # Requires may be manually set on the field -- if not,
             # assume the field requires only its source.
-            requires = getattr(field, 'requires', None) or [source]
+            requires = getattr(field, "requires", None) or [source]
             for require in requires:
                 if not require:
                     # ignore fields with empty source
                     continue
 
-                requirement = require.split('.')
-                if requirement[-1] == '':
+                requirement = require.split(".")
+                if requirement[-1] == "":
                     # Change 'a.b.' -> 'a.b.*',
                     # supporting 'a.b.' for backwards compatibility.
-                    requirement[-1] = '*'
+                    requirement[-1] = "*"
                 requirements.insert(requirement, TreeMap(), update=True)
 
     def _get_queryset(self, queryset=None, serializer=None):
+        """Get the base queryset for this request."""
         if serializer and queryset is None:
             queryset = serializer.Meta.model.objects
 
         return queryset
 
     def _serializer_filter(self, serializer=None, queryset=None):
+        """Filter a queryset using a serializer's filter_queryset method."""
         return serializer.filter_queryset(queryset)
 
     def _build_queryset(
@@ -525,8 +527,9 @@ class DynamicFilterBackend(BaseFilterBackend):
             filters: An optional TreeMap of nested filters.
             queryset: An optional base queryset.
             requirements: An optional TreeMap of nested requirements.
+            extra_filters: An optional Q() object to add to the queryset.
+            disable_prefetches: An optional flag to disable prefetching.
         """
-
         is_root_level = False
         if not serializer:
             serializer = self.view.get_serializer()
@@ -534,7 +537,7 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         queryset = self._get_queryset(queryset=queryset, serializer=serializer)
 
-        model = getattr(serializer.Meta, 'model', None)
+        model = getattr(serializer.Meta, "model", None)
 
         if not model:
             return queryset
@@ -580,11 +583,11 @@ class DynamicFilterBackend(BaseFilterBackend):
         # only do this for GET requests where we are not requesting the
         # entire fieldset
         if (
-            '*' not in requirements
+            "*" not in requirements
             and not self.view.is_update()
             and not self.view.is_delete()
         ):
-            id_fields = getattr(serializer, 'get_id_fields', lambda: [])()
+            id_fields = getattr(serializer, "get_id_fields", lambda: [])()
             # only include local model fields
             only = [
                 field
@@ -607,12 +610,14 @@ class DynamicFilterBackend(BaseFilterBackend):
             try:
                 queryset = queryset.filter(query)
             except InternalValidationError as e:
-                raise ValidationError(dict(e) if hasattr(e, 'error_dict') else list(e))
-            except Exception as e:
+                raise ValidationError(
+                    dict(e) if hasattr(e, "error_dict") else list(e)
+                ) from e
+            except Exception as exc:
                 # Some other Django error in parsing the filter.
                 # Very likely a bad query, so throw a ValidationError.
-                err_msg = getattr(e, 'message', '')
-                raise ValidationError(err_msg)
+                err_msg = getattr(exc, "message", "")
+                raise ValidationError(err_msg) from exc
 
         # A serializer can have this optional function
         # to dynamically apply additional filters on
@@ -620,7 +625,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         # You could use this to have (for example) different
         # serializers for different subsets of a model or to
         # implement permissions which work even in sideloads
-        if hasattr(serializer, 'filter_queryset'):
+        if hasattr(serializer, "filter_queryset"):
             queryset = self._serializer_filter(serializer=serializer, queryset=queryset)
 
         # add prefetches and remove duplicates if necessary
@@ -632,19 +637,21 @@ class DynamicFilterBackend(BaseFilterBackend):
         if has_joins(queryset) or not is_root_level:
             queryset = queryset.distinct()
 
-        if self.DEBUG:
-            queryset._using_prefetches = prefetches
+        if self.debug:
+            queryset._using_prefetches = prefetches  # pylint: disable=protected-access
         return queryset
 
 
 class FastDynamicFilterBackend(DynamicFilterBackend):
+    """A DRF filter backend that constructs DREST querysets."""
+
     def _create_prefetch(self, source, queryset):
+        """Create a Prefetch object."""
         return FastPrefetch(source, queryset=queryset)
 
     def _get_queryset(self, queryset=None, serializer=None):
-        queryset = super(FastDynamicFilterBackend, self)._get_queryset(
-            queryset=queryset, serializer=serializer
-        )
+        """Get the base queryset for this request."""
+        queryset = super()._get_queryset(queryset=queryset, serializer=serializer)
 
         if not isinstance(queryset, FastQuery):
             queryset = FastQuery(queryset)
@@ -652,23 +659,24 @@ class FastDynamicFilterBackend(DynamicFilterBackend):
         return queryset
 
     def _make_model_queryset(self, model):
-        queryset = super(FastDynamicFilterBackend, self)._make_model_queryset(model)
+        """Make a queryset for a model."""
+        queryset = super()._make_model_queryset(model)
         return FastQuery(queryset)
 
     def _serializer_filter(self, serializer=None, queryset=None):
+        """Filter a queryset using a serializer's filter_queryset method."""
         queryset.queryset = serializer.filter_queryset(queryset.queryset)
         return queryset
 
 
 class DynamicSortingFilter(OrderingFilter):
-
     """Subclass of DRF's OrderingFilter.
 
     This class adds support for multi-field ordering and rewritten fields.
     """
 
     def filter_queryset(self, request, queryset, view):
-        """"Filter the queryset, applying the ordering.
+        """Filter the queryset, applying the ordering.
 
         The `ordering_param` can be overwritten here.
         In DRF, the ordering_param is 'ordering', but we support changing it
@@ -679,7 +687,7 @@ class DynamicSortingFilter(OrderingFilter):
         ordering = self.get_ordering(request, queryset, view)
         if ordering:
             queryset = queryset.order_by(*ordering)
-            if any(['__' in o for o in ordering]):
+            if any("__" in o for o in ordering):
                 # add distinct() to remove duplicates
                 # in case of order-by-related
                 queryset = queryset.distinct()
@@ -689,7 +697,7 @@ class DynamicSortingFilter(OrderingFilter):
         """Return an ordering for a given request.
 
         DRF expects a comma separated list, while DREST expects an array.
-        This method overwrites the DRF default so it can parse the array.
+        This method overwrites the DRF default, so it can parse the array.
         """
         params = view.get_request_feature(view.SORT)
         if params:
@@ -714,16 +722,15 @@ class DynamicSortingFilter(OrderingFilter):
         Overwrites the DRF default remove_invalid_fields method to return
         both the valid orderings and any invalid orderings.
         """
-
         valid_orderings = []
         invalid_orderings = []
 
         # for each field sent down from the query param,
         # determine if its valid or invalid
         for term in fields:
-            stripped_term = term.lstrip('-')
+            stripped_term = term.lstrip("-")
             # add back the '-' add the end if necessary
-            reverse_sort_term = '' if len(stripped_term) is len(term) else '-'
+            reverse_sort_term = "" if len(stripped_term) is len(term) else "-"
             ordering = self.ordering_for(stripped_term, view)
 
             if ordering:
@@ -734,7 +741,8 @@ class DynamicSortingFilter(OrderingFilter):
         return valid_orderings, invalid_orderings
 
     def ordering_for(self, term, view):
-        """
+        """Override DRF's ordering_for method to support rewritten fields.
+
         Return ordering (model field chain) for term (serializer field chain)
         or None if invalid
 
@@ -744,7 +752,7 @@ class DynamicSortingFilter(OrderingFilter):
             return None
 
         serializer = self._get_serializer_class(view)()
-        serializer_chain = term.split('.')
+        serializer_chain = term.split(".")
 
         model_chain = []
 
@@ -753,7 +761,7 @@ class DynamicSortingFilter(OrderingFilter):
 
             if not (
                 field
-                and field.source != '*'
+                and field.source != "*"
                 and isinstance(field, DynamicRelationField)
             ):
                 return None
@@ -765,22 +773,24 @@ class DynamicSortingFilter(OrderingFilter):
         last_segment = serializer_chain[-1]
         last_field = serializer.get_all_fields().get(last_segment)
 
-        if not last_field or last_field.source == '*':
+        if not last_field or last_field.source == "*":
             return None
 
         model_chain.append(last_field.source or last_segment)
 
-        return '__'.join(model_chain)
+        return "__".join(model_chain)
 
     def _is_allowed_term(self, term, view):
-        valid_fields = getattr(view, 'ordering_fields', self.ordering_fields)
-        all_fields_allowed = valid_fields is None or valid_fields == '__all__'
+        """Check if a term is allowed to be ordered on."""
+        valid_fields = getattr(view, "ordering_fields", self.ordering_fields)
+        all_fields_allowed = valid_fields is None or valid_fields == "__all__"
 
         return all_fields_allowed or term in valid_fields
 
     def _get_serializer_class(self, view):
+        """Get the serializer class from the view."""
         # prefer the overriding method
-        if hasattr(view, 'get_serializer_class'):
+        if hasattr(view, "get_serializer_class"):
             try:
                 serializer_class = view.get_serializer_class()
             except AssertionError:
@@ -789,7 +799,7 @@ class DynamicSortingFilter(OrderingFilter):
                 serializer_class = None
         # use the attribute
         else:
-            serializer_class = getattr(view, 'serializer_class', None)
+            serializer_class = getattr(view, "serializer_class", None)
 
         # neither a method nor an attribute has been specified
         if serializer_class is None:

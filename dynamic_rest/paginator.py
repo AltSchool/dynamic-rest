@@ -1,34 +1,38 @@
+"""Paginator that supports dynamic page sizes and excludes count queries."""
 # adapted from Django's django.core.paginator (2.2 - 3.2+ compatible)
 # adds support for the "exclude_count" parameter
 
+import inspect
 from math import ceil
 
-import inspect
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.utils.functional import cached_property
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 from django.utils.inspect import method_has_no_args
 
 try:
     from django.utils.translation import gettext_lazy as _
 except ImportError:
+
     def _(x):
         return x
 
 
 class DynamicPaginator(Paginator):
+    """A subclass of Paginator that supports dynamic page sizes."""
 
     def __init__(self, *args, **kwargs):
-        self.exclude_count = kwargs.pop('exclude_count', False)
+        """Initialise the DynamicPaginator."""
+        self.exclude_count = kwargs.pop("exclude_count", False)
         super().__init__(*args, **kwargs)
 
     def validate_number(self, number):
         """Validate the given 1-based page number."""
         try:
             number = int(number)
-        except (TypeError, ValueError):
-            raise PageNotAnInteger(_('That page number is not an integer'))
+        except (TypeError, ValueError) as exc:
+            raise PageNotAnInteger(_("That page number is not an integer")) from exc
         if number < 1:
-            raise EmptyPage(_('That page number is less than 1'))
+            raise EmptyPage(_("That page number is less than 1"))
         if self.exclude_count:
             # skip validating against num_pages
             return number
@@ -36,7 +40,7 @@ class DynamicPaginator(Paginator):
             if number == 1 and self.allow_empty_first_page:
                 pass
             else:
-                raise EmptyPage(_('That page contains no results'))
+                raise EmptyPage(_("That page contains no results"))
         return number
 
     def page(self, number):
@@ -63,7 +67,7 @@ class DynamicPaginator(Paginator):
             # always return 0, count should not be called
             return 0
 
-        c = getattr(self.object_list, 'count', None)
+        c = getattr(self.object_list, "count", None)
         if callable(c) and not inspect.isbuiltin(c) and method_has_no_args(c):
             return c()
         return len(self.object_list)
