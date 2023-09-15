@@ -1,3 +1,4 @@
+"""Tests for prefetch corner-case bugs introduced in Django 1.7."""
 from django.db.models import Prefetch
 from django.test import TestCase
 
@@ -5,31 +6,29 @@ from tests.models import A, B, C, D
 
 
 class TestPrefetch(TestCase):
-    """Tests prefetch corner-case bugs introduced in Django 1.7
+    """Tests prefetch corner-case bugs introduced in Django 1.7.
 
     See dynamic_rest.patches for details.
     """
 
     def test_nested_prefetch(self):
+        """Test nested prefetch."""
         a = A.objects.create(name="a")
         b = B.objects.create(a=a)
         d = D.objects.create(name="d")
         C.objects.create(b=b, d=d)
 
         # This fails
-        A.objects.prefetch_related(
+        A.objects.prefetch_related(  # pylint: disable=expression-not-assigned
             Prefetch(
-                'b',
+                "b",
                 queryset=B.objects.prefetch_related(
                     Prefetch(
-                        'cs',
+                        "cs",
                         queryset=C.objects.prefetch_related(
-                            Prefetch(
-                                'd',
-                                queryset=D.objects.all()
-                            )
-                        )
+                            Prefetch("d", queryset=D.objects.all())
+                        ),
                     )
-                )
+                ),
             )
         )[0]

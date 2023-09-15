@@ -1,0 +1,1 @@
+"""Benchmark admin configuration."""
