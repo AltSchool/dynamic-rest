@@ -1,4 +1,4 @@
-"""benchmark settings."""
+"""Benchmark settings."""
 import os
 
 BASE_DIR = os.path.dirname(__file__)
