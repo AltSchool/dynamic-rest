@@ -2,7 +2,6 @@
 
 import importlib
 import orjson
-import six
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.functional import cached_property
 from rest_framework import fields
@@ -39,7 +38,7 @@ class DynamicField(CacheableFieldMixin, fields.Field):
     ):
         """
         Arguments:
-            deferred: Whether or not this field is deferred.
+            deferred: Whether this field is deferred.
                 Deferred fields are not included in the response,
                 unless explicitly requested.
             field_type: Field data type, if not inferrable from model.
@@ -51,7 +50,7 @@ class DynamicField(CacheableFieldMixin, fields.Field):
         self.field_type = field_type
         self.immutable = immutable
         self.kwargs = kwargs
-        super(DynamicField, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def to_representation(self, value):
         return value
@@ -120,7 +119,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
             raise Exception('Nested relationships are not supported')
         if 'link' in kwargs:
             self.link = kwargs.pop('link')
-        super(DynamicRelationField, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.kwargs['many'] = self.many = many
 
     def get_model(self):
@@ -353,7 +352,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         Resolves string imports.
         """
         serializer_class = self._serializer_class
-        if not isinstance(serializer_class, six.string_types):
+        if not isinstance(serializer_class, str):
             return serializer_class
 
         parts = serializer_class.split('.')
@@ -361,7 +360,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         if not module_path:
             if getattr(self, 'parent', None) is None:
                 raise Exception(
-                    "Can not load serializer '%s'" % serializer_class +
+                    f"Can not load serializer '{serializer_class}'"
                     ' before binding or without specifying full path')
 
             # try the module of the parent class
@@ -411,9 +410,7 @@ class CountField(DynamicComputedField):
         # since this is a "count" field, we'll limit to list, set, tuple.
         if not isinstance(data, (list, set, tuple)):
             raise TypeError(
-                "'%s' is %s. Must be list, set or tuple to be countable." % (
-                    source, type(data)
-                )
+                f"'{source}' is {type(data)}. Must be list, set or tuple to be countable."
             )
 
         if self.unique:

@@ -1,14 +1,8 @@
 """This module contains custom router classes."""
 import copy
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
 
-# Backwards compatability for django < 1.10.x
-try:
-    from django.urls import get_script_prefix
-except ImportError:
-    from django.core.urlresolvers import get_script_prefix
-
-import six
+from django.urls import get_script_prefix
 
 import rest_framework
 from rest_framework import views
@@ -33,7 +27,7 @@ except ImportError:
         ret = ret.replace('{methodnamehyphen}', methodnamehyphen)
         return ret
 
-directory = {}
+directory = defaultdict(lambda: defaultdict(dict))
 resource_map = {}
 resource_name_map = {}
 drf_version = tuple(
@@ -41,42 +35,45 @@ drf_version = tuple(
 )
 
 
+def get_url(url, request):
+    return reverse(url, request=request) if url else url
+
+
+def is_active_url(path, url):
+    return path.startswith(url) if url and path else False
+
+
+def sort_key(r):
+    return r[0]
+
+
 def get_directory(request):
     """Get API directory as a nested list of lists."""
 
-    def get_url(url):
-        return reverse(url, request=request) if url else url
-
-    def is_active_url(path, url):
-        return path.startswith(url) if url and path else False
-
     path = request.path
     directory_list = []
-
-    def sort_key(r):
-        return r[0]
 
     # TODO(ant): support arbitrarily nested
     # structure, for now it is capped at a single level
     # for UX reasons
     for group_name, endpoints in sorted(
-        six.iteritems(directory),
+        directory.items(),
         key=sort_key
     ):
         endpoints_list = []
         for endpoint_name, endpoint in sorted(
-            six.iteritems(endpoints),
+            endpoints.items(),
             key=sort_key
         ):
             if endpoint_name[:1] == '_':
                 continue
-            endpoint_url = get_url(endpoint.get('_url', None))
+            endpoint_url = get_url(endpoint.get('_url', None), request)
             active = is_active_url(path, endpoint_url)
             endpoints_list.append(
                 (endpoint_name, endpoint_url, [], active)
             )
 
-        url = get_url(endpoints.get('_url', None))
+        url = get_url(endpoints.get('_url', None), request)
         active = is_active_url(path, url)
         directory_list.append(
             (group_name, url, endpoints_list, active)
@@ -100,7 +97,7 @@ class DynamicRouter(DefaultRouter):
 
     def __init__(self, *args, **kwargs):
         optional_trailing_slash = kwargs.pop('optional_trailing_slash', True)
-        super(DynamicRouter, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         if optional_trailing_slash:
             self.trailing_slash = '/?'
 
@@ -150,7 +147,7 @@ class DynamicRouter(DefaultRouter):
         if base_name is None:
             base_name = prefix
 
-        super(DynamicRouter, self).register(prefix, viewset, base_name)
+        super().register(prefix, viewset, base_name)
 
         prefix_parts = prefix.split('/')
         if len(prefix_parts) > 1:
@@ -160,15 +157,13 @@ class DynamicRouter(DefaultRouter):
             endpoint = prefix
             prefix = None
 
-        if prefix and prefix not in directory:
-            current = directory[prefix] = {}
+        if prefix:  # and prefix not in directory:
+            current = directory[prefix]
         else:
             current = directory.get(prefix, directory)
 
         list_name = self.routes[0].name
         url_name = list_name.format(basename=base_name)
-        if endpoint not in current:
-            current[endpoint] = {}
         current[endpoint]['_url'] = url_name
         current[endpoint]['_viewset'] = viewset
 
@@ -194,10 +189,8 @@ class DynamicRouter(DefaultRouter):
             import traceback
             traceback.print_exc()
             raise Exception(
-                "Failed to extract resource name from viewset: '%s'."
-                " It, or its serializer, may not be DREST-compatible." % (
-                    viewset
-                )
+                f"Failed to extract resource name from viewset: '{viewset}'."
+                " It, or its serializer, may not be DREST-compatible."
             )
 
         # Construct canonical path and register it.
@@ -210,12 +203,10 @@ class DynamicRouter(DefaultRouter):
         # Make sure resource isn't already registered.
         if resource_key in resource_map:
             raise Exception(
-                "The resource '%s' has already been mapped to '%s'."
+                f"The resource '{resource_key}' has already been"
+                f" mapped to '{resource_map[resource_key]['path']}'."
                 " Each resource can only be mapped to one canonical"
-                " path. " % (
-                    resource_key,
-                    resource_map[resource_key]['path']
-                )
+                " path. "
             )
 
         # Register resource in reverse map.
@@ -232,11 +223,9 @@ class DynamicRouter(DefaultRouter):
         if resource_name in resource_name_map:
             resource_key = resource_name_map[resource_name]
             raise Exception(
-                "The resource name '%s' has already been mapped to '%s'."
-                " A resource name can only be used once." % (
-                    resource_name,
-                    resource_map[resource_key]['path']
-                )
+                f"The resource name '{resource_name}' has already been mapped"
+                f" to '{resource_map[resource_key]['path']}'."
+                " A resource name can only be used once."
             )
 
         # map the resource name to the resource key for easier lookup
@@ -260,7 +249,7 @@ class DynamicRouter(DefaultRouter):
 
         base_path = get_script_prefix() + resource_map[resource_key]['path']
         if pk:
-            return '%s/%s/' % (base_path, pk)
+            return f'{base_path}/{pk}/'
         else:
             return base_path
 
@@ -303,7 +292,8 @@ class DynamicRouter(DefaultRouter):
         routes += self.get_relation_routes(viewset)
         return routes
 
-    def get_relation_routes(self, viewset):
+    @staticmethod
+    def get_relation_routes(viewset):
         """
         Generate routes to serve relational objects. This method will add
         a sub-URL for each relational field.
@@ -331,6 +321,7 @@ class DynamicRouter(DefaultRouter):
             return routes
 
         serializer = viewset.serializer_class()
+        # TODO: Is this really a list? Seems like it should be dict.
         fields = getattr(serializer, 'get_link_fields', lambda: [])()
 
         route_name = '{basename}-{methodnamehyphen}'
@@ -339,7 +330,7 @@ class DynamicRouter(DefaultRouter):
         else:
             route_compat_kwargs = {}
 
-        for field_name, field in six.iteritems(fields):
+        for field_name, field in fields.items():
             methodname = 'list_related'
             url = (
                 r'^{prefix}/{lookup}/(?P<field_name>%s)'

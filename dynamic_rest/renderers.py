@@ -9,8 +9,7 @@ class DynamicBrowsableAPIRenderer(BrowsableAPIRenderer):
 
     def get_context(self, data, media_type, context):
         from dynamic_rest.routers import get_directory
-
-        context = super(DynamicBrowsableAPIRenderer, self).get_context(
+        context = super().get_context(
             data,
             media_type,
             context

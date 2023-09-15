@@ -1,6 +1,10 @@
 """Module containing Django meta helpers."""
+from __future__ import annotations
+
+from functools import lru_cache
 from itertools import chain
 
+from django.core.exceptions import FieldDoesNotExist
 from django.db.models import ManyToOneRel  # tested in 1.9
 from django.db.models import OneToOneRel  # tested in 1.9
 from django.db.models import (
@@ -31,6 +35,32 @@ def is_model_field(model, field_name):
         return False
 
 
+@lru_cache()
+def get_model_relationships(meta) -> dict:
+    related_objs = (
+        f for f in meta.get_fields()
+        if (f.one_to_many or f.one_to_one)
+        and f.auto_created and not f.concrete
+    )
+    related_m2m_objs = (
+        f for f in meta.get_fields(include_hidden=True)
+        if f.many_to_many and f.auto_created
+    )
+    return {
+        o.get_accessor_name(): o
+        for o in chain(related_objs, related_m2m_objs)
+    }
+
+
+@lru_cache()
+def get_virtual_fields(meta) -> dict | None:
+    if hasattr(meta, 'virtual_fields'):
+        return {
+            f.name: f
+            for f in meta.virtual_fields
+        }
+
+
 def get_model_field(model: Model | None, field_name):
     """Return a field given a model and field name.
 
@@ -49,33 +79,23 @@ def get_model_field(model: Model | None, field_name):
     meta = model._meta
     try:
         return meta.get_field(field_name)
-    except BaseException:
-        related_objs = (
-            f for f in meta.get_fields()
-            if (f.one_to_many or f.one_to_one)
-            and f.auto_created and not f.concrete
-        )
-        related_m2m_objs = (
-            f for f in meta.get_fields(include_hidden=True)
-            if f.many_to_many and f.auto_created
+    except FieldDoesNotExist:
+        meta._related_fields_cache = cache = getattr(
+            meta,
+            '_related_fields_cache',
+            get_model_relationships(meta)
         )
 
-        related_objects = {
-            o.get_accessor_name(): o
-            for o in chain(related_objs, related_m2m_objs)
-        }
-        if field_name in related_objects:
-            return related_objects[field_name]
-        else:
-            # check virtual fields (1.7)
-            if hasattr(meta, 'virtual_fields'):
-                for field in meta.virtual_fields:
-                    if field.name == field_name:
-                        return field
+        if field_name in cache:
+            return cache[field_name]
+        # check virtual fields (1.7)
+        if virtual_fields := get_virtual_fields(meta):
+            if field := virtual_fields.get(field_name):
+                return field
 
-            raise AttributeError(
-                '%s is not a valid field for %s' % (field_name, model)
-            )
+        raise AttributeError(
+            f'{field_name} is not a valid field for {model}'
+        )
 
 
 def get_model_field_and_type(model, field_name):

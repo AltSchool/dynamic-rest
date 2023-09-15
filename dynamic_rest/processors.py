@@ -1,7 +1,6 @@
 """This module contains response processors."""
 from collections import defaultdict
 
-import six
 from rest_framework.serializers import ListSerializer
 from rest_framework.utils.serializer_helpers import ReturnDict
 
@@ -59,7 +58,7 @@ class SideloadingProcessor(object):
 
         if isinstance(serializer, ListSerializer):
             serializer = serializer.child
-        self.data = {}
+        self.data = defaultdict(list)
         self.seen = defaultdict(set)
         self.plural_name = serializer.get_plural_name()
         self.name = serializer.get_name()
@@ -74,7 +73,8 @@ class SideloadingProcessor(object):
         ) else self.plural_name
         self.data[resource_name] = data
 
-    def is_dynamic(self, data):
+    @staticmethod
+    def is_dynamic(data):
         """Check whether the given data dictionary is a DREST structure.
 
         Arguments:
@@ -94,69 +94,66 @@ class SideloadingProcessor(object):
         elif isinstance(obj, dict):
             dynamic = self.is_dynamic(obj)
             returned = isinstance(obj, ReturnDict)
-            if dynamic or returned:
-                # recursively check all fields
-                for key, o in six.iteritems(obj):
-                    if isinstance(o, list) or isinstance(o, dict):
-                        # lists or dicts indicate a relation
-                        self.process(
-                            o,
-                            parent=obj,
-                            parent_key=key,
-                            depth=depth +
-                            1
-                        )
-
-                if not dynamic or getattr(obj, 'embed', False):
-                    return
-
-                serializer = obj.serializer
-                name = serializer.get_plural_name()
-                instance = getattr(obj, 'instance', serializer.instance)
-                instance_pk = instance.pk if instance else None
-                pk = getattr(obj, 'pk_value', instance_pk) or instance_pk
-
-                # For polymorphic relations, `pk` can be a dict, so use the
-                # string representation (dict isn't hashable).
-                pk_key = repr(pk)
-
-                # sideloading
-                seen = True
-                # if this object has not yet been seen
-                if pk_key not in self.seen[name]:
-                    seen = False
-                    self.seen[name].add(pk_key)
-
-                # prevent sideloading the primary objects
-                if depth == 0:
-                    return
-
-                # TODO: spec out the exact behavior for secondary instances of
-                # the primary resource
-
-                # if the primary resource is embedded, add it to a prefixed key
-                if name == self.plural_name:
-                    name = '%s%s' % (
-                        settings.ADDITIONAL_PRIMARY_RESOURCE_PREFIX,
-                        name
+            if not dynamic and not returned:
+                return
+            # recursively check all fields
+            for key, o in obj.items():
+                if isinstance(o, list) or isinstance(o, dict):
+                    # lists or dicts indicate a relation
+                    self.process(
+                        o,
+                        parent=obj,
+                        parent_key=key,
+                        depth=depth +
+                        1
                     )
 
-                if not seen:
-                    # allocate a top-level key in the data for this resource
-                    # type
-                    if name not in self.data:
-                        self.data[name] = []
+            if not dynamic or getattr(obj, 'embed', False):
+                return
 
-                    # move the object into a new top-level bucket
-                    # and mark it as seen
-                    self.data[name].append(obj)
-                else:
-                    # obj sideloaded, but maybe with other fields
-                    for o in self.data.get(name, []):
-                        if o.instance.pk == pk:
-                            o.update(obj)
-                            break
+            serializer = obj.serializer
+            name = serializer.get_plural_name()
+            instance = getattr(obj, 'instance', serializer.instance)
+            instance_pk = instance.pk if instance else None
+            pk = getattr(obj, 'pk_value', instance_pk) or instance_pk
 
-                # replace the object with a reference
-                if parent is not None and parent_key is not None:
-                    parent[parent_key] = pk
+            # For polymorphic relations, `pk` can be a dict, so use the
+            # string representation (dict isn't hashable).
+            pk_key = repr(pk)
+
+            # sideloading
+            seen = True
+            seen_set = self.seen[name]
+            # if this object has not yet been seen
+            if pk_key not in seen_set:
+                seen = False
+                seen_set.add(pk_key)
+
+            # prevent sideloading the primary objects
+            if depth == 0:
+                return
+
+            # TODO: spec out the exact behavior for secondary instances of
+            # the primary resource
+
+            # if the primary resource is embedded, add it to a prefixed key
+            if name == self.plural_name:
+                name = f'{settings.ADDITIONAL_PRIMARY_RESOURCE_PREFIX}{name}'
+
+            if not seen:
+                # allocate a top-level key in the data for this resource
+                # type
+
+                # move the object into a new top-level bucket
+                # and mark it as seen
+                self.data[name].append(obj)
+            else:
+                # obj sideloaded, but maybe with other fields
+                for o in self.data[name]:
+                    if o.instance.pk == pk:
+                        o.update(obj)
+                        break
+
+            # replace the object with a reference
+            if parent is not None and parent_key is not None:
+                parent[parent_key] = pk

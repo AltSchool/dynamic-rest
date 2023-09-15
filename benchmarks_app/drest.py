@@ -1,14 +1,9 @@
-from dynamic_rest import fields as fields
-from dynamic_rest import routers as routers
-from dynamic_rest import serializers as serializers
+from dynamic_rest import fields
+from dynamic_rest import routers
+from dynamic_rest import serializers
 from dynamic_rest import viewsets
 
-from .models import Group, Permission, User
-
-
-# DREST
-
-# DREST serializers
+from benchmarks_app.models import Group, Permission, User
 
 
 class UserSerializer(serializers.DynamicModelSerializer):

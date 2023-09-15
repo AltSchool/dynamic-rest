@@ -42,16 +42,18 @@ class DynamicPaginator(Paginator):
     def page(self, number):
         """Return a Page object for the given 1-based page number."""
         number = self.validate_number(number)
-        bottom = (number - 1) * self.per_page
-        top = bottom + self.per_page
+        per_page = self.per_page
+        count = self.count
+        bottom = (number - 1) * per_page
+        top = bottom + per_page
         if self.exclude_count:
             # always fetch one extra item
             # to determine if more pages are available
             # and skip validation against count
-            top = top + 1
+            top += 1
         else:
-            if top + self.orphans >= self.count:
-                top = self.count
+            if top + self.orphans >= count:
+                top = count
         return self._get_page(self.object_list[bottom:top], number, self)
 
     @cached_property
@@ -72,8 +74,8 @@ class DynamicPaginator(Paginator):
         if self.exclude_count:
             # always return 1, count should not be called
             return 1
-
-        if self.count == 0 and not self.allow_empty_first_page:
+        count = self.count
+        if count == 0 and not self.allow_empty_first_page:
             return 0
-        hits = max(1, self.count - self.orphans)
+        hits = max(1, count - self.orphans)
         return int(ceil(hits / float(self.per_page)))

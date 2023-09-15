@@ -1,6 +1,7 @@
 from collections import defaultdict
 import copy
 import traceback
+from functools import lru_cache
 
 from django.db import models
 from django.db.models import Prefetch, QuerySet
@@ -17,12 +18,13 @@ class FastObject(dict):
 
     def __init__(self, *args, **kwargs):
         self.pk_field = kwargs.pop('pk_field', 'id')
-        return super(FastObject, self).__init__(*args)
+        super().__init__(*args)
 
     @property
     def pk(self):
         return self[self.pk_field]
 
+    @lru_cache()
     def _slow_getattr(self, name):
         if '.' in name:
             parts = name.split('.')
@@ -46,7 +48,7 @@ class FastObject(dict):
         if name != 'pk_field' and name != 'pk':
             self[name] = value
         else:
-            super(FastObject, self).__setattr__(name, value)
+            super().__setattr__(name, value)
 
 
 class SlowObject(dict):
@@ -54,7 +56,7 @@ class SlowObject(dict):
     def __init__(self, slow_object=None, *args, **kwargs):
         self.pk_field = kwargs.pop('pk_field', 'id')
         self.data = slow_object
-        return super(SlowObject, self).__init__(slow_object.__dict__, *args)
+        super().__init__(slow_object=slow_object.__dict__, *args)
 
     @property
     def pk(self):
@@ -65,7 +67,7 @@ class SlowObject(dict):
         if hasattr(self.data, str(value)):
             return getattr(self.data, str(value))
 
-        # for the purposse of mapping serialized model + '_id' fields back to
+        # for the purpose of mapping serialized model + '_id' fields back to
         # internal models, we need to check if that pattern is present
         is_nested_obj = value.split('_')
         test_attr = '_'.join(is_nested_obj[:-1])
@@ -114,7 +116,7 @@ class FastPrefetch(object):
 
         field, ftype = get_model_field_and_type(model, field_name)
         if not ftype:
-            raise RuntimeError("%s is not prefetchable" % field_name)
+            raise RuntimeError(f"{field_name} is not prefetchable")
 
         qs = get_remote_model(field).objects.all()
 
@@ -128,7 +130,7 @@ class FastPrefetch(object):
         return prefetch
 
     @classmethod
-    def make_from_prefetch(cls, prefetch, parent_model):
+    def make_from_prefetch(cls, prefetch: Prefetch, parent_model):
         assert isinstance(prefetch, Prefetch)
 
         if isinstance(prefetch.queryset, FastQuery):
@@ -146,19 +148,20 @@ class FastPrefetch(object):
 class FastQueryCompatMixin(object):
     """ Mixins for FastQuery to provide QuerySet-compatibility APIs.
     They basically just modify the underlying QuerySet object.
-    Separated in a mixin so it's clearer which APIs are supported.
+    Separated in a mixin, so it's clearer which APIs are supported.
     """
 
     def prefetch_related(self, *args):
+        model = self.model
         try:
             for arg in args:
                 if isinstance(arg, str):
                     arg = FastPrefetch.make_from_field(
-                        model=self.model,
+                        model=model,
                         field_name=arg
                     )
                 elif isinstance(arg, Prefetch):
-                    arg = FastPrefetch.make_from_prefetch(arg, self.model)
+                    arg = FastPrefetch.make_from_prefetch(arg, model)
                 if not isinstance(arg, FastPrefetch):
                     raise Exception("Must be FastPrefetch object")
 
@@ -326,10 +329,9 @@ class FastQuery(FastQueryCompatMixin, object):
                 raise TypeError("Stepping not supported")
 
             self.queryset.query.set_limits(start, stop)
-            return self.execute()
         else:
             self.queryset.query.set_limits(k, k+1)
-            return self.execute()
+        return self.execute()
 
     def __len__(self):
         return len(self.execute())
@@ -409,7 +411,7 @@ class FastQuery(FastQueryCompatMixin, object):
         # If prefetching User.profile, construct filter like:
         #   Profile.objects.filter(user__in=<user_ids>)
         remote_field = reverse_o2o_field_name(field)
-        remote_filter_key = '%s__in' % remote_field
+        remote_filter_key = f'{remote_field}__in'
         filter_args = {remote_filter_key: my_ids}
 
         # Fetch remote objects
@@ -417,7 +419,7 @@ class FastQuery(FastQueryCompatMixin, object):
         id_map = self._make_id_map(data, pk_field=self.pk_field)
 
         field_name = prefetch.field
-        reverse_found = set()  # IDs of local objects that were reversed
+        reverse_found = []  # IDs of local objects that were reversed
         for remote_obj in remote_objects:
             # Pull out ref on remote object pointing at us, and
             # get local object. There *should* always be a matching
@@ -435,10 +437,10 @@ class FastQuery(FastQueryCompatMixin, object):
                 # in o2or mode, there can only be one
                 local_obj[field_name] = remote_obj
 
-            reverse_found.add(reverse_ref)
+            reverse_found.append(reverse_ref)
 
         # Set value to None for objects that didn't have a matching prefetch
-        not_found = my_ids - reverse_found
+        not_found = my_ids - set(reverse_found)
         for pk in not_found:
             id_map[pk][field_name] = FastList([]) if m2o_mode else None
 
@@ -459,7 +461,7 @@ class FastQuery(FastQueryCompatMixin, object):
             # Note: We can't just reuse self.queryset here because it's
             #       been sliced already.
             filters = {
-                field.attname + '__isnull': False
+                f'{field.attname}__isnull': False
             }
             qs = self.queryset.model.objects.filter(
                 pk__in=my_ids, **filters
@@ -472,7 +474,7 @@ class FastQuery(FastQueryCompatMixin, object):
             # Get reverse mapping (for User.groups, get Group.users)
             # Note: `qs` already has base filter applied on remote model.
             filters = {
-                reverse_field+'__in': my_ids
+                f'{reverse_field}__in': my_ids
             }
             joins = list(base_qs.filter(**filters).values_list(
                 remote_pk_field,

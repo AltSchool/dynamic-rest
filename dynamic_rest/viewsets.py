@@ -1,7 +1,8 @@
 """This module contains custom viewset classes."""
+
 from django.core.exceptions import ObjectDoesNotExist
 from django.http import QueryDict
-import six
+
 import json
 from django.db import transaction, IntegrityError
 from rest_framework import exceptions, status, viewsets
@@ -34,11 +35,11 @@ class QueryParams(QueryDict):
         else:
             assert isinstance(
                 query_params,
-                (six.string_types, six.binary_type)
+                (str, bytes)
             )
             query_string = query_params
         kwargs['mutable'] = True
-        super(QueryParams, self).__init__(query_string, *args, **kwargs)
+        super().__init__(query_string, *args, **kwargs)
 
     def add(self, key, value):
         """
@@ -122,7 +123,7 @@ class WithDynamicViewSetMixin(object):
             return QueryParams(s)
 
         request.GET = handle_encodings(request)
-        request = super(WithDynamicViewSetMixin, self).initialize_request(
+        request = super().initialize_request(
             request, *args, **kargs
         )
 
@@ -206,7 +207,7 @@ class WithDynamicViewSetMixin(object):
                     # malformed argument like:
                     # filter{foo=bar
                     raise exceptions.ParseError(
-                        '"%s" is not a well-formed filter key.' % name
+                        f'"{name}" is not a well-formed filter key.'
                     )
             else:
                 continue
@@ -330,20 +331,18 @@ class WithDynamicViewSetMixin(object):
         )
 
     def paginate_queryset(self, *args, **kwargs):
-        if self.PAGE in self.features:
-            # make sure pagination is enabled
-            if (
-                self.PER_PAGE not in self.features and
-                self.PER_PAGE in self.request.query_params
-            ):
-                # remove per_page if it is disabled
-                self.request.query_params[self.PER_PAGE] = None
-            return super(
-                WithDynamicViewSetMixin, self
-            ).paginate_queryset(
-                *args, **kwargs
-            )
-        return None
+        if self.PAGE not in self.features:
+            return
+        query_params = self.request.query_params
+        per_page = self.PER_PAGE
+        # make sure pagination is enabled
+        if (
+            per_page not in self.features and
+            per_page in query_params
+        ):
+            # remove per_page if it is disabled
+            query_params[per_page] = None
+        return super().paginate_queryset(*args, **kwargs)
 
     def _prefix_inex_params(self, request, feature, prefix):
         values = self.get_request_feature(feature)
@@ -356,7 +355,7 @@ class WithDynamicViewSetMixin(object):
         )
 
     def list_related(self, request, pk=None, field_name=None):
-        """Fetch related object(s), as if sideloaded (used to support
+        """Fetch related object(s), as if side-loaded (used to support
         link objects).
 
         This method gets mapped to `/<resource>/<pk>/<field_name>/` by
@@ -369,14 +368,14 @@ class WithDynamicViewSetMixin(object):
         """
 
         # Explicitly disable support filtering. Applying filters to this
-        # endpoint would require us to pass through sideload filters, which
+        # endpoint would require us to pass through side-load filters, which
         # can have unintended consequences when applied asynchronously.
         if self.get_request_feature(self.FILTER):
             raise ValidationError(
                 'Filtering is not enabled on relation endpoints.'
             )
 
-        # Prefix include/exclude filters with field_name so it's scoped to
+        # Prefix include/exclude filters with field_name, so it's scoped to
         # the parent object.
         field_prefix = field_name + '.'
         self._prefix_inex_params(request, self.INCLUDE, field_prefix)
@@ -390,7 +389,7 @@ class WithDynamicViewSetMixin(object):
         serializer = self.get_serializer()
         field = serializer.fields.get(field_name)
         if field is None:
-            raise ValidationError('Unknown field: "%s".' % field_name)
+            raise ValidationError(f'Unknown field: "{field_name}".')
 
         # Query for root object, with related field prefetched
         queryset = self.get_queryset()
@@ -435,10 +434,11 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
 
     def _get_bulk_payload(self, request):
         plural_name = self.get_serializer_class().get_plural_name()
-        if isinstance(request.data, list):
-            return request.data
-        elif plural_name in request.data and len(request.data) == 1:
-            return request.data[plural_name]
+        data = request.data
+        if isinstance(data, list):
+            return data
+        elif plural_name in data and len(data) == 1:
+            return data[plural_name]
         return None
 
     def _bulk_update(self, data, partial=False):
@@ -461,16 +461,16 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         serializer = self.get_serializer()
         fields = serializer.get_all_fields()
         validated = {}
-        for name, value in six.iteritems(data):
+        for name, value in data.items():
             field = fields.get(name, None)
             if field is None:
                 raise ValidationError(
-                    'Unknown field: "%s"' % name
+                    f'Unknown field: "{name}"'
                 )
             source = field.source or name
             if source == '*' or field.read_only:
                 raise ValidationError(
-                    'Cannot update field: "%s"' % name
+                    f'Cannot update field: "{name}"'
                 )
             validated[source] = value
         return validated
@@ -482,11 +482,8 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         except Exception as e:
             raise ValidationError(
                 'Failed to bulk-update records:\n'
-                '%s\n'
-                'Data: %s' % (
-                    str(e),
-                    str(data)
-                )
+                f'{str(e)}\n'
+                f'Data: {str(data)}'
             )
 
     def _patch_all_loop(self, queryset, data):
@@ -495,7 +492,7 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         try:
             with transaction.atomic():
                 for record in queryset:
-                    for k, v in six.iteritems(data):
+                    for k, v in data.items():
                         setattr(record, k, v)
                     record.save()
                     updated += 1
@@ -503,11 +500,8 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         except IntegrityError as e:
             raise ValidationError(
                 'Failed to update records:\n'
-                '%s\n'
-                'Data: %s' % (
-                    str(e),
-                    str(data)
-                )
+                f'{str(e)}\n'
+                f'Data: {str(data)}'
             )
 
     def _patch_all(self, data, query=False):
@@ -595,8 +589,7 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
 
         # singular update
         try:
-            return super(DynamicModelViewSet, self).update(request, *args,
-                                                           **kwargs)
+            return super().update(request, *args, **kwargs)
         except AssertionError as e:
             err = str(e)
             if 'Fix your URL conf' in err:
@@ -693,8 +686,7 @@ class DynamicModelViewSet(WithDynamicViewSetMixin, viewsets.ModelViewSet):
         bulk_payload = self._get_bulk_payload(request)
         if bulk_payload:
             return self._create_many(bulk_payload)
-        return super(DynamicModelViewSet, self).create(
-            request, *args, **kwargs)
+        return super().create(request, *args, **kwargs)
 
     def _destroy_many(self, data):
         instances = self.get_queryset().filter(

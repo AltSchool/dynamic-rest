@@ -1,5 +1,3 @@
-import traceback
-
 from django.db import models
 from rest_framework.exceptions import ValidationError
 
@@ -70,49 +68,42 @@ class DynamicGenericRelationField(
         )
 
     def to_representation(self, instance):
-        try:
-            # Find serializer for the instance
-            serializer_class = self.get_serializer_class_for_instance(instance)
-            if not serializer_class:
-                # Can't find canonical serializer! For now, just return
-                # object name and ID, and hope the client knows what to do
-                # with it.
-                return self.get_pk_object(
-                    instance._meta.object_name,
-                    instance.pk
-                )
-
-            # We want the pk to be represented as an object with type,
-            # rather than just the ID.
-            pk_value = self.get_pk_object(
-                serializer_class.get_name(),
+        # Find serializer for the instance
+        serializer_class = self.get_serializer_class_for_instance(instance)
+        if not serializer_class:
+            # Can't find canonical serializer! For now, just return
+            # object name and ID, and hope the client knows what to do
+            # with it.
+            return self.get_pk_object(
+                instance._meta.object_name,
                 instance.pk
             )
-            if self.id_only():
-                return pk_value
 
-            # Serialize the object. Note that request_fields is set, but
-            # field inclusion/exclusion is disallowed via check in bind()
-            representation = serializer_class(
-                dynamic=True,
-                request_fields=self.request_fields,
-                context=self.context,
-                embed=self.embed
-            ).to_representation(
-                instance
-            )
+        # We want the pk to be represented as an object with type,
+        # rather than just the ID.
+        pk_value = self.get_pk_object(
+            serializer_class.get_name(),
+            instance.pk
+        )
+        if self.id_only():
+            return pk_value
 
-            # Pass pk object that contains type and ID to TaggedDict object
-            # so that Processor can use it when the field gets side-loaded.
-            if isinstance(representation, TaggedDict):
-                representation.pk_value = pk_value
-            return representation
-        except BaseException:
-            # This feature should be considered to be in Beta so don't break
-            # if anything unexpected happens.
-            # TODO: Remove once we have more confidence.
-            traceback.print_exc()
-            return None
+        # Serialize the object. Note that request_fields is set, but
+        # field inclusion/exclusion is disallowed via check in bind()
+        representation = serializer_class(
+            dynamic=True,
+            request_fields=self.request_fields,
+            context=self.context,
+            embed=self.embed
+        ).to_representation(
+            instance
+        )
+
+        # Pass pk object that contains type and ID to TaggedDict object
+        # so that Processor can use it when the field gets side-loaded.
+        if isinstance(representation, TaggedDict):
+            representation.pk_value = pk_value
+        return representation
 
     def to_internal_value(self, data: dict) -> models.Model | None:
         model_name = data.get('type', None)

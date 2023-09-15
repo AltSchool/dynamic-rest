@@ -1,5 +1,4 @@
 """This module contains utilities to support API links."""
-import six
 from dynamic_rest.conf import settings
 from dynamic_rest.routers import DynamicRouter
 
@@ -16,11 +15,11 @@ def merge_link_object(serializer, data, instance):
     if not getattr(instance, 'pk', None):
         # If instance doesn't have a `pk` field, we'll assume it doesn't
         # have a canonical resource URL to hang a link off of.
-        # This generally only affectes Ephemeral Objects.
+        # This generally only affects Ephemeral Objects.
         return data
 
     link_fields = serializer.get_link_fields()
-    for name, field in six.iteritems(link_fields):
+    for name, field in link_fields.items():
         # For included fields, omit link if there's no data.
         if name in data and not data[name]:
             continue
@@ -35,7 +34,7 @@ def merge_link_object(serializer, data, instance):
                     serializer.get_resource_key(),
                     instance.pk
                 ) or ''
-            link = '%s%s/' % (base_url, name)
+            link = f'{base_url}{name}/'
         # Default to DREST-generated relation endpoints.
         elif callable(link):
             link = link(name, field, data, instance)

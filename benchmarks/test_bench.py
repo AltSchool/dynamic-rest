@@ -176,52 +176,61 @@ class BenchmarkTest(APITestCase):
         d = diff.total_seconds()
         self._results[benchmark_name][implementation_name][size][sample] = d
 
-    def generate_linear(self, size):
-        total = 0
-        for i in range(size):
-            total += 1
-            User.objects.create(
-                name=str(i)
-            )
+    def generate_linear(self, amount):
+        users = [
+            User(name=str(i)) for i in range(amount)
+        ]
+        User.objects.bulk_create(users)
+        return len(users)
+
+    def generate_quadratic(self, amount):
+        users = [
+            User(name=f"{i}")
+            for i in range(amount)
+        ]
+        total = len(users)
+        User.objects.bulk_create(users)
+        users = User.objects.all()
+        for user in users:
+            groups = [
+                Group(
+                    name=f'{user.name}-{j}',
+                    max_size=amount
+                ) for j in range(amount)
+            ]
+            Group.objects.bulk_create(groups)
+            total += len(groups)
+            user.groups.set(groups)
         return total
 
-    def generate_quadratic(self, size):
-        total = 0
-        for i in range(size):
-            total += 1
-            user = User.objects.create(
-                name=str(i)
-            )
-            for j in range(size):
-                total += 1
-                group = Group.objects.create(
-                    name='%d-%d' % (i, j),
-                    max_size=size
-                )
-                user.groups.add(group)
-        return total
-
-    def generate_cubic(self, size):
-        total = 0
-        for i in range(size):
-            total += 1
-            user = User.objects.create(
-                name=str(i)
-            )
-            for j in range(size):
-                total += 1
-                group = Group.objects.create(
-                    name='%d-%d' % (i, j),
-                    max_size=size
-                )
-                user.groups.add(group)
-                for k in range(size):
-                    total += 1
-                    permission = Permission.objects.create(
-                        name='%d-%d-%d' % (i, j, k)
-                    )
-                    group.permissions.add(permission)
-        return total
+    def generate_cubic(self, amount):
+            users = [
+                User(name=f"{i}")
+                for i in range(amount)
+            ]
+            total = len(users)
+            User.objects.bulk_create(users)
+            users = User.objects.all()
+            for user in users:
+                groups = [
+                    Group(
+                        name=f'{user.name}-{j}',
+                        max_size=amount
+                    ) for j in range(amount)
+                ]
+                Group.objects.bulk_create(groups)
+                total += len(groups)
+                user.groups.set(groups)
+                for group in groups:
+                    permissions = [
+                        Permission(
+                            name=f'{user.name}-{group.name}-{k}'
+                        ) for k in range(amount)
+                    ]
+                    Permission.objects.bulk_create(permissions)
+                    total += len(permissions)
+                    group.permissions.set(permissions)
+            return total
 
 
 def generate_benchmark(name, title, drest, drf, size, sample):

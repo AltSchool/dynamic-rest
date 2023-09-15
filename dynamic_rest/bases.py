@@ -17,11 +17,15 @@ def resettable_cached_property(func):
     """
 
     def wrapper(self):
-        if not hasattr(self, '_resettable_cached_properties'):
-            self._resettable_cached_properties = {}
-        if func.__name__ not in self._resettable_cached_properties:
-            self._resettable_cached_properties[func.__name__] = func(self)
-        return self._resettable_cached_properties[func.__name__]
+        self._resettable_cached_properties = cache = getattr(
+            self,
+            '_resettable_cached_properties',
+            {}
+        )
+        func_name = func.__name__
+        if func_name not in cache:
+            cache[func_name] = func(self)
+        return cache[func_name]
 
     # Returns a property whose getter is the 'wrapper' function
     return property(wrapper)
@@ -34,8 +38,7 @@ def cacheable_object(cls):
     """
 
     def reset(self):
-        if hasattr(self, '_resettable_cached_properties'):
-            self._resettable_cached_properties = {}
+        self._resettable_cached_properties = {}
 
     cls.reset = reset
     return cls
@@ -43,7 +46,7 @@ def cacheable_object(cls):
 
 @cacheable_object
 class CacheableFieldMixin(object):
-    """Overide Field.root and Field.context to make fields/serializers
+    """Override Field.root and Field.context to make fields/serializers
     cacheable and reusable. The DRF version uses @cached_property which
     doesn't have a public API for resetting. This version uses normal
     object variables with and adds a `reset()` API.
@@ -71,7 +74,7 @@ class GetModelMixin(object):
 
     def __init__(self, *args, **kwargs):
         self.model = kwargs.pop('model', None)
-        super(GetModelMixin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def get_model(self):
         """
@@ -85,21 +88,22 @@ class GetModelMixin(object):
         The Meta can either explicitly define a model, or provide a
         dot-delimited string path to it.
         """
-        if self.model is None:
-            custom_fn_name = 'get_{0}_model'.format(self.field_name)
-
-            if hasattr(self.parent, custom_fn_name):
-                return getattr(self.parent, custom_fn_name)()
-            else:
-                try:
-                    return self.parent.Meta.model
-                except AttributeError:
-                    raise AssertionError(
-                        'No "model" value passed to field "{0}"'.format(
-                            type(self).__name__
+        model = self.model
+        if model is None:
+            if model is None:
+                custom_fn_name = f'get_{self.field_name}_model'
+                parent = self.parent
+                if hasattr(parent, custom_fn_name):
+                    self.model = getattr(parent, custom_fn_name)()
+                else:
+                    try:
+                        self.model = parent.Meta.model
+                    except AttributeError:
+                        raise AssertionError(
+                           f'No "model" value passed to field "{type(self).__name__}"'
                         )
-                    )
-        elif isinstance(self.model, str):
-            return model_from_definition(self.model)
-        else:
-            return self.model
+            elif isinstance(model, str):
+                self.model = model_from_definition(model)
+            else:
+                self.model = model
+        return self.model

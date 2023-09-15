@@ -28,7 +28,7 @@ from tests.models import (
 
 
 def backup_home_link(name, field, data, obj):
-    return "/locations/%s/?include[]=address" % obj.backup_home_id
+    return f"/locations/{obj.backup_home_id}/?include[]=address"
 
 
 class CatSerializer(DynamicModelSerializer):

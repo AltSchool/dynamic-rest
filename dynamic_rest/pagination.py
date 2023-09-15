@@ -30,20 +30,20 @@ class DynamicPageNumberPagination(PageNumberPagination):
         # always returns page, per_page
         # also returns total_results and total_pages
         # (unless EXCLUDE_COUNT_QUERY_PARAM is set)
+        page = self.page
         meta = {
-            'page': self.page.number,
+            'page': page.number,
             'per_page': self.get_page_size(self.request)
         }
         if not self.exclude_count:
-            meta['total_results'] = self.page.paginator.count
-            meta['total_pages'] = self.page.paginator.num_pages
+            meta['total_results'] = page.paginator.count
+            meta['total_pages'] = page.paginator.num_pages
         else:
             meta['more_pages'] = self.more_pages
         return meta
 
     def get_paginated_response(self, data):
         meta = self.get_page_metadata()
-        result = None
         if isinstance(data, list):
             result = OrderedDict()
             if not self.exclude_count:
@@ -81,10 +81,10 @@ class DynamicPageNumberPagination(PageNumberPagination):
         page_size = self.get_page_size(request)
         if not page_size:
             return None
-
         self.request = request
+        exclude = self.exclude_count
         paginator = self.django_paginator_class(
-            queryset, page_size, exclude_count=self.exclude_count
+            queryset, page_size, exclude_count=exclude
         )
         page_number = self.get_page_number(request, paginator)
 
@@ -101,7 +101,7 @@ class DynamicPageNumberPagination(PageNumberPagination):
             self.display_page_controls = True
 
         result = list(self.page)
-        if self.exclude_count:
+        if exclude:
             if len(result) > page_size:
                 # if exclude_count is set, we fetch one extra item
                 result = result[:page_size]

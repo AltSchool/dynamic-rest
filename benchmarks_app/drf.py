@@ -1,11 +1,6 @@
 from rest_framework import routers, serializers, viewsets
 
-from .models import Group, Permission, User
-
-
-# DRF
-
-# DRF Serializers
+from benchmarks_app.models import Group, Permission, User
 
 
 class UserSerializer(serializers.ModelSerializer):

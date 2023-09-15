@@ -25,9 +25,7 @@ class DynamicMetadata(SimpleMetadata):
 
     def determine_metadata(self, request, view):
         """Adds `properties` and `features` to the metadata response."""
-        metadata = super(
-            DynamicMetadata,
-            self).determine_metadata(
+        metadata = super().determine_metadata(
             request,
             view)
         metadata['features'] = getattr(view, 'features', [])

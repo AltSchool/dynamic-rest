@@ -4,17 +4,15 @@ import json
 import django
 from django.db import connection
 from django.test import override_settings
-import six
 from rest_framework.test import APITestCase
 from urllib.parse import quote
 
 from tests.models import Cat, Group, Location, Permission, Profile, User
 from tests.serializers import NestedEphemeralSerializer, PermissionSerializer
 from tests.setup import create_fixture
-
-UNICODE_STRING = six.unichr(9629)  # unicode heart
-# UNICODE_URL_STRING = urllib.quote(UNICODE_STRING.encode('utf-8'))
-UNICODE_URL_STRING = '%E2%96%9D'
+from urllib.parse import quote_plus
+UNICODE_STRING = "\u2764\ufe0f"  # unicode heart
+UNICODE_URL_STRING = quote_plus(UNICODE_STRING)
 
 
 @override_settings(
@@ -353,7 +351,7 @@ class TestUsersAPI(APITestCase):
             json.loads(response.content.decode('utf-8')))
         with self.assertNumQueries(1):
             response = self.client.get(
-                six.u('/users/?filter{name}[]=%s') % UNICODE_STRING
+                '/users/?filter{name}[]=%s' % UNICODE_STRING
             )
         self.assertEqual(200, response.status_code)
         self.assertEqual(
@@ -380,7 +378,7 @@ class TestUsersAPI(APITestCase):
         )
         with self.assertNumQueries(1):
             response = self.client.get(
-                six.u('/users/?filter{name}[]=%s') % UNICODE_STRING
+                '/users/?filter{name}[]=%s' % UNICODE_STRING
             )
         self.assertEqual(200, response.status_code)
         self.assertEqual(

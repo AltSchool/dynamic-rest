@@ -3,7 +3,6 @@
 from django.core.exceptions import ValidationError as InternalValidationError
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q, Prefetch, Manager
-import six
 from functools import reduce
 from rest_framework import __version__ as drf_version
 from rest_framework import serializers
@@ -53,7 +52,7 @@ def has_joins(queryset):
     If this is the case, it is possible for the queryset
     to return duplicate results.
     """
-    for join in six.itervalues(queryset.query.alias_map):
+    for join in queryset.query.alias_map.values():
         if join.join_type:
             return True
     return False
@@ -112,7 +111,7 @@ class FilterNode(object):
         field = None
         for i, field_name in enumerate(self.field):
             # Note: .fields can be empty for related serializers that aren't
-            # sideloaded. Fields that are deferred also won't be present.
+            # side-loaded. Fields that are deferred also won't be present.
             # If field name isn't in serializer.fields, get full list from
             # get_all_fields() method. This is somewhat expensive, so only do
             # this if we have to.
@@ -125,7 +124,7 @@ class FilterNode(object):
                 continue
 
             if field_name not in fields:
-                raise ValidationError("Invalid filter field: %s" % field_name)
+                raise ValidationError(f"Invalid filter field: {field_name}")
 
             field = fields[field_name]
 
@@ -148,12 +147,12 @@ class FilterNode(object):
             if isinstance(s, serializers.ListSerializer):
                 s = s.child
             if not s:
-                raise ValidationError("Invalid nested filter field: %s" % field_name)
+                raise ValidationError(f"Invalid nested filter field: {field_name}")
 
         if self.operator:
             rewritten.append(self.operator)
 
-        return ('__'.join(rewritten), field)
+        return '__'.join(rewritten), field
 
 
 def rewrite_filters(fs, serializer):
@@ -170,7 +169,6 @@ def rewrite_filters(fs, serializer):
 def clause_to_q(clause, serializer):
     key, value = clause
     negate = False
-    q = {}
     if key.startswith('-'):
         negate = True
         key = key[1:]
@@ -277,7 +275,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         if getattr(self, 'view', None):
             out['_complex'] = self.view.get_request_feature(self.view.FILTER, raw=True)
 
-        for spec, value in six.iteritems(filters_map):
+        for spec, value in filters_map.items():
 
             # Inclusion or exclusion?
             if spec[0] == '-':
@@ -309,7 +307,7 @@ class DynamicFilterBackend(BaseFilterBackend):
                 pass
             elif operator in self.VALID_FILTER_OPERATORS:
                 value = value[0]
-                if operator == 'isnull' and isinstance(value, six.string_types):
+                if operator == 'isnull' and isinstance(value, str):
                     value = is_truthy(value)
                 elif operator == 'eq':
                     operator = None
@@ -360,7 +358,7 @@ class DynamicFilterBackend(BaseFilterBackend):
                 q &= Q(**includes)
             if excludes:
                 excludes = rewrite_filters(excludes, serializer)
-                for k, v in six.iteritems(excludes):
+                for k, v in excludes.items():
                     q &= ~Q(**{k: v})
             return q
         else:
@@ -391,8 +389,8 @@ class DynamicFilterBackend(BaseFilterBackend):
     def _build_implicit_prefetches(self, model, prefetches, requirements):
         """Build a prefetch dictionary based on internal requirements."""
 
-        for source, remainder in six.iteritems(requirements):
-            if not remainder or isinstance(remainder, six.string_types):
+        for source, remainder in requirements.items():
+            if not remainder or isinstance(remainder, str):
                 # no further requirements to prefetch
                 continue
 
@@ -429,7 +427,7 @@ class DynamicFilterBackend(BaseFilterBackend):
     ):
         """Build a prefetch dictionary based on request requirements."""
 
-        for name, field in six.iteritems(fields):
+        for name, field in fields.items():
             original_field = field
             if isinstance(field, DynamicRelationField):
                 field = field.serializer
@@ -480,7 +478,7 @@ class DynamicFilterBackend(BaseFilterBackend):
 
     def _get_implicit_requirements(self, fields, requirements):
         """Extract internal prefetch requirements from serializer fields."""
-        for name, field in six.iteritems(fields):
+        for name, field in fields.items():
             source = field.source
             # Requires may be manually set on the field -- if not,
             # assume the field requires only its source.
@@ -703,7 +701,7 @@ class DynamicSortingFilter(OrderingFilter):
             # if any of the sort fields are invalid, throw an error.
             # else return the ordering
             if invalid_ordering:
-                raise ValidationError("Invalid filter field: %s" % invalid_ordering)
+                raise ValidationError(f"Invalid filter field: {invalid_ordering}")
             else:
                 return valid_ordering
 
@@ -795,10 +793,10 @@ class DynamicSortingFilter(OrderingFilter):
 
         # neither a method nor an attribute has been specified
         if serializer_class is None:
-            msg = (
-                "Cannot use %s on a view which does not have either a "
-                "'serializer_class' or an overriding 'get_serializer_class'."
+            raise ImproperlyConfigured(
+                f"Cannot use { self.__class__.__name__} on a view which does"
+                " not have either a 'serializer_class' or an overriding "
+                "'get_serializer_class'."
             )
-            raise ImproperlyConfigured(msg % self.__class__.__name__)
 
         return serializer_class
