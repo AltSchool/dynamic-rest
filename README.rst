@@ -17,7 +17,7 @@ DREST classes can be used as a drop-in replacement for DRF classes,
 which offer the following features on top of the standard DRF kit:
 
 -  Linked relationships
--  Sideloaded relationships
+-  Side-loaded relationships
 -  Embedded relationships
 -  Field inclusions
 -  Field exclusions
@@ -41,6 +41,6 @@ Maintainers
 Requirements
 ============
 
--  Python (3.6, 3.7, 3.8, 3.9, 3.10, 3.11)
--  Django (2.2, 3.1, 3.2, 4.0, 4.1, 4.2)
+-  Python (3.9, 3.10, 3.11)
+-  Django (3.1, 3.2, 4.0, 4.1, 4.2)
 -  Django REST Framework (3.11, 3.12, 3.13, 3.14)
