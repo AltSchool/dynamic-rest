@@ -20,6 +20,17 @@ UNICODE_STRING = "\u2764\ufe0f"  # unicode heart
 UNICODE_URL_STRING = quote_plus(UNICODE_STRING)
 
 
+def sort_values(data: dict) -> dict:
+    """A hack to fix ordering in responses."""
+    for key, value in data.items():
+        for key_value in value:
+            for k, v in key_value.items():
+                if isinstance(v, list):
+                    key_value[k] = sorted(v)
+        data[key] = sorted(value, key=lambda x: x["id"])
+    return data
+
+
 @override_settings(DYNAMIC_REST={"ENABLE_LINKS": False})
 class TestUsersAPI(TestCase):
     """Test users API."""
@@ -73,7 +84,7 @@ class TestUsersAPI(TestCase):
                     {"id": 4, "groups": [1, 2], "location": 3, "name": "3"},
                 ]
             },
-            json.loads(response.content.decode("utf-8")),
+            sort_values(json.loads(response.content.decode("utf-8"))),
         )
 
         with self.assertNumQueries(2):
@@ -87,7 +98,7 @@ class TestUsersAPI(TestCase):
                     {"id": 2, "members": [1, 2, 3, 4], "name": "1"},
                 ]
             },
-            json.loads(response.content.decode("utf-8")),
+            sort_values(json.loads(response.content.decode("utf-8"))),
         )
 
     def test_get_with_exclude(self):
@@ -166,7 +177,7 @@ class TestUsersAPI(TestCase):
                     {"groups": [1, 2], "id": 4, "location": 3, "name": "3"},
                 ],
             },
-            json.loads(response.content.decode("utf-8")),
+            sort_values(json.loads(response.content.decode("utf-8"))),
         )
 
     def test_get_with_nested_include(self):
@@ -188,7 +199,7 @@ class TestUsersAPI(TestCase):
                     {"groups": [1, 2], "id": 4, "location": 3, "name": "3"},
                 ],
             },
-            json.loads(response.content.decode("utf-8")),
+            sort_values(json.loads(response.content.decode("utf-8"))),
         )
 
     def test_get_with_nested_exclude(self):
@@ -207,7 +218,7 @@ class TestUsersAPI(TestCase):
                     {"groups": [1, 2], "id": 4, "location": 3, "name": "3"},
                 ],
             },
-            json.loads(response.content.decode("utf-8")),
+            sort_values(json.loads(response.content.decode("utf-8"))),
         )
 
     def test_get_with_nested_exclude_all(self):
@@ -227,7 +238,7 @@ class TestUsersAPI(TestCase):
                     {"groups": [1, 2], "id": 4, "location": 3, "name": "3"},
                 ],
             },
-            json.loads(response.content.decode("utf-8")),
+            sort_values(json.loads(response.content.decode("utf-8"))),
         )
 
     def test_get_with_exclude_all_and_include_field(self):
