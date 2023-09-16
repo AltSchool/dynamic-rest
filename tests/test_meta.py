@@ -1,11 +1,7 @@
 """Tests for dynamic_rest.meta."""
 import os
 
-from dynamic_rest.meta import (
-    get_model_field,
-    get_model_field_and_type,
-    get_remote_model,
-)
+from dynamic_rest.meta import get_model_field_and_type
 from tests.models import Group, Location, Profile, User
 
 if os.getenv("DATABASE_URL"):
@@ -16,25 +12,6 @@ else:
 
 class TestMeta(TestCase):
     """Test case for dynamic_rest.meta."""
-
-    def test_get_remote_model(self):
-        """Test get remote model."""
-        tests = [
-            (Location, "user_set", User),
-            (User, "location", Location),
-            (User, "profile", Profile),
-            (User, "groups", Group),
-            (Group, "users", User),
-            (Profile, "user", User),
-        ]
-
-        for model, field_name, expected in tests:
-            remote_model = get_remote_model(get_model_field(model, field_name))
-            self.assertEqual(
-                expected,
-                remote_model,
-                f"For {model}.{field_name} expected {expected} got {remote_model}",
-            )
 
     def test_model_field_and_type(self):
         """Test model field and type."""

@@ -7,11 +7,7 @@ from functools import lru_cache
 from django.db import models
 from django.db.models import Prefetch, QuerySet
 
-from dynamic_rest.meta import (
-    get_model_field_and_type,
-    get_remote_model,
-    reverse_o2o_field_name,
-)
+from dynamic_rest.meta import get_model_field_and_type
 
 
 class FastObject(dict):
@@ -136,7 +132,7 @@ class FastPrefetch(object):
         if not ftype:
             raise RuntimeError(f"{field_name} is not prefetchable")
 
-        qs = get_remote_model(field).objects.all()
+        qs = field.remote_field.model.objects.all()
 
         field_name = field_name or field.name
         prefetch = cls(field_name, qs)
@@ -438,7 +434,7 @@ class FastQuery(FastQueryCompatMixin, object):
 
         # If prefetching User.profile, construct filter like:
         #   Profile.objects.filter(user__in=<user_ids>)
-        remote_field = reverse_o2o_field_name(field)
+        remote_field = field.remote_field.attname
         remote_filter_key = f"{remote_field}__in"
         filter_args = {remote_filter_key: my_ids}
 

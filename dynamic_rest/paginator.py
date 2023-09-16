@@ -1,5 +1,5 @@
 """Paginator that supports dynamic page sizes and excludes count queries."""
-# adapted from Django's django.core.paginator (2.2 - 3.2+ compatible)
+# adapted from Django's django.core.paginator (3.2+ compatible)
 # adds support for the "exclude_count" parameter
 
 import inspect
@@ -8,13 +8,7 @@ from math import ceil
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator
 from django.utils.functional import cached_property
 from django.utils.inspect import method_has_no_args
-
-try:
-    from django.utils.translation import gettext_lazy as _
-except ImportError:
-
-    def _(x):
-        return x
+from django.utils.translation import gettext_lazy as _
 
 
 class DynamicPaginator(Paginator):

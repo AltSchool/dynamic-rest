@@ -149,36 +149,6 @@ def is_field_remote(model, field_name):
     return isinstance(model_field, (ManyToManyField, RelatedObject))
 
 
-def reverse_o2o_field_name(o2or_field):
-    """Return the name of the reverse o2o field."""
-    try:
-        # Django 1.9
-        return o2or_field.remote_field.attname
-    except BaseException:  # pylint: disable=broad-except
-        # Django 1.7
-        return o2or_field.field.attname
-
-
-def get_remote_model(field):
-    """Return the remote model for a given field."""
-    try:
-        # Django 1.9
-        return field.remote_field.model
-    except BaseException:  # pylint: disable=broad-except
-        # Django 1.7
-        if hasattr(field, "field"):
-            return field.field.model
-        elif hasattr(field, "rel"):
-            return field.rel.to
-        elif field.__class__.__name__ == "GenericForeignKey":
-            return None
-        else:
-            raise
-
-
 def get_model_table(model):
     """Return the table name for a given model."""
-    try:
-        return model._meta.db_table  # pylint: disable=protected-access
-    except BaseException:  # pylint: disable=broad-except
-        return None
+    return model._meta.db_table  # pylint: disable=protected-access

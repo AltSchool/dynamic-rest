@@ -78,10 +78,10 @@ over HTTP.
 1. Install using `pip`:
 
 ```bash
-    pip install dynamic-rest
+    pip install dynamic-rest-bse
 ```
 
-(or add `dynamic-rest` to `requirements.txt` or `setup.py`)
+(or add `dynamic-rest-bse` to `requirements.txt` or `setup.py`)
 
 2. Add `rest_framework` and `dynamic_rest` to `INSTALLED_APPS` in `settings.py`:
 
@@ -114,7 +114,7 @@ This application is hosted at https://dynamic-rest.herokuapp.com but can also be
 1. Clone this repository:
 
 ```bash
-    git clone git@github.com:AltSchool/dynamic-rest.git
+    git clone git@github.com:BillSchumacher/dynamic-rest.git
     cd dynamic-rest
 ```
 
