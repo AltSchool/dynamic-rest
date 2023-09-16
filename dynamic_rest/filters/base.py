@@ -2,12 +2,15 @@
 from __future__ import annotations
 
 from functools import reduce
+from typing import Any
 
 from django.core.exceptions import ValidationError as InternalValidationError
 from django.db.models import Manager, Model, Prefetch, Q, QuerySet
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
+from rest_framework.fields import Field
 from rest_framework.filters import BaseFilterBackend
+from rest_framework.request import Request
 
 from dynamic_rest.conf import settings
 from dynamic_rest.constants import VALID_FILTER_OPERATORS
@@ -21,6 +24,8 @@ from dynamic_rest.filters.utils import (
     rewrite_filters,
 )
 from dynamic_rest.meta import get_model_field, is_field_remote, is_model_field
+from dynamic_rest.prefetch import FastPrefetch
+from dynamic_rest.serializers import DynamicModelSerializer
 from dynamic_rest.utils import is_truthy
 
 DEBUG = settings.DEBUG
@@ -33,7 +38,7 @@ class DynamicFilterBackend(BaseFilterBackend):
     filters, includes, and excludes to the base queryset of a view.
     """
 
-    def filter_queryset(self, request, queryset: QuerySet, view) -> QuerySet:
+    def filter_queryset(self, request: Request, queryset: QuerySet, view) -> QuerySet:
         """Filter the queryset.
 
         This is the main entry-point to this class, and
@@ -60,11 +65,11 @@ class DynamicFilterBackend(BaseFilterBackend):
     # This function was renamed and broke downstream dependencies that haven't
     # been updated to use the new naming convention.
 
-    def _extract_filters(self, **kwargs):
+    def _extract_filters(self, **kwargs) -> TreeMap:
         """Extract filters from the request."""
         return self._get_requested_filters(**kwargs)
 
-    def _get_requested_filters(self, **kwargs):
+    def _get_requested_filters(self, **kwargs) -> TreeMap:
         """Get filters from the request.
 
         Convert 'filters' query params into a dict that can be passed
@@ -126,7 +131,9 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         return out
 
-    def _filters_to_query(self, filters, serializer, q: Q = None) -> Q | None:
+    def _filters_to_query(
+        self, filters: dict[str, dict[Any, Any]], serializer, q: Q = None
+    ) -> Q | None:
         """Construct Django Query object from request.
 
         Arguments are dictionaries, which will be passed to Q() as kwargs.
@@ -189,7 +196,10 @@ class DynamicFilterBackend(BaseFilterBackend):
         return Prefetch(source, queryset=queryset)
 
     def _build_implicit_prefetches(
-        self, model: Model, prefetches, requirements: dict[str, str | dict]
+        self,
+        model: Model,
+        prefetches: dict[str, Prefetch | FastPrefetch],
+        requirements: dict[str, str | dict],
     ) -> dict[str, Prefetch]:
         """Build a prefetch dictionary based on internal requirements."""
         for source, remainder in requirements.items():
@@ -214,7 +224,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         """Make a queryset for a model."""
         return model.objects.all()
 
-    def _build_implicit_queryset(self, model: Model, requirements) -> QuerySet:
+    def _build_implicit_queryset(self, model: Model, requirements: TreeMap) -> QuerySet:
         """Build a queryset based on implicit requirements."""
         queryset = self._make_model_queryset(model)
         prefetches = {}
@@ -226,7 +236,12 @@ class DynamicFilterBackend(BaseFilterBackend):
         return queryset
 
     def _build_requested_prefetches(
-        self, prefetches, requirements, model: Model, fields, filters
+        self,
+        prefetches: dict[str, Prefetch | FastPrefetch],
+        requirements: TreeMap,
+        model: Model,
+        fields: dict[str, Field],
+        filters: TreeMap,
     ):
         """Build a prefetch dictionary based on request requirements."""
         for name, field in fields.items():
@@ -278,7 +293,10 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         return prefetches
 
-    def _get_implicit_requirements(self, fields, requirements):
+    @staticmethod
+    def _get_implicit_requirements(
+        fields: dict[str, Field], requirements: TreeMap
+    ) -> None:
         """Extract internal prefetch requirements from serializer fields."""
         for _, field in fields.items():
             source = field.source
@@ -312,13 +330,13 @@ class DynamicFilterBackend(BaseFilterBackend):
 
     def _build_queryset(
         self,
-        serializer=None,
-        filters=None,
-        queryset=None,
-        requirements=None,
-        extra_filters=None,
-        disable_prefetches=False,
-    ):
+        serializer: DynamicModelSerializer | None = None,
+        filters: TreeMap = None,
+        queryset: QuerySet = None,
+        requirements: TreeMap = None,
+        extra_filters: Q | None = None,
+        disable_prefetches: bool = False,
+    ) -> QuerySet:
         """Build a queryset that pulls in all data required by this request.
 
         Handles nested prefetching of related data and deferring fields
