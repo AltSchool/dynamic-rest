@@ -3,7 +3,7 @@ from django.test import (  # noqa pylint: disable=unused-import
     TestCase,
     TransactionTestCase,
 )
-from rest_framework.test import APITestCase
+from rest_framework.test import APITransactionTestCase
 
 
 class ResetTestCase(TransactionTestCase):
@@ -12,7 +12,7 @@ class ResetTestCase(TransactionTestCase):
     reset_sequences = True
 
 
-class ResetAPITestCase(APITestCase):
+class ResetAPITestCase(APITransactionTestCase):
     """Reset API test case."""
 
     reset_sequences = True
