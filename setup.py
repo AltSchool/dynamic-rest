@@ -4,7 +4,7 @@ from setuptools import find_packages, setup
 NAME = "dynamic-rest-bse"
 DESCRIPTION = "Dynamic API support to Django REST Framework. Forked..."
 URL = "http://github.com/BillSchumacher/dynamic-rest"
-VERSION = "2.3.1"
+VERSION = "2.3.2"
 SCRIPTS = ["manage.py"]
 
 with open("install_requires.txt", encoding="utf-8") as fp:
@@ -18,6 +18,7 @@ setup(
     include_package_data=True,
     install_requires=INSTALL_REQUIRES,
     long_description=LONG_DESCRIPTION,
+    long_description_content_type="text/x-rst",
     name=NAME,
     packages=find_packages(exclude=["benchmarks", "tests"]),
     scripts=SCRIPTS,
