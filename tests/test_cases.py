@@ -3,7 +3,10 @@ from django.test import (  # noqa pylint: disable=unused-import
     TestCase,
     TransactionTestCase,
 )
-from rest_framework.test import APITransactionTestCase
+from rest_framework.test import (  # noqa pylint: disable=unused-import
+    APITestCase,
+    APITransactionTestCase,
+)
 
 
 class ResetTestCase(TransactionTestCase):
