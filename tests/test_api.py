@@ -27,7 +27,10 @@ def sort_values(data: dict) -> dict:
             for k, v in key_value.items():
                 if isinstance(v, list):
                     key_value[k] = sorted(v)
-        data[key] = sorted(value, key=lambda x: x["id"])
+        if "id" in data[key][0]:
+            data[key] = sorted(value, key=lambda x: x["id"])
+        else:
+            data[key] = sorted(value, key=lambda x: x["name"])
     return data
 
 
