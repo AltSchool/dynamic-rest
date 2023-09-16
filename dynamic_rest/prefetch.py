@@ -314,7 +314,7 @@ class FastQuery(FastQueryCompatMixin, object):
             prefetches = [
                 make_prefetch(prefetch) for prefetch in self.prefetches.values()
             ]
-            if len(prefetches) > 0:
+            if prefetches:
                 qs = qs.prefetch_related(*prefetches)
             self._data = FastList(
                 map(lambda obj: SlowObject(obj, pk_field=self.pk_field), qs.all())
@@ -338,17 +338,11 @@ class FastQuery(FastQueryCompatMixin, object):
 
         # Query hasn't yet been executed. Update queryset.
         if isinstance(k, slice):
-            if k.start is not None:
-                start = int(k.start)
-            else:
-                start = None
-            if k.stop is not None:
-                stop = int(k.stop)
-            else:
-                stop = None
             if k.step:
                 raise TypeError("Stepping not supported")
 
+            start = int(k.start) if k.start is not None else None
+            stop = int(k.stop) if k.stop is not None else None
             self.queryset.query.set_limits(start, stop)
         else:
             self.queryset.query.set_limits(k, k + 1)

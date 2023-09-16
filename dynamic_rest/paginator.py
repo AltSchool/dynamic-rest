@@ -31,9 +31,7 @@ class DynamicPaginator(Paginator):
             # skip validating against num_pages
             return number
         if number > self.num_pages:
-            if number == 1 and self.allow_empty_first_page:
-                pass
-            else:
+            if number != 1 or not self.allow_empty_first_page:
                 raise EmptyPage(_("That page contains no results"))
         return number
 
@@ -49,9 +47,8 @@ class DynamicPaginator(Paginator):
             # to determine if more pages are available
             # and skip validation against count
             top += 1
-        else:
-            if top + self.orphans >= count:
-                top = count
+        elif top + self.orphans >= count:
+            top = count
         return self._get_page(self.object_list[bottom:top], number, self)
 
     @cached_property

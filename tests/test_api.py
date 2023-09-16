@@ -260,7 +260,7 @@ class TestUsersAPI(TestCase):
             response = self.client.get(url)
         self.assertEqual(200, response.status_code, response.content.decode("utf-8"))
         data = json.loads(response.content.decode("utf-8"))
-        self.assertEqual(set(["groups"]), set(data["users"][0].keys()))
+        self.assertEqual({"groups"}, set(data["users"][0].keys()))
         self.assertTrue("groups" in data)
 
     def test_get_one_with_include(self):
