@@ -56,9 +56,7 @@ def clause_to_q(clause, serializer):
         negate = True
         key = key[1:]
     parts = key.split(".")
-    operator = "eq"
-    if parts[-1] in VALID_FILTER_OPERATORS:
-        operator = parts.pop()
+    operator = parts.pop() if parts[-1] in VALID_FILTER_OPERATORS else "eq"
     if operator == "eq":
         operator = None
     node = FilterNode(parts, operator, value)
