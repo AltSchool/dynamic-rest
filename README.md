@@ -1,3 +1,6 @@
+# Django Dynamic REST -4
+due to the lack of response from the main project to my pull request and the need to have an updated repository compatible with the latest version of django (Django 4), I have decided to create this version based on the original creator's version, the source details are detailed below
+
 # Django Dynamic REST
 
 [![Circle CI](https://circleci.com/gh/AltSchool/dynamic-rest.svg?style=svg)](https://circleci.com/gh/AltSchool/dynamic-rest)
