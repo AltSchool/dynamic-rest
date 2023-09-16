@@ -184,7 +184,6 @@ class DynamicRouter(DefaultRouter):
             resource_name = serializer.get_name()
             path_name = serializer.get_plural_name()
         except BaseException as exc:
-
             traceback.print_exc()
             raise RuntimeError(
                 f"Failed to extract resource name from viewset: '{viewset}'."
