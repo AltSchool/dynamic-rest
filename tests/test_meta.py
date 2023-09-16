@@ -5,7 +5,6 @@ from dynamic_rest.meta import (
     get_model_field,
     get_model_field_and_type,
     get_remote_model,
-    reverse_m2m_field_name,
 )
 from tests.models import Group, Location, Profile, User
 
@@ -56,9 +55,3 @@ class TestMeta(TestCase):
                 typestr,
                 f"{model}.{field_name} should be '{expected}', got '{typestr}'",
             )
-
-    def test_reverse_m2m_field_name(self):
-        """Test reverse m2m field name."""
-        m2m_field = get_model_field(User, "groups")
-        reverse = reverse_m2m_field_name(m2m_field)
-        self.assertEqual("users", reverse)

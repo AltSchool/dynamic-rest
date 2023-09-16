@@ -149,40 +149,6 @@ def is_field_remote(model, field_name):
     return isinstance(model_field, (ManyToManyField, RelatedObject))
 
 
-def get_related_model(field):
-    """Return the related model for a given field."""
-    try:
-        # django 1.8+
-        return field.related_model
-    except AttributeError:
-        # django 1.7
-        if hasattr(field, "field"):
-            return field.field.model
-        elif hasattr(field, "rel"):
-            return field.rel.to
-        elif field.__class__.__name__ == "GenericForeignKey":
-            return None
-        else:
-            raise
-
-
-def reverse_m2m_field_name(m2m_field):
-    """Return the name of the reverse m2m field."""
-    try:
-        # Django 1.9
-        return m2m_field.remote_field.name
-    except BaseException:  # pylint: disable=broad-except
-        # Django 1.7
-        if hasattr(m2m_field, "rel"):
-            return m2m_field.rel.related_name
-        elif hasattr(m2m_field, "field"):
-            return m2m_field.field.name
-        elif m2m_field.__class__.__name__ == "GenericForeignKey":
-            return None
-        else:
-            raise
-
-
 def reverse_o2o_field_name(o2or_field):
     """Return the name of the reverse o2o field."""
     try:

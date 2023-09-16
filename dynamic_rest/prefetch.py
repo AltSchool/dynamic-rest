@@ -10,7 +10,6 @@ from django.db.models import Prefetch, QuerySet
 from dynamic_rest.meta import (
     get_model_field_and_type,
     get_remote_model,
-    reverse_m2m_field_name,
     reverse_o2o_field_name,
 )
 
@@ -488,7 +487,7 @@ class FastQuery(FastQueryCompatMixin, object):
         remote_pk_field = (
             base_qs.model._meta.pk.attname  # pylint: disable=protected-access
         )
-        reverse_field = reverse_m2m_field_name(field)
+        reverse_field = field.remote_field.name
 
         if reverse_field is None:
             # Note: We can't just reuse self.queryset here because it's

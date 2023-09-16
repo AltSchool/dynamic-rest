@@ -20,12 +20,7 @@ from rest_framework.filters import BaseFilterBackend, OrderingFilter
 from dynamic_rest.conf import settings
 from dynamic_rest.datastructures import TreeMap
 from dynamic_rest.fields import DynamicRelationField
-from dynamic_rest.meta import (
-    get_model_field,
-    get_related_model,
-    is_field_remote,
-    is_model_field,
-)
+from dynamic_rest.meta import get_model_field, is_field_remote, is_model_field
 from dynamic_rest.prefetch import FastPrefetch, FastQuery
 from dynamic_rest.related import RelatedObject
 from dynamic_rest.utils import is_truthy
@@ -393,7 +388,7 @@ class DynamicFilterBackend(BaseFilterBackend):
                 continue
 
             related_field = get_model_field(model, source)
-            related_model = get_related_model(related_field)
+            related_model = related_field.related_model
 
             queryset = (
                 self._build_implicit_queryset(related_model, remainder)
