@@ -2,7 +2,16 @@
 import os
 from pathlib import Path
 
+import environ
+
+env = environ.Env(
+    # set casting, default value
+    DEBUG=(bool, True)
+)
+
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+environ.Env.read_env(os.path.join(BASE_DIR, ".env"))
 
 SECRET_KEY = "test"
 INSTALL_DIR = os.getenv("INSTALL_DIR")
@@ -12,25 +21,11 @@ STATIC_ROOT = os.environ.get("STATIC_ROOT", INSTALL_DIR if INSTALL_DIR else None
 
 ENABLE_INTEGRATION_TESTS = os.environ.get("ENABLE_INTEGRATION_TESTS", False)
 
-DEBUG = True
+DEBUG = env("DEBUG")
+
 USE_TZ = False
 
-DATABASES = {}
-if os.environ.get("DATABASE_URL"):
-    # remote database
-    import dj_database_url
-
-    DATABASES["default"] = dj_database_url.config()
-else:
-    # local sqlite database file
-    DATABASES["default"] = {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
-        "USER": "",
-        "PASSWORD": "",
-        "HOST": "",
-        "PORT": "",
-    }
+DATABASES = {"default": env.db(default="sqlite:///db.sqlite3")}
 
 INSTALLED_APPS = (
     "rest_framework",

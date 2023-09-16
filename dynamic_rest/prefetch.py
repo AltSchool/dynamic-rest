@@ -7,12 +7,7 @@ from functools import lru_cache
 from django.db import models
 from django.db.models import Prefetch, QuerySet
 
-from dynamic_rest.meta import (
-    get_model_field_and_type,
-    get_remote_model,
-    reverse_m2m_field_name,
-    reverse_o2o_field_name,
-)
+from dynamic_rest.meta import get_model_field_and_type
 
 
 class FastObject(dict):
@@ -137,7 +132,7 @@ class FastPrefetch(object):
         if not ftype:
             raise RuntimeError(f"{field_name} is not prefetchable")
 
-        qs = get_remote_model(field).objects.all()
+        qs = field.remote_field.model.objects.all()
 
         field_name = field_name or field.name
         prefetch = cls(field_name, qs)
@@ -319,7 +314,7 @@ class FastQuery(FastQueryCompatMixin, object):
             prefetches = [
                 make_prefetch(prefetch) for prefetch in self.prefetches.values()
             ]
-            if len(prefetches) > 0:
+            if prefetches:
                 qs = qs.prefetch_related(*prefetches)
             self._data = FastList(
                 map(lambda obj: SlowObject(obj, pk_field=self.pk_field), qs.all())
@@ -343,17 +338,11 @@ class FastQuery(FastQueryCompatMixin, object):
 
         # Query hasn't yet been executed. Update queryset.
         if isinstance(k, slice):
-            if k.start is not None:
-                start = int(k.start)
-            else:
-                start = None
-            if k.stop is not None:
-                stop = int(k.stop)
-            else:
-                stop = None
             if k.step:
                 raise TypeError("Stepping not supported")
 
+            start = int(k.start) if k.start is not None else None
+            stop = int(k.stop) if k.stop is not None else None
             self.queryset.query.set_limits(start, stop)
         else:
             self.queryset.query.set_limits(k, k + 1)
@@ -439,7 +428,7 @@ class FastQuery(FastQueryCompatMixin, object):
 
         # If prefetching User.profile, construct filter like:
         #   Profile.objects.filter(user__in=<user_ids>)
-        remote_field = reverse_o2o_field_name(field)
+        remote_field = field.remote_field.attname
         remote_filter_key = f"{remote_field}__in"
         filter_args = {remote_filter_key: my_ids}
 
@@ -488,7 +477,7 @@ class FastQuery(FastQueryCompatMixin, object):
         remote_pk_field = (
             base_qs.model._meta.pk.attname  # pylint: disable=protected-access
         )
-        reverse_field = reverse_m2m_field_name(field)
+        reverse_field = field.remote_field.name
 
         if reverse_field is None:
             # Note: We can't just reuse self.queryset here because it's

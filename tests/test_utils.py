@@ -1,5 +1,7 @@
 """Tests for dynamic_rest.utils."""
-from django.test import TestCase, override_settings
+import os
+
+from django.test import override_settings
 
 from dynamic_rest.utils import (
     internal_id_from_model_and_external_id,
@@ -8,6 +10,11 @@ from dynamic_rest.utils import (
     unpack,
 )
 from tests.models import User
+
+if os.getenv("DATABASE_URL"):
+    from tests.test_cases import ResetTestCase as TestCase
+else:
+    from tests.test_cases import TestCase
 
 
 class UtilsTestCase(TestCase):

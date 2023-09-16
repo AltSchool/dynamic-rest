@@ -1,7 +1,7 @@
 """Tests for viewsets."""
 import json
+import os
 
-from django.test import TestCase
 from django.test.client import RequestFactory
 from rest_framework import exceptions, status
 from rest_framework.request import Request
@@ -11,6 +11,11 @@ from tests.models import Dog, Group, User
 from tests.serializers import GroupSerializer
 from tests.setup import create_fixture
 from tests.viewsets import GroupNoMergeDictViewSet, UserViewSet
+
+if os.getenv("DATABASE_URL"):
+    from tests.test_cases import ResetTestCase as TestCase
+else:
+    from tests.test_cases import TestCase
 
 
 class TestUserViewSet(TestCase):
@@ -175,7 +180,7 @@ class BulkUpdateTestCase(TestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue("dogs" in response.data)
-        self.assertTrue(2 == len(response.data["dogs"]))
+        self.assertTrue(len(response.data["dogs"]) == 2)
         self.assertTrue(
             all(Dog.objects.get(id=pk).fur_color == "grey" for pk in (1, 2))
         )
@@ -346,7 +351,7 @@ class BulkCreationTestCase(TestCase):
         resp_data = response.data
 
         # Check top-level keys
-        self.assertEqual(set(["users", "groups"]), set(resp_data.keys()))
+        self.assertEqual({"users", "groups"}, set(resp_data.keys()))
 
         # Should be 2 of each
         self.assertEqual(2, len(resp_data["users"]))

@@ -1,12 +1,17 @@
 """Tests for FastQuery and FastPrefetch."""
-from rest_framework.test import APITestCase
+import os
 
 from dynamic_rest.prefetch import FastPrefetch, FastQuery
 from tests.models import Cat, Group, Location, Profile, User
 from tests.setup import create_fixture
 
+if os.getenv("DATABASE_URL"):
+    from tests.test_cases import ResetAPITestCase as TestCase
+else:
+    from rest_framework.test import APITestCase as TestCase
 
-class TestFastQuery(APITestCase):
+
+class TestFastQuery(TestCase):
     """Test FastQuery and FastPrefetch."""
 
     def setUp(self):
