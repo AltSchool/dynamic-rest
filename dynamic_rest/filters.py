@@ -26,12 +26,9 @@ from dynamic_rest.meta import (
     is_field_remote,
     is_model_field,
 )
-from dynamic_rest.patches import patch_prefetch_one_level
 from dynamic_rest.prefetch import FastPrefetch, FastQuery
 from dynamic_rest.related import RelatedObject
 from dynamic_rest.utils import is_truthy
-
-patch_prefetch_one_level()
 
 DRF_VERSION = drf_version.split(".")
 if int(DRF_VERSION[0]) >= 3 and int(DRF_VERSION[1]) >= 14:

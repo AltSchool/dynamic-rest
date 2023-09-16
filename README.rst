@@ -1,6 +1,10 @@
 Dynamic REST
 ===================
 
+.. image:: https://coveralls.io/repos/github/BillSchumacher/dynamic-rest/badge.svg?branch=main
+:target: https://coveralls.io/github/BillSchumacher/dynamic-rest?branch=main
+
+
 **Dynamic API extensions for Django REST Framework**
 
 See http://dynamic-rest.readthedocs.org for full documentation.

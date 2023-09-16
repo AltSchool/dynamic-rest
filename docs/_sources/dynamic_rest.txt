@@ -84,13 +84,6 @@ dynamic_rest.pagination module
     :undoc-members:
     :show-inheritance:
 
-dynamic_rest.patches module
----------------------------
-
-.. automodule:: dynamic_rest.patches
-    :members:
-    :undoc-members:
-    :show-inheritance:
 
 dynamic_rest.processors module
 ------------------------------

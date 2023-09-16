@@ -3,6 +3,8 @@
 [![Circle CI](https://circleci.com/gh/AltSchool/dynamic-rest.svg?style=svg)](https://circleci.com/gh/AltSchool/dynamic-rest)
 [![PyPi](https://img.shields.io/pypi/v/dynamic-rest.svg)](https://pypi.python.org/pypi/dynamic-rest)
 
+[![Coverage Status](https://coveralls.io/repos/github/BillSchumacher/dynamic-rest/badge.svg?branch=main)](https://coveralls.io/github/BillSchumacher/dynamic-rest?branch=main)
+
 **Dynamic API extensions for Django REST Framework**
 
 See http://dynamic-rest.readthedocs.org for full documentation.
