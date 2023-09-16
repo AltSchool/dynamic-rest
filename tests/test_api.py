@@ -16,8 +16,14 @@ UNICODE_STRING = "\u2764\ufe0f"  # unicode heart
 UNICODE_URL_STRING = quote_plus(UNICODE_STRING)
 
 
+class ResetAPITestCase(APITestCase):
+    """Reset API test case."""
+
+    reset_sequences = True
+
+
 @override_settings(DYNAMIC_REST={"ENABLE_LINKS": False})
-class TestUsersAPI(APITestCase):
+class TestUsersAPI(ResetAPITestCase):
     """Test users API."""
 
     def setUp(self):
@@ -866,7 +872,7 @@ class TestUsersAPI(APITestCase):
 
 
 @override_settings(DYNAMIC_REST={"ENABLE_LINKS": False})
-class TestLocationsAPI(APITestCase):
+class TestLocationsAPI(ResetAPITestCase):
     """Test Locations API."""
 
     def setUp(self):
@@ -999,7 +1005,7 @@ class TestLocationsAPI(APITestCase):
 
 
 @override_settings(DYNAMIC_REST={"ENABLE_LINKS": False})
-class TestAlternateLocationsAPI(APITestCase):
+class TestAlternateLocationsAPI(ResetAPITestCase):
     """Test extra_drest_filters view attribute."""
 
     def setUp(self):
@@ -1045,7 +1051,7 @@ class TestAlternateLocationsAPI(APITestCase):
         self.assertEqual(location["name"], "0")
 
 
-class TestRelationsAPI(APITestCase):
+class TestRelationsAPI(ResetAPITestCase):
     """Test auto-generated relation endpoints."""
 
     def setUp(self):
@@ -1115,7 +1121,7 @@ class TestRelationsAPI(APITestCase):
         self.assertEqual(400, r.status_code)
 
 
-class TestUserLocationsAPI(APITestCase):
+class TestUserLocationsAPI(ResetAPITestCase):
     """Test API on serializer with embedded fields."""
 
     def setUp(self):
@@ -1151,7 +1157,7 @@ class TestUserLocationsAPI(APITestCase):
         self.assertFalse(isinstance(location, dict))
 
 
-class TestLinks(APITestCase):
+class TestLinks(ResetAPITestCase):
     """Test links."""
 
     def setUp(self):
@@ -1326,7 +1332,7 @@ class TestLinks(APITestCase):
         self.assertTrue("users" in data["permission"])
 
 
-class TestDogsAPI(APITestCase):
+class TestDogsAPI(ResetAPITestCase):
     """Tests for sorting and pagination."""
 
     def setUp(self):
@@ -1522,7 +1528,7 @@ class TestDogsAPI(APITestCase):
         self.assertEqual(400, response.status_code)
 
 
-class TestHorsesAPI(APITestCase):
+class TestHorsesAPI(ResetAPITestCase):
     """Tests for sorting on default fields and limit sorting fields."""
 
     def setUp(self):
@@ -1559,7 +1565,7 @@ class TestHorsesAPI(APITestCase):
         self.assertEqual(400, response.status_code)
 
 
-class TestZebrasAPI(APITestCase):
+class TestZebrasAPI(ResetAPITestCase):
     """Tests for sorting on when ordering_fields is __all__."""
 
     def setUp(self):
@@ -1586,7 +1592,7 @@ class TestZebrasAPI(APITestCase):
         self.assertEqual(expected_response, actual_response)
 
 
-class TestBrowsableAPI(APITestCase):
+class TestBrowsableAPI(ResetAPITestCase):
     """Tests for Browsable API directory."""
 
     def test_get_root(self):
@@ -1608,7 +1614,7 @@ class TestBrowsableAPI(APITestCase):
         self.assertIn("/users", content)
 
 
-class TestCatsAPI(APITestCase):
+class TestCatsAPI(ResetAPITestCase):
     """Tests for nested resources."""
 
     def setUp(self):
@@ -1685,7 +1691,7 @@ class TestCatsAPI(APITestCase):
         self.assertEqual(data["cat"]["name"], kitten_name)
 
 
-class TestFilters(APITestCase):
+class TestFilters(ResetAPITestCase):
     """Tests for filters."""
 
     def test_unparseable_int(self):
