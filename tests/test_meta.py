@@ -1,5 +1,5 @@
 """Tests for dynamic_rest.meta."""
-from django.test import TestCase
+import os
 
 from dynamic_rest.meta import (
     get_model_field,
@@ -8,6 +8,11 @@ from dynamic_rest.meta import (
     reverse_m2m_field_name,
 )
 from tests.models import Group, Location, Profile, User
+
+if os.getenv("DATABASE_URL"):
+    from tests.test_cases import ResetTestCase as TestCase
+else:
+    from tests.test_cases import TestCase
 
 
 class TestMeta(TestCase):

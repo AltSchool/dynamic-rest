@@ -1,8 +1,9 @@
 """Tests for dynamic_rest.serializers."""
+import os
 import unittest
 from collections import OrderedDict
 
-from django.test import TestCase, override_settings
+from django.test import override_settings
 from mock import patch
 
 from dynamic_rest.fields import DynamicRelationField
@@ -22,6 +23,10 @@ from tests.serializers import (
 )
 from tests.setup import create_fixture
 
+if os.getenv("DATABASE_URL"):
+    from tests.test_cases import ResetTestCase as TestCase
+else:
+    from tests.test_cases import TestCase
 # TODO(ant): move UserSerializer-specific tests
 # into an integration test case and test serializer
 # methods in a more generic way

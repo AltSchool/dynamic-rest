@@ -1,10 +1,17 @@
 """Tests for the dynamic_rest.fields module."""
-from django.test import TestCase, override_settings
+import os
+
+from django.test import override_settings
 from rest_framework import serializers
 
 from dynamic_rest.fields import DynamicHashIdField
 from dynamic_rest.utils import external_id_from_model_and_internal_id
 from tests.models import Dog
+
+if os.getenv("DATABASE_URL"):
+    from tests.test_cases import ResetTestCase as TestCase
+else:
+    from tests.test_cases import TestCase
 
 
 @override_settings(

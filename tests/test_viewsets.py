@@ -1,7 +1,7 @@
 """Tests for viewsets."""
 import json
+import os
 
-from django.test import TestCase
 from django.test.client import RequestFactory
 from rest_framework import exceptions, status
 from rest_framework.request import Request
@@ -11,6 +11,11 @@ from tests.models import Dog, Group, User
 from tests.serializers import GroupSerializer
 from tests.setup import create_fixture
 from tests.viewsets import GroupNoMergeDictViewSet, UserViewSet
+
+if os.getenv("DATABASE_URL"):
+    from tests.test_cases import ResetTestCase as TestCase
+else:
+    from tests.test_cases import TestCase
 
 
 class TestUserViewSet(TestCase):

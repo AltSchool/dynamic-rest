@@ -1,8 +1,14 @@
 """Tests for prefetch corner-case bugs introduced in Django 1.7."""
+import os
+
 from django.db.models import Prefetch
-from django.test import TestCase
 
 from tests.models import A, B, C, D
+
+if os.getenv("DATABASE_URL"):
+    from tests.test_cases import ResetTestCase as TestCase
+else:
+    from tests.test_cases import TestCase
 
 
 class TestPrefetch(TestCase):

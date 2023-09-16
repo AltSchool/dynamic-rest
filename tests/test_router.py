@@ -1,7 +1,8 @@
 """Tests for the dynamic_rest.routers module."""
+import os
+
 from django.urls import clear_script_prefix, set_script_prefix
 from rest_framework.routers import DefaultRouter
-from rest_framework.test import APITestCase
 
 from dynamic_rest.meta import get_model_table
 from dynamic_rest.routers import DynamicRouter, Route
@@ -9,8 +10,13 @@ from tests.models import Dog
 from tests.serializers import CatSerializer, DogSerializer
 from tests.urls import urlpatterns  # noqa pylint: disable=unused-import
 
+if os.getenv("DATABASE_URL"):
+    from tests.test_cases import ResetAPITestCase as TestCase
+else:
+    from tests.test_cases import APITestCase as TestCase
 
-class TestDynamicRouter(APITestCase):
+
+class TestDynamicRouter(TestCase):
     """Test case for dynamic_rest.routers."""
 
     def test_get_canonical_path(self):

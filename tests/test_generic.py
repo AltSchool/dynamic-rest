@@ -1,7 +1,6 @@
 """Tests for generic relations."""
 import json
-
-from rest_framework.test import APITestCase
+import os
 
 from dynamic_rest.fields import DynamicGenericRelationField
 from dynamic_rest.routers import DynamicRouter
@@ -9,8 +8,13 @@ from tests.models import User, Zebra
 from tests.serializers import UserSerializer
 from tests.setup import create_fixture
 
+if os.getenv("DATABASE_URL"):
+    from tests.test_cases import ResetAPITestCase as TestCase
+else:
+    from rest_framework.test import APITestCase as TestCase
 
-class TestGenericRelationFieldAPI(APITestCase):
+
+class TestGenericRelationFieldAPI(TestCase):
     """Test case for generic relation fields."""
 
     def setUp(self):
