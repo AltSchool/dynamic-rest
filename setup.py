@@ -1,9 +1,9 @@
 from setuptools import find_packages, setup
 
-NAME = 'dynamic-rest'
-DESCRIPTION = 'Dynamic API support to Django REST Framework.'
+NAME = 'dynamic-rest-4'
+DESCRIPTION = 'Dynamic API support to Django REST Framework, Compatible with Django 4'
 URL = 'http://github.com/twine003/dynamic-rest'
-VERSION = '3.1.0'
+VERSION = '4.1.0'
 SCRIPTS = ['manage.py']
 
 setup(
