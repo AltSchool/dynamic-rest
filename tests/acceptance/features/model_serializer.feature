@@ -14,8 +14,7 @@ Feature: Dynamic Model Serializer
         | country |
         | Invalid value for 'country': Country object with ID=42 not found |
 
-    Scenario: Create endpoint should 201 on success
-    referencing a non-existent related model record.
+    Scenario: Create endpoint should 201 on success.
       Given a "Country" with values
         | name                     | short_name |
         | United States of America | USA        |
