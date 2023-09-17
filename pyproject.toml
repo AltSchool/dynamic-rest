@@ -8,7 +8,7 @@ source = ["dynamic_rest", ]
 [tool.coverage.report]
 # Regexes for lines to exclude from consideration
 omit = ["*/migrations/*","*/blueprints/*"]
-exclude_also = [
+exclude_lines = [
     # Don't complain about missing debug-only code:
     "def __repr__",
     "if self\\.debug",
