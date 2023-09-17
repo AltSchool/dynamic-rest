@@ -174,15 +174,13 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         filters = complex_filters
 
-        ors = filters.get(".or") or filters.get("$or")
-        if ors:
+        if ors := filters.get(".or") or filters.get("$or"):
             return reduce(
                 _or,
                 [self._filters_to_query({"_complex": f}, serializer) for f in ors],
             )
 
-        ands = filters.get(".and") or filters.get("$and")
-        if ands:
+        if ands := filters.get(".and") or filters.get("$and"):
             return reduce(
                 _and,
                 [self._filters_to_query({"_complex": f}, serializer) for f in ands],
@@ -298,7 +296,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         fields: dict[str, Field], requirements: TreeMap
     ) -> None:
         """Extract internal prefetch requirements from serializer fields."""
-        for _, field in fields.items():
+        for field in fields.values():
             source = field.source
             # Requires may be manually set on the field -- if not,
             # assume the field requires only its source.
