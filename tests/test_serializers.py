@@ -447,8 +447,11 @@ class TestUserLocationSerializer(TestCase):
         )
 
     def test_data_with_embed_deferred(self):
-        """Test data with embed deferred."""
-        # Make sure 'embed' fields can be deferred
+        """Test data with embed deferred.
+
+        Make sure 'embed' fields can be deferred.
+        """
+
         class UserDeferredLocationSerializer(UserLocationSerializer):
             """User deferred location serializer."""
 

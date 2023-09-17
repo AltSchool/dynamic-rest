@@ -155,11 +155,7 @@ class DynamicRouter(DefaultRouter):
             endpoint = prefix
             prefix = None
 
-        if prefix:  # and prefix not in directory:
-            current = directory[prefix]
-        else:
-            current = directory.get(prefix, directory)
-
+        current = directory[prefix] if prefix else directory.get(prefix, directory)
         list_name = self.routes[0].name
         url_name = list_name.format(basename=basename)
         current[endpoint]["_url"] = url_name
@@ -184,7 +180,6 @@ class DynamicRouter(DefaultRouter):
             resource_name = serializer.get_name()
             path_name = serializer.get_plural_name()
         except BaseException as exc:
-
             traceback.print_exc()
             raise RuntimeError(
                 f"Failed to extract resource name from viewset: '{viewset}'."
@@ -241,10 +236,7 @@ class DynamicRouter(DefaultRouter):
             return None
 
         base_path = get_script_prefix() + resource_map[resource_key]["path"]
-        if pk:
-            return f"{base_path}/{pk}/"
-        else:
-            return base_path
+        return f"{base_path}/{pk}/" if pk else base_path
 
     @staticmethod
     def get_canonical_serializer(
@@ -315,13 +307,9 @@ class DynamicRouter(DefaultRouter):
         fields = getattr(serializer, "get_link_fields", lambda: [])()
 
         route_name = "{basename}-{methodnamehyphen}"
-        if drf_version >= (3, 8, 0):
-            route_compat_kwargs = {"detail": False}
-        else:
-            route_compat_kwargs = {}
-
+        route_compat_kwargs = {"detail": False} if drf_version >= (3, 8, 0) else {}
+        methodname = "list_related"
         for field_name, _ in fields.items():
-            methodname = "list_related"
             url = (
                 r"^{prefix}/{lookup}/(?P<field_name>%s)"
                 "{trailing_slash}$" % field_name
