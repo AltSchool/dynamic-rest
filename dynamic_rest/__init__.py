@@ -8,5 +8,5 @@ DREST offers the following features on top of the standard DRF kit:
 - Directory panel for the browsable API
 - Optimizations
 """
-__version__ = "2.3.2"
+__version__ = "2.4.0"
 default_app_config = "dynamic_rest.apps.DynamicRestConfig"
