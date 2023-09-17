@@ -58,7 +58,9 @@ jobs:
         pip install 'django==${{ matrix.dj-version }}' 'djangorestframework==${{ matrix.drf-version }}'
     - name: Run Tests
       run: |
-        DATABASE_URL=psql://postgres:postgres@127.0.0.1:5432/github_actions coverage run runtests.py
+        DATABASE_URL=psql://postgres:postgres@127.0.0.1:5432/github_actions coverage run -p runtests.py
+        DATABASE_URL=psql://postgres:postgres@127.0.0.1:5432/github_actions coverage run -p manage.py behave
+        coverage combine
     - name: Upload coverage data to coveralls.io
       run: coveralls --service=github
       env:
