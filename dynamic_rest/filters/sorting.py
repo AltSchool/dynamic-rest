@@ -1,9 +1,19 @@
 """Sorting filter."""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from django.core.exceptions import ImproperlyConfigured
+from django.db.models import QuerySet
 from rest_framework.exceptions import ValidationError
 from rest_framework.filters import OrderingFilter
+from rest_framework.request import Request
+from rest_framework.serializers import SerializerMetaclass
 
 from dynamic_rest.fields import DynamicRelationField
+
+if TYPE_CHECKING:
+    from dynamic_rest.viewsets import DynamicModelViewSet
 
 
 class DynamicSortingFilter(OrderingFilter):
@@ -12,7 +22,9 @@ class DynamicSortingFilter(OrderingFilter):
     This class adds support for multi-field ordering and rewritten fields.
     """
 
-    def filter_queryset(self, request, queryset, view):
+    def filter_queryset(
+        self, request: Request, queryset: QuerySet, view: "DynamicModelViewSet"
+    ) -> QuerySet:
         """Filter the queryset, applying the ordering.
 
         The `ordering_param` can be overwritten here.
@@ -20,7 +32,6 @@ class DynamicSortingFilter(OrderingFilter):
         to allow the viewset to control the parameter.
         """
         self.ordering_param = view.SORT
-
         if ordering := self.get_ordering(request, queryset, view):
             queryset = queryset.order_by(*ordering)
             if any("__" in o for o in ordering):
@@ -29,7 +40,9 @@ class DynamicSortingFilter(OrderingFilter):
                 queryset = queryset.distinct()
         return queryset
 
-    def get_ordering(self, request, queryset, view):
+    def get_ordering(
+        self, request: Request, queryset: QuerySet, view: "DynamicModelViewSet"
+    ):
         """Return an ordering for a given request.
 
         DRF expects a comma separated list, while DREST expects an array.
@@ -38,7 +51,7 @@ class DynamicSortingFilter(OrderingFilter):
         if params := view.get_request_feature(view.SORT):
             fields = [param.strip() for param in params]
             valid_ordering, invalid_ordering = self.remove_invalid_fields(
-                queryset, fields, view
+                queryset, fields, view, request
             )
 
             # if any of the sort fields are invalid, throw an error.
@@ -51,7 +64,13 @@ class DynamicSortingFilter(OrderingFilter):
         # No sorting was included
         return self.get_default_ordering(view)
 
-    def remove_invalid_fields(self, queryset, fields, view):
+    def remove_invalid_fields(
+        self,
+        queryset: QuerySet,
+        fields: list[str],
+        view: "DynamicModelViewSet",
+        _: Request,
+    ) -> tuple[list[str], list[str]]:
         """Remove invalid fields from an ordering.
 
         Overwrites the DRF default remove_invalid_fields method to return
@@ -73,7 +92,7 @@ class DynamicSortingFilter(OrderingFilter):
 
         return valid_orderings, invalid_orderings
 
-    def ordering_for(self, term, view):
+    def ordering_for(self, term: str, view: "DynamicModelViewSet") -> str | None:
         """Override DRF's ordering_for method to support rewritten fields.
 
         Return ordering (model field chain) for term (serializer field chain)
@@ -113,14 +132,14 @@ class DynamicSortingFilter(OrderingFilter):
 
         return "__".join(model_chain)
 
-    def _is_allowed_term(self, term, view):
+    def _is_allowed_term(self, term: str, view: "DynamicModelViewSet") -> bool:
         """Check if a term is allowed to be ordered on."""
         valid_fields = getattr(view, "ordering_fields", self.ordering_fields)
         all_fields_allowed = valid_fields is None or valid_fields == "__all__"
 
         return all_fields_allowed or term in valid_fields
 
-    def _get_serializer_class(self, view):
+    def _get_serializer_class(self, view: "DynamicModelViewSet") -> SerializerMetaclass:
         """Get the serializer class from the view."""
         # prefer the overriding method
         if hasattr(view, "get_serializer_class"):
@@ -141,5 +160,4 @@ class DynamicSortingFilter(OrderingFilter):
                 " not have either a 'serializer_class' or an overriding "
                 "'get_serializer_class'."
             )
-
         return serializer_class

@@ -1,22 +1,21 @@
 """Filter utils."""
 from __future__ import annotations
 
-from typing import Any
-
 from django.db.models import Q, QuerySet
 
 from dynamic_rest.compat import RestFrameworkBooleanField
 from dynamic_rest.constants import VALID_FILTER_OPERATORS
-from dynamic_rest.datastructures import FilterNode
+from dynamic_rest.datastructures import FilterNode, TreeMap
+from dynamic_rest.serializers import DynamicModelSerializer
 from dynamic_rest.utils import is_truthy
 
 
-def _or(a, b):
+def _or(a: Q, b: Q) -> Q:
     """Return a or b."""
     return a | b
 
 
-def _and(a, b):
+def _and(a: Q, b: Q) -> Q:
     """Return a and b."""
     return a & b
 
@@ -36,19 +35,20 @@ def has_joins(queryset: QuerySet) -> bool:
     return any(join.join_type for join in queryset.query.alias_map.values())
 
 
-def rewrite_filters(fs: dict[Any, Any], serializer):
+def rewrite_filters(
+    filters: TreeMap, serializer: DynamicModelSerializer
+) -> dict[str, str | bool]:
     """Rewrite filter keys to use model field names."""
     out = {}
-    for node in fs.values():
+    for node in filters.values():
         filter_key, field = node.generate_query_key(serializer)
         if isinstance(field, RestFrameworkBooleanField):
             node.value = is_truthy(node.value)
         out[filter_key] = node.value
-
     return out
 
 
-def clause_to_q(clause, serializer):
+def clause_to_q(clause: tuple[str, str | int], serializer: DynamicModelSerializer) -> Q:
     """Convert a filter clause to a Django Q object."""
     key, value = clause
     negate = False

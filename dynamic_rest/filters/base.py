@@ -324,7 +324,9 @@ class DynamicFilterBackend(BaseFilterBackend):
 
         return queryset
 
-    def _serializer_filter(self, serializer, queryset: QuerySet) -> QuerySet:
+    def _serializer_filter(
+        self, serializer: DynamicModelSerializer, queryset: QuerySet
+    ) -> QuerySet:
         """Filter a queryset using a serializer's filter_queryset method."""
         return serializer.filter_queryset(queryset)
 

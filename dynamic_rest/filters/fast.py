@@ -3,6 +3,7 @@ from django.db.models import Model, QuerySet
 
 from dynamic_rest.filters.base import DynamicFilterBackend
 from dynamic_rest.prefetch import FastPrefetch, FastQuery
+from dynamic_rest.serializers import DynamicModelSerializer
 
 
 class FastDynamicFilterBackend(DynamicFilterBackend):
@@ -12,7 +13,9 @@ class FastDynamicFilterBackend(DynamicFilterBackend):
         """Create a Prefetch object."""
         return FastPrefetch(source, queryset=queryset)
 
-    def _get_queryset(self, queryset=None, serializer=None) -> FastQuery:
+    def _get_queryset(
+        self, queryset: QuerySet = None, serializer: DynamicModelSerializer = None
+    ) -> FastQuery:
         """Get the base queryset for this request."""
         queryset = super()._get_queryset(queryset=queryset, serializer=serializer)
 
@@ -26,7 +29,9 @@ class FastDynamicFilterBackend(DynamicFilterBackend):
         queryset = super()._make_model_queryset(model)
         return FastQuery(queryset)
 
-    def _serializer_filter(self, serializer, queryset: QuerySet) -> QuerySet:
+    def _serializer_filter(
+        self, serializer: DynamicModelSerializer, queryset: QuerySet
+    ) -> QuerySet:
         """Filter a queryset using a serializer's filter_queryset method."""
         queryset.queryset = serializer.filter_queryset(queryset.queryset)
         return queryset
