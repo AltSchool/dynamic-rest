@@ -35,6 +35,7 @@ INSTALLED_APPS = (
     "django.contrib.sites",
     "dynamic_rest",
     "tests",
+    "behave_django",
 )
 
 DEFAULT_AUTO_FIELD = "django.db.models.AutoField"
