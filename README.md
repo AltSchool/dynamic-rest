@@ -639,8 +639,8 @@ DYNAMIC_REST = {
 We actively support the following:
 
 -   Python: 3.6, 3.7, 3.8
--   Django: 2.2, 3.1, 3.2
--   Django Rest Framework: 3.11, 3.12
+-   Django: 2.2, 3.1, 3.2, 4.0, 4.1, 4.2
+-   Django Rest Framework: 3.11, 3.12, 3.13, 3.14
 
 **Note:** Some combinations are not supported. For up-to-date information on actively supported/tested combinations, see the `tox.ini` file.
 
