@@ -5,6 +5,10 @@
 
 **Dynamic API extensions for Django REST Framework**
 
+This is a fork of original dynamic-rest from https://github.com/AltSchool/dynamic-rest which seems a bit abandoned. The intentions of this fork is upgrade support for modern django and djangorestframeworks versions while original repo keeps outdated. 
+
+This will keep 100% compatibility with original package but had name changed only in repo to distinguish each one, but usage and package name will remains.
+
 See http://dynamic-rest.readthedocs.org for full documentation.
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
@@ -68,18 +72,18 @@ over HTTP.
 # Requirements
 
 -   Python (3.6, 3.7, 3.8)
--   Django (2.2, 3.1, 3.2)
--   Django REST Framework (3.11, 3.12, 3.13)
+-   Django (2.2, 3.1, 3.2, 4.2)
+-   Django REST Framework (3.11, 3.12, 3.13, 3.14)
 
 # Installation
 
 1. Install using `pip`:
 
 ```bash
-    pip install dynamic-rest
+    pip install git+https://github.com/cesar-benjamin/drf-dynamic-rest@v2.1.2#egg=dynamic-rest
 ```
 
-(or add `dynamic-rest` to `requirements.txt` or `setup.py`)
+(or add `-e git+https://github.com/cesar-benjamin/drf-dynamic-rest@v2.1.2#egg=dynamic-rest` to `requirements.txt` or `setup.py`)
 
 2. Add `rest_framework` and `dynamic_rest` to `INSTALLED_APPS` in `settings.py`:
 
@@ -112,7 +116,7 @@ This application is hosted at https://dynamic-rest.herokuapp.com but can also be
 1. Clone this repository:
 
 ```bash
-    git clone git@github.com:AltSchool/dynamic-rest.git
+    git clone git@github.com/cesar-benjamin/drf-dynamic-rest.git
     cd dynamic-rest
 ```
 
