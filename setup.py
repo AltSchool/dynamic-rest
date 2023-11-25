@@ -2,8 +2,8 @@ from setuptools import find_packages, setup
 
 NAME = 'dynamic-rest'
 DESCRIPTION = 'Dynamic API support to Django REST Framework.'
-URL = 'http://github.com/AltSchool/dynamic-rest'
-VERSION = '2.1.7'
+URL = 'https://github.com/cesar-benjamin/drf-dynamic-rest'
+VERSION = '2.1.2'
 SCRIPTS = ['manage.py']
 
 setup(
@@ -21,9 +21,6 @@ setup(
         'Intended Audience :: Developers',
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
         'Topic :: Software Development :: Libraries :: Python Modules',
