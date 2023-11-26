@@ -5,10 +5,16 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q, Prefetch, Manager
 import six
 from functools import reduce
+from rest_framework import __version__ as drf_version
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
-from rest_framework.fields import BooleanField, NullBooleanField
 from rest_framework.filters import BaseFilterBackend, OrderingFilter
+
+try:
+    from rest_framework.fields import BooleanField, NullBooleanField
+except ImportError:
+    # DRF >= 3.14.0
+    from rest_framework.fields import BooleanField
 
 from dynamic_rest.utils import is_truthy
 from dynamic_rest.conf import settings
@@ -26,6 +32,12 @@ from dynamic_rest.related import RelatedObject
 
 patch_prefetch_one_level()
 
+DRF_VERSION = drf_version.split('.')
+if int(DRF_VERSION[0]) >= 3 and int(DRF_VERSION[1]) >= 14:
+    # NullBooleanField deprecated in DRF >= 3.14
+    DRF_BOOLEAN_FIELD = BooleanField
+else:
+    DRF_BOOLEAN_FIELD = (BooleanField, NullBooleanField)
 
 def OR(a, b):
     return a | b
@@ -148,10 +160,9 @@ def rewrite_filters(fs, serializer):
     out = {}
     for node in fs.values():
         filter_key, field = node.generate_query_key(serializer)
-        if isinstance(field, (BooleanField, NullBooleanField)):
+        if isinstance(field, DRF_BOOLEAN_FIELD):
             node.value = is_truthy(node.value)
         out[filter_key] = node.value
-
     return out
 
 
