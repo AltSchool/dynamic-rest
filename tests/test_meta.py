@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from dynamic_rest.meta import (
+from src.dynamic_rest import (
     get_model_field,
     get_model_field_and_type,
     get_remote_model,

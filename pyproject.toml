@@ -1,0 +1,63 @@
+# pyproject.toml
+
+[build-system]
+requires = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "drf-dynamic-rest"
+version = "2023.11-alpha0"
+description = "Dynamic API extensions for Django REST Framework"
+readme = "README.md"
+authors = [{ name = "César Benjamín", email = "mathereall@gmail.com" }, {name = "Anthony Leontiev", email = "aleontiev@tohigherground.com"}]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+
+keywords = ["feed", "reader", "tutorial"]
+dependencies = [
+    "djangorestframework >= 3.14.0",
+    "django >= 4.2.7",
+    'tomli; python_version < "3.11"',
+]
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+dev = ["black", "bumpver", "isort", "pip-tools", "pytest"]
+
+[project.urls]
+Homepage = "https://github.com/cesar-benjamin/drf-dynamic-rest"
+
+
+[tool.bumpver]
+current_version = "2023.11-alpha0"
+version_pattern = "YYYY.MM[-TAGNUM]"
+commit_message = "bump version {old_version} -> {new_version}"
+tag_message = "{new_version}"
+tag_scope = "default"
+pre_commit_hook = ""
+post_commit_hook = ""
+commit = true
+tag = true
+push = true
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = [
+    'current_version = "{version}"',
+]
+"setup.py" = [
+    "{version}",
+    "{pep440_version}",
+]
+"README.rst" = [
+    "{version}",
+    "{pep440_version}",
+]
+"README.md" = [
+    "{version}",
+    "{pep440_version}",
+]
+

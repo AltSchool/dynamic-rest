@@ -5,7 +5,7 @@ from django.test.client import RequestFactory
 from rest_framework import exceptions, status
 from rest_framework.request import Request
 
-from dynamic_rest.filters import DynamicFilterBackend, FilterNode
+from src.dynamic_rest import DynamicFilterBackend, FilterNode
 from tests.models import Dog, Group, User
 from tests.serializers import GroupSerializer
 from tests.setup import create_fixture

@@ -1,6 +1,6 @@
 from django.urls import include, path
 
-from dynamic_rest.routers import DynamicRouter
+from src.dynamic_rest import DynamicRouter
 from tests import viewsets
 
 router = DynamicRouter()

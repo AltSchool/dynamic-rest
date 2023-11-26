@@ -57,7 +57,7 @@ ROOT_URLCONF = 'tests.urls'
 STATICFILES_DIRS = (
     os.path.abspath(
         os.path.join(
-            BASE_DIR, '../dynamic_rest/static'
+            BASE_DIR, '../src/dynamic_rest/static'
         )
     ),
 )
@@ -66,7 +66,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': os.path.abspath(
-            os.path.join(BASE_DIR, '../dynamic_rest/templates')
+            os.path.join(BASE_DIR, '../src/dynamic_rest/templates')
         ),
         'APP_DIRS': True,
     }

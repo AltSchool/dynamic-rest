@@ -1,7 +1,7 @@
 from rest_framework import exceptions
 from django.db.models import Q
 
-from dynamic_rest.viewsets import DynamicModelViewSet
+from src.dynamic_rest import DynamicModelViewSet
 from tests.models import (
     Car,
     Cat,

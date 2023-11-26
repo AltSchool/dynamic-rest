@@ -5,9 +5,9 @@ from collections import OrderedDict
 from django.test import TestCase, override_settings
 import six
 
-from dynamic_rest.fields import DynamicRelationField
-from dynamic_rest.processors import register_post_processor
-from dynamic_rest.serializers import DynamicListSerializer, EphemeralObject
+from src.dynamic_rest.fields import DynamicRelationField
+from src.dynamic_rest.processors import register_post_processor
+from src.dynamic_rest import DynamicListSerializer, EphemeralObject
 from tests.models import User
 from tests.serializers import (
     CatSerializer,

@@ -4,8 +4,8 @@ from django.urls import set_script_prefix, clear_script_prefix
 from rest_framework.test import APITestCase
 from rest_framework.routers import DefaultRouter
 
-from dynamic_rest.meta import get_model_table
-from dynamic_rest.routers import DynamicRouter, Route
+from src.dynamic_rest import get_model_table
+from src.dynamic_rest import DynamicRouter, Route
 from tests.models import Dog
 from tests.serializers import CatSerializer, DogSerializer
 from tests.urls import urlpatterns  # noqa  force route registration

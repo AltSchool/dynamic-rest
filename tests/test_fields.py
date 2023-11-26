@@ -2,8 +2,8 @@ from django.test import TestCase, override_settings
 
 from rest_framework import serializers
 
-from dynamic_rest.fields import DynamicHashIdField
-from dynamic_rest.utils import (
+from src.dynamic_rest.fields import DynamicHashIdField
+from src.dynamic_rest.utils import (
     external_id_from_model_and_internal_id,
 )
 from tests.models import Dog

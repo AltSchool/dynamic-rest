@@ -2,7 +2,7 @@ import six
 
 from rest_framework.test import APITestCase
 
-from dynamic_rest.prefetch import FastPrefetch, FastQuery
+from src.dynamic_rest import FastPrefetch, FastQuery
 from tests.models import Group, Location, Profile, User, Cat
 from tests.setup import create_fixture
 

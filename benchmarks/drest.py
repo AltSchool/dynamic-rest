@@ -1,7 +1,5 @@
-from dynamic_rest import fields as fields
-from dynamic_rest import routers as routers
-from dynamic_rest import serializers as serializers
-from dynamic_rest import viewsets as viewsets
+from src.dynamic_rest import fields as fields
+from src.dynamic_rest import viewsets as viewsets, serializers as serializers, routers as routers
 
 from .models import Group, Permission, User
 

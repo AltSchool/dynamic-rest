@@ -1,13 +1,13 @@
 from rest_framework.serializers import CharField
 
-from dynamic_rest.fields import (
+from src.dynamic_rest.fields import (
     CountField,
     DynamicField,
     DynamicGenericRelationField,
     DynamicMethodField,
     DynamicRelationField
 )
-from dynamic_rest.serializers import (
+from src.dynamic_rest import (
     DynamicEphemeralSerializer,
     DynamicModelSerializer
 )

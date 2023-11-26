@@ -64,6 +64,7 @@ over HTTP.
 -   [Anthony Leontiev](mailto:aleontiev@tohigherground.com>)
 -   [Savinay Nangalia](mailto:snangalia@tohigherground.com)
 -   [Christina D'Astolfo](mailto:cdastolfo@tohigherground.com)
+-   [César Benjamín](mailto:mathereall@gmail.com)
 
 ## Contributors
 
@@ -532,7 +533,7 @@ The sky is the limit! DREST supports just about every basic filtering scenario a
 -   gt
     ...
 
-See the [full list here](dynamic_rest/filters.py#L153-L176).
+See the [full list here](src/dynamic_rest/filters.py#L153-L176).
 
 ## Ordering
 
@@ -583,7 +584,7 @@ Cubic benchmark: rendering a list of lists of lists
 # Settings
 
 DREST is configurable, and all settings should be nested under a single block in your `settings.py` file.
-Here are our [defaults](dynamic_rest/conf.py):
+Here are our [defaults](src/dynamic_rest/conf.py):
 
 ```python
 DYNAMIC_REST = {

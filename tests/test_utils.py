@@ -1,6 +1,6 @@
 from django.test import TestCase, override_settings
 
-from dynamic_rest.utils import (
+from src.dynamic_rest.utils import (
     is_truthy,
     unpack,
     internal_id_from_model_and_external_id,
