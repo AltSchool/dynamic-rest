@@ -45,7 +45,7 @@ tag = true
 push = true
 
 [tool.bumpver.file_patterns]
-"pyproject.toml" = ['version = "{version}"', 'current_version = "{version}"']
+"pyproject.toml" = ['^version = "{version}"', '^current_version = "{version}"']
 "src/dynamic_rest/__init__.py" = ["{version}"]
 "setup.py" = [
     "{version}",
