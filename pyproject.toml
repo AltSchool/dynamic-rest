@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "drf-dynamic-rest"
-version = "2023.11-alpha6"
+version = "2023.11-alpha7"
 description = "Dynamic API extensions for Django REST Framework"
 readme = "README.md"
 authors = [{ name = "César Benjamín", email = "mathereall@gmail.com" }, {name = "Anthony Leontiev", email = "aleontiev@tohigherground.com"}]
@@ -31,7 +31,7 @@ dev = ["black", "bumpver", "isort", "pip-tools", "pytest"]
 Homepage = "https://github.com/cesar-benjamin/drf-dynamic-rest"
 
 [tool.bumpver]
-current_version = "2023.11-alpha6"
+current_version = "2023.11-alpha7"
 version_pattern = "YYYY.MM[-TAGNUM]"
 commit_message = "bump version {old_version} -> {new_version}"
 tag_message = "{new_version}"
@@ -41,5 +41,5 @@ tag = true
 push = true
 
 [tool.bumpver.file_patterns]
-"pyproject.toml" = ['version = "{version}"', 'current_version = "{current_version}"']
+"pyproject.toml" = ['version = "{version}"', '']
 "src/dynamic_rest/__init__.py" = ["{version}"]
