@@ -1,9 +1,10 @@
 from setuptools import find_packages, setup
+from src.dynamic_rest import __version__
 
 NAME = 'dynamic-rest'
 DESCRIPTION = 'Dynamic API support to Django REST Framework.'
 URL = 'https://github.com/cesar-benjamin/drf-dynamic-rest'
-VERSION = '2023.11-alpha0'
+VERSION = __version__
 SCRIPTS = ['manage.py']
 
 setup(
