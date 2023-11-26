@@ -12,4 +12,4 @@ DREST offers the following features on top of the standard DRF kit:
 default_app_config = "src.dynamic_rest.apps.DynamicRestConfig"
 
 # Version of the package
-__version__ = "2023.11-alpha5"
+__version__ = "2023.11-alpha6"
