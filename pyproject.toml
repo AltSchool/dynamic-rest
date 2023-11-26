@@ -16,7 +16,6 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
 ]
-
 keywords = ["feed", "reader", "tutorial"]
 dependencies = [
     "djangorestframework >= 3.14.0",
@@ -31,7 +30,6 @@ dev = ["black", "bumpver", "isort", "pip-tools", "pytest"]
 [project.urls]
 Homepage = "https://github.com/cesar-benjamin/drf-dynamic-rest"
 
-
 [tool.bumpver]
 current_version = "2023.11-alpha6"
 version_pattern = "YYYY.MM[-TAGNUM]"
@@ -43,6 +41,5 @@ tag = true
 push = true
 
 [tool.bumpver.file_patterns]
-"pyproject.toml" = ['^version = "{version}"', '^current_version = "{version}"']
+"pyproject.toml" = ['version = "{version}"', 'current_version = "{current_version}"']
 "src/dynamic_rest/__init__.py" = ["{version}"]
-
