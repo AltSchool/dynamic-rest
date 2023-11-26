@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "drf-dynamic-rest"
-version = "2023.11-alpha4"
+version = "2023.11-alpha5"
 description = "Dynamic API extensions for Django REST Framework"
 readme = "README.md"
 authors = [{ name = "César Benjamín", email = "mathereall@gmail.com" }, {name = "Anthony Leontiev", email = "aleontiev@tohigherground.com"}]
@@ -33,7 +33,7 @@ Homepage = "https://github.com/cesar-benjamin/drf-dynamic-rest"
 
 
 [tool.bumpver]
-current_version = "2023.11-alpha4"
+current_version = "2023.11-alpha5"
 version_pattern = "YYYY.MM[-TAGNUM]"
 commit_message = "bump version {old_version} -> {new_version}"
 tag_message = "{new_version}"
