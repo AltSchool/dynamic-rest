@@ -45,9 +45,8 @@ tag = true
 push = true
 
 [tool.bumpver.file_patterns]
-"pyproject.toml" = [
-    'current_version = "{version}"',
-]
+"pyproject.toml" = ['current_version = "{version}"', 'version = "{version}"']
+"src/dynamic_rest/__init__.py" = ["{version}"]
 "setup.py" = [
     "{version}",
     "{pep440_version}",
