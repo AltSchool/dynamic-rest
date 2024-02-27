@@ -185,7 +185,7 @@ class WithDynamicViewSetMixin(HasInitializeRequest):
     meta = None
     filter_backends = (DynamicFilterBackend, DynamicSortingFilter)
 
-    def initialize_request(self, request: Request, *args, **kwargs):
+    def initialize_request(self, request: Request, *args, **kwargs) -> Request:
         """Initialize the request object.
 
         Override DRF initialize_request() method to swap request.GET
@@ -195,29 +195,7 @@ class WithDynamicViewSetMixin(HasInitializeRequest):
         """
         request.GET = handle_encodings(request)
         # pylint: disable-next=E1111
-        request = super().initialize_request(request, *args, **kwargs)
-
-        try:
-            # Django<1.9, DRF<3.2
-
-            # MergeDict doesn't have the same API as dict.
-            # Django has deprecated MergeDict and DRF is moving away from
-            # using it - thus, were comfortable replacing it with a QueryDict
-            # This will allow the data property to have normal dict methods.
-            # pylint: disable-next=import-outside-toplevel
-            from django.utils.datastructures import MergeDict
-
-            if isinstance(
-                request._full_data, MergeDict  # pylint: disable=protected-access
-            ):
-                data_as_dict = request.data.dicts[0]
-                for d in request.data.dicts[1:]:
-                    data_as_dict.update(d)
-                request._full_data = data_as_dict  # pylint: disable=protected-access
-        except BaseException:  # pylint: disable=broad-exception-caught
-            pass
-
-        return request
+        return super().initialize_request(request, *args, **kwargs)
 
     def get_renderers(self):
         """Optionally block Browsable API rendering."""
