@@ -332,6 +332,19 @@ class TestUsersAPI(TestCase):
             },
             json.loads(response.content.decode("utf-8")),
         )
+        url = "/users/?filter{name.in}=[1,2]"
+        with self.assertNumQueries(1):
+            response = self.client.get(url)
+        self.assertEqual(200, response.status_code)
+        self.assertEqual(
+            {
+                "users": [
+                    {"id": 2, "location": 1, "name": "1"},
+                    {"id": 3, "location": 2, "name": "2"},
+                ]
+            },
+            json.loads(response.content.decode("utf-8")),
+        )
 
     def test_get_with_complex_filter(self):
         """Test get with complex filter."""

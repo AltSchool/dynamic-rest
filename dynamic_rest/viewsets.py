@@ -74,6 +74,15 @@ def _extract_object_params(
             raise exceptions.ParseError(
                 f'"{param_name}" is not a well-formed filter key.'
             )
+        if param_name.endswith(".in"):
+            temp_value = []
+            for v in value:
+                if v.startswith("[") and v.endswith("]") and "," in v:
+                    v = v[1:-1].split(",")
+                    temp_value.extend(v)
+                else:
+                    temp_value.append(v)
+            value = temp_value
         params_map[param_name] = value
     logger.debug("Extracted object params: %s", params_map)
     return None if raw else params_map
@@ -224,7 +233,6 @@ class WithDynamicViewSetMixin(
             Request: Request object.
         """
         request.GET = handle_encodings(request)
-        # pylint: disable-next=E1111
         return super().initialize_request(request, *args, **kwargs)
 
     def get_renderers(self) -> list[BaseRenderer]:
@@ -233,7 +241,6 @@ class WithDynamicViewSetMixin(
         Returns:
             list[BaseRenderer]: List of renderers.
         """
-        # pylint: disable-next=E1111
         renderers = super().get_renderers()
         if settings.ENABLE_BROWSABLE_API is False:
             return [r for r in renderers if not isinstance(r, BrowsableAPIRenderer)]
@@ -253,18 +260,17 @@ class WithDynamicViewSetMixin(
         request = self.request
         if "[]" in name:
             logger.debug("Using array-type feature: %s", name)
-            # array-type
             return request.query_params.getlist(name) if name_is_feature else None
         elif "{}" in name:
-            logger.debug("Using object-type feature: %s", name)
-            # object-type (keys are not consistent)
+            logger.debug(
+                "Using object-type feature (keys are not consistent): %s", name
+            )
             return (
                 _extract_object_params(request, name, raw=raw)
                 if name_is_feature
                 else {}
             )
         logger.debug("Using single-type feature: %s", name)
-        # single-type
         return request.query_params.get(name) if name_is_feature else None
 
     def get_queryset(self, queryset=None):  # pylint: disable=unused-argument
@@ -310,7 +316,7 @@ class WithDynamicViewSetMixin(
                             current_fields = current_fields[segment]
                     elif not last:
                         # empty segment must be the last segment
-                        raise exceptions.ParseError('"{field}" is not a valid field.')
+                        raise exceptions.ParseError(f'"{field}" is not a valid field.')
 
         self._request_fields = request_fields
         return request_fields

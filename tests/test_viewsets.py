@@ -8,6 +8,7 @@ from rest_framework.request import Request
 
 from dynamic_rest.datastructures import FilterNode
 from dynamic_rest.filters import DynamicFilterBackend
+from dynamic_rest.filters.base import _get_requested_filters
 from tests.models import Dog, Group, User
 from tests.serializers import GroupSerializer
 from tests.setup import create_fixture
@@ -81,8 +82,9 @@ class TestUserViewSet(TestCase):
         }
 
         backend = DynamicFilterBackend()
-        out = backend._get_requested_filters(  # pylint: disable=protected-access
-            filters_map=filters_map
+        # pylint: disable=protected-access
+        out = _get_requested_filters(
+            getattr(backend, "view", None), filters_map=filters_map
         )
         self.assertEqual(out["_include"]["attr"].value, "bar")
         self.assertEqual(out["_include"]["attr2"].value, "bar")
@@ -112,8 +114,9 @@ class TestUserViewSet(TestCase):
         }
 
         backend = DynamicFilterBackend()
-        out = backend._get_requested_filters(  # pylint: disable=protected-access
-            filters_map=filters_map
+        # pylint: disable=protected-access
+        out = _get_requested_filters(
+            getattr(backend, "view", None), filters_map=filters_map
         )
 
         self.assertEqual(out["_include"]["f1__isnull"].value, True)
