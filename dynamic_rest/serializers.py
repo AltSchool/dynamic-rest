@@ -763,7 +763,7 @@ class WithDynamicModelSerializerMixin(WithDynamicSerializerMixin):
         #    or else it is possible Django will issue another request.
         for field in model._meta.fields:  # pylint: disable=protected-access
             if isinstance(field, models.ForeignKey):
-                out.append(f"{field.name }_id")
+                out.append(f"{field.name}_id")
 
         return out
 

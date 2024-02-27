@@ -1,13 +1,17 @@
-"""This module contains custom viewset classes."""
+"""This module contains custom ViewSet classes."""
+from __future__ import annotations
 
 import json
+import logging
+from typing import Protocol, runtime_checkable
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
 from django.http import QueryDict
 from rest_framework import exceptions, status, viewsets
 from rest_framework.exceptions import ValidationError
-from rest_framework.renderers import BrowsableAPIRenderer
+from rest_framework.renderers import BaseRenderer, BrowsableAPIRenderer
+from rest_framework.request import Request
 from rest_framework.response import Response
 
 from dynamic_rest.conf import settings
@@ -20,6 +24,97 @@ from dynamic_rest.utils import is_truthy
 UPDATE_REQUEST_METHODS = ("PUT", "PATCH", "POST")
 DELETE_REQUEST_METHOD = "DELETE"
 PATCH = "PATCH"
+
+logger = logging.getLogger(__name__)
+
+
+def _extract_object_params(
+    request: Request, name: str, raw: bool = False
+) -> dict | None:
+    """Extract object params, return as dict.
+
+    Always returns None if raw??? # TODO: Make sure this makes sense.
+
+    Args:
+        request: Request object.
+        name: Name of the object.
+        raw: Raw flag.
+
+    Returns:
+        dict | None: Parsed object params.
+    """
+    params = request.query_params.lists()
+    logger.debug("Extracting object params: %s", name)
+    params_map = {}
+    original_name = name
+    prefix = name[:-1]
+    offset = len(prefix)
+    logger.debug("Name: %s, Prefix: %s, Offset: %s", name, prefix, offset)
+
+    for param_name, value in params:
+        if param_name == original_name:
+            if raw and value:
+                # filter{} as object
+                return json.loads(value[0])
+            else:
+                continue
+
+        if not param_name.startswith(prefix):
+            continue
+
+        if param_name.endswith("}"):
+            param_name = param_name[offset:-1]
+        elif param_name.endswith("}[]"):
+            # strip off trailing }[]
+            # this fixes an Ember queryparams issue
+            param_name = param_name[offset:-3]
+        else:
+            # malformed argument like:
+            # filter{foo=bar
+            raise exceptions.ParseError(
+                f'"{param_name}" is not a well-formed filter key.'
+            )
+        if param_name.endswith(".in"):
+            temp_value = []
+            for v in value:
+                if v.startswith("[") and v.endswith("]") and "," in v:
+                    v = v[1:-1].split(",")
+                    temp_value.extend(v)
+                else:
+                    temp_value.append(v)
+            value = temp_value
+        params_map[param_name] = value
+    logger.debug("Extracted object params: %s", params_map)
+    return None if raw else params_map
+
+
+def handle_encodings(request: Request) -> QueryParams:
+    """Handle encodings.
+
+    WSGIRequest does not support Unicode values in the query string.
+    WSGIRequest handling has a history of drifting behavior between
+    combinations of Python versions, Django versions and DRF versions.
+    Django changed its QUERY_STRING handling here:
+    https://goo.gl/WThXo6. DRF 3.4.7 changed its behavior here:
+    https://goo.gl/0ojIIO.
+
+    Args:
+        request: Request object.
+
+    Returns:
+        QueryParams: Query parameters.
+    """
+    try:
+        return QueryParams(request.GET)
+    except UnicodeEncodeError:
+        pass
+
+    s = request.environ.get("QUERY_STRING", "")
+    try:
+        s = s.encode("utf-8")
+    except UnicodeDecodeError:
+        pass
+    return QueryParams(s)
 
 
 class QueryParams(QueryDict):
@@ -57,7 +152,36 @@ class QueryParams(QueryDict):
             self.appendlist(key, value)
 
 
-class WithDynamicViewSetMixin(object):
+@runtime_checkable
+class HasRequestProperty(Protocol):
+    """Protocol for request property."""
+
+    request: Request
+
+
+@runtime_checkable
+class HasInitializeRequest(Protocol):
+    """Protocol for initialize_request method."""
+
+    # pylint: disable=W0246
+    def initialize_request(self, request: Request, *args, **kwargs) -> Request:
+        """Initialize the request object."""
+        return super().initialize_request(request, *args, **kwargs)
+
+
+@runtime_checkable
+class HasGetRenderers(Protocol):
+    """Protocol for get_renderers method."""
+
+    # pylint: disable=W0246
+    def get_renderers(self) -> list[BaseRenderer]:
+        """Get renderers."""
+        return super().get_renderers()
+
+
+class WithDynamicViewSetMixin(
+    HasInitializeRequest, HasGetRenderers, HasRequestProperty
+):
     """A ViewSet that can support dynamic API features.
 
     Attributes:
@@ -92,134 +216,62 @@ class WithDynamicViewSetMixin(object):
     meta = None
     filter_backends = (DynamicFilterBackend, DynamicSortingFilter)
 
-    def initialize_request(self, request, *args, **kargs):
+    def initialize_request(self, request: Request, *args, **kwargs) -> Request:
         """Initialize the request object.
 
         Override DRF initialize_request() method to swap request.GET
         (which is aliased by request.query_params) with a mutable instance
         of QueryParams, and to convert request MergeDict to a subclass of dict
         for consistency (MergeDict is not a subclass of dict)
+
+        Args:
+            request: Request object.
+            *args: Args.
+            **kwargs: Kwargs.
+
+        Returns:
+            Request: Request object.
         """
-
-        def handle_encodings(request):
-            """Handle encodings.
-
-            WSGIRequest does not support Unicode values in the query string.
-            WSGIRequest handling has a history of drifting behavior between
-            combinations of Python versions, Django versions and DRF versions.
-            Django changed its QUERY_STRING handling here:
-            https://goo.gl/WThXo6. DRF 3.4.7 changed its behavior here:
-            https://goo.gl/0ojIIO.
-            """
-            try:
-                return QueryParams(request.GET)
-            except UnicodeEncodeError:
-                pass
-
-            s = request.environ.get("QUERY_STRING", "")
-            try:
-                s = s.encode("utf-8")
-            except UnicodeDecodeError:
-                pass
-            return QueryParams(s)
-
         request.GET = handle_encodings(request)
-        request = super().initialize_request(request, *args, **kargs)
+        return super().initialize_request(request, *args, **kwargs)
 
-        try:
-            # Django<1.9, DRF<3.2
+    def get_renderers(self) -> list[BaseRenderer]:
+        """Optionally block Browsable API rendering.
 
-            # MergeDict doesn't have the same API as dict.
-            # Django has deprecated MergeDict and DRF is moving away from
-            # using it - thus, were comfortable replacing it with a QueryDict
-            # This will allow the data property to have normal dict methods.
-            # pylint: disable-next=import-outside-toplevel
-            from django.utils.datastructures import MergeDict
-
-            if isinstance(
-                request._full_data, MergeDict  # pylint: disable=protected-access
-            ):
-                data_as_dict = request.data.dicts[0]
-                for d in request.data.dicts[1:]:
-                    data_as_dict.update(d)
-                request._full_data = data_as_dict  # pylint: disable=protected-access
-        except BaseException:  # pylint: disable=broad-exception-caught
-            pass
-
-        return request
-
-    def get_renderers(self):
-        """Optionally block Browsable API rendering."""
+        Returns:
+            list[BaseRenderer]: List of renderers.
+        """
         renderers = super().get_renderers()
         if settings.ENABLE_BROWSABLE_API is False:
             return [r for r in renderers if not isinstance(r, BrowsableAPIRenderer)]
-        else:
-            return renderers
+        return renderers
 
-    def get_request_feature(self, name, raw=False):
+    def get_request_feature(self, name, raw: bool = False):
         """Parses the request for a particular feature.
 
         Arguments:
           name: A feature name.
+          raw: bool -
 
         Returns:
           A feature parsed from the URL if the feature is supported, or None.
         """
+        name_is_feature = name in self.features
+        request = self.request
         if "[]" in name:
-            # array-type
-            return (
-                self.request.query_params.getlist(name)
-                if name in self.features
-                else None
-            )
+            logger.debug("Using array-type feature: %s", name)
+            return request.query_params.getlist(name) if name_is_feature else None
         elif "{}" in name:
-            # object-type (keys are not consistent)
+            logger.debug(
+                "Using object-type feature (keys are not consistent): %s", name
+            )
             return (
-                self._extract_object_params(name, raw=raw)
-                if name in self.features
+                _extract_object_params(request, name, raw=raw)
+                if name_is_feature
                 else {}
             )
-        else:
-            # single-type
-            return (
-                self.request.query_params.get(name) if name in self.features else None
-            )
-
-    def _extract_object_params(self, name, raw=False):
-        """Extract object params, return as dict."""
-        params = self.request.query_params.lists()
-        params_map = {}
-        original_name = name
-        prefix = name[:-1]
-        offset = len(prefix)
-
-        for param_name, value in params:
-            name_match = param_name == original_name
-            if name_match:
-                if raw and value:
-                    # filter{} as object
-                    return json.loads(value[0])
-                else:
-                    continue
-
-            if param_name.startswith(prefix):
-                if param_name.endswith("}"):
-                    param_name = param_name[offset:-1]
-                elif param_name.endswith("}[]"):
-                    # strip off trailing []
-                    # this fixes an Ember queryparams issue
-                    param_name = param_name[offset:-3]
-                else:
-                    # malformed argument like:
-                    # filter{foo=bar
-                    raise exceptions.ParseError(
-                        f'"{param_name}" is not a well-formed filter key.'
-                    )
-            else:
-                continue
-            params_map[param_name] = value
-
-        return params_map if not raw else None
+        logger.debug("Using single-type feature: %s", name)
+        return request.query_params.get(name) if name_is_feature else None
 
     def get_queryset(self, queryset=None):  # pylint: disable=unused-argument
         """Returns a queryset for this request.
@@ -264,7 +316,7 @@ class WithDynamicViewSetMixin(object):
                             current_fields = current_fields[segment]
                     elif not last:
                         # empty segment must be the last segment
-                        raise exceptions.ParseError('"{field}" is not a valid field.')
+                        raise exceptions.ParseError(f'"{field}" is not a valid field.')
 
         self._request_fields = request_fields
         return request_fields

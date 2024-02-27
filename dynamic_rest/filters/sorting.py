@@ -156,7 +156,7 @@ class DynamicSortingFilter(OrderingFilter):
         # neither a method nor an attribute has been specified
         if serializer_class is None:
             raise ImproperlyConfigured(
-                f"Cannot use { self.__class__.__name__} on a view which does"
+                f"Cannot use {self.__class__.__name__} on a view which does"
                 " not have either a 'serializer_class' or an overriding "
                 "'get_serializer_class'."
             )

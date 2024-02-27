@@ -1,6 +1,7 @@
 """Base filter backend for DREST."""
 from __future__ import annotations
 
+import logging
 from functools import reduce
 from typing import Any
 
@@ -28,7 +29,71 @@ from dynamic_rest.prefetch import FastPrefetch
 from dynamic_rest.serializers import DynamicModelSerializer
 from dynamic_rest.utils import is_truthy
 
+logger = logging.getLogger(__name__)
 DEBUG = settings.DEBUG
+
+
+def _get_requested_filters(view, **kwargs) -> TreeMap:
+    """Get filters from the request.
+
+    Convert 'filters' query params into a dict that can be passed
+    to Q. Returns a dict with two fields, 'include' and 'exclude',
+    which can be used like:
+
+      result = self._get_requested_filters()
+      q = Q(**result['include'] & ~Q(**result['exclude'])
+    """
+    out = TreeMap()
+    logger.debug("kwargs: %s", kwargs)
+    filters_map = kwargs.get("filters_map") or view.get_request_feature(view.FILTER)
+    logger.debug("filters_map: %s", filters_map)
+    if view is not None:
+        out["_complex"] = view.get_request_feature(view.FILTER, raw=True)
+
+    for spec, value in filters_map.items():
+        # Inclusion or exclusion?
+        if spec[0] == "-":
+            spec = spec[1:]
+            inex = "_exclude"
+        else:
+            inex = "_include"
+
+        # for relational filters, separate out relation path part
+        if "|" in spec:
+            rel, spec = spec.split("|")
+            rel = rel.split(".")
+        else:
+            rel = None
+
+        parts = spec.split(".")
+
+        # Last part could be operator, e.g. "events.capacity.gte"
+        if len(parts) > 1 and parts[-1] in VALID_FILTER_OPERATORS:
+            operator = parts.pop()
+        else:
+            operator = None
+
+        # All operators except 'range' and 'in' should have one value
+        if operator == "range":
+            value = value[:2]
+        elif operator == "in":
+            # no-op: i.e. accept `value` as an arbitrarily long list
+            pass
+        elif operator in VALID_FILTER_OPERATORS:
+            value = value[0]
+            if operator == "isnull" and isinstance(value, str):
+                value = is_truthy(value)
+            elif operator == "eq":
+                operator = None
+
+        node = FilterNode(parts, operator, value)
+
+        # insert into output tree
+        path = rel or []
+        path += [inex, node.key]
+        out.insert(path, node)
+
+    return out
 
 
 class DynamicFilterBackend(BaseFilterBackend):
@@ -67,69 +132,7 @@ class DynamicFilterBackend(BaseFilterBackend):
 
     def _extract_filters(self, **kwargs) -> TreeMap:
         """Extract filters from the request."""
-        return self._get_requested_filters(**kwargs)
-
-    def _get_requested_filters(self, **kwargs) -> TreeMap:
-        """Get filters from the request.
-
-        Convert 'filters' query params into a dict that can be passed
-        to Q. Returns a dict with two fields, 'include' and 'exclude',
-        which can be used like:
-
-          result = self._get_requested_filters()
-          q = Q(**result['include'] & ~Q(**result['exclude'])
-        """
-        out = TreeMap()
-        filters_map = kwargs.get("filters_map") or self.view.get_request_feature(
-            self.view.FILTER
-        )
-        if getattr(self, "view", None):
-            out["_complex"] = self.view.get_request_feature(self.view.FILTER, raw=True)
-
-        for spec, value in filters_map.items():
-            # Inclusion or exclusion?
-            if spec[0] == "-":
-                spec = spec[1:]
-                inex = "_exclude"
-            else:
-                inex = "_include"
-
-            # for relational filters, separate out relation path part
-            if "|" in spec:
-                rel, spec = spec.split("|")
-                rel = rel.split(".")
-            else:
-                rel = None
-
-            parts = spec.split(".")
-
-            # Last part could be operator, e.g. "events.capacity.gte"
-            if len(parts) > 1 and parts[-1] in VALID_FILTER_OPERATORS:
-                operator = parts.pop()
-            else:
-                operator = None
-
-            # All operators except 'range' and 'in' should have one value
-            if operator == "range":
-                value = value[:2]
-            elif operator == "in":
-                # no-op: i.e. accept `value` as an arbitrarily long list
-                pass
-            elif operator in VALID_FILTER_OPERATORS:
-                value = value[0]
-                if operator == "isnull" and isinstance(value, str):
-                    value = is_truthy(value)
-                elif operator == "eq":
-                    operator = None
-
-            node = FilterNode(parts, operator, value)
-
-            # insert into output tree
-            path = rel if rel else []
-            path += [inex, node.key]
-            out.insert(path, node)
-
-        return out
+        return _get_requested_filters(getattr(self, "view", None), **kwargs)
 
     def _filters_to_query(
         self, filters: dict[str, dict[Any, Any]], serializer, q: Q = None
@@ -386,7 +389,7 @@ class DynamicFilterBackend(BaseFilterBackend):
             )
 
         if filters is None:
-            filters = self._get_requested_filters()
+            filters = _get_requested_filters(getattr(self, "view", None))
 
         # build nested Prefetch queryset
         self._build_requested_prefetches(

@@ -484,6 +484,17 @@ You can filter a user by his name (exact match):
     200 OK
 ```
 
+... or several relationship IDs:
+
+```
+-->
+    GET /users/?filter{groups.in}=1&filter{groups.in}=2
+    or
+    GET /users/?filter{name.in}=[1,2]
+<--
+    200 OK
+```
+
 ... or lack thereof:
 
 ```
