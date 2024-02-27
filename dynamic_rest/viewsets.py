@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Protocol
+from typing import Protocol, runtime_checkable
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
@@ -143,21 +143,36 @@ class QueryParams(QueryDict):
             self.appendlist(key, value)
 
 
+@runtime_checkable
+class HasRequestProperty(Protocol):
+    """Protocol for request property."""
+
+    request: Request
+
+
+@runtime_checkable
 class HasInitializeRequest(Protocol):
     """Protocol for initialize_request method."""
 
+    # pylint: disable=W0246
     def initialize_request(self, request: Request, *args, **kwargs) -> Request:
         """Initialize the request object."""
+        return super().initialize_request(request, *args, **kwargs)
 
 
+@runtime_checkable
 class HasGetRenderers(Protocol):
     """Protocol for get_renderers method."""
 
+    # pylint: disable=W0246
     def get_renderers(self) -> list[BaseRenderer]:
         """Get renderers."""
+        return super().get_renderers()
 
 
-class WithDynamicViewSetMixin(HasInitializeRequest, HasGetRenderers):
+class WithDynamicViewSetMixin(
+    HasInitializeRequest, HasGetRenderers, HasRequestProperty
+):
     """A ViewSet that can support dynamic API features.
 
     Attributes:
@@ -199,13 +214,25 @@ class WithDynamicViewSetMixin(HasInitializeRequest, HasGetRenderers):
         (which is aliased by request.query_params) with a mutable instance
         of QueryParams, and to convert request MergeDict to a subclass of dict
         for consistency (MergeDict is not a subclass of dict)
+
+        Args:
+            request: Request object.
+            *args: Args.
+            **kwargs: Kwargs.
+
+        Returns:
+            Request: Request object.
         """
         request.GET = handle_encodings(request)
         # pylint: disable-next=E1111
         return super().initialize_request(request, *args, **kwargs)
 
     def get_renderers(self) -> list[BaseRenderer]:
-        """Optionally block Browsable API rendering."""
+        """Optionally block Browsable API rendering.
+
+        Returns:
+            list[BaseRenderer]: List of renderers.
+        """
         # pylint: disable-next=E1111
         renderers = super().get_renderers()
         if settings.ENABLE_BROWSABLE_API is False:
