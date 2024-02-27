@@ -10,7 +10,7 @@ from django.db import IntegrityError, transaction
 from django.http import QueryDict
 from rest_framework import exceptions, status, viewsets
 from rest_framework.exceptions import ValidationError
-from rest_framework.renderers import BrowsableAPIRenderer
+from rest_framework.renderers import BaseRenderer, BrowsableAPIRenderer
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -150,7 +150,14 @@ class HasInitializeRequest(Protocol):
         """Initialize the request object."""
 
 
-class WithDynamicViewSetMixin(HasInitializeRequest):
+class HasGetRenderers(Protocol):
+    """Protocol for get_renderers method."""
+
+    def get_renderers(self) -> list[BaseRenderer]:
+        """Get renderers."""
+
+
+class WithDynamicViewSetMixin(HasInitializeRequest, HasGetRenderers):
     """A ViewSet that can support dynamic API features.
 
     Attributes:
@@ -197,13 +204,13 @@ class WithDynamicViewSetMixin(HasInitializeRequest):
         # pylint: disable-next=E1111
         return super().initialize_request(request, *args, **kwargs)
 
-    def get_renderers(self):
+    def get_renderers(self) -> list[BaseRenderer]:
         """Optionally block Browsable API rendering."""
+        # pylint: disable-next=E1111
         renderers = super().get_renderers()
         if settings.ENABLE_BROWSABLE_API is False:
             return [r for r in renderers if not isinstance(r, BrowsableAPIRenderer)]
-        else:
-            return renderers
+        return renderers
 
     def get_request_feature(self, name, raw: bool = False):
         """Parses the request for a particular feature.
