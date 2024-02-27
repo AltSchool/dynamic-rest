@@ -1643,7 +1643,7 @@ class TestCatsAPI(TestCase):
 
     def test_additional_sideloads(self):
         """Test additional side-loads."""
-        response = self.client.get(f"/cats/{ self.kitten.id}?include[]=parent.")
+        response = self.client.get(f"/cats/{self.kitten.id}?include[]=parent.")
         content = json.loads(response.content.decode("utf-8"))
         self.assertTrue("cat" in content)
         self.assertTrue("+cats" in content)
