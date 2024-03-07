@@ -1,0 +1,81 @@
+name: Django CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 4
+      matrix:
+        python-version: [3.9, "3.10", "3.11"]
+        dj-version: ["3.0.*", "3.1.*", "3.2.*", "4.0.*", "4.1.*", "4.2.*"]
+        drf-version: ["3.11.*", "3.12.*", "3.13.*", "3.14.*"]
+        exclude:
+        - dj-version: '4.0.*'
+          drf-version: '3.11.*'
+        - dj-version: '4.1.*'
+          drf-version: '3.11.*'
+        - dj-version: '4.2.*'
+          drf-version: '3.11.*'
+        - dj-version: '4.0.*'
+          drf-version: '3.12.*'
+        - dj-version: '4.1.*'
+          drf-version: '3.12.*'
+        - dj-version: '4.2.*'
+          drf-version: '3.11.*'
+        - dj-version: '4.2.*'
+          drf-version: '3.12.*'
+        - dj-version: '4.2.*'
+          drf-version: '3.13.*'
+
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: github_actions
+        ports:
+          - 5432:5432
+        # needed because the postgres container does not provide a healthcheck
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install 'django==${{ matrix.dj-version }}' 'djangorestframework==${{ matrix.drf-version }}'
+    - name: Run Tests
+      run: |
+        DATABASE_URL=psql://postgres:postgres@127.0.0.1:5432/github_actions coverage run -p runtests.py
+        DATABASE_URL=psql://postgres:postgres@127.0.0.1:5432/github_actions coverage run -p manage.py behave
+        coverage combine
+    - name: Upload coverage data to coveralls.io
+      run: coveralls --service=github
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        COVERALLS_FLAG_NAME: ${{ join(matrix.*, '-') }}
+        COVERALLS_PARALLEL: true
+  coveralls:
+    name: Indicate completion to coveralls.io
+    needs: test
+    runs-on: ubuntu-latest
+    container: python:3-slim
+    steps:
+    - name: Finished
+      run: |
+        pip3 install --upgrade coveralls
+        coveralls --service=github --finish
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

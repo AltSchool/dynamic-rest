@@ -18,7 +18,11 @@
     {# the directory is shoehorned into the breadcrumbs block because there is no other block to fit it into #}
     {% block directory %}
         <div class="directory">
+            {% if breadcrumblist %}
+            <li><a href="{{ breadcrumblist.0.1 }}">{{ breadcrumblist.0.1 }}</a>
+            {% else %}
             <li><a href="/">/</a>
+            {% endif %}
             <ul>
                 {% for l1_name, l1_link, l1_items, l1_active in directory %}
                     <li>

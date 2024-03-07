@@ -1,5 +1,8 @@
 Dynamic REST
-============
+===================
+
+.. image:: https://coveralls.io/repos/github/BillSchumacher/dynamic-rest/badge.svg?branch=main
+ :target: https://coveralls.io/github/BillSchumacher/dynamic-rest?branch=main
 
 **Dynamic API extensions for Django REST Framework**
 
@@ -17,7 +20,7 @@ DREST classes can be used as a drop-in replacement for DRF classes,
 which offer the following features on top of the standard DRF kit:
 
 -  Linked relationships
--  Sideloaded relationships
+-  Side-loaded relationships
 -  Embedded relationships
 -  Field inclusions
 -  Field exclusions
@@ -34,12 +37,13 @@ over HTTP.
 Maintainers
 -----------
 
--  `Anthony Leontiev <mailto:ant@altschool.com>`__
--  `Ryo Chijiiwa <mailto:ryo@altschool.com>`__
+-  `Anthony Leontiev <mailto:aleontiev@tohigherground.com>`__
+-  `Savinay Nangalia <mailto:snangalia@tohigherground.com>`__
+-  `Christina D'Astolfo <mailto:cdastolfo@tohigherground.com>`__
 
 Requirements
 ============
 
--  Python (2.7, 3.5, 3.6, 3.7)
--  Django (1.11, 2.0, 2.1, 2.2)
--  Django REST Framework (3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3.10)
+-  Python (3.9, 3.10, 3.11)
+-  Django (3.1, 3.2, 4.0, 4.1, 4.2)
+-  Django REST Framework (3.11, 3.12, 3.13, 3.14)

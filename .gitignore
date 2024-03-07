@@ -69,3 +69,5 @@ db.sqlite3
 
 # PyCharm
 .idea/
+tests/reports/
+profile

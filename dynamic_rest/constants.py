@@ -1,0 +1,27 @@
+"""Constants."""
+
+VALID_FILTER_OPERATORS = (
+    "in",
+    "any",
+    "all",
+    "icontains",
+    "contains",
+    "startswith",
+    "istartswith",
+    "endswith",
+    "iendswith",
+    "year",
+    "month",
+    "day",
+    "week_day",
+    "regex",
+    "range",
+    "gt",
+    "lt",
+    "gte",
+    "lte",
+    "isnull",
+    "eq",
+    "iexact",
+    None,
+)
