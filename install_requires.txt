@@ -3,4 +3,4 @@ djangorestframework>=3.11.2,<3.15
 inflection>=0.5.0
 requests
 sqids>=0.1.0
-orjson==3.9.7
+orjson>=3.9.7
