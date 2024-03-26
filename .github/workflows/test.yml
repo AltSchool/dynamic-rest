@@ -22,6 +22,8 @@ jobs:
           dj-version: '4.1.*'
         - python-version: 3.7
           dj-version: '4.2.*'
+        - dj-version: '4.2.*'
+          drf-version: '3.13.*'
 
     steps:
     - uses: actions/checkout@v2
