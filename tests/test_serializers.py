@@ -1,5 +1,5 @@
 import unittest
-from mock import patch
+from mock import patch, Mock
 from collections import OrderedDict
 
 from django.test import TestCase, override_settings
@@ -522,6 +522,31 @@ class TestDynamicSerializer(TestCase):
         )
         data = serializer.data
         self.assertTrue(data.get('post_processed'))
+
+    def test_to_representation_passed_model_instance(self):
+        mock_obj = Mock()
+
+        class GroupRelationField(DynamicRelationField):
+            def to_representation(self, instance):
+                mock_obj(instance)
+                # Dead men have no groups
+                if instance.is_dead:
+                    return []
+                return super(GroupRelationField, self).to_representation(
+                    instance)
+
+        class UserCustomGroupFieldSerializer(UserSerializer):
+            groups = GroupRelationField(GroupSerializer, many=True, embed=True)
+
+        user = User.objects.create(name='Dead', last_name='Mort', is_dead=True)
+        user.groups.add(*self.fixture.groups)
+
+        data = UserCustomGroupFieldSerializer(
+            user, request_fields={'groups': {'name': True}}
+        ).data
+
+        assert data['groups'] == []
+        mock_obj.assert_called_once_with(user)
 
 
 class TestListSerializer(TestCase):
