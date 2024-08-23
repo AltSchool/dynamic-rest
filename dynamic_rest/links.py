@@ -1,5 +1,4 @@
 """This module contains utilities to support API links."""
-import six
 from dynamic_rest.conf import settings
 from dynamic_rest.routers import DynamicRouter
 
@@ -20,7 +19,7 @@ def merge_link_object(serializer, data, instance):
         return data
 
     link_fields = serializer.get_link_fields()
-    for name, field in six.iteritems(link_fields):
+    for name, field in link_fields.items():
         # For included fields, omit link if there's no data.
         if name in data and not data[name]:
             continue

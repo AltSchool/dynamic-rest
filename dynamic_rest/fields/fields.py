@@ -3,7 +3,6 @@
 import importlib
 import pickle
 
-import six
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.functional import cached_property
 from rest_framework import fields
@@ -245,7 +244,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
     def get_serializer(self, *args, **kwargs):
         """Get an instance of the child serializer."""
         init_args = {
-            k: v for k, v in six.iteritems(self.kwargs)
+            k: v for k, v in self.kwargs.items()
             if k in self.SERIALIZER_KWARGS
         }
 
@@ -353,7 +352,7 @@ class DynamicRelationField(WithRelationalFieldMixin, DynamicField):
         Resolves string imports.
         """
         serializer_class = self._serializer_class
-        if not isinstance(serializer_class, six.string_types):
+        if not isinstance(serializer_class, str):
             return serializer_class
 
         parts = serializer_class.split('.')

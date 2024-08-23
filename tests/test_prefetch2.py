@@ -1,5 +1,3 @@
-import six
-
 from rest_framework.test import APITestCase
 
 from dynamic_rest.prefetch import FastPrefetch, FastQuery
@@ -135,7 +133,7 @@ class TestFastQuery(APITestCase):
         self.assertTrue(
             all(['user_set' in obj for obj in result])
         )
-        location = six.next((
+        location = next((
             o for o in result if o['user_set'] and len(o['user_set']) > 1
         ))
 

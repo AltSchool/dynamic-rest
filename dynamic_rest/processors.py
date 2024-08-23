@@ -1,7 +1,6 @@
 """This module contains response processors."""
 from collections import defaultdict
 
-import six
 from rest_framework.serializers import ListSerializer
 from rest_framework.utils.serializer_helpers import ReturnDict
 
@@ -96,7 +95,7 @@ class SideloadingProcessor(object):
             returned = isinstance(obj, ReturnDict)
             if dynamic or returned:
                 # recursively check all fields
-                for key, o in six.iteritems(obj):
+                for key, o in obj.items():
                     if isinstance(o, list) or isinstance(o, dict):
                         # lists or dicts indicate a relation
                         self.process(

@@ -1,5 +1,4 @@
 """This module contains custom data-structures."""
-import six
 
 
 class TreeMap(dict):
@@ -15,7 +14,7 @@ class TreeMap(dict):
             A list of lists of paths.
         """
         paths = []
-        for key, child in six.iteritems(self):
+        for key, child in self.items():
             if isinstance(child, TreeMap) and child:
                 # current child is an intermediate node
                 for path in child.get_paths():

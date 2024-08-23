@@ -5,7 +5,6 @@ import os
 
 import inflection
 from django.db import models
-import six
 from django.utils.functional import cached_property
 from rest_framework import __version__ as drf_version
 from rest_framework import exceptions, fields, serializers
@@ -236,7 +235,7 @@ class WithDynamicSerializerMixin(
             # passes null as a value, remove the field from the data
             # this addresses the frontends that send
             # undefined resource fields as null on POST/PUT
-            for field_name, field in six.iteritems(self.get_all_fields()):
+            for field_name, field in self.get_all_fields().items():
                 if (
                     field.allow_null is False and
                     field.required is False and
@@ -304,7 +303,7 @@ class WithDynamicSerializerMixin(
             # First exclude all, then add back in explicitly included fields.
             include_fields = set(
                 list(include_fields) + [
-                    field for field, val in six.iteritems(self.request_fields)
+                    field for field, val in self.request_fields.items()
                     if val or val == {}
                 ]
             )
@@ -393,11 +392,11 @@ class WithDynamicSerializerMixin(
                 FIELDS_CACHE[self.__class__] = all_fields
         else:
             all_fields = copy.copy(FIELDS_CACHE[self.__class__])
-            for k, field in six.iteritems(all_fields):
+            for k, field in all_fields.items():
                 if hasattr(field, 'reset'):
                     field.reset()
 
-        for k, field in six.iteritems(all_fields):
+        for k, field in all_fields.items():
             field.field_name = k
             field.parent = self
 
@@ -411,7 +410,7 @@ class WithDynamicSerializerMixin(
             meta_attr = '%s_fields' % attr
         meta_list = set(getattr(self.Meta, meta_attr, []))
         return {
-            name for name, field in six.iteritems(fields)
+            name for name, field in fields.items()
             if getattr(field, attr, None) is True or name in
             meta_list
         }
@@ -460,7 +459,7 @@ class WithDynamicSerializerMixin(
 
         # apply request overrides
         if request_fields:
-            for name, include in six.iteritems(request_fields):
+            for name, include in request_fields.items():
                 if name not in serializer_fields:
                     raise exceptions.ParseError(
                         '"%s" is not a valid field name for "%s".' %
@@ -520,7 +519,7 @@ class WithDynamicSerializerMixin(
         else:
             all_fields = self.get_all_fields()
             return {
-                name: field for name, field in six.iteritems(all_fields)
+                name: field for name, field in all_fields.items()
                 if isinstance(field, DynamicRelationField) and
                 getattr(field, 'link', True) and
                 not (

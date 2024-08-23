@@ -3,7 +3,6 @@
 from django.core.exceptions import ValidationError as InternalValidationError
 from django.core.exceptions import ImproperlyConfigured
 from django.db.models import Q, Prefetch, Manager
-import six
 from functools import reduce
 from rest_framework import __version__ as drf_version
 from rest_framework import serializers
@@ -53,7 +52,7 @@ def has_joins(queryset):
     If this is the case, it is possible for the queryset
     to return duplicate results.
     """
-    for join in six.itervalues(queryset.query.alias_map):
+    for join in queryset.query.alias_map.values():
         if join.join_type:
             return True
     return False
@@ -277,7 +276,7 @@ class DynamicFilterBackend(BaseFilterBackend):
         if getattr(self, 'view', None):
             out['_complex'] = self.view.get_request_feature(self.view.FILTER, raw=True)
 
-        for spec, value in six.iteritems(filters_map):
+        for spec, value in filters_map.items():
 
             # Inclusion or exclusion?
             if spec[0] == '-':
@@ -309,7 +308,7 @@ class DynamicFilterBackend(BaseFilterBackend):
                 pass
             elif operator in self.VALID_FILTER_OPERATORS:
                 value = value[0]
-                if operator == 'isnull' and isinstance(value, six.string_types):
+                if operator == 'isnull' and isinstance(value, str):
                     value = is_truthy(value)
                 elif operator == 'eq':
                     operator = None
@@ -360,7 +359,7 @@ class DynamicFilterBackend(BaseFilterBackend):
                 q &= Q(**includes)
             if excludes:
                 excludes = rewrite_filters(excludes, serializer)
-                for k, v in six.iteritems(excludes):
+                for k, v in excludes.items():
                     q &= ~Q(**{k: v})
             return q
         else:
@@ -391,8 +390,8 @@ class DynamicFilterBackend(BaseFilterBackend):
     def _build_implicit_prefetches(self, model, prefetches, requirements):
         """Build a prefetch dictionary based on internal requirements."""
 
-        for source, remainder in six.iteritems(requirements):
-            if not remainder or isinstance(remainder, six.string_types):
+        for source, remainder in requirements.items():
+            if not remainder or isinstance(remainder, str):
                 # no further requirements to prefetch
                 continue
 
@@ -429,7 +428,7 @@ class DynamicFilterBackend(BaseFilterBackend):
     ):
         """Build a prefetch dictionary based on request requirements."""
 
-        for name, field in six.iteritems(fields):
+        for name, field in fields.items():
             original_field = field
             if isinstance(field, DynamicRelationField):
                 field = field.serializer
@@ -480,7 +479,7 @@ class DynamicFilterBackend(BaseFilterBackend):
 
     def _get_implicit_requirements(self, fields, requirements):
         """Extract internal prefetch requirements from serializer fields."""
-        for name, field in six.iteritems(fields):
+        for name, field in fields.items():
             source = field.source
             # Requires may be manually set on the field -- if not,
             # assume the field requires only its source.

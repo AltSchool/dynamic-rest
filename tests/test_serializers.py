@@ -3,7 +3,6 @@ from mock import patch
 from collections import OrderedDict
 
 from django.test import TestCase, override_settings
-import six
 
 from dynamic_rest.fields import DynamicRelationField
 from dynamic_rest.processors import register_post_processor
@@ -414,17 +413,17 @@ class TestDynamicSerializer(TestCase):
 
     def test_get_all_fields(self):
         s = GroupSerializer()
-        all_keys1 = six.iterkeys(s.get_all_fields())
+        all_keys1 = s.get_all_fields().keys()
         f2 = s.fields
-        all_keys2 = six.iterkeys(s.get_all_fields())
+        all_keys2 = s.get_all_fields().keys()
         expected = ['id', 'name']
-        self.assertEqual(list(six.iterkeys(f2)), expected)
+        self.assertEqual(list(f2.keys()), expected)
         self.assertEqual(list(all_keys1), list(all_keys2))
 
     def test_get_fields_with_only_fields(self):
         expected = ['id', 'last_name']
         serializer = UserSerializer(only_fields=expected)
-        self.assertEqual(list(six.iterkeys(serializer.fields)), expected)
+        self.assertEqual(list(serializer.fields.keys()), expected)
 
     def test_get_fields_with_only_fields_and_request_fields(self):
         expected = ['id', 'permissions']
@@ -434,7 +433,7 @@ class TestDynamicSerializer(TestCase):
                 'permissions': {}
             }
         )
-        self.assertEqual(list(six.iterkeys(serializer.fields)), expected)
+        self.assertEqual(list(serializer.fields.keys()), expected)
         self.assertEqual(serializer.request_fields['permissions'], {})
 
     def test_get_fields_with_only_fields_and_include_fields(self):
@@ -443,37 +442,37 @@ class TestDynamicSerializer(TestCase):
             only_fields=expected,
             include_fields=['permissions']
         )
-        self.assertEqual(list(six.iterkeys(serializer.fields)), expected)
+        self.assertEqual(list(serializer.fields.keys()), expected)
 
     def test_get_fields_with_include_all(self):
-        expected = six.iterkeys(UserSerializer().get_all_fields())
+        expected = UserSerializer().get_all_fields().keys()
         serializer = UserSerializer(
             include_fields='*'
         )
-        self.assertEqual(list(six.iterkeys(serializer.fields)), list(expected))
+        self.assertEqual(list(serializer.fields.keys()), list(expected))
 
     def test_get_fields_with_include_all_and_exclude(self):
-        expected = six.iterkeys(UserSerializer().get_all_fields())
+        expected = UserSerializer().get_all_fields().keys()
         serializer = UserSerializer(
             include_fields='*',
             exclude_fields=['id']
         )
-        self.assertEqual(list(six.iterkeys(serializer.fields)), list(expected))
+        self.assertEqual(list(serializer.fields.keys()), list(expected))
 
     def test_get_fields_with_include_fields(self):
         include = ['permissions']
         expected = set(
-            six.iterkeys(UserSerializer().get_fields())
+            UserSerializer().get_fields().keys()
         ) | set(include)
         serializer = UserSerializer(
             include_fields=include
         )
-        self.assertEqual(set(six.iterkeys(serializer.fields)), expected)
+        self.assertEqual(set(serializer.fields.keys()), expected)
 
     def test_get_fields_with_include_fields_and_request_fields(self):
         include = ['permissions']
         expected = set(
-            six.iterkeys(UserSerializer().get_fields())
+            UserSerializer().get_fields().keys()
         ) | set(include)
         serializer = UserSerializer(
             include_fields=include,
@@ -481,18 +480,18 @@ class TestDynamicSerializer(TestCase):
                 'permissions': {}
             }
         )
-        self.assertEqual(set(six.iterkeys(serializer.fields)), expected)
+        self.assertEqual(set(serializer.fields.keys()), expected)
         self.assertEqual(serializer.request_fields['permissions'], {})
 
     def test_get_fields_with_exclude_fields(self):
         exclude = ['id']
         expected = set(
-            six.iterkeys(UserSerializer().get_fields())
+            UserSerializer().get_fields().keys()
         ) - set(exclude)
         serializer = UserSerializer(
             exclude_fields=exclude,
         )
-        self.assertEqual(set(six.iterkeys(serializer.fields)), expected)
+        self.assertEqual(set(serializer.fields.keys()), expected)
 
     def test_serializer_propagation_consistency(self):
         s = CatSerializer(
