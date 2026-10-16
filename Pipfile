@@ -1,0 +1,36 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+django-environ = "==0.11.2"
+flake8 = ">=3.0"
+sqids = ">=0.1.0"
+mock = "==5.1.0"
+coverage = "==6.5.0"
+coveralls = "==3.3.1"
+psycopg2-binary = "==2.9.3"
+pytest-cov = ">=4.1.0"
+pytest-django = "==4.5.2"
+pytest-sugar = "==0.9.7"
+pytest = ">=7.4.2"
+sphinx = ">=7.2.6"
+tox-pyenv = "==1.1.0"
+tox = "==4.11.3"
+twine = "==4.0.2"
+inflection = "==0.5.1"
+django = "<5.3,>=3.2"
+djangorestframework = "<3.18,>=3.11.2"
+orjson = ">=3.9.7"
+black = "==23.9.1"
+isort = "==5.12.0"
+pre-commit = "==3.4.0"
+pylint = "==2.17.5"
+behave-django = "==1.9.0"
+behave-django-steps = ">=0.7.13"
+
+[dev-packages]
+
+[requires]
+python_version = "3.12"

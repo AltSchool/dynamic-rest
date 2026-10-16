@@ -1,0 +1,1 @@
+"""Environment for acceptance tests."""

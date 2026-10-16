@@ -1,0 +1,43 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v2.3.0
+    hooks:
+    -   id: check-yaml
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+-   repo: https://github.com/pycqa/isort
+    rev: 5.12.0
+    hooks:
+      - id: isort
+        name: isort (python)
+        args: ["--profile", "black", "--filter-files"]
+-   repo: https://github.com/psf/black
+    rev: 22.10.0
+    hooks:
+    -   id: black
+-   repo: https://github.com/pycqa/flake8
+    rev: 6.1.0
+    hooks:
+    -   id: flake8
+        exclude: ^.*migrations/
+        additional_dependencies: [flake8-docstrings]
+- repo: local
+  hooks:
+    - id: pylint
+      name: pylint
+      entry: pylint
+      language: system
+      types: [python]
+      exclude: ^.*migrations/
+      #args:
+      #  [
+      #    "-rn", # Only display messages
+      #    "-sn", # Don't display the score
+      #  ]
+#- repo: local
+#  hooks:
+#    - id: generate-requirements
+#      name: generate-requirements
+#      entry: python generate_requirements.py
+#      language: python
+#      pass_filenames: false

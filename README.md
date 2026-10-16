@@ -3,6 +3,8 @@
 [![Circle CI](https://circleci.com/gh/AltSchool/dynamic-rest.svg?style=svg)](https://circleci.com/gh/AltSchool/dynamic-rest)
 [![PyPi](https://img.shields.io/pypi/v/dynamic-rest.svg)](https://pypi.python.org/pypi/dynamic-rest)
 
+[![Coverage Status](https://coveralls.io/repos/github/BillSchumacher/dynamic-rest/badge.svg?branch=main)](https://coveralls.io/github/BillSchumacher/dynamic-rest?branch=main)
+
 **Dynamic API extensions for Django REST Framework**
 
 See http://dynamic-rest.readthedocs.org for full documentation.
@@ -42,7 +44,7 @@ empower simple RESTful APIs with the flexibility of a graph query language.
 DREST classes can be used as a drop-in replacement for DRF classes, which offer the following features on top of the standard DRF kit:
 
 -   Linked relationships
--   Sideloaded relationships
+-   Side-loaded relationships
 -   Embedded relationships
 -   Inclusions
 -   Exclusions
@@ -67,19 +69,21 @@ over HTTP.
 
 # Requirements
 
--   Python (3.6, 3.7, 3.8)
--   Django (2.2, 3.1, 3.2)
--   Django REST Framework (3.11, 3.12, 3.13)
+-   Python (3.9, 3.10, 3.11, 3.12)
+-   Django (3.1, 3.2, 4.0, 4.1, 4.2, 5.0, 5.1, 5.2)
+-   Django REST Framework (3.11, 3.12, 3.13, 3.14, 3.15, 3.16, 3.17)
+
+Django REST Framework 3.17 requires Python 3.10+ and Django 4.2+.
 
 # Installation
 
 1. Install using `pip`:
 
 ```bash
-    pip install dynamic-rest
+    pip install dynamic-rest-bse
 ```
 
-(or add `dynamic-rest` to `requirements.txt` or `setup.py`)
+(or add `dynamic-rest-bse` to `requirements.txt` or `setup.py`)
 
 2. Add `rest_framework` and `dynamic_rest` to `INSTALLED_APPS` in `settings.py`:
 
@@ -112,7 +116,7 @@ This application is hosted at https://dynamic-rest.herokuapp.com but can also be
 1. Clone this repository:
 
 ```bash
-    git clone git@github.com:AltSchool/dynamic-rest.git
+    git clone git@github.com:BillSchumacher/dynamic-rest.git
     cd dynamic-rest
 ```
 
@@ -482,6 +486,17 @@ You can filter a user by his name (exact match):
     200 OK
 ```
 
+... or several relationship IDs:
+
+```
+-->
+    GET /users/?filter{groups.in}=1&filter{groups.in}=2
+    or
+    GET /users/?filter{name.in}=[1,2]
+<--
+    200 OK
+```
+
 ... or lack thereof:
 
 ```
@@ -518,6 +533,19 @@ You can filter a user by his name (exact match):
     200 OK
 ```
 
+... or pass a JSON object to `filter{}` for `.or` / `.and` conditions. Any `filter{field}` params in the same request are applied as well, and all of them must match:
+
+```
+-->
+    GET /users/?filter{}={".or":[{"name":"John"},{"name":"Joe"}]}&filter{-groups}=1
+<--
+    200 OK
+```
+
+Inside `.or` / `.and` (also spelled `$or` / `$and`), empty clauses (`{}`) are ignored. The list must hold at least one non-empty filter object, otherwise the request is rejected with a `400`. Every key of the object must match: a combinator can be combined with other keys (`{".or": [...], "-name": "John"}`) and with another combinator, and they are applied together. Values in `filter{}` must be single strings, numbers, booleans or `null`; `.in` takes a list of them, `.range` takes exactly two (not `null`), and `.isnull` takes `true` or `false`. Anything else is rejected with a `400`, so use `name.in` for several values. The `range` operator in a `filter{field.range}` query parameter also needs exactly two values.
+
+Write-only serializer fields are never rendered, but by default they can still be used in `filter{}` and `sort[]`, which lets a client work out their values. Set `PROTECT_WRITE_ONLY_FIELDS` (or `protect_write_only_fields` in a serializer's `Meta`) to reject them, in which case they are treated like unknown fields.
+
 The sky is the limit! DREST supports just about every basic filtering scenario and operator that you can use in Django:
 
 -   in
@@ -529,6 +557,8 @@ The sky is the limit! DREST supports just about every basic filtering scenario a
     ...
 
 See the [full list here](dynamic_rest/filters.py#L153-L176).
+
+Filters across many-to-many or reverse relations (for example `filter{groups.name}=Home`) can match a row several times, so DREST applies `DISTINCT` to those queries. Filters that only follow forward foreign keys or one-to-one relations do not need it and are left alone, because Django requires the target of such a relation to be unique. A custom relation field that sets `requires_unique_target = False` gives no such guarantee, so `DISTINCT` is applied to filters across it as well. On large tables, `DISTINCT` combined with `count()` can be slow, so prefer `per_page` with the `exclude_count` query parameter when filtering across multi-valued relations.
 
 ## Ordering
 
@@ -551,6 +581,8 @@ For descending order, simply add a `-` sign. To sort by name in descending order
     200 OK
     ...
 ```
+
+When a sort field crosses a many-to-many or reverse relation, such as `groups.name` above, a record has several values to sort by. DREST orders it by its smallest value (its largest when descending), so each record is listed once. The same applies to a model's default `Meta.ordering` when it crosses such a relation and no `sort[]` is given. When records are updated or deleted, the ordering is ignored.
 
 ## Directory panel
 
@@ -603,9 +635,31 @@ DYNAMIC_REST = {
     # `deferred=False` is explicitly set on the field.
     'DEFER_MANY_RELATIONS': False,
 
+    # PROTECT_WRITE_ONLY_FIELDS: when True, write-only serializer fields cannot
+    # be used in filter{} or sort[], because filtering or sorting on a field
+    # that is never rendered reveals its values. Off by default for backwards
+    # compatibility. A serializer can override it with
+    # `protect_write_only_fields` in its Meta class.
+    'PROTECT_WRITE_ONLY_FIELDS': False,
+
     # MAX_PAGE_SIZE: global setting for max page size.
     # Can be overriden at the viewset level.
     'MAX_PAGE_SIZE': None,
+
+    # PATCH_ALL_CHECK_OBJECT_PERMISSIONS: check the object-level permissions of
+    # every record in a patch-all update, and reject the request if any is
+    # denied. Patch-all only relies on the queryset and view-level permissions
+    # by default, so enable this if your permissions depend on the individual
+    # record. Every matching record is loaded and checked, so permission
+    # classes that query the database cost one query per record. The records
+    # are locked while they are checked, on databases that support row locks.
+    # Can be overriden at the viewset level.
+    'PATCH_ALL_CHECK_OBJECT_PERMISSIONS': False,
+
+    # PATCH_ALL_BATCH_SIZE: number of records loaded and saved at a time by a
+    # patch-all update, and checked at a time when object permissions are
+    # checked. Must be a positive integer.
+    'PATCH_ALL_BATCH_SIZE': 500,
 
     # PAGE_QUERY_PARAM: global setting for the pagination query parameter.
     # Can be overriden at the viewset level.
@@ -634,9 +688,9 @@ DYNAMIC_REST = {
 
 We actively support the following:
 
--   Python: 3.6, 3.7, 3.8
--   Django: 2.2, 3.1, 3.2
--   Django Rest Framework: 3.11, 3.12
+-   Python: 3.6, 3.7, 3.8, 3.9, 3.10, 3.11, 3.12
+-   Django: 2.2, 3.1, 3.2, 4.0, 4.1, 4.2, 5.0, 5.1, 5.2
+-   Django Rest Framework: 3.11, 3.12, 3.13, 3.14, 3.15, 3.16, 3.17 (3.17 requires Python 3.10+ and Django 4.2+)
 
 **Note:** Some combinations are not supported. For up-to-date information on actively supported/tested combinations, see the `tox.ini` file.
 

@@ -8,7 +8,7 @@ When making contributions, try to follow these guidelines:
 
 Use `make lint` to check your code for style violations.
 
-We use the `flake8` linter to enforce PEP8 code style. 
+We use the `flake8` linter to enforce PEP8 code style.
 For additional details, see our [Python style guide](https://github.com/AltSchool/Python).
 
 ## Documentation

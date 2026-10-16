@@ -453,6 +453,3 @@ To address this issue, DREST fields like DynamicField and DynamicMethodField sup
                 user.profile.preferred_first_name,
                 user.profile.preferred_last_name
             )
-
-
-

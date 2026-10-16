@@ -4,31 +4,28 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('tests', '0005_auto_20170712_0759'),
+        ("tests", "0005_auto_20170712_0759"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='cat',
-            name='hunting_grounds',
+            model_name="cat",
+            name="hunting_grounds",
             field=models.ManyToManyField(
-                related_name='annoying_cats',
-                related_query_name='getoffmylawn',
-                to='tests.Location'),
+                related_name="annoying_cats",
+                related_query_name="getoffmylawn",
+                to="tests.Location",
+            ),
         ),
         migrations.AlterField(
-            model_name='event',
-            name='status',
-            field=models.TextField(
-                default='current'),
+            model_name="event",
+            name="status",
+            field=models.TextField(default="current"),
         ),
         migrations.AlterField(
-            model_name='user',
-            name='is_dead',
-            field=models.BooleanField(
-                default=False,
-                null=True),
+            model_name="user",
+            name="is_dead",
+            field=models.BooleanField(default=False, null=True),
         ),
     ]

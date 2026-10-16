@@ -1,2 +1,4 @@
 [flake8]
-max-line-length=90
+docstring-convention=google
+max-line-length = 88
+extend-ignore = E203,D212,D411
